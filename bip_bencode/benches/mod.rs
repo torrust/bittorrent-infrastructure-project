@@ -5,7 +5,7 @@ extern crate test;
 
 #[cfg(test)]
 mod benches {
-    use bip_bencode::{BencodeRef, BDecodeOpt};
+    use bip_bencode::{BDecodeOpt, BencodeRef};
     use test::Bencher;
 
     #[bench]
