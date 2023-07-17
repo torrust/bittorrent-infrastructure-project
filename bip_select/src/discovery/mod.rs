@@ -1,12 +1,13 @@
 //! Module for peer discovery.
 
-use ControlMessage;
+use std::net::SocketAddr;
+
 use bip_handshake::InfoHash;
 use bip_metainfo::Metainfo;
-use bip_peer::PeerInfo;
 use bip_peer::messages::UtMetadataMessage;
+use bip_peer::PeerInfo;
 use bip_utracker::announce::ClientState;
-use std::net::SocketAddr;
+use ControlMessage;
 
 pub mod error;
 
