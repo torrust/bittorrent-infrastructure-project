@@ -1,97 +1,143 @@
 use std::net::SocketAddr;
 
-use bittorrent::message::HandshakeMessage;
+use bip_util::bt::PeerId;
 use bittorrent::framed::FramedHandshake;
-use message::extensions::Extensions;
-use handshake::handler::HandshakeType;
-use message::initiate::InitiateMessage;
-use message::complete::CompleteMessage;
+use bittorrent::message::HandshakeMessage;
 use filter::filters::Filters;
+use futures::future::Future;
+use futures::sink::Sink;
+use futures::stream::Stream;
 use handshake::handler;
 use handshake::handler::timer::HandshakeTimer;
-
-use bip_util::bt::{PeerId};
-use futures::future::Future;
-use futures::stream::Stream;
-use futures::sink::Sink;
+use handshake::handler::HandshakeType;
+use message::complete::CompleteMessage;
+use message::extensions::Extensions;
+use message::initiate::InitiateMessage;
 use tokio_io::{AsyncRead, AsyncWrite};
 
-pub fn execute_handshake<S>(item: HandshakeType<S>, context: &(Extensions, PeerId, Filters, HandshakeTimer))
-    -> Box<Future<Item=Option<CompleteMessage<S>>, Error=()>> where S: AsyncRead + AsyncWrite + 'static {
+pub fn execute_handshake<S>(
+    item: HandshakeType<S>,
+    context: &(Extensions, PeerId, Filters, HandshakeTimer),
+) -> Box<Future<Item = Option<CompleteMessage<S>>, Error = ()>>
+where
+    S: AsyncRead + AsyncWrite + 'static,
+{
     let &(ref ext, ref pid, ref filters, ref timer) = context;
 
     match item {
         HandshakeType::Initiate(sock, init_msg) => initiate_handshake(sock, init_msg, *ext, *pid, filters.clone(), timer.clone()),
-        HandshakeType::Complete(sock, addr)     => complete_handshake(sock, addr, *ext, *pid, filters.clone(), timer.clone())
+        HandshakeType::Complete(sock, addr) => complete_handshake(sock, addr, *ext, *pid, filters.clone(), timer.clone()),
     }
 }
 
-fn initiate_handshake<S>(sock: S, init_msg: InitiateMessage, ext: Extensions, pid: PeerId, filters: Filters, timer: HandshakeTimer)
-    -> Box<Future<Item=Option<CompleteMessage<S>>, Error=()>> where S: AsyncRead + AsyncWrite + 'static {
+fn initiate_handshake<S>(
+    sock: S,
+    init_msg: InitiateMessage,
+    ext: Extensions,
+    pid: PeerId,
+    filters: Filters,
+    timer: HandshakeTimer,
+) -> Box<Future<Item = Option<CompleteMessage<S>>, Error = ()>>
+where
+    S: AsyncRead + AsyncWrite + 'static,
+{
     let framed = FramedHandshake::new(sock);
-    
+
     let (prot, hash, addr) = init_msg.into_parts();
     let handshake_msg = HandshakeMessage::from_parts(prot.clone(), ext, hash, pid);
 
-    let composed_future = timer.timeout(
-            framed.send(handshake_msg)
-                .map_err(|_| ())
-        )
+    let composed_future = timer
+        .timeout(framed.send(handshake_msg).map_err(|_| ()))
         .and_then(move |framed| {
-            timer.timeout(
-                framed.into_future()
-                    .map_err(|_| ())
-                    .and_then(|(opt_msg, framed)| opt_msg.ok_or(())
-                    .map(|msg| (msg, framed)))
-            )
-            .and_then(move |(msg, framed)| {
-                let (remote_prot, remote_ext, remote_hash, remote_pid) = msg.into_parts();
-                let socket = framed.into_inner();
-                
-                // Check that it responds with the same hash and protocol, also check our filters
-                if remote_hash != hash ||
-                    remote_prot != prot ||
-                    handler::should_filter(Some(&addr), Some(&remote_prot), Some(&remote_ext), Some(&remote_hash), Some(&remote_pid), &filters) {
-                    Err(())
-                } else {
-                    Ok(Some(CompleteMessage::new(prot, ext.union(&remote_ext), hash, remote_pid, addr, socket)))
-                }
-            })
+            timer
+                .timeout(
+                    framed
+                        .into_future()
+                        .map_err(|_| ())
+                        .and_then(|(opt_msg, framed)| opt_msg.ok_or(()).map(|msg| (msg, framed))),
+                )
+                .and_then(move |(msg, framed)| {
+                    let (remote_prot, remote_ext, remote_hash, remote_pid) = msg.into_parts();
+                    let socket = framed.into_inner();
+
+                    // Check that it responds with the same hash and protocol, also check our filters
+                    if remote_hash != hash
+                        || remote_prot != prot
+                        || handler::should_filter(
+                            Some(&addr),
+                            Some(&remote_prot),
+                            Some(&remote_ext),
+                            Some(&remote_hash),
+                            Some(&remote_pid),
+                            &filters,
+                        )
+                    {
+                        Err(())
+                    } else {
+                        Ok(Some(CompleteMessage::new(
+                            prot,
+                            ext.union(&remote_ext),
+                            hash,
+                            remote_pid,
+                            addr,
+                            socket,
+                        )))
+                    }
+                })
         })
         .or_else(|_| Ok(None));
 
     Box::new(composed_future)
 }
 
-fn complete_handshake<S>(sock: S, addr: SocketAddr, ext: Extensions, pid: PeerId, filters: Filters, timer: HandshakeTimer)
-    -> Box<Future<Item=Option<CompleteMessage<S>>, Error=()>> where S: AsyncRead + AsyncWrite + 'static {
+fn complete_handshake<S>(
+    sock: S,
+    addr: SocketAddr,
+    ext: Extensions,
+    pid: PeerId,
+    filters: Filters,
+    timer: HandshakeTimer,
+) -> Box<Future<Item = Option<CompleteMessage<S>>, Error = ()>>
+where
+    S: AsyncRead + AsyncWrite + 'static,
+{
     let framed = FramedHandshake::new(sock);
 
-    let composed_future = timer.timeout(
-            framed.into_future()
+    let composed_future = timer
+        .timeout(
+            framed
+                .into_future()
                 .map_err(|_| ())
-                .and_then(|(opt_msg, framed)| {
-                    opt_msg.ok_or(())
-                        .map(|msg| (msg, framed))
-            })
+                .and_then(|(opt_msg, framed)| opt_msg.ok_or(()).map(|msg| (msg, framed))),
         )
         .and_then(move |(msg, framed)| {
             let (remote_prot, remote_ext, remote_hash, remote_pid) = msg.into_parts();
-            
+
             // Check our filters
-            if handler::should_filter(Some(&addr), Some(&remote_prot), Some(&remote_ext), Some(&remote_hash), Some(&remote_pid), &filters) {
+            if handler::should_filter(
+                Some(&addr),
+                Some(&remote_prot),
+                Some(&remote_ext),
+                Some(&remote_hash),
+                Some(&remote_pid),
+                &filters,
+            ) {
                 Err(())
             } else {
                 let handshake_msg = HandshakeMessage::from_parts(remote_prot.clone(), ext, remote_hash, pid);
 
-                Ok(timer.timeout(framed.send(handshake_msg)
-                        .map_err(|_| ())
-                        .map(move |framed| {
-                            let socket = framed.into_inner();
+                Ok(timer.timeout(framed.send(handshake_msg).map_err(|_| ()).map(move |framed| {
+                    let socket = framed.into_inner();
 
-                            Some(CompleteMessage::new(remote_prot, ext.union(&remote_ext), remote_hash, remote_pid, addr, socket))
-                        })
-                ))
+                    Some(CompleteMessage::new(
+                        remote_prot,
+                        ext.union(&remote_ext),
+                        remote_hash,
+                        remote_pid,
+                        addr,
+                        socket,
+                    ))
+                })))
             }
         })
         .flatten()
@@ -102,19 +148,19 @@ fn complete_handshake<S>(sock: S, addr: SocketAddr, ext: Extensions, pid: PeerId
 
 #[cfg(test)]
 mod tests {
-    use std::io::{Cursor};
+    use std::io::Cursor;
     use std::time::Duration;
 
-    use super::{HandshakeMessage};
-    use message::extensions::{self, Extensions};
-    use message::protocol::Protocol;
-    use message::initiate::InitiateMessage;
+    use bip_util::bt::{self, InfoHash, PeerId};
     use filter::filters::Filters;
-    use handshake::handler::timer::HandshakeTimer;
-
-    use bip_util::bt::{self, PeerId, InfoHash};
-    use tokio_timer;
     use futures::future::{self, Future};
+    use handshake::handler::timer::HandshakeTimer;
+    use message::extensions::{self, Extensions};
+    use message::initiate::InitiateMessage;
+    use message::protocol::Protocol;
+    use tokio_timer;
+
+    use super::HandshakeMessage;
 
     fn any_peer_id() -> PeerId {
         [22u8; bt::PEER_ID_LEN].into()
@@ -163,7 +209,11 @@ mod tests {
         let init_timer = any_handshake_timer();
 
         // Wrap in lazy since we can call wait on non sized types...
-        let complete_message = future::lazy(|| super::initiate_handshake(writer, init_message, init_ext, init_pid, init_filters, init_timer)).wait().unwrap().unwrap();
+        let complete_message =
+            future::lazy(|| super::initiate_handshake(writer, init_message, init_ext, init_pid, init_filters, init_timer))
+                .wait()
+                .unwrap()
+                .unwrap();
 
         assert_eq!(init_prot, *complete_message.protocol());
         assert_eq!(init_ext, *complete_message.extensions());
@@ -171,10 +221,14 @@ mod tests {
         assert_eq!(remote_pid, *complete_message.peer_id());
         assert_eq!(remote_addr, *complete_message.address());
 
-        let sent_message = HandshakeMessage::from_bytes(&complete_message.socket().get_ref()[..remote_message.write_len()]).unwrap().1;
+        let sent_message = HandshakeMessage::from_bytes(&complete_message.socket().get_ref()[..remote_message.write_len()])
+            .unwrap()
+            .1;
         let local_message = HandshakeMessage::from_parts(init_prot, init_ext, init_hash, init_pid);
 
-        let recv_message = HandshakeMessage::from_bytes(&complete_message.socket().get_ref()[remote_message.write_len()..]).unwrap().1;
+        let recv_message = HandshakeMessage::from_bytes(&complete_message.socket().get_ref()[remote_message.write_len()..])
+            .unwrap()
+            .1;
 
         assert_eq!(local_message, sent_message);
         assert_eq!(remote_message, recv_message);
@@ -202,7 +256,11 @@ mod tests {
         let comp_timer = any_handshake_timer();
 
         // Wrap in lazy since we can call wait on non sized types...
-        let complete_message = future::lazy(|| super::complete_handshake(writer, remote_addr, comp_ext, comp_pid, comp_filters, comp_timer)).wait().unwrap().unwrap();
+        let complete_message =
+            future::lazy(|| super::complete_handshake(writer, remote_addr, comp_ext, comp_pid, comp_filters, comp_timer))
+                .wait()
+                .unwrap()
+                .unwrap();
 
         assert_eq!(remote_protocol, *complete_message.protocol());
         assert_eq!(comp_ext, *complete_message.extensions());
@@ -210,10 +268,14 @@ mod tests {
         assert_eq!(remote_pid, *complete_message.peer_id());
         assert_eq!(remote_addr, *complete_message.address());
 
-        let sent_message = HandshakeMessage::from_bytes(&complete_message.socket().get_ref()[remote_message.write_len()..]).unwrap().1;
+        let sent_message = HandshakeMessage::from_bytes(&complete_message.socket().get_ref()[remote_message.write_len()..])
+            .unwrap()
+            .1;
         let local_message = HandshakeMessage::from_parts(remote_protocol, comp_ext, remote_hash, comp_pid);
 
-        let recv_message = HandshakeMessage::from_bytes(&complete_message.socket().get_ref()[..remote_message.write_len()]).unwrap().1;
+        let recv_message = HandshakeMessage::from_bytes(&complete_message.socket().get_ref()[..remote_message.write_len()])
+            .unwrap()
+            .1;
 
         assert_eq!(local_message, sent_message);
         assert_eq!(remote_message, recv_message);
