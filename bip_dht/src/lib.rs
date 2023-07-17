@@ -8,9 +8,9 @@ extern crate bip_util;
 extern crate crc;
 #[macro_use]
 extern crate log;
+extern crate chrono;
 extern crate mio;
 extern crate rand;
-extern crate chrono;
 #[macro_use]
 extern crate error_chain;
 
@@ -32,17 +32,16 @@ mod builder;
 mod error;
 pub mod message;
 mod router;
+mod routing;
 mod security;
 mod storage;
-mod routing;
 mod token;
 mod transaction;
 mod worker;
 
-pub use builder::{DhtBuilder, MainlineDht};
-pub use router::Router;
-pub use worker::{DhtEvent, ShutdownCause};
-
 pub use bip_handshake::Handshaker;
 /// Test
 pub use bip_util::bt::{InfoHash, PeerId};
+pub use builder::{DhtBuilder, MainlineDht};
+pub use router::Router;
+pub use worker::{DhtEvent, ShutdownCause};

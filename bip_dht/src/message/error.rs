@@ -3,10 +3,9 @@
 
 use std::borrow::Cow;
 
-use bip_bencode::{Bencode, BencodeConvert, Dictionary, BencodeConvertError};
-
-use message;
+use bip_bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
 use error::{DhtError, DhtErrorKind, DhtResult};
+use message;
 
 const ERROR_ARGS_KEY: &'static str = "e";
 const NUM_ERROR_ARGS: usize = 2;
@@ -31,11 +30,9 @@ impl ErrorCode {
             SERVER_ERROR_CODE => Ok(ErrorCode::ServerError),
             PROTOCOL_ERROR_CODE => Ok(ErrorCode::ProtocolError),
             METHOD_UNKNOWN_CODE => Ok(ErrorCode::MethodUnknown),
-            unknown => {
-                Err(DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                    details: format!("Error Message Invalid Error Code {:?}", unknown),
-                }))
-            }
+            unknown => Err(DhtError::from_kind(DhtErrorKind::InvalidResponse {
+                details: format!("Error Message Invalid Error Code {:?}", unknown),
+            })),
         }
     }
 }
@@ -103,9 +100,7 @@ impl<'a> ErrorMessage<'a> {
         }
     }
 
-    pub fn from_parts(root: &Dictionary<'a, Bencode<'a>>,
-                      trans_id: &'a [u8])
-                      -> DhtResult<ErrorMessage<'a>> {
+    pub fn from_parts(root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<ErrorMessage<'a>> {
         let validate = ErrorValidate;
         let error_args = try!(validate.lookup_and_convert_list(root, ERROR_ARGS_KEY));
 
@@ -137,7 +132,7 @@ impl<'a> ErrorMessage<'a> {
     pub fn encode(&self) -> Vec<u8> {
         let error_code = Into::<u8>::into(self.code) as i64;
 
-        (ben_map!{
+        (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),
             message::TRANSACTION_ID_KEY => ben_bytes!(&self.trans_id),
             message::MESSAGE_TYPE_KEY => ben_bytes!(message::ERROR_TYPE_KEY),
@@ -146,6 +141,6 @@ impl<'a> ErrorMessage<'a> {
                 ben_bytes!(self.message.as_bytes())
             )
         })
-            .encode()
+        .encode()
     }
 }

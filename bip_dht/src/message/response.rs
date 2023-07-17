@@ -1,12 +1,11 @@
-use bip_bencode::{Bencode, BencodeConvert, Dictionary, BencodeConvertError};
+use bip_bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
 use bip_util::bt::NodeId;
-
+use error::{DhtError, DhtErrorKind, DhtResult};
+use message::announce_peer::AnnouncePeerResponse;
 use message::compact_info::{CompactNodeInfo, CompactValueInfo};
-use message::ping::PingResponse;
 use message::find_node::FindNodeResponse;
 use message::get_peers::GetPeersResponse;
-use message::announce_peer::AnnouncePeerResponse;
-use error::{DhtError, DhtErrorKind, DhtResult};
+use message::ping::PingResponse;
 
 pub const RESPONSE_ARGS_KEY: &'static str = "r";
 
@@ -24,9 +23,11 @@ impl<'a> ResponseValidate<'a> {
     pub fn validate_node_id(&self, node_id: &[u8]) -> DhtResult<NodeId> {
         NodeId::from_hash(node_id).map_err(|_| {
             DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                details: format!("TID {:?} Found Node ID With Invalid Length {:?}",
-                                 self.trans_id,
-                                 node_id.len()),
+                details: format!(
+                    "TID {:?} Found Node ID With Invalid Length {:?}",
+                    self.trans_id,
+                    node_id.len()
+                ),
             })
         })
     }
@@ -35,24 +36,23 @@ impl<'a> ResponseValidate<'a> {
     pub fn validate_nodes<'b>(&self, nodes: &'b [u8]) -> DhtResult<CompactNodeInfo<'b>> {
         CompactNodeInfo::new(nodes).map_err(|_| {
             DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                details: format!("TID {:?} Found Nodes Structure With {} Number Of Bytes Instead \
+                details: format!(
+                    "TID {:?} Found Nodes Structure With {} Number Of Bytes Instead \
                                   Of Correct Multiple",
-                                 self.trans_id,
-                                 nodes.len()),
+                    self.trans_id,
+                    nodes.len()
+                ),
             })
         })
     }
 
-    pub fn validate_values<'b>(&self,
-                               values: &'b [Bencode<'a>])
-                               -> DhtResult<CompactValueInfo<'b>> {
+    pub fn validate_values<'b>(&self, values: &'b [Bencode<'a>]) -> DhtResult<CompactValueInfo<'b>> {
         for bencode in values.iter() {
             match bencode.bytes() {
                 Some(_) => (),
                 None => {
                     return Err(DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                        details: format!("TID {:?} Found Values Structure As Non Bytes Type",
-                                         self.trans_id),
+                        details: format!("TID {:?} Found Values Structure As Non Bytes Type", self.trans_id),
                     }))
                 }
             }
@@ -60,8 +60,7 @@ impl<'a> ResponseValidate<'a> {
 
         CompactValueInfo::new(values).map_err(|_| {
             DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                details: format!("TID {:?} Found Values Structrue With Wrong Number Of Bytes",
-                                 self.trans_id),
+                details: format!("TID {:?} Found Values Structrue With Wrong Number Of Bytes", self.trans_id),
             })
         })
     }
@@ -98,10 +97,11 @@ pub enum ResponseType<'a> {
 }
 
 impl<'a> ResponseType<'a> {
-    pub fn from_parts(root: &'a Dictionary<'a, Bencode<'a>>,
-                      trans_id: &'a [u8],
-                      rsp_type: ExpectedResponse)
-                      -> DhtResult<ResponseType<'a>> {
+    pub fn from_parts(
+        root: &'a Dictionary<'a, Bencode<'a>>,
+        trans_id: &'a [u8],
+        rsp_type: ExpectedResponse,
+    ) -> DhtResult<ResponseType<'a>> {
         let validate = ResponseValidate::new(trans_id);
         let rqst_root = try!(validate.lookup_and_convert_dict(root, RESPONSE_ARGS_KEY));
 
