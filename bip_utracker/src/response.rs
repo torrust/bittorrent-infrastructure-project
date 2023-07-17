@@ -2,12 +2,11 @@
 
 use std::io::{self, Write};
 
-use byteorder::{BigEndian, WriteBytesExt};
-use nom::{be_u32, IResult, be_u64};
-
 use announce::AnnounceResponse;
+use byteorder::{BigEndian, WriteBytesExt};
 use contact::CompactPeers;
 use error::ErrorResponse;
+use nom::{be_u32, be_u64, IResult};
 use scrape::ScrapeResponse;
 
 /// Error action ids only occur in responses.
@@ -55,7 +54,8 @@ impl<'a> TrackerResponse<'a> {
 
     /// Write the TrackerResponse to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         match self.response_type() {
             &ResponseType::Connect(id) => {

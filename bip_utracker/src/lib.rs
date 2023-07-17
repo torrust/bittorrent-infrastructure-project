@@ -35,10 +35,8 @@ pub mod scrape;
 mod client;
 mod server;
 
-pub use client::{TrackerClient, ClientRequest, ClientResponse, ClientToken, ClientMetadata};
-pub use client::error::{ClientResult, ClientError};
-
-pub use server::TrackerServer;
-pub use server::handler::{ServerResult, ServerHandler};
-
 pub use bip_util::bt::{InfoHash, PeerId};
+pub use client::error::{ClientError, ClientResult};
+pub use client::{ClientMetadata, ClientRequest, ClientResponse, ClientToken, TrackerClient};
+pub use server::handler::{ServerHandler, ServerResult};
+pub use server::TrackerServer;

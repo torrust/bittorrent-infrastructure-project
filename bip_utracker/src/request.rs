@@ -2,10 +2,9 @@
 
 use std::io::{self, Write};
 
-use byteorder::{BigEndian, WriteBytesExt};
-use nom::{be_u64, be_u32, IResult};
-
 use announce::AnnounceRequest;
+use byteorder::{BigEndian, WriteBytesExt};
+use nom::{be_u32, be_u64, IResult};
 use scrape::ScrapeRequest;
 
 // For all practical applications, this value should be hardcoded as a valid
@@ -59,7 +58,8 @@ impl<'a> TrackerRequest<'a> {
 
     /// Write the TrackerRequest to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         try!(writer.write_u64::<BigEndian>(self.connection_id()));
 
