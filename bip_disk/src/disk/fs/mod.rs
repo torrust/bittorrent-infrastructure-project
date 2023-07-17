@@ -1,5 +1,5 @@
-use std::path::{Path};
 use std::io::{self};
+use std::path::Path;
 
 pub mod cache;
 pub mod native;
@@ -15,11 +15,13 @@ pub trait FileSystem {
     ///
     /// Intermediate directories will be created if necessary.
     fn open_file<P>(&self, path: P) -> io::Result<Self::File>
-        where P: AsRef<Path> + Send + 'static;
+    where
+        P: AsRef<Path> + Send + 'static;
 
     /// Sync the file.
     fn sync_file<P>(&self, path: P) -> io::Result<()>
-        where P: AsRef<Path> + Send + 'static;
+    where
+        P: AsRef<Path> + Send + 'static;
 
     /// Get the size of the file in bytes.
     fn file_size(&self, file: &Self::File) -> io::Result<u64>;
@@ -36,16 +38,23 @@ pub trait FileSystem {
     fn write_file(&self, file: &mut Self::File, offset: u64, buffer: &[u8]) -> io::Result<usize>;
 }
 
-impl<'a, F> FileSystem for &'a F where F: FileSystem {
+impl<'a, F> FileSystem for &'a F
+where
+    F: FileSystem,
+{
     type File = F::File;
 
     fn open_file<P>(&self, path: P) -> io::Result<Self::File>
-        where P: AsRef<Path> + Send + 'static {
+    where
+        P: AsRef<Path> + Send + 'static,
+    {
         FileSystem::open_file(*self, path)
     }
 
     fn sync_file<P>(&self, path: P) -> io::Result<()>
-        where P: AsRef<Path> + Send + 'static {
+    where
+        P: AsRef<Path> + Send + 'static,
+    {
         FileSystem::sync_file(*self, path)
     }
 

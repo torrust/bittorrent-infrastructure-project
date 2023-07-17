@@ -1,22 +1,23 @@
-use std::cmp;
-use std::io;
+use std::{cmp, io};
 
-use disk::fs::{FileSystem};
-use memory::block::BlockMetadata;
+use bip_metainfo::Info;
+use disk::fs::FileSystem;
 use disk::tasks::helpers;
-
-use bip_metainfo::{Info};
+use memory::block::BlockMetadata;
 
 pub struct PieceAccessor<'a, F> {
-    fs:        F,
-    info_dict: &'a Info
+    fs: F,
+    info_dict: &'a Info,
 }
 
-impl<'a, F> PieceAccessor<'a, F> where F: FileSystem {
+impl<'a, F> PieceAccessor<'a, F>
+where
+    F: FileSystem,
+{
     pub fn new(fs: F, info_dict: &'a Info) -> PieceAccessor<'a, F> {
-        PieceAccessor{
+        PieceAccessor {
             fs: fs,
-            info_dict: info_dict
+            info_dict: info_dict,
         }
     }
 
@@ -39,9 +40,11 @@ impl<'a, F> PieceAccessor<'a, F> where F: FileSystem {
     }
 
     /// Run the given closure with the file, the file offset, and the read/write buffer stard (inclusive) and end (exclusive) indices.
-    /// TODO: We do not detect when/if the file size changes after the initial file size check, so the returned number of 
+    /// TODO: We do not detect when/if the file size changes after the initial file size check, so the returned number of
     fn run_with_file_regions<C>(&self, message: &BlockMetadata, mut callback: C) -> io::Result<()>
-        where C: FnMut(F::File, u64, usize, usize) -> io::Result<()> {
+    where
+        C: FnMut(F::File, u64, usize, usize) -> io::Result<()>,
+    {
         let piece_length = self.info_dict.piece_length() as u64;
 
         let mut total_bytes_to_skip = (message.piece_index() * piece_length) + message.block_offset();
@@ -64,8 +67,11 @@ impl<'a, F> PieceAccessor<'a, F> where F: FileSystem {
                 let total_max_bytes_to_access = total_block_length - total_bytes_accessed;
                 let actual_bytes_to_access = cmp::min(total_max_bytes_to_access, bytes_to_access);
                 let offset = total_file_size - bytes_to_access;
-                
-                let (begin, end) = (total_bytes_accessed as usize, (total_bytes_accessed + actual_bytes_to_access) as usize);
+
+                let (begin, end) = (
+                    total_bytes_accessed as usize,
+                    (total_bytes_accessed + actual_bytes_to_access) as usize,
+                );
                 try!(callback(fs_file, offset, begin, end));
                 total_bytes_accessed += actual_bytes_to_access;
             }

@@ -2,25 +2,25 @@ extern crate bip_disk;
 extern crate bip_metainfo;
 extern crate futures;
 
-use std::io::{self, Read, Write, BufRead};
 use std::fs::File;
+use std::io::{self, BufRead, Read, Write};
 
-use bip_disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
 use bip_disk::fs::NativeFileSystem;
+use bip_disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
 use bip_metainfo::Metainfo;
-use futures::{Stream, Sink, Future};
+use futures::{Future, Sink, Stream};
 
 fn main() {
     println!("Utility For Allocating Disk Space For A Torrent File");
-    
+
     let stdin = io::stdin();
     let mut input_lines = stdin.lock().lines();
     let mut stdout = io::stdout();
 
-    print!("Enter the destination download directory: " );
+    print!("Enter the destination download directory: ");
     stdout.flush().unwrap();
     let download_path = input_lines.next().unwrap().unwrap();
-    
+
     print!("Enter the full path to the torrent file: ");
     stdout.flush().unwrap();
     let torrent_path = input_lines.next().unwrap().unwrap();
@@ -47,8 +47,8 @@ fn main() {
                 println!("Torrent Has {} Good Pieces Out Of {} Total Pieces", good_pieces, total_pieces);
                 break;
             }
-            ODiskMessage::FoundGoodPiece(_, _) => { good_pieces += 1},
-            unexpected @ _ => panic!("Unexpected ODiskMessage {:?}", unexpected)
+            ODiskMessage::FoundGoodPiece(_, _) => good_pieces += 1,
+            unexpected @ _ => panic!("Unexpected ODiskMessage {:?}", unexpected),
         }
     }
 }

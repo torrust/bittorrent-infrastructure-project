@@ -1,11 +1,11 @@
-use {MultiFileDirectAccessor, InMemoryFileSystem};
-use bip_disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage, BlockMetadata, Block};
-use bip_metainfo::{MetainfoBuilder, PieceLength, Metainfo};
+use bip_disk::{Block, BlockMetadata, DiskManagerBuilder, IDiskMessage, ODiskMessage};
+use bip_metainfo::{Metainfo, MetainfoBuilder, PieceLength};
 use bytes::BytesMut;
-use tokio_core::reactor::{Core};
-use futures::future::{Loop};
-use futures::stream::Stream;
+use futures::future::Loop;
 use futures::sink::Sink;
+use futures::stream::Stream;
+use tokio_core::reactor::Core;
+use {InMemoryFileSystem, MultiFileDirectAccessor};
 
 #[test]
 fn positive_remove_torrent() {
@@ -15,18 +15,18 @@ fn positive_remove_torrent() {
     let data_c = (::random_buffer(0), "/path/to/file/c".into());
 
     // Create our accessor for our in memory files and create a torrent file for them
-    let files_accessor = MultiFileDirectAccessor::new("/my/downloads/".into(),
-        vec![data_a.clone(), data_b.clone(), data_c.clone()]);
+    let files_accessor =
+        MultiFileDirectAccessor::new("/my/downloads/".into(), vec![data_a.clone(), data_b.clone(), data_c.clone()]);
     let metainfo_bytes = MetainfoBuilder::new()
         .set_piece_length(PieceLength::Custom(1024))
-        .build(1, files_accessor, |_| ()).unwrap();
+        .build(1, files_accessor, |_| ())
+        .unwrap();
     let metainfo_file = Metainfo::from_bytes(metainfo_bytes).unwrap();
     let info_hash = metainfo_file.info().info_hash();
 
     // Spin up a disk manager and add our created torrent to it
     let filesystem = InMemoryFileSystem::new();
-    let disk_manager = DiskManagerBuilder::new()
-        .build(filesystem.clone());
+    let disk_manager = DiskManagerBuilder::new().build(filesystem.clone());
 
     let (send, recv) = disk_manager.split();
     let mut blocking_send = send.wait();
@@ -35,18 +35,20 @@ fn positive_remove_torrent() {
     // Verify that zero pieces are marked as good
     let mut core = Core::new().unwrap();
 
-    let (mut blocking_send, good_pieces, recv) = ::core_loop_with_timeout(&mut core, 500, ((blocking_send, 0), recv),
-        |(mut blocking_send, good_pieces), recv, msg| {
-            match msg {
-                ODiskMessage::TorrentAdded(_)      => {
-                    blocking_send.send(IDiskMessage::RemoveTorrent(info_hash)).unwrap();
-                    Loop::Continue(((blocking_send, good_pieces), recv))
-                },
-                ODiskMessage::TorrentRemoved(_)    => Loop::Break((blocking_send, good_pieces, recv)),
-                ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue(((blocking_send, good_pieces + 1), recv)),
-                unexpected @ _                     => panic!("Unexpected Message: {:?}", unexpected)
+    let (mut blocking_send, good_pieces, recv) = ::core_loop_with_timeout(
+        &mut core,
+        500,
+        ((blocking_send, 0), recv),
+        |(mut blocking_send, good_pieces), recv, msg| match msg {
+            ODiskMessage::TorrentAdded(_) => {
+                blocking_send.send(IDiskMessage::RemoveTorrent(info_hash)).unwrap();
+                Loop::Continue(((blocking_send, good_pieces), recv))
             }
-    });
+            ODiskMessage::TorrentRemoved(_) => Loop::Break((blocking_send, good_pieces, recv)),
+            ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue(((blocking_send, good_pieces + 1), recv)),
+            unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+        },
+    );
 
     assert_eq!(0, good_pieces);
 
@@ -57,11 +59,8 @@ fn positive_remove_torrent() {
 
     blocking_send.send(IDiskMessage::ProcessBlock(process_block)).unwrap();
 
-    ::core_loop_with_timeout(&mut core, 500, ((), recv),
-        |_, _, msg| {
-            match msg {
-                ODiskMessage::ProcessBlockError(_, _) => Loop::Break(()),
-                unexpected                            => panic!("Unexpected Message: {:?}", unexpected)
-            }
+    ::core_loop_with_timeout(&mut core, 500, ((), recv), |_, _, msg| match msg {
+        ODiskMessage::ProcessBlockError(_, _) => Loop::Break(()),
+        unexpected => panic!("Unexpected Message: {:?}", unexpected),
     });
 }
