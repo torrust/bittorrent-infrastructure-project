@@ -2,15 +2,14 @@
 
 use std::io;
 
+use bytes::{BufMut, BytesMut};
 use protocol::PeerProtocol;
-
-use bytes::{BytesMut, BufMut};
 use tokio_io::codec::{Decoder, Encoder};
 
 /// Codec operating over some `PeerProtocol`.
 pub struct PeerProtocolCodec<P> {
-    protocol:    P,
-    max_payload: Option<usize>
+    protocol: P,
+    max_payload: Option<usize>,
 }
 
 impl<P> PeerProtocolCodec<P> {
@@ -20,44 +19,57 @@ impl<P> PeerProtocolCodec<P> {
     /// instead of this function, as this function will not enforce a limit on
     /// received payload length.
     pub fn new(protocol: P) -> PeerProtocolCodec<P> {
-        PeerProtocolCodec{ protocol: protocol, max_payload: None }
+        PeerProtocolCodec {
+            protocol: protocol,
+            max_payload: None,
+        }
     }
 
-    /// Create a new `PeerProtocolCodec` which will yield an error if 
+    /// Create a new `PeerProtocolCodec` which will yield an error if
     /// receiving a payload larger than the specified `max_payload`.
     pub fn with_max_payload(protocol: P, max_payload: usize) -> PeerProtocolCodec<P> {
-        PeerProtocolCodec{ protocol: protocol, max_payload: Some(max_payload) }
+        PeerProtocolCodec {
+            protocol: protocol,
+            max_payload: Some(max_payload),
+        }
     }
 }
 
-impl<P> Decoder for PeerProtocolCodec<P> where P: PeerProtocol {
+impl<P> Decoder for PeerProtocolCodec<P>
+where
+    P: PeerProtocol,
+{
     type Item = P::ProtocolMessage;
     type Error = io::Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<Self::Item>> {
         let src_len = src.len();
-        
+
         let bytes = match try!(self.protocol.bytes_needed(src.as_ref())) {
-            Some(needed) if self.max_payload
-                                .map(|max_payload| needed > max_payload)
-                                .unwrap_or(false) => {
-                return Err(io::Error::new(io::ErrorKind::Other, "PeerProtocolCodec Enforced Maximum Payload Check For Peer"))
+            Some(needed) if self.max_payload.map(|max_payload| needed > max_payload).unwrap_or(false) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "PeerProtocolCodec Enforced Maximum Payload Check For Peer",
+                ))
             }
             Some(needed) if needed <= src_len => src.split_to(needed).freeze(),
-            Some(_) | None                    => { return Ok(None) }
+            Some(_) | None => return Ok(None),
         };
 
         self.protocol.parse_bytes(bytes).map(|message| Some(message))
     }
 }
 
-impl<P> Encoder for PeerProtocolCodec<P> where P: PeerProtocol {
+impl<P> Encoder for PeerProtocolCodec<P>
+where
+    P: PeerProtocol,
+{
     type Item = P::ProtocolMessage;
     type Error = io::Error;
 
     fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> io::Result<()> {
         dst.reserve(self.protocol.message_size(&item));
-        
+
         self.protocol.write_bytes(&item, dst.writer())
     }
 }
@@ -66,11 +78,11 @@ impl<P> Encoder for PeerProtocolCodec<P> where P: PeerProtocol {
 mod tests {
     use std::io::{self, Write};
 
-    use super::PeerProtocolCodec;
-    use protocol::PeerProtocol;
-
     use bytes::{Bytes, BytesMut};
-    use tokio_io::codec::{Decoder};
+    use protocol::PeerProtocol;
+    use tokio_io::codec::Decoder;
+
+    use super::PeerProtocolCodec;
 
     struct ConsumeProtocol;
 
@@ -86,7 +98,9 @@ mod tests {
         }
 
         fn write_bytes<W>(&mut self, _message: &Self::ProtocolMessage, _writer: W) -> io::Result<()>
-            where W: Write {
+        where
+            W: Write,
+        {
             Ok(())
         }
 

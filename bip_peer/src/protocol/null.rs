@@ -1,9 +1,8 @@
 use std::io::{self, Write};
 
-use message::NullProtocolMessage;
-use protocol::{PeerProtocol, NestedPeerProtocol};
-
 use bytes::Bytes;
+use message::NullProtocolMessage;
+use protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Null protocol which will return an error if called.
 ///
@@ -30,12 +29,19 @@ impl PeerProtocol for NullProtocol {
     }
 
     fn parse_bytes(&mut self, _bytes: Bytes) -> io::Result<Self::ProtocolMessage> {
-        Err(io::Error::new(io::ErrorKind::Other, "Attempted To Parse Bytes As Null Protocol"))
+        Err(io::Error::new(
+            io::ErrorKind::Other,
+            "Attempted To Parse Bytes As Null Protocol",
+        ))
     }
 
     fn write_bytes<W>(&mut self, _message: &Self::ProtocolMessage, _writer: W) -> io::Result<()>
-        where W: Write {
-        panic!("bip_peer: NullProtocol::write_bytes Was Called...Wait, How Did You Construct An Instance Of NullProtocolMessage? :)")
+    where
+        W: Write,
+    {
+        panic!(
+            "bip_peer: NullProtocol::write_bytes Was Called...Wait, How Did You Construct An Instance Of NullProtocolMessage? :)"
+        )
     }
 
     fn message_size(&mut self, _message: &Self::ProtocolMessage) -> usize {
@@ -44,7 +50,7 @@ impl PeerProtocol for NullProtocol {
 }
 
 impl<M> NestedPeerProtocol<M> for NullProtocol {
-    fn received_message(&mut self, _message: &M) { }
+    fn received_message(&mut self, _message: &M) {}
 
-    fn sent_message(&mut self, _message: &M) { }
+    fn sent_message(&mut self, _message: &M) {}
 }

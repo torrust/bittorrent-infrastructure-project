@@ -1,37 +1,36 @@
-use std::time::Duration;
 use std::io;
-
-use manager::{PeerManager, ManagedMessage};
+use std::time::Duration;
 
 use futures::sink::Sink;
 use futures::stream::Stream;
+use manager::{ManagedMessage, PeerManager};
 use tokio_core::reactor::Handle;
 
-const DEFAULT_PEER_CAPACITY:             usize = 1000;
-const DEFAULT_SINK_BUFFER_CAPACITY:      usize = 100;
-const DEFAULT_STREAM_BUFFER_CAPACITY:    usize = 100;
-const DEFAULT_HEARTBEAT_INTERVAL_MILLIS: u64   = 1 * 60 * 1000;
-const DEFAULT_HEARTBEAT_TIMEOUT_MILLIS:  u64   = 2 * 60 * 1000;
+const DEFAULT_PEER_CAPACITY: usize = 1000;
+const DEFAULT_SINK_BUFFER_CAPACITY: usize = 100;
+const DEFAULT_STREAM_BUFFER_CAPACITY: usize = 100;
+const DEFAULT_HEARTBEAT_INTERVAL_MILLIS: u64 = 1 * 60 * 1000;
+const DEFAULT_HEARTBEAT_TIMEOUT_MILLIS: u64 = 2 * 60 * 1000;
 
 /// Builder for configuring a `PeerManager`.
 #[derive(Copy, Clone)]
 pub struct PeerManagerBuilder {
-    peer:               usize,
-    sink_buffer:        usize,
-    stream_buffer:      usize,
+    peer: usize,
+    sink_buffer: usize,
+    stream_buffer: usize,
     heartbeat_interval: Duration,
-    heartbeat_timeout:  Duration
+    heartbeat_timeout: Duration,
 }
 
 impl PeerManagerBuilder {
     /// Create a new `PeerManagerBuilder`.
     pub fn new() -> PeerManagerBuilder {
         PeerManagerBuilder {
-            peer:               DEFAULT_PEER_CAPACITY,
-            sink_buffer:        DEFAULT_SINK_BUFFER_CAPACITY,
-            stream_buffer:      DEFAULT_STREAM_BUFFER_CAPACITY,
+            peer: DEFAULT_PEER_CAPACITY,
+            sink_buffer: DEFAULT_SINK_BUFFER_CAPACITY,
+            stream_buffer: DEFAULT_STREAM_BUFFER_CAPACITY,
             heartbeat_interval: Duration::from_millis(DEFAULT_HEARTBEAT_INTERVAL_MILLIS),
-            heartbeat_timeout:  Duration::from_millis(DEFAULT_HEARTBEAT_TIMEOUT_MILLIS)
+            heartbeat_timeout: Duration::from_millis(DEFAULT_HEARTBEAT_TIMEOUT_MILLIS),
         }
     }
 
@@ -92,10 +91,11 @@ impl PeerManagerBuilder {
 
     /// Build a `PeerManager` from the current `PeerManagerBuilder`.
     pub fn build<P>(self, handle: Handle) -> PeerManager<P>
-        where P: Sink<SinkError=io::Error> +
-                 Stream<Error=io::Error>,
-              P::SinkItem: ManagedMessage,
-              P::Item:     ManagedMessage {
+    where
+        P: Sink<SinkError = io::Error> + Stream<Error = io::Error>,
+        P::SinkItem: ManagedMessage,
+        P::Item: ManagedMessage,
+    {
         PeerManager::from_builder(self, handle)
     }
 }

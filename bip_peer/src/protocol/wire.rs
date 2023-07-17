@@ -1,13 +1,12 @@
 use std::io::{self, Write};
 
-use message::{PeerWireProtocolMessage, ExtendedMessage, BitsExtensionMessage};
-use protocol::{PeerProtocol, NestedPeerProtocol};
-
 use bytes::Bytes;
+use message::{BitsExtensionMessage, ExtendedMessage, PeerWireProtocolMessage};
+use protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Protocol for peer wire messages.
 pub struct PeerWireProtocol<P> {
-    ext_protocol: P
+    ext_protocol: P,
 }
 
 impl<P> PeerWireProtocol<P> {
@@ -17,11 +16,16 @@ impl<P> PeerWireProtocol<P> {
     /// as the peer wire protocol. This means it should expect a 4 byte (`u32`) message
     /// length prefix. Nested protocols will NOT have their `bytes_needed` method called.
     pub fn new(ext_protocol: P) -> PeerWireProtocol<P> {
-        PeerWireProtocol{ ext_protocol: ext_protocol }
+        PeerWireProtocol {
+            ext_protocol: ext_protocol,
+        }
     }
 }
 
-impl<P> PeerProtocol for PeerWireProtocol<P> where P: PeerProtocol + NestedPeerProtocol<ExtendedMessage> {
+impl<P> PeerProtocol for PeerWireProtocol<P>
+where
+    P: PeerProtocol + NestedPeerProtocol<ExtendedMessage>,
+{
     type ProtocolMessage = PeerWireProtocolMessage<P>;
 
     fn bytes_needed(&mut self, bytes: &[u8]) -> io::Result<Option<usize>> {
@@ -34,20 +38,22 @@ impl<P> PeerProtocol for PeerWireProtocol<P> where P: PeerProtocol + NestedPeerP
                 self.ext_protocol.received_message(&msg);
 
                 Ok(PeerWireProtocolMessage::BitsExtension(BitsExtensionMessage::Extended(msg)))
-            },
-            other                                                                           => other
+            }
+            other => other,
         }
     }
 
     fn write_bytes<W>(&mut self, message: &Self::ProtocolMessage, writer: W) -> io::Result<()>
-        where W: Write {
+    where
+        W: Write,
+    {
         match (message.write_bytes(writer, &mut self.ext_protocol), message) {
             (Ok(()), &PeerWireProtocolMessage::BitsExtension(BitsExtensionMessage::Extended(ref msg))) => {
                 self.ext_protocol.sent_message(msg);
-                
+
                 Ok(())
-            },
-            (other, _)                                                                                 => other
+            }
+            (other, _) => other,
         }
     }
 
