@@ -1,6 +1,6 @@
 use std::ops::BitXor;
 
-use error::{LengthError, LengthResult, LengthErrorKind};
+use error::{LengthError, LengthErrorKind, LengthResult};
 
 mod builder;
 
@@ -102,11 +102,9 @@ impl<'a> Iterator for XorBits<'a> {
     type Item = XorRep;
 
     fn next(&mut self) -> Option<XorRep> {
-        self.bits.next().map(|n| {
-            match n {
-                BitRep::Set => XorRep::Diff,
-                BitRep::Unset => XorRep::Same,
-            }
+        self.bits.next().map(|n| match n {
+            BitRep::Set => XorRep::Diff,
+            BitRep::Unset => XorRep::Same,
         })
     }
 }
@@ -141,10 +139,7 @@ pub struct Bits<'a> {
 
 impl<'a> Bits<'a> {
     fn new(bytes: &'a [u8]) -> Bits<'a> {
-        Bits {
-            bytes: bytes,
-            bit_pos: 0,
-        }
+        Bits { bytes: bytes, bit_pos: 0 }
     }
 }
 
@@ -159,11 +154,7 @@ impl<'a> Iterator for Bits<'a> {
 
             self.bit_pos += 1;
 
-            Some(bit_value).map(|x| if x == 1 {
-                BitRep::Set
-            } else {
-                BitRep::Unset
-            })
+            Some(bit_value).map(|x| if x == 1 { BitRep::Set } else { BitRep::Unset })
         } else {
             None
         }

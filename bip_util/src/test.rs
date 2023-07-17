@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 
-use chrono::{Duration, UTC, DateTime};
+use chrono::{DateTime, Duration, UTC};
 
 use bt::{self, NodeId};
 use net::IpAddr;

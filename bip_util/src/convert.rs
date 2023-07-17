@@ -9,14 +9,16 @@ pub fn four_bytes_to_array(bytes: u32) -> [u8; 4] {
 
 /// Convert an 8 byte value to an array of 8 bytes.
 pub fn eight_bytes_to_array(bytes: u64) -> [u8; 8] {
-    [(bytes >> 56) as u8,
-     (bytes >> 48) as u8,
-     (bytes >> 40) as u8,
-     (bytes >> 32) as u8,
-     (bytes >> 24) as u8,
-     (bytes >> 16) as u8,
-     (bytes >> 8) as u8,
-     bytes as u8]
+    [
+        (bytes >> 56) as u8,
+        (bytes >> 48) as u8,
+        (bytes >> 40) as u8,
+        (bytes >> 32) as u8,
+        (bytes >> 24) as u8,
+        (bytes >> 16) as u8,
+        (bytes >> 8) as u8,
+        bytes as u8,
+    ]
 }
 
 /// Convert an ipv4 address to an array of 4 bytes big endian.
@@ -89,23 +91,21 @@ pub fn bytes_be_to_ipv6(bytes: [u8; 16]) -> Ipv6Addr {
         let combined_index = index / 2;
         let should_shift = index % 2 == 0;
 
-        let adjusted_value = if should_shift {
-            (value as u16) << 8
-        } else {
-            value as u16
-        };
+        let adjusted_value = if should_shift { (value as u16) << 8 } else { value as u16 };
 
         combined_bytes[combined_index] |= adjusted_value;
     }
 
-    Ipv6Addr::new(combined_bytes[0],
-                  combined_bytes[1],
-                  combined_bytes[2],
-                  combined_bytes[3],
-                  combined_bytes[4],
-                  combined_bytes[5],
-                  combined_bytes[6],
-                  combined_bytes[7])
+    Ipv6Addr::new(
+        combined_bytes[0],
+        combined_bytes[1],
+        combined_bytes[2],
+        combined_bytes[3],
+        combined_bytes[4],
+        combined_bytes[5],
+        combined_bytes[6],
+        combined_bytes[7],
+    )
 }
 
 /// Convert an array of 2 bytes big endian to a port.
