@@ -1,0 +1,30 @@
+[package]
+name          = "handshake"
+version       = "0.7.1"
+description   = "Common handshaking interface as well as a default handshake implementation"
+keywords      = ["handshake", "bittorrent"]
+
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+[dependencies]
+util      = { path = "../util"  }
+bytes         = "0.4"
+futures       = "0.1"
+nom           = "3.1"
+rand          = "0.3"
+tokio-core    = "0.1"
+tokio-io      = "0.1"
+tokio-timer   = "0.1"
+
+[[test]]
+name          = "test"
+path          = "test/mod.rs"

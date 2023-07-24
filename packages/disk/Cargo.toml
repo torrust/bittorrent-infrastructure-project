@@ -1,0 +1,45 @@
+[package]
+name = "disk"
+version = "0.6.0"
+description = "Bittorrent Infrastructure Project Disk Module"
+keywords = ["filesystem", "fs", "disk"]
+
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+[dependencies]
+metainfo = { path = "../metainfo" }
+util = { path = "../util" }
+
+bytes = "0.4"
+crossbeam = "0.3"
+futures = "0.1"
+futures-cpupool = "0.1"
+error-chain = "0.11"
+log = "0.3"
+lru-cache = "0.1"
+
+[dev-dependencies]
+rand = "0.3"
+tokio-core = "0.1"
+
+[[test]]
+name = "test"
+path = "test/mod.rs"
+
+[profile.bench]
+opt-level = 3
+debug = false
+rpath = false
+lto = false
+debug-assertions = false
+codegen-units = 1
+panic = 'unwind'

@@ -1,0 +1,23 @@
+[package]
+name = "util"
+version = "0.5.0"
+description = "Utilities for the Bittorrent Infrastructure Project"
+keywords = ["utility"]
+
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+
+[dependencies]
+chrono = "0.2.0"
+num = "0.1.0"
+rand = "0.3.0"
+rust-crypto = "0.2.0"

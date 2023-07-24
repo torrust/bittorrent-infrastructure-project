@@ -18,5 +18,3 @@ Cargo.lock
 spike/
 *.torrent
 
-# Visual Studio Code Files
-.vscode
