@@ -15,6 +15,7 @@ pub struct DiskManagerBuilder {
 
 impl DiskManagerBuilder {
     /// Create a new `DiskManagerBuilder`.
+    #[must_use]
     pub fn new() -> DiskManagerBuilder {
         DiskManagerBuilder {
             builder: Builder::new(),
@@ -24,18 +25,21 @@ impl DiskManagerBuilder {
     }
 
     /// Use a custom `Builder` for the `CpuPool`.
+    #[must_use]
     pub fn with_worker_config(mut self, config: Builder) -> DiskManagerBuilder {
         self.builder = config;
         self
     }
 
     /// Specify the buffer capacity for pending `IDiskMessage`s.
+    #[must_use]
     pub fn with_sink_buffer_capacity(mut self, size: usize) -> DiskManagerBuilder {
         self.pending_size = size;
         self
     }
 
     /// Specify the buffer capacity for completed `ODiskMessage`s.
+    #[must_use]
     pub fn with_stream_buffer_capacity(mut self, size: usize) -> DiskManagerBuilder {
         self.completed_size = size;
         self
@@ -47,11 +51,13 @@ impl DiskManagerBuilder {
     }
 
     /// Retrieve the sink buffer capacity.
+    #[must_use]
     pub fn sink_buffer_capacity(&self) -> usize {
         self.pending_size
     }
 
     /// Retrieve the stream buffer capacity.
+    #[must_use]
     pub fn stream_buffer_capacity(&self) -> usize {
         self.completed_size
     }

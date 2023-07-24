@@ -17,6 +17,7 @@ pub struct ResponseValidate<'a> {
 }
 
 impl<'a> ResponseValidate<'a> {
+    #[must_use]
     pub fn new(trans_id: &'a [u8]) -> ResponseValidate<'a> {
         ResponseValidate { trans_id }
     }

@@ -62,18 +62,19 @@ where
 
 //----------------------------------------------------------------------------//
 
-/// Struct for providing a ContiguousBuffer abstraction over many contiguous buffers.
+/// Struct for providing a `ContiguousBuffer` abstraction over many contiguous buffers.
 pub struct ContiguousBuffers<T> {
     buffers: Vec<T>,
 }
 
 impl<T> ContiguousBuffers<T> {
-    /// Create a new empty ContiguousBuffers struct.
+    /// Create a new empty `ContiguousBuffers` struct.
+    #[must_use]
     pub fn new() -> ContiguousBuffers<T> {
         ContiguousBuffers { buffers: Vec::new() }
     }
 
-    /// Create a new ContiguousBuffers struct with an initial element.
+    /// Create a new `ContiguousBuffers` struct with an initial element.
     pub fn with_buffer(buffer: T) -> ContiguousBuffers<T> {
         ContiguousBuffers { buffers: vec![buffer] }
     }
@@ -100,15 +101,15 @@ where
     I: Clone,
 {
     fn capacity(&self) -> usize {
-        self.buffers.iter().map(|buffer| buffer.capacity()).sum()
+        self.buffers.iter().map(ContiguousBuffer::capacity).sum()
     }
 
     fn length(&self) -> usize {
-        self.buffers.iter().map(|buffer| buffer.length()).sum()
+        self.buffers.iter().map(ContiguousBuffer::length).sum()
     }
 
     fn clear(&mut self) {
-        for buffer in self.buffers.iter_mut() {
+        for buffer in &mut self.buffers {
             buffer.clear();
         }
     }
@@ -116,7 +117,7 @@ where
     fn write(&mut self, data: &[I]) {
         let mut bytes_written = 0;
 
-        for buffer in self.buffers.iter_mut() {
+        for buffer in &mut self.buffers {
             if bytes_written == data.len() {
                 break;
             }
@@ -130,16 +131,17 @@ where
         }
 
         // If we exhausted all of our buffers but we didn't write all the data yet
-        if bytes_written != data.len() {
-            panic!("bip_util: ContiguousBuffer::write Detected Write That Overflows ContiguousBuffers");
-        }
+        assert!(
+            bytes_written == data.len(),
+            "bip_util: ContiguousBuffer::write Detected Write That Overflows ContiguousBuffers"
+        );
     }
 
     fn read<F>(&self, mut receive: F)
     where
         F: FnMut(&[I]),
     {
-        for buffer in self.buffers.iter() {
+        for buffer in &self.buffers {
             buffer.read(&mut receive);
         }
     }

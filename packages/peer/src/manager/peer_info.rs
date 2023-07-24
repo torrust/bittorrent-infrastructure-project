@@ -19,6 +19,7 @@ pub struct PeerInfo {
 
 impl PeerInfo {
     /// Create a new `PeerInfo` object.
+    #[must_use]
     pub fn new(addr: SocketAddr, pid: PeerId, hash: InfoHash, extensions: Extensions) -> PeerInfo {
         PeerInfo {
             addr,
@@ -29,21 +30,25 @@ impl PeerInfo {
     }
 
     /// Retrieve the peer address.
+    #[must_use]
     pub fn addr(&self) -> &SocketAddr {
         &self.addr
     }
 
     /// Retrieve the peer id.
+    #[must_use]
     pub fn peer_id(&self) -> &PeerId {
         &self.pid
     }
 
     /// Retrieve the peer info hash.
+    #[must_use]
     pub fn hash(&self) -> &InfoHash {
         &self.hash
     }
 
     /// Retrieve the extensions supported by this peer.
+    #[must_use]
     pub fn extensions(&self) -> &Extensions {
         &self.ext
     }

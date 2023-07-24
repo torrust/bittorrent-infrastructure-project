@@ -26,6 +26,7 @@ pub struct RequestValidate<'a> {
 }
 
 impl<'a> RequestValidate<'a> {
+    #[must_use]
     pub fn new(trans_id: &'a [u8]) -> RequestValidate<'a> {
         RequestValidate { trans_id }
     }
@@ -119,7 +120,7 @@ impl<'a> RequestType<'a> {
                     let error_message = ErrorMessage::new(
                         trans_id.to_owned(),
                         ErrorCode::MethodUnknown,
-                        format!("Received Unknown Request Method: {}", unknown),
+                        format!("Received Unknown Request Method: {unknown}"),
                     );
 
                     Err(DhtError::from_kind(DhtErrorKind::InvalidRequest { msg: error_message }))

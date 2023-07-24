@@ -17,6 +17,7 @@ pub struct GetPeersRequest<'a> {
 }
 
 impl<'a> GetPeersRequest<'a> {
+    #[must_use]
     pub fn new(trans_id: &'a [u8], node_id: NodeId, info_hash: InfoHash) -> GetPeersRequest<'a> {
         GetPeersRequest {
             trans_id,
@@ -40,18 +41,22 @@ impl<'a> GetPeersRequest<'a> {
         Ok(GetPeersRequest::new(trans_id, node_id, info_hash))
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),
@@ -91,6 +96,7 @@ impl<'a, 'b> GetPeersResponse<'a>
 where
     'b: 'a,
 {
+    #[must_use]
     pub fn new(
         trans_id: &'a [u8],
         node_id: NodeId,
@@ -148,22 +154,27 @@ where
         Ok(GetPeersResponse::new(trans_id, node_id, token, info_type))
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn token(&self) -> Option<&'a [u8]> {
         self.token
     }
 
+    #[must_use]
     pub fn info_type(&self) -> &CompactInfoType<'a, BencodeRef<'a>, BencodeRef<'a>> {
         &self.info_type
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         let mut response_args = BTreeMap::new();
 

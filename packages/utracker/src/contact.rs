@@ -20,7 +20,8 @@ pub enum CompactPeers<'a> {
 }
 
 impl<'a> CompactPeers<'a> {
-    /// Construct a CompactPeers::V4 from the given bytes.
+    /// Construct a `CompactPeers::V4` from the given bytes.
+    #[must_use]
     pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>> {
         match CompactPeersV4::from_bytes(bytes) {
             IResult::Done(i, peers) => IResult::Done(i, CompactPeers::V4(peers)),
@@ -29,7 +30,8 @@ impl<'a> CompactPeers<'a> {
         }
     }
 
-    /// Construct a CompactPeers::V6 from the given bytes.
+    /// Construct a `CompactPeers::V6` from the given bytes.
+    #[must_use]
     pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>> {
         match CompactPeersV6::from_bytes(bytes) {
             IResult::Done(i, peers) => IResult::Done(i, CompactPeers::V6(peers)),
@@ -38,7 +40,7 @@ impl<'a> CompactPeers<'a> {
         }
     }
 
-    /// Write the underlying CompactPeers to the given writer.
+    /// Write the underlying `CompactPeers` to the given writer.
     pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
     where
         W: Write,
@@ -50,6 +52,7 @@ impl<'a> CompactPeers<'a> {
     }
 
     /// Iterator over all of the contact information.
+    #[must_use]
     pub fn iter(&self) -> CompactPeersIter<'_> {
         match self {
             CompactPeers::V4(peers) => CompactPeersIter::new(CompactPeersIterType::V4(peers.iter())),
@@ -57,7 +60,8 @@ impl<'a> CompactPeers<'a> {
         }
     }
 
-    /// Create an owned version of CompactPeers.
+    /// Create an owned version of `CompactPeers`.
+    #[must_use]
     pub fn to_owned(&self) -> CompactPeers<'static> {
         match self {
             CompactPeers::V4(peers) => CompactPeers::V4(peers.to_owned()),
@@ -75,14 +79,14 @@ enum CompactPeersIterType<'a> {
     V6(CompactPeersV6Iter<'a>),
 }
 
-/// Iterator over the SocketAddr info for some peers.
+/// Iterator over the `SocketAddr` info for some peers.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct CompactPeersIter<'a> {
     iter: CompactPeersIterType<'a>,
 }
 
 impl<'a> CompactPeersIter<'a> {
-    /// Create a new CompactPeersIter.
+    /// Create a new `CompactPeersIter`.
     fn new(iter: CompactPeersIterType<'a>) -> CompactPeersIter<'a> {
         CompactPeersIter { iter }
     }
@@ -108,19 +112,21 @@ pub struct CompactPeersV4<'a> {
 }
 
 impl<'a> CompactPeersV4<'a> {
-    /// Create a new CompactPeersV4.
+    /// Create a new `CompactPeersV4`.
+    #[must_use]
     pub fn new() -> CompactPeersV4<'a> {
         CompactPeersV4 {
             peers: Cow::Owned(Vec::new()),
         }
     }
 
-    /// Construct a CompactPeersV4 from the given bytes.
+    /// Construct a `CompactPeersV4` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV4<'a>> {
         parse_peers_v4(bytes)
     }
 
-    /// Write the CompactPeersV4 to the given writer.
+    /// Write the `CompactPeersV4` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -138,11 +144,13 @@ impl<'a> CompactPeersV4<'a> {
     }
 
     /// Iterator over all of the contact information.
+    #[must_use]
     pub fn iter(&self) -> CompactPeersV4Iter<'_> {
         CompactPeersV4Iter::new(&self.peers)
     }
 
-    /// Create an owned version of CompactPeersV4.
+    /// Create an owned version of `CompactPeersV4`.
+    #[must_use]
     pub fn to_owned(&self) -> CompactPeersV4<'static> {
         CompactPeersV4 {
             peers: Cow::Owned((*self.peers).to_vec()),
@@ -169,7 +177,7 @@ fn parse_peers_v4(bytes: &[u8]) -> IResult<&[u8], CompactPeersV4<'_>> {
 
 // ----------------------------------------------------------------------------//
 
-/// Iterator over the SocketAddrV4 info for some peers.
+/// Iterator over the `SocketAddrV4` info for some peers.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct CompactPeersV4Iter<'a> {
     peers: &'a [u8],
@@ -177,7 +185,7 @@ pub struct CompactPeersV4Iter<'a> {
 }
 
 impl<'a> CompactPeersV4Iter<'a> {
-    /// Create a new CompactPeersV4Iter.
+    /// Create a new `CompactPeersV4Iter`.
     fn new(peers: &'a [u8]) -> CompactPeersV4Iter<'a> {
         CompactPeersV4Iter { peers, offset: 0 }
     }
@@ -217,19 +225,21 @@ pub struct CompactPeersV6<'a> {
 }
 
 impl<'a> CompactPeersV6<'a> {
-    /// Create a new CompactPeersV6.
+    /// Create a new `CompactPeersV6`.
+    #[must_use]
     pub fn new() -> CompactPeersV6<'a> {
         CompactPeersV6 {
             peers: Cow::Owned(Vec::new()),
         }
     }
 
-    /// Construct a CompactPeersV6 from the given bytes.
+    /// Construct a `CompactPeersV6` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV6<'a>> {
         parse_peers_v6(bytes)
     }
 
-    /// Write the CompactPeersV6 to the given writer.
+    /// Write the `CompactPeersV6` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -247,11 +257,13 @@ impl<'a> CompactPeersV6<'a> {
     }
 
     /// Iterator over all of the contact information.
+    #[must_use]
     pub fn iter(&self) -> CompactPeersV6Iter<'_> {
         CompactPeersV6Iter::new(&self.peers)
     }
 
-    /// Create an owned version of CompactPeersV6.
+    /// Create an owned version of `CompactPeersV6`.
+    #[must_use]
     pub fn to_owned(&self) -> CompactPeersV6<'static> {
         CompactPeersV6 {
             peers: Cow::Owned((*self.peers).to_vec()),
@@ -278,7 +290,7 @@ fn parse_peers_v6(bytes: &[u8]) -> IResult<&[u8], CompactPeersV6<'_>> {
 
 // ----------------------------------------------------------------------------//
 
-/// Iterator over the SocketAddrV6 info for some peers.
+/// Iterator over the `SocketAddrV6` info for some peers.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct CompactPeersV6Iter<'a> {
     peers: &'a [u8],
@@ -286,7 +298,7 @@ pub struct CompactPeersV6Iter<'a> {
 }
 
 impl<'a> CompactPeersV6Iter<'a> {
-    /// Create a new CompactPeersV6Iter.
+    /// Create a new `CompactPeersV6Iter`.
     fn new(peers: &'a [u8]) -> CompactPeersV6Iter<'a> {
         CompactPeersV6Iter { peers, offset: 0 }
     }

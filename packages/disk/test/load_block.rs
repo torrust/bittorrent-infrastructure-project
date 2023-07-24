@@ -27,7 +27,7 @@ fn positive_load_block() {
     let disk_manager = DiskManagerBuilder::new().build(filesystem.clone());
 
     let mut process_block = BytesMut::new();
-    process_block.extend_from_slice(&data_b.0[1..(50 + 1)]);
+    process_block.extend_from_slice(&data_b.0[1..=50]);
 
     let mut load_block = BytesMut::with_capacity(50);
     load_block.extend_from_slice(&[0u8; 50]);

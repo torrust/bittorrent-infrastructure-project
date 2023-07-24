@@ -118,7 +118,7 @@ where
     } else {
         Err(io::Error::new(
             io::ErrorKind::Other,
-            format!("Unknown Id For PeerExtensionProtocolMessage: {}", id),
+            format!("Unknown Id For PeerExtensionProtocolMessage: {id}"),
         ))
     };
 

@@ -14,12 +14,13 @@ impl<T> SequentialIds<T>
 where
     T: Zero,
 {
-    /// Create a new SequentialIds struct.
+    /// Create a new `SequentialIds` struct.
+    #[must_use]
     pub fn new() -> SequentialIds<T> {
         SequentialIds::start_at(T::zero())
     }
 
-    /// Create a new SequentialIds struct at the starting value.
+    /// Create a new `SequentialIds` struct at the starting value.
     pub fn start_at(start: T) -> SequentialIds<T> {
         SequentialIds { next_id: start }
     }

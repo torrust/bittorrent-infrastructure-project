@@ -265,7 +265,7 @@ mod tests {
         where
             C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
         {
-            for range in self.buffer_ranges.iter() {
+            for range in &self.buffer_ranges {
                 let mut next_region = Cursor::new(self.contiguous_buffer.index(range.clone()));
 
                 (callback(PieceAccess::Compute(&mut next_region)))?;
@@ -347,7 +347,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH,
             DEFAULT_PIECE_LENGTH * 50,
         ];
-        for region_length in region_lengths.into_iter() {
+        for region_length in region_lengths {
             accessor.create_region(region_length);
         }
 
@@ -363,7 +363,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH,
             DEFAULT_PIECE_LENGTH * 50,
         ];
-        for region_length in region_lengths.into_iter() {
+        for region_length in region_lengths {
             accessor.create_region(region_length);
         }
 
@@ -380,7 +380,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH,
             (DEFAULT_PIECE_LENGTH * 2 - 1) * 2,
         ];
-        for region_length in region_lengths.into_iter() {
+        for region_length in region_lengths {
             accessor.create_region(region_length);
         }
 
@@ -397,7 +397,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH,
             (DEFAULT_PIECE_LENGTH * 2 - 1) * 2,
         ];
-        for region_length in region_lengths.into_iter() {
+        for region_length in region_lengths {
             accessor.create_region(region_length);
         }
 

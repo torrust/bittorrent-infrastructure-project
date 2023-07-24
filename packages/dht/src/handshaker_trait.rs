@@ -7,7 +7,7 @@ pub trait HandshakerTrait: Send {
     /// Type that metadata will be passed back to the client as.
     type MetadataEnvelope: Send;
 
-    /// PeerId exposed to peer discovery services.
+    /// `PeerId` exposed to peer discovery services.
     fn id(&self) -> PeerId;
 
     /// Port exposed to peer discovery services.
@@ -16,7 +16,7 @@ pub trait HandshakerTrait: Send {
     /// to. This is relevant if the client employs nat traversal via upnp or other means.
     fn port(&self) -> u16;
 
-    /// Connect to the given address with the InfoHash and expecting the PeerId.
+    /// Connect to the given address with the `InfoHash` and expecting the `PeerId`.
     fn connect(&mut self, expected: Option<PeerId>, hash: InfoHash, addr: SocketAddr);
 
     /// Send the given Metadata back to the client.

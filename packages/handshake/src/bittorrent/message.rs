@@ -19,12 +19,11 @@ impl HandshakeMessage {
     /// Create a new `HandshakeMessage` from the given components.
     pub fn from_parts(prot: Protocol, ext: Extensions, hash: InfoHash, pid: PeerId) -> HandshakeMessage {
         if let Protocol::Custom(ref custom) = prot {
-            if custom.len() > u8::max_value() as usize {
-                panic!(
-                    "bip_handshake: Handshake Message With Protocol Length Greater Than {} Found",
-                    u8::max_value()
-                )
-            }
+            assert!(
+                u8::try_from(custom.len()).is_ok(),
+                "bip_handshake: Handshake Message With Protocol Length Greater Than {} Found",
+                u8::max_value()
+            );
         }
 
         HandshakeMessage { prot, ext, hash, pid }

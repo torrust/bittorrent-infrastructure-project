@@ -16,7 +16,7 @@ pub struct MainlineDht {
 }
 
 impl MainlineDht {
-    /// Start the MainlineDht with the given DhtBuilder and Handshaker.
+    /// Start the `MainlineDht` with the given `DhtBuilder` and Handshaker.
     fn with_builder<H>(builder: DhtBuilder, handshaker: H) -> io::Result<MainlineDht>
     where
         H: crate::handshaker_trait::HandshakerTrait + 'static,
@@ -47,11 +47,11 @@ impl MainlineDht {
         Ok(MainlineDht { send })
     }
 
-    /// Perform a search for the given InfoHash with an optional announce on the closest nodes.
+    /// Perform a search for the given `InfoHash` with an optional announce on the closest nodes.
     ///
     ///
     /// Announcing will place your contact information in the DHT so others performing lookups
-    /// for the InfoHash will be able to find your contact information and initiate a handshake.
+    /// for the `InfoHash` will be able to find your contact information and initiate a handshake.
     ///
     /// If the initial bootstrap has not finished, the search will be queued and executed once
     /// the bootstrap has completed.
@@ -65,6 +65,7 @@ impl MainlineDht {
     ///
     /// It is important to at least monitor the DHT for shutdown events as any calls
     /// after that event occurs will not be processed but no indication will be given.
+    #[must_use]
     pub fn events(&self) -> Receiver<DhtEvent> {
         let (send, recv) = mpsc::channel();
 
@@ -103,7 +104,7 @@ pub struct DhtBuilder {
 }
 
 impl DhtBuilder {
-    /// Create a new DhtBuilder.
+    /// Create a new `DhtBuilder`.
     ///
     /// This should not be used directly, force the user to supply builder with
     /// some initial bootstrap method.
@@ -117,18 +118,20 @@ impl DhtBuilder {
         }
     }
 
-    /// Creates a DhtBuilder with an initial node for our routing table.
+    /// Creates a `DhtBuilder` with an initial node for our routing table.
+    #[must_use]
     pub fn with_node(node_addr: SocketAddr) -> DhtBuilder {
         let dht = DhtBuilder::new();
 
         dht.add_node(node_addr)
     }
 
-    /// Creates a DhtBuilder with an initial router which will let us gather nodes
+    /// Creates a `DhtBuilder` with an initial router which will let us gather nodes
     /// if our routing table is ever empty.
     ///
     /// Difference between a node and a router is that a router is never put in
     /// our routing table.
+    #[must_use]
     pub fn with_router(router: Router) -> DhtBuilder {
         let dht = DhtBuilder::new();
 
@@ -136,6 +139,7 @@ impl DhtBuilder {
     }
 
     /// Add nodes which will be distributed within our routing table.
+    #[must_use]
     pub fn add_node(mut self, node_addr: SocketAddr) -> DhtBuilder {
         self.nodes.insert(node_addr);
 
@@ -144,7 +148,8 @@ impl DhtBuilder {
 
     /// Add a router which will let us gather nodes if our routing table is ever empty.
     ///
-    /// See DhtBuilder::with_router for difference between a router and a node.
+    /// See `DhtBuilder::with_router` for difference between a router and a node.
+    #[must_use]
     pub fn add_router(mut self, router: Router) -> DhtBuilder {
         self.routers.insert(router);
 
@@ -156,6 +161,7 @@ impl DhtBuilder {
     ///
     /// Used when we are behind a restrictive NAT and/or we want to decrease
     /// incoming network traffic. Defaults value is true.
+    #[must_use]
     pub fn set_read_only(mut self, read_only: bool) -> DhtBuilder {
         self.read_only = read_only;
 
@@ -165,8 +171,9 @@ impl DhtBuilder {
     /// Provide the DHT with our external address. If this is not supplied we will
     /// have to deduce this information from remote nodes.
     ///
-    /// Purpose of the external address is to generate a NodeId that conforms to
+    /// Purpose of the external address is to generate a `NodeId` that conforms to
     /// BEP 42 so that nodes can safely store information on our node.
+    #[must_use]
     pub fn set_external_addr(mut self, addr: SocketAddr) -> DhtBuilder {
         self.ext_addr = Some(addr);
 
@@ -176,6 +183,7 @@ impl DhtBuilder {
     /// Provide the DHT with the source address.
     ///
     /// If this is not supplied we will use the OS default route.
+    #[must_use]
     pub fn set_source_addr(mut self, addr: SocketAddr) -> DhtBuilder {
         self.src_addr = addr;
 

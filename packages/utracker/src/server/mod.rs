@@ -17,7 +17,7 @@ pub struct TrackerServer {
 }
 
 impl TrackerServer {
-    /// Run a new TrackerServer.
+    /// Run a new `TrackerServer`.
     pub fn run<H>(bind: SocketAddr, handler: H) -> io::Result<TrackerServer>
     where
         H: ServerHandler + 'static,

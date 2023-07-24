@@ -12,7 +12,7 @@ const END_OF_OPTIONS_BYTE: u8 = 0x00;
 const NO_OPERATION_BYTE: u8 = 0x01;
 const URL_DATA_BYTE: u8 = 0x02;
 
-/// Trait for supplying optional information in an AnnounceRequest.
+/// Trait for supplying optional information in an `AnnounceRequest`.
 pub trait AnnounceOption<'a>: Sized {
     /// Byte specifying what option this is.
     fn option_byte() -> u8;
@@ -36,14 +36,16 @@ pub struct AnnounceOptions<'a> {
 }
 
 impl<'a> AnnounceOptions<'a> {
-    /// Create a new set of AnnounceOptions.
+    /// Create a new set of `AnnounceOptions`.
+    #[must_use]
     pub fn new() -> AnnounceOptions<'a> {
         AnnounceOptions {
             raw_options: HashMap::new(),
         }
     }
 
-    /// Parse a set of AnnounceOptions from the given bytes.
+    /// Parse a set of `AnnounceOptions` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceOptions<'a>> {
         let mut raw_options = HashMap::new();
 
@@ -52,13 +54,13 @@ impl<'a> AnnounceOptions<'a> {
         })
     }
 
-    /// Write the AnnounceOptions to the given writer.
+    /// Write the `AnnounceOptions` to the given writer.
     #[allow(unused)]
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
     {
-        for (byte, content) in self.raw_options.iter() {
+        for (byte, content) in &self.raw_options {
             for content_chunk in content.chunks(u8::max_value() as usize) {
                 let content_chunk_len = content_chunk.len() as u8;
 
@@ -76,9 +78,10 @@ impl<'a> AnnounceOptions<'a> {
         Ok(())
     }
 
-    /// Search for and construct the given AnnounceOption from the current AnnounceOptions.
+    /// Search for and construct the given `AnnounceOption` from the current `AnnounceOptions`.
     ///
     /// Returns None if the option is not found or it failed to read from the given bytes.
+    #[must_use]
     pub fn get<O>(&'a self) -> Option<O>
     where
         O: AnnounceOption<'a>,
@@ -88,7 +91,7 @@ impl<'a> AnnounceOptions<'a> {
             .and_then(|bytes| O::read_option(bytes))
     }
 
-    /// Add an AnnounceOption to the current set of AnnounceOptions.
+    /// Add an `AnnounceOption` to the current set of `AnnounceOptions`.
     ///
     /// Any existing option with a matching option byte will be replaced.
     pub fn insert<O>(&mut self, option: &O)
@@ -105,11 +108,12 @@ impl<'a> AnnounceOptions<'a> {
         self.insert_bytes(O::option_byte(), bytes);
     }
 
-    /// Create an owned version of AnnounceOptions.
+    /// Create an owned version of `AnnounceOptions`.
+    #[must_use]
     pub fn to_owned(&self) -> AnnounceOptions<'static> {
         let mut options = AnnounceOptions::new();
 
-        for (&key, value) in self.raw_options.iter() {
+        for (&key, value) in &self.raw_options {
             options.insert_bytes(key, (*value).to_vec());
         }
 
@@ -189,7 +193,8 @@ pub struct URLDataOption<'a> {
 }
 
 impl<'a> URLDataOption<'a> {
-    /// Create a new URLDataOption from the given bytes.
+    /// Create a new `URLDataOption` from the given bytes.
+    #[must_use]
     pub fn new(url_data: &'a [u8]) -> URLDataOption<'a> {
         URLDataOption { url_data }
     }

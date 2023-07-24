@@ -13,7 +13,7 @@ pub struct NativeFile {
 }
 
 impl NativeFile {
-    /// Create a new NativeFile.
+    /// Create a new `NativeFile`.
     fn new(file: File) -> NativeFile {
         NativeFile { file }
     }
@@ -102,7 +102,7 @@ where
     } else {
         let mut combine_user_path = current_dir.to_path_buf();
 
-        for user_path_piece in ref_user_path.iter() {
+        for user_path_piece in ref_user_path {
             combine_user_path.push(user_path_piece);
         }
 

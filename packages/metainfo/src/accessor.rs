@@ -79,7 +79,7 @@ pub struct FileAccessor {
 }
 
 impl FileAccessor {
-    /// Create a new FileAccessor from the given file/directory path.
+    /// Create a new `FileAccessor` from the given file/directory path.
     pub fn new<T>(path: T) -> io::Result<FileAccessor>
     where
         T: AsRef<Path>,
@@ -121,7 +121,7 @@ where
 
 impl Accessor for FileAccessor {
     fn access_directory(&self) -> Option<&Path> {
-        self.directory_name.as_ref().map(|s| s.as_ref())
+        self.directory_name.as_ref().map(std::convert::AsRef::as_ref)
     }
 
     fn access_metadata<C>(&self, mut callback: C) -> io::Result<()>
@@ -180,7 +180,8 @@ pub struct DirectAccessor<'a> {
 }
 
 impl<'a> DirectAccessor<'a> {
-    /// Create a new DirectAccessor from the given file name and contents.
+    /// Create a new `DirectAccessor` from the given file name and contents.
+    #[must_use]
     pub fn new(file_name: &'a str, file_contents: &'a [u8]) -> DirectAccessor<'a> {
         DirectAccessor {
             file_name,

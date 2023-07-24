@@ -35,15 +35,13 @@ impl HandshakeFilter for FilterAllowHash {
     }
 
     fn on_hash(&self, opt_hash: Option<&InfoHash>) -> FilterDecision {
-        opt_hash
-            .map(|hash| {
-                if hash == &self.hash {
-                    FilterDecision::Allow
-                } else {
-                    FilterDecision::Pass
-                }
-            })
-            .unwrap_or(FilterDecision::NeedData)
+        opt_hash.map_or(FilterDecision::NeedData, |hash| {
+            if hash == &self.hash {
+                FilterDecision::Allow
+            } else {
+                FilterDecision::Pass
+            }
+        })
     }
 }
 

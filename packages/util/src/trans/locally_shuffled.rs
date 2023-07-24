@@ -28,12 +28,13 @@ where
     T: One + Zero + Clone + Eq + Bounded + Default,
     Wrapping<T>: Add<Wrapping<T>, Output = Wrapping<T>>,
 {
-    /// Create a new LocallyShuffledIds struct.
+    /// Create a new `LocallyShuffledIds` struct.
+    #[must_use]
     pub fn new() -> LocallyShuffledIds<T> {
         LocallyShuffledIds::start_at(T::zero())
     }
 
-    /// Create a new LocallyShuffledIds struct at the starting value.
+    /// Create a new `LocallyShuffledIds` struct at the starting value.
     pub fn start_at(start: T) -> LocallyShuffledIds<T> {
         LocallyShuffledIds {
             sequential: SequentialIds::start_at(start),
@@ -105,7 +106,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
-        for count in tid_count.iter() {
+        for count in &tid_count {
             assert_eq!(*count, duplicates_to_find as u8);
         }
     }
@@ -125,7 +126,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
-        for count in tid_count.iter() {
+        for count in &tid_count {
             assert_eq!(*count, duplicates_to_find as u8);
         }
     }
@@ -145,7 +146,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
-        for count in tid_count.iter() {
+        for count in &tid_count {
             assert_eq!(*count, duplicates_to_find as i8);
         }
     }
@@ -165,7 +166,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
-        for count in tid_count.iter() {
+        for count in &tid_count {
             assert_eq!(*count, duplicates_to_find as i8);
         }
     }
@@ -181,7 +182,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
-        for count in tid_count.iter() {
+        for count in &tid_count {
             assert_eq!(*count, 1);
         }
     }
@@ -197,7 +198,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
-        for count in tid_count.iter() {
+        for count in &tid_count {
             assert_eq!(*count, 1);
         }
     }

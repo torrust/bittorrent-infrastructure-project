@@ -36,41 +36,49 @@ impl Metainfo {
     }
 
     /// Announce url for the main tracker of the metainfo file.
+    #[must_use]
     pub fn main_tracker(&self) -> Option<&str> {
         self.announce.as_ref().map(|a| &a[..])
     }
 
     /// List of announce urls.
+    #[must_use]
     pub fn trackers(&self) -> Option<&Vec<Vec<String>>> {
         self.announce_list.as_ref()
     }
 
     /// Comment included within the metainfo file.
+    #[must_use]
     pub fn comment(&self) -> Option<&str> {
         self.comment.as_ref().map(|c| &c[..])
     }
 
     /// Person or group that created the metainfo file.
+    #[must_use]
     pub fn created_by(&self) -> Option<&str> {
         self.created_by.as_ref().map(|c| &c[..])
     }
 
     /// String encoding format of the peices portion of the info dictionary.
+    #[must_use]
     pub fn encoding(&self) -> Option<&str> {
         self.encoding.as_ref().map(|e| &e[..])
     }
 
     /// Creation date in UNIX epoch format for the metainfo file.
+    #[must_use]
     pub fn creation_date(&self) -> Option<i64> {
         self.creation_date
     }
 
     /// Info dictionary for the metainfo file.
+    #[must_use]
     pub fn info(&self) -> &Info {
         &self.info
     }
 
     /// Retrieve the bencoded bytes for the `Metainfo` file.
+    #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
         // Since there are no file system accesses here, should be fine to unwrap
         MetainfoBuilder::new()
@@ -105,7 +113,7 @@ fn parse_meta_bytes(bytes: &[u8]) -> ParseResult<Metainfo> {
     let root_bencode = (BencodeRef::decode(bytes, BDecodeOpt::default()))?;
     let root_dict = (parse::parse_root_dict(&root_bencode))?;
 
-    let announce = parse::parse_announce_url(root_dict).map(|e| e.to_owned());
+    let announce = parse::parse_announce_url(root_dict).map(std::borrow::ToOwned::to_owned);
 
     let opt_announce_list = {
         parse::parse_announce_list(root_dict)
@@ -113,9 +121,9 @@ fn parse_meta_bytes(bytes: &[u8]) -> ParseResult<Metainfo> {
             .or(None)
     };
 
-    let opt_comment = parse::parse_comment(root_dict).map(|e| e.to_owned());
-    let opt_encoding = parse::parse_encoding(root_dict).map(|e| e.to_owned());
-    let opt_created_by = parse::parse_created_by(root_dict).map(|e| e.to_owned());
+    let opt_comment = parse::parse_comment(root_dict).map(std::borrow::ToOwned::to_owned);
+    let opt_encoding = parse::parse_encoding(root_dict).map(std::borrow::ToOwned::to_owned);
+    let opt_created_by = parse::parse_created_by(root_dict).map(std::borrow::ToOwned::to_owned);
     let opt_creation_date = parse::parse_creation_date(root_dict);
 
     let info_bencode = (parse::parse_info_bencode(root_dict))?;
@@ -158,6 +166,7 @@ impl Info {
     }
 
     /// Hash to uniquely identify this torrent.
+    #[must_use]
     pub fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
@@ -167,16 +176,19 @@ impl Info {
     /// If you want to check to see if this is a multi-file torrent, you should
     /// check whether or not this returns Some. Checking the number of files
     /// present is NOT the correct method.
+    #[must_use]
     pub fn directory(&self) -> Option<&Path> {
-        self.file_directory.as_ref().map(|d| d.as_ref())
+        self.file_directory.as_ref().map(std::convert::AsRef::as_ref)
     }
 
     /// Length in bytes of each piece.
+    #[must_use]
     pub fn piece_length(&self) -> u64 {
         self.piece_len
     }
 
     /// Whether or not the torrent is private.
+    #[must_use]
     pub fn is_private(&self) -> Option<bool> {
         self.is_private
     }
@@ -186,6 +198,7 @@ impl Info {
     /// Ordering of pieces yielded in the iterator is guaranteed to be the order in
     /// which they are found in the torrent file as this is necessary to refer to
     /// pieces by their index to other peers.
+    #[must_use]
     pub fn pieces(&self) -> Pieces<'_> {
         Pieces::new(&self.pieces)
     }
@@ -195,11 +208,13 @@ impl Info {
     /// Ordering of files yielded in the iterator is guaranteed to be the order in
     /// which they are found in the torrent file as this is necessary to reconstruct
     /// pieces received from peers.
+    #[must_use]
     pub fn files(&self) -> Files<'_> {
         Files::new(&self.files)
     }
 
     /// Retrieve the bencoded bytes for the `Info` dictionary.
+    #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
         // Since there are no file system accesses here, should be fine to unwrap
         InfoBuilder::new()
@@ -356,7 +371,7 @@ impl File {
         B: BRefAccess,
     {
         let length = (parse::parse_length(info_dict))?;
-        let md5sum = parse::parse_md5sum(info_dict).map(|m| m.to_owned());
+        let md5sum = parse::parse_md5sum(info_dict).map(std::borrow::ToOwned::to_owned);
         let name = (parse::parse_name(info_dict))?;
 
         Ok(File {
@@ -372,7 +387,7 @@ impl File {
         B: BRefAccess<BType = B>,
     {
         let length = parse::parse_length(file_dict)?;
-        let md5sum = parse::parse_md5sum(file_dict).map(|m| m.to_owned());
+        let md5sum = parse::parse_md5sum(file_dict).map(std::borrow::ToOwned::to_owned);
 
         let path_list_bencode = (parse::parse_path_list(file_dict))?;
 
@@ -391,6 +406,7 @@ impl File {
     }
 
     /// Length of the file in bytes.
+    #[must_use]
     pub fn length(&self) -> u64 {
         self.len
     }
@@ -398,11 +414,13 @@ impl File {
     /// Optional md5sum of the file.
     ///
     /// Not used by bittorrent.
+    #[must_use]
     pub fn md5sum(&self) -> Option<&[u8]> {
         self.md5sum.as_ref().map(|m| &m[..])
     }
 
     /// Path of the file.
+    #[must_use]
     pub fn path(&self) -> &Path {
         &self.path
     }
@@ -470,13 +488,13 @@ mod tests {
                             {
                                 let bencode_files_access = bencode_files.list_mut().unwrap();
 
-                                for (opt_len, opt_md5, opt_paths) in files.iter() {
+                                for (opt_len, opt_md5, opt_paths) in files {
                                     let opt_bencode_paths = opt_paths.as_ref().map(|paths| {
                                         let mut bencode_paths = BencodeMut::new_list();
 
                                         {
                                             let bencode_paths_access = bencode_paths.list_mut().unwrap();
-                                            for path in paths.iter() {
+                                            for path in paths {
                                                 bencode_paths_access.push(ben_bytes!(&path[..]));
                                             }
                                         }
@@ -532,7 +550,7 @@ mod tests {
         assert_eq!(metainfo_file.encoding(), encoding);
         assert_eq!(metainfo_file.creation_date, create_date);
 
-        assert_eq!(metainfo_file.info().directory(), directory.map(|d| d.as_ref()));
+        assert_eq!(metainfo_file.info().directory(), directory.map(std::convert::AsRef::as_ref));
         assert_eq!(metainfo_file.info().piece_length(), piece_length.unwrap() as u64);
         assert_eq!(metainfo_file.info().is_private(), private.map(|private| private == 1));
 
@@ -545,7 +563,7 @@ mod tests {
             assert_eq!(piece_chunk, piece_elem);
         }
 
-        let num_files = files.as_ref().map(|f| f.len()).unwrap_or(0);
+        let num_files = files.as_ref().map_or(0, std::vec::Vec::len);
         assert_eq!(metainfo_file.info().files().count(), num_files);
 
         let mut supp_files = files.as_ref().unwrap().iter();
@@ -679,7 +697,7 @@ mod tests {
         let file_len = 0;
         let file_paths = vec!["dummy_file_name".to_owned()];
 
-        let creation_date = 5050505050;
+        let creation_date = 5_050_505_050;
 
         validate_parse_from_params(
             Some(tracker),

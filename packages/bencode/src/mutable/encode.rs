@@ -59,7 +59,7 @@ where
 
     bytes.push(crate::DICT_START);
     // Iterate And Dictionary Encode The (String, Bencode) Pairs
-    for (key, value) in sort_dict.iter() {
+    for (key, value) in &sort_dict {
         encode_bytes(key.as_ref(), bytes);
         encode(value, bytes);
     }

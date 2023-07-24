@@ -491,7 +491,7 @@ where
 fn insert_closest_nodes(nodes: &mut [(Node, bool)], target_id: InfoHash, new_node: Node) {
     let new_distance = target_id ^ new_node.id();
 
-    for &mut (ref mut old_node, ref mut used) in nodes.iter_mut() {
+    for &mut (ref mut old_node, ref mut used) in &mut *nodes {
         if !*used {
             // Slot was not in use, go ahead and place the node
             *old_node = new_node;

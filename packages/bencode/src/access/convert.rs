@@ -5,7 +5,7 @@ use crate::error::{BencodeConvertError, BencodeConvertErrorKind};
 
 /// Trait for extended casting of bencode objects and converting conversion errors into application specific errors.
 pub trait BConvertExt: BConvert {
-    /// See BConvert::convert_bytes.
+    /// See `BConvert::convert_bytes`.
     fn convert_bytes_ext<'a, B, E>(&self, bencode: B, error_key: E) -> Result<&'a [u8], Self::Error>
     where
         B: BRefAccessExt<'a>,
@@ -19,7 +19,7 @@ pub trait BConvertExt: BConvert {
         )
     }
 
-    /// See BConvert::convert_str.
+    /// See `BConvert::convert_str`.
     fn convert_str_ext<'a, B, E>(&self, bencode: &B, error_key: E) -> Result<&'a str, Self::Error>
     where
         B: BRefAccessExt<'a>,
@@ -33,7 +33,7 @@ pub trait BConvertExt: BConvert {
         )
     }
 
-    /// See BConvert::lookup_and_convert_bytes.
+    /// See `BConvert::lookup_and_convert_bytes`.
     fn lookup_and_convert_bytes_ext<'a, B, K1, K2>(
         &self,
         dictionary: &dyn BDictAccess<K1, B>,
@@ -46,7 +46,7 @@ pub trait BConvertExt: BConvert {
         self.convert_bytes_ext((self.lookup(dictionary, &key))?, &key)
     }
 
-    /// See BConvert::lookup_and_convert_str.
+    /// See `BConvert::lookup_and_convert_str`.
     fn lookup_and_convert_str_ext<'a, B, K1, K2>(
         &self,
         dictionary: &dyn BDictAccess<K1, B>,

@@ -21,7 +21,7 @@ impl<'a, F> PieceChecker<'a, F>
 where
     F: FileSystem + 'a,
 {
-    /// Create the initial PieceCheckerState for the PieceChecker.
+    /// Create the initial `PieceCheckerState` for the `PieceChecker`.
     pub fn init_state(fs: F, info_dict: &'a Info) -> TorrentResult<PieceCheckerState> {
         let total_blocks = info_dict.pieces().count();
         let last_piece_size = last_piece_size(info_dict);
@@ -38,7 +38,7 @@ where
         Ok(checker_state)
     }
 
-    /// Create a new PieceChecker with the given state.
+    /// Create a new `PieceChecker` with the given state.
     pub fn with_state(fs: F, info_dict: &'a Info, checker_state: &'a mut PieceCheckerState) -> PieceChecker<'a, F> {
         PieceChecker {
             fs,
@@ -75,13 +75,13 @@ where
         Ok(())
     }
 
-    /// Fill the PieceCheckerState with all piece messages for each file in our info dictionary.
+    /// Fill the `PieceCheckerState` with all piece messages for each file in our info dictionary.
     ///
     /// This is done once when a torrent file is added to see if we have any good pieces that
     /// the caller can use to skip (if the torrent was partially downloaded before).
     fn fill_checker_state(&mut self) -> io::Result<()> {
         let piece_length = self.info_dict.piece_length();
-        let total_bytes: u64 = self.info_dict.files().map(|file| file.length()).sum();
+        let total_bytes: u64 = self.info_dict.files().map(metainfo::File::length).sum();
 
         let full_pieces = total_bytes / piece_length;
         let last_piece_size = last_piece_size(self.info_dict);
@@ -113,7 +113,7 @@ where
             (self
                 .fs
                 .open_file(file_path.clone())
-                .map_err(|err| err.into())
+                .map_err(std::convert::Into::into)
                 .and_then(|mut file| {
                     // File May Or May Not Have Existed Before, If The File Is Zero
                     // Length, Assume It Wasn't There (User Doesn't Lose Any Data)
@@ -144,14 +144,14 @@ where
 
 fn last_piece_size(info_dict: &Info) -> usize {
     let piece_length = info_dict.piece_length();
-    let total_bytes: u64 = info_dict.files().map(|file| file.length()).sum();
+    let total_bytes: u64 = info_dict.files().map(metainfo::File::length).sum();
 
     (total_bytes % piece_length) as usize
 }
 
 // ----------------------------------------------------------------------------//
 
-/// Stores state for the PieceChecker between invocations.
+/// Stores state for the `PieceChecker` between invocations.
 pub struct PieceCheckerState {
     new_states: Vec<PieceState>,
     old_states: HashSet<PieceState>,
@@ -169,7 +169,7 @@ pub enum PieceState {
 }
 
 impl PieceCheckerState {
-    /// Create a new PieceCheckerState.
+    /// Create a new `PieceCheckerState`.
     pub fn new(total_blocks: usize, last_block_size: usize) -> PieceCheckerState {
         PieceCheckerState {
             new_states: Vec::new(),
@@ -185,8 +185,8 @@ impl PieceCheckerState {
         self.pending_blocks.entry(msg.piece_index()).or_insert(Vec::new()).push(msg);
     }
 
-    /// Run the given closures against NewGood and NewBad messages. Each of the messages will
-    /// then either be dropped (NewBad) or converted to OldGood (NewGood).
+    /// Run the given closures against `NewGood` and `NewBad` messages. Each of the messages will
+    /// then either be dropped (`NewBad`) or converted to `OldGood` (`NewGood`).
     pub fn run_with_diff<F>(&mut self, mut callback: F)
     where
         F: FnMut(&PieceState),
@@ -198,8 +198,8 @@ impl PieceCheckerState {
         }
     }
 
-    /// Pass any pieces that have not been identified as OldGood into the callback which determines
-    /// if the piece is good or bad so it can be marked as NewGood or NewBad.
+    /// Pass any pieces that have not been identified as `OldGood` into the callback which determines
+    /// if the piece is good or bad so it can be marked as `NewGood` or `NewBad`.
     fn run_with_whole_pieces<F>(&mut self, piece_length: usize, mut callback: F) -> io::Result<()>
     where
         F: FnMut(&BlockMetadata) -> io::Result<bool>,
@@ -235,9 +235,9 @@ impl PieceCheckerState {
 
     /// Merges all pending piece messages into a single messages if possible.
     fn merge_pieces(&mut self) {
-        for (_, ref mut messages) in self.pending_blocks.iter_mut() {
+        for (_, ref mut messages) in &mut self.pending_blocks {
             // Sort the messages by their block offset
-            messages.sort_by_key(|a| a.block_offset());
+            messages.sort_by_key(crate::memory::block::BlockMetadata::block_offset);
 
             let mut messages_len = messages.len();
             let mut merge_success = true;
@@ -265,18 +265,13 @@ impl PieceCheckerState {
 /// True if the piece is ready to be hashed and checked (full) as good or not.
 fn piece_is_complete(total_blocks: usize, last_block_size: usize, piece_length: usize, messages: &[BlockMetadata]) -> bool {
     let is_single_message = messages.len() == 1;
-    let is_piece_length = messages
-        .get(0)
-        .map(|message| message.block_length() == piece_length)
-        .unwrap_or(false);
+    let is_piece_length = messages.get(0).is_some_and(|message| message.block_length() == piece_length);
     let is_last_block = messages
         .get(0)
-        .map(|message| message.piece_index() == (total_blocks - 1) as u64)
-        .unwrap_or(false);
+        .is_some_and(|message| message.piece_index() == (total_blocks - 1) as u64);
     let is_last_block_length = messages
         .get(0)
-        .map(|message| message.block_length() == last_block_size)
-        .unwrap_or(false);
+        .is_some_and(|message| message.block_length() == last_block_size);
 
     is_single_message && (is_piece_length || (is_last_block && is_last_block_length))
 }

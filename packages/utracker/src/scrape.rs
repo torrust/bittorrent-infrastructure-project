@@ -9,7 +9,7 @@ use util::convert;
 
 const SCRAPE_STATS_BYTES: usize = 12;
 
-/// Status for a given InfoHash.
+/// Status for a given `InfoHash`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeStats {
     seeders: i32,
@@ -18,7 +18,8 @@ pub struct ScrapeStats {
 }
 
 impl ScrapeStats {
-    /// Create a new ScrapeStats.
+    /// Create a new `ScrapeStats`.
+    #[must_use]
     pub fn new(seeders: i32, downloaded: i32, leechers: i32) -> ScrapeStats {
         ScrapeStats {
             seeders,
@@ -27,22 +28,25 @@ impl ScrapeStats {
         }
     }
 
-    /// Construct a ScrapeStats from the given bytes.
+    /// Construct a `ScrapeStats` from the given bytes.
     fn from_bytes(bytes: &[u8]) -> IResult<&[u8], ScrapeStats> {
         parse_stats(bytes)
     }
 
     /// Current number of seeders.
+    #[must_use]
     pub fn num_seeders(&self) -> i32 {
         self.seeders
     }
 
     /// Number of times it has been downloaded.
+    #[must_use]
     pub fn num_downloads(&self) -> i32 {
         self.downloaded
     }
 
     /// Current number of leechers.
+    #[must_use]
     pub fn num_leechers(&self) -> i32 {
         self.leechers
     }
@@ -66,21 +70,23 @@ pub struct ScrapeRequest<'a> {
 }
 
 impl<'a> ScrapeRequest<'a> {
-    /// Create a new ScrapeRequest.
+    /// Create a new `ScrapeRequest`.
+    #[must_use]
     pub fn new() -> ScrapeRequest<'a> {
         ScrapeRequest {
             hashes: Cow::Owned(Vec::new()),
         }
     }
 
-    /// Construct a ScrapeRequest from the given bytes.
+    /// Construct a `ScrapeRequest` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ScrapeRequest<'a>> {
         parse_request(bytes)
     }
 
-    /// Write the ScrapeRequest to the given writer.
+    /// Write the `ScrapeRequest` to the given writer.
     ///
-    /// Ordering of the written InfoHash is identical to that of ScrapeRequest::iter().
+    /// Ordering of the written `InfoHash` is identical to that of `ScrapeRequest::iter`().
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -88,7 +94,7 @@ impl<'a> ScrapeRequest<'a> {
         writer.write_all(&self.hashes)
     }
 
-    /// Add the InfoHash to the current request.
+    /// Add the `InfoHash` to the current request.
     pub fn insert(&mut self, hash: InfoHash) {
         let hash_bytes: [u8; bt::INFO_HASH_LEN] = hash.into();
 
@@ -96,11 +102,13 @@ impl<'a> ScrapeRequest<'a> {
     }
 
     /// Iterator over all of the hashes in the request.
+    #[must_use]
     pub fn iter(&self) -> ScrapeRequestIter<'_> {
         ScrapeRequestIter::new(&self.hashes)
     }
 
-    /// Create an owned version of ScrapeRequest.
+    /// Create an owned version of `ScrapeRequest`.
+    #[must_use]
     pub fn to_owned(&self) -> ScrapeRequest<'static> {
         ScrapeRequest {
             hashes: Cow::Owned((*self.hashes).to_vec()),
@@ -134,21 +142,23 @@ pub struct ScrapeResponse<'a> {
 }
 
 impl<'a> ScrapeResponse<'a> {
-    /// Create a new ScrapeResponse.
+    /// Create a new `ScrapeResponse`.
+    #[must_use]
     pub fn new() -> ScrapeResponse<'a> {
         ScrapeResponse {
             stats: Cow::Owned(Vec::new()),
         }
     }
 
-    /// Construct a ScrapeResponse from the given bytes.
+    /// Construct a `ScrapeResponse` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ScrapeResponse<'a>> {
         parse_response(bytes)
     }
 
-    /// Write the ScrapeResponse to the given writer.
+    /// Write the `ScrapeResponse` to the given writer.
     ///
-    /// Ordering of the written stats is identical to that of ScrapeResponse::iter().
+    /// Ordering of the written stats is identical to that of `ScrapeResponse::iter`().
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -169,15 +179,17 @@ impl<'a> ScrapeResponse<'a> {
         self.stats.to_mut().extend_from_slice(&leechers_bytes);
     }
 
-    /// Iterator over each status for every InfoHash in the request.
+    /// Iterator over each status for every `InfoHash` in the request.
     ///
-    /// Ordering of the status corresponds to the ordering of the InfoHash in the
+    /// Ordering of the status corresponds to the ordering of the `InfoHash` in the
     /// initial request.
+    #[must_use]
     pub fn iter(&self) -> ScrapeResponseIter<'_> {
         ScrapeResponseIter::new(&self.stats)
     }
 
-    /// Create an owned version of ScrapeResponse.
+    /// Create an owned version of `ScrapeResponse`.
+    #[must_use]
     pub fn to_owned(&self) -> ScrapeResponse<'static> {
         ScrapeResponse {
             stats: Cow::Owned((*self.stats).to_vec()),
@@ -204,7 +216,7 @@ fn parse_response(bytes: &[u8]) -> IResult<&[u8], ScrapeResponse<'_>> {
 
 // ----------------------------------------------------------------------------//
 
-/// Iterator over a number of InfoHashes.
+/// Iterator over a number of `InfoHashes`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeRequestIter<'a> {
     hashes: &'a [u8],
@@ -243,7 +255,7 @@ impl<'a> ExactSizeIterator for ScrapeRequestIter<'a> {
 
 // ----------------------------------------------------------------------------//
 
-/// Iterator over a number of ScrapeStats.
+/// Iterator over a number of `ScrapeStats`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeResponseIter<'a> {
     stats: &'a [u8],

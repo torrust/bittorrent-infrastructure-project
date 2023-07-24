@@ -15,6 +15,7 @@ pub enum Protocol {
 
 impl Protocol {
     /// Create a `Protocol` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Protocol> {
         parse_protocol(bytes)
     }
@@ -36,6 +37,7 @@ impl Protocol {
     }
 
     /// Get the legth of the given protocol (does not include the length byte).
+    #[must_use]
     pub fn write_len(&self) -> usize {
         match self {
             &Protocol::BitTorrent => BT_PROTOCOL_LEN as usize,

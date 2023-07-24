@@ -12,7 +12,7 @@ use crate::scrape::ScrapeRequest;
 // connection id for connection requests when operating in server mode and processing
 // incoming requests.
 /// Global connection id for connect requests.
-pub const CONNECT_ID_PROTOCOL_ID: u64 = 0x41727101980;
+pub const CONNECT_ID_PROTOCOL_ID: u64 = 0x0417_2710_1980;
 
 /// Enumerates all types of requests that can be made to a tracker.
 pub enum RequestType<'a> {
@@ -22,7 +22,8 @@ pub enum RequestType<'a> {
 }
 
 impl<'a> RequestType<'a> {
-    /// Create an owned version of the RequestType.
+    /// Create an owned version of the `RequestType`.
+    #[must_use]
     pub fn to_owned(&self) -> RequestType<'static> {
         match self {
             &RequestType::Connect => RequestType::Connect,
@@ -32,7 +33,7 @@ impl<'a> RequestType<'a> {
     }
 }
 
-/// TrackerRequest which encapsulates any request sent to a tracker.
+/// `TrackerRequest` which encapsulates any request sent to a tracker.
 pub struct TrackerRequest<'a> {
     // Both the connection id and transaction id are techinically not unsigned according
     // to the spec, but since they are just bits we will keep them as unsigned since it
@@ -43,7 +44,8 @@ pub struct TrackerRequest<'a> {
 }
 
 impl<'a> TrackerRequest<'a> {
-    /// Create a new TrackerRequest.
+    /// Create a new `TrackerRequest`.
+    #[must_use]
     pub fn new(conn_id: u64, trans_id: u32, req_type: RequestType<'a>) -> TrackerRequest<'a> {
         TrackerRequest {
             connection_id: conn_id,
@@ -52,12 +54,13 @@ impl<'a> TrackerRequest<'a> {
         }
     }
 
-    /// Create a new TrackerRequest from the given bytes.
+    /// Create a new `TrackerRequest` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerRequest<'a>> {
         parse_request(bytes)
     }
 
-    /// Write the TrackerRequest to the given writer.
+    /// Write the `TrackerRequest` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -95,21 +98,25 @@ impl<'a> TrackerRequest<'a> {
     ///
     /// For Connect requests, this will always be equal to 0x41727101980. Therefore,
     /// you should not hand out that specific ID to peers that make a connect request.
+    #[must_use]
     pub fn connection_id(&self) -> u64 {
         self.connection_id
     }
 
     /// Transaction ID supplied with a request to uniquely identify a response.
+    #[must_use]
     pub fn transaction_id(&self) -> u32 {
         self.transaction_id
     }
 
-    /// Actual type of request that this TrackerRequest represents.
+    /// Actual type of request that this `TrackerRequest` represents.
+    #[must_use]
     pub fn request_type(&self) -> &RequestType {
         &self.request_type
     }
 
-    /// Create an owned version of the TrackerRequest.
+    /// Create an owned version of the `TrackerRequest`.
+    #[must_use]
     pub fn to_owned(&self) -> TrackerRequest<'static> {
         TrackerRequest {
             connection_id: self.connection_id,

@@ -1,13 +1,15 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 
 /// Convert a 4 byte value to an array of 4 bytes.
+#[must_use]
 pub fn four_bytes_to_array(bytes: u32) -> [u8; 4] {
-    let eight_bytes = eight_bytes_to_array(bytes as u64);
+    let eight_bytes = eight_bytes_to_array(u64::from(bytes));
 
     [eight_bytes[4], eight_bytes[5], eight_bytes[6], eight_bytes[7]]
 }
 
 /// Convert an 8 byte value to an array of 8 bytes.
+#[must_use]
 pub fn eight_bytes_to_array(bytes: u64) -> [u8; 8] {
     [
         (bytes >> 56) as u8,
@@ -22,11 +24,13 @@ pub fn eight_bytes_to_array(bytes: u64) -> [u8; 8] {
 }
 
 /// Convert an ipv4 address to an array of 4 bytes big endian.
+#[must_use]
 pub fn ipv4_to_bytes_be(v4_addr: Ipv4Addr) -> [u8; 4] {
     v4_addr.octets()
 }
 
 /// Convert an ipv6 address to an array of 16 bytes big endian.
+#[must_use]
 pub fn ipv6_to_bytes_be(v6_addr: Ipv6Addr) -> [u8; 16] {
     let segments = v6_addr.segments();
     let mut bytes = [0u8; 16];
@@ -46,11 +50,13 @@ pub fn ipv6_to_bytes_be(v6_addr: Ipv6Addr) -> [u8; 16] {
 }
 
 // Convert a port to an array of 2 bytes big endian.
+#[must_use]
 pub fn port_to_bytes_be(port: u16) -> [u8; 2] {
     [(port >> 8) as u8, port as u8]
 }
 
 /// Convert a v4 socket address to an array of 6 bytes big endian.
+#[must_use]
 pub fn sock_v4_to_bytes_be(v4_sock: SocketAddrV4) -> [u8; 6] {
     let mut sock_bytes = [0u8; 6];
 
@@ -65,6 +71,7 @@ pub fn sock_v4_to_bytes_be(v4_sock: SocketAddrV4) -> [u8; 6] {
 }
 
 /// Convert a v6 socket address to an array of 18 bytes big endian.
+#[must_use]
 pub fn sock_v6_to_bytes_be(v6_sock: SocketAddrV6) -> [u8; 18] {
     let mut sock_bytes = [0u8; 18];
 
@@ -79,11 +86,13 @@ pub fn sock_v6_to_bytes_be(v6_sock: SocketAddrV6) -> [u8; 18] {
 }
 
 /// Convert an array of 4 bytes big endian to an ipv4 address.
+#[must_use]
 pub fn bytes_be_to_ipv4(bytes: [u8; 4]) -> Ipv4Addr {
     Ipv4Addr::new(bytes[0], bytes[1], bytes[2], bytes[3])
 }
 
 /// Convert an array of 16 bytes big endian to an ipv6 address.
+#[must_use]
 pub fn bytes_be_to_ipv6(bytes: [u8; 16]) -> Ipv6Addr {
     let mut combined_bytes = [0u16; 8];
 
@@ -91,7 +100,11 @@ pub fn bytes_be_to_ipv6(bytes: [u8; 16]) -> Ipv6Addr {
         let combined_index = index / 2;
         let should_shift = index % 2 == 0;
 
-        let adjusted_value = if should_shift { (value as u16) << 8 } else { value as u16 };
+        let adjusted_value = if should_shift {
+            u16::from(value) << 8
+        } else {
+            u16::from(value)
+        };
 
         combined_bytes[combined_index] |= adjusted_value;
     }
@@ -109,13 +122,15 @@ pub fn bytes_be_to_ipv6(bytes: [u8; 16]) -> Ipv6Addr {
 }
 
 /// Convert an array of 2 bytes big endian to a port.
+#[must_use]
 pub fn bytes_be_to_port(bytes: [u8; 2]) -> u16 {
-    let (high_byte, low_byte) = (bytes[0] as u16, bytes[1] as u16);
+    let (high_byte, low_byte) = (u16::from(bytes[0]), u16::from(bytes[1]));
 
     (high_byte << 8) | low_byte
 }
 
 /// Convert an array of 6 bytes big endian to a v4 socket address.
+#[must_use]
 pub fn bytes_be_to_sock_v4(bytes: [u8; 6]) -> SocketAddrV4 {
     let ip_bytes = [bytes[0], bytes[1], bytes[2], bytes[3]];
     let port_bytes = [bytes[4], bytes[5]];
@@ -126,6 +141,7 @@ pub fn bytes_be_to_sock_v4(bytes: [u8; 6]) -> SocketAddrV4 {
 }
 
 /// Convert an array of 18 bytes big endian to a v6 socket address.
+#[must_use]
 pub fn bytes_be_to_sock_v6(bytes: [u8; 18]) -> SocketAddrV6 {
     let mut ip_bytes = [0u8; 16];
     let port_bytes = [bytes[16], bytes[17]];
@@ -158,7 +174,7 @@ mod tests {
         let sock_addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 1600);
 
         let received = super::sock_v4_to_bytes_be(sock_addr);
-        let expected = [127, 0, 0, 1, (1600 >> 8) as u8, 1600 as u8];
+        let expected = [127, 0, 0, 1, (1600 >> 8) as u8, 64];
 
         assert_eq!(received, expected);
     }
@@ -168,7 +184,7 @@ mod tests {
         let sock_addr = SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), 1821, 0, 0);
 
         let received = super::sock_v6_to_bytes_be(sock_addr);
-        let expected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (1821 >> 8) as u8, 1821 as u8];
+        let expected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (1821 >> 8) as u8, 29];
 
         assert_eq!(received, expected);
     }
@@ -179,8 +195,8 @@ mod tests {
         let mut combined_bytes = 0u32;
 
         let mut shift = 32 - 8;
-        for &byte in bytes.iter() {
-            let shifted_byte = (byte as u32) << shift;
+        for &byte in &bytes {
+            let shifted_byte = u32::from(byte) << shift;
             combined_bytes |= shifted_byte;
 
             shift -= 8;
@@ -196,8 +212,8 @@ mod tests {
         let mut combined_bytes = 0u64;
 
         let mut shift = 64 - 8;
-        for &byte in bytes.iter() {
-            let shifted_byte = (byte as u64) << shift;
+        for &byte in &bytes {
+            let shifted_byte = u64::from(byte) << shift;
             combined_bytes |= shifted_byte;
 
             shift -= 8;

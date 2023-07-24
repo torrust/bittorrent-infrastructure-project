@@ -12,19 +12,20 @@ pub struct ErrorResponse<'a> {
 }
 
 impl<'a> ErrorResponse<'a> {
-    /// Create a new ErrorResponse.
+    /// Create a new `ErrorResponse`.
+    #[must_use]
     pub fn new(message: &'a str) -> ErrorResponse<'a> {
         ErrorResponse {
             message: Cow::Borrowed(message),
         }
     }
 
-    /// Construct an ErrorResponse from the given bytes.
+    /// Construct an `ErrorResponse` from the given bytes.
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ErrorResponse<'a>> {
         map!(bytes, take_str!(bytes.len()), ErrorResponse::new)
     }
 
-    /// Write the ErrorResponse to the given writer.
+    /// Write the `ErrorResponse` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -35,11 +36,13 @@ impl<'a> ErrorResponse<'a> {
     }
 
     /// Message describing the error that occured.
+    #[must_use]
     pub fn message(&self) -> &str {
         &self.message
     }
 
-    /// Create an owned version of the ErrorResponse.
+    /// Create an owned version of the `ErrorResponse`.
+    #[must_use]
     pub fn to_owned(&self) -> ErrorResponse<'static> {
         ErrorResponse {
             message: Cow::Owned((*self.message).to_owned()),

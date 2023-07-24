@@ -17,6 +17,7 @@ pub struct NullProtocol;
 
 impl NullProtocol {
     /// Create a new `NullProtocol`.
+    #[must_use]
     pub fn new() -> NullProtocol {
         NullProtocol
     }

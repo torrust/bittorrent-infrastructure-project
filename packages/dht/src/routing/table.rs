@@ -23,14 +23,14 @@ pub struct RoutingTable {
 }
 
 impl RoutingTable {
-    /// Create a new RoutingTable with the given node id as our id.
+    /// Create a new `RoutingTable` with the given node id as our id.
     pub fn new(node_id: NodeId) -> RoutingTable {
         let buckets = vec![Bucket::new()];
 
         RoutingTable { buckets, node_id }
     }
 
-    /// Return the node id of the RoutingTable.
+    /// Return the node id of the `RoutingTable`.
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
@@ -49,7 +49,7 @@ impl RoutingTable {
         Buckets::new(&self.buckets)
     }
 
-    /// Find an instance of the target node in the RoutingTable, if it exists.
+    /// Find an instance of the target node in the `RoutingTable`, if it exists.
     pub fn find_node(&self, node: &Node) -> Option<&Node> {
         let bucket_index = leading_bit_count(self.node_id, node.id());
 
@@ -74,7 +74,7 @@ impl RoutingTable {
         }
     }
 
-    /// Add the node to the RoutingTable if there is space for it.
+    /// Add the node to the `RoutingTable` if there is space for it.
     pub fn add_node(&mut self, node: Node) {
         // Doing some checks and calculations here, outside of the recursion
         if node.status() == NodeStatus::Bad {
@@ -135,14 +135,14 @@ fn can_split_bucket(num_buckets: usize, bucket_index: usize) -> bool {
     bucket_index == num_buckets - 1 && bucket_index != MAX_BUCKETS - 1
 }
 
-/// Generates a random NodeId.
+/// Generates a random `NodeId`.
 ///
 /// TODO: Shouldnt use this in the future to get an id for the routing table,
 /// generate one from the security module to be compliant with the spec.
 pub fn random_node_id() -> NodeId {
     let mut random_sha_hash = [0u8; sha::SHA_HASH_LEN];
 
-    for byte in random_sha_hash.iter_mut() {
+    for byte in &mut random_sha_hash {
         *byte = rand::random::<u8>();
     }
 
@@ -473,7 +473,7 @@ mod tests {
         // Trigger a bucket overflow and since the ids are placed in the last bucket, all of
         // the buckets will be recursively created and inserted into the list of all buckets.
         let block_addrs = bip_test::dummy_block_socket_addrs((bucket::MAX_BUCKET_SIZE + 1) as u16);
-        for index in 0..(bucket::MAX_BUCKET_SIZE + 1) {
+        for index in 0..=bucket::MAX_BUCKET_SIZE {
             let node = Node::as_good(node_id.into(), block_addrs[index]);
 
             table.add_node(node);
@@ -509,7 +509,7 @@ mod tests {
         node_id[0] |= 128;
 
         let block_addrs = bip_test::dummy_block_socket_addrs((bucket::MAX_BUCKET_SIZE + 1) as u16);
-        for index in 0..(bucket::MAX_BUCKET_SIZE + 1) {
+        for index in 0..=bucket::MAX_BUCKET_SIZE {
             let node = Node::as_good(node_id.into(), block_addrs[index]);
 
             table.add_node(node);
@@ -557,7 +557,7 @@ mod tests {
         node_id[bt::NODE_ID_LEN - 1] = 0;
 
         let block_addrs = bip_test::dummy_block_socket_addrs((bucket::MAX_BUCKET_SIZE + 1) as u16);
-        for index in 0..(bucket::MAX_BUCKET_SIZE + 1) {
+        for index in 0..=bucket::MAX_BUCKET_SIZE {
             let node = Node::as_good(node_id.into(), block_addrs[index]);
 
             table.add_node(node);

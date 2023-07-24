@@ -42,7 +42,7 @@ pub enum DispatchMessage {
 
 /// Create a new background dispatcher to execute request and send responses back.
 ///
-/// Assumes msg_capacity is less than usize::max_value().
+/// Assumes `msg_capacity` is less than `usize::max_value`().
 pub fn create_dispatcher<H>(
     bind: SocketAddr,
     handshaker: H,
@@ -94,7 +94,7 @@ where
     H: Sink + DiscoveryInfo,
     H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>,
 {
-    /// Create a new ClientDispatcher.
+    /// Create a new `ClientDispatcher`.
     pub fn new(handshaker: H, bind: SocketAddr, limiter: RequestLimiter) -> ClientDispatcher<H> {
         let peer_id = handshaker.peer_id();
         let port = handshaker.port();
@@ -349,7 +349,7 @@ struct ConnectTimer {
 }
 
 impl ConnectTimer {
-    /// Create a new ConnectTimer.
+    /// Create a new `ConnectTimer`.
     pub fn new(addr: SocketAddr, request: ClientRequest) -> ConnectTimer {
         ConnectTimer {
             addr,
@@ -449,7 +449,7 @@ impl ConnectIdCache {
     }
 }
 
-/// Returns true if the connect id received at prev_time is now expired.
+/// Returns true if the connect id received at `prev_time` is now expired.
 fn is_expired(curr_time: DateTime<Utc>, prev_time: DateTime<Utc>) -> bool {
     let valid_duration = Duration::milliseconds(CONNECTION_ID_VALID_DURATION_MILLIS);
     let difference = prev_time.signed_duration_since(curr_time);

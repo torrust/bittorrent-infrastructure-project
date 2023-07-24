@@ -224,11 +224,11 @@ mod tests {
             ben_dict.lookup("location".as_bytes()).unwrap().str().unwrap(),
             "udp://test.com:80"
         );
-        assert_eq!(ben_dict.lookup("number".as_bytes()).unwrap().int().unwrap(), 500500i64);
+        assert_eq!(ben_dict.lookup("number".as_bytes()).unwrap().int().unwrap(), 500_500_i64);
 
         let nested_dict = ben_dict.lookup("nested dict".as_bytes()).unwrap().dict().unwrap();
         let nested_list = nested_dict.lookup("list".as_bytes()).unwrap().list().unwrap();
-        assert_eq!(nested_list[0].int().unwrap(), -500500i64);
+        assert_eq!(nested_list[0].int().unwrap(), -500_500_i64);
     }
 
     #[test]

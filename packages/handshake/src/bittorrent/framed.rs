@@ -103,7 +103,7 @@ where
                             self.read_buffer = vec![0u8; message::write_len_with_protocol_len(length)];
                             self.read_buffer[0] = length;
                         }
-                        Async::Ready(read) => panic!("bip_handshake: Expected To Read Single Byte, Read {:?}", read),
+                        Async::Ready(read) => panic!("bip_handshake: Expected To Read Single Byte, Read {read:?}"),
                         Async::NotReady => return Ok(Async::NotReady),
                     }
                 }

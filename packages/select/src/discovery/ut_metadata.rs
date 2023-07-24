@@ -69,6 +69,7 @@ pub struct UtMetadataModule {
 
 impl UtMetadataModule {
     /// Create a new `UtMetadataModule`.
+    #[must_use]
     pub fn new() -> UtMetadataModule {
         UtMetadataModule {
             completed_map: HashMap::new(),
@@ -186,7 +187,7 @@ impl UtMetadataModule {
         });
 
         // Go back through and subtract from the left over requests, they wont underflow
-        for active_request in active_requests.iter_mut() {
+        for active_request in &mut *active_requests {
             active_request.left -= duration;
         }
 
@@ -251,7 +252,7 @@ impl UtMetadataModule {
         let opt_completed_hash = self
             .pending_map
             .iter()
-            .find(|(_, opt_pending)| opt_pending.as_ref().map(|pending| pending.left == 0).unwrap_or(false))
+            .find(|(_, opt_pending)| opt_pending.as_ref().is_some_and(|pending| pending.left == 0))
             .map(|(hash, _)| *hash);
 
         opt_completed_hash.and_then(|completed_hash| {
@@ -268,16 +269,9 @@ impl UtMetadataModule {
     }
 
     fn retrieve_piece_request(&mut self) -> Option<Result<ODiscoveryMessage, DiscoveryError>> {
-        for (hash, opt_pending) in self.pending_map.iter_mut() {
-            let has_ready_requests = opt_pending
-                .as_ref()
-                .map(|pending| !pending.messages.is_empty())
-                .unwrap_or(false);
-            let has_active_peers = self
-                .active_peers
-                .get(hash)
-                .map(|peers| !peers.peers.is_empty())
-                .unwrap_or(false);
+        for (hash, opt_pending) in &mut self.pending_map {
+            let has_ready_requests = opt_pending.as_ref().is_some_and(|pending| !pending.messages.is_empty());
+            let has_active_peers = self.active_peers.get(hash).is_some_and(|peers| !peers.peers.is_empty());
 
             if has_ready_requests && has_active_peers {
                 let pending = opt_pending.as_mut().unwrap();
@@ -342,7 +336,7 @@ impl UtMetadataModule {
         let mut pending_tasks_available = false;
 
         // Initialize PeningInfo once we get peers that have told us the metadata size
-        for (hash, opt_pending) in self.pending_map.iter_mut() {
+        for (hash, opt_pending) in &mut self.pending_map {
             if opt_pending.is_none() {
                 let opt_pending_info = self
                     .active_peers
@@ -353,10 +347,7 @@ impl UtMetadataModule {
             }
 
             // If pending is there, and the messages array is not empty
-            pending_tasks_available |= opt_pending
-                .as_ref()
-                .map(|pending| !pending.messages.is_empty())
-                .unwrap_or(false);
+            pending_tasks_available |= opt_pending.as_ref().is_some_and(|pending| !pending.messages.is_empty());
         }
 
         pending_tasks_available
@@ -368,24 +359,21 @@ impl UtMetadataModule {
         // Sweep over all "pending" requests, and check if completed downloads pass hash validation
         // If not, set them back to None so they get re-initialized
         // If yes, mark down that we have completed downloads
-        for (&expected_hash, opt_pending) in self.pending_map.iter_mut() {
-            let should_reset = opt_pending
-                .as_mut()
-                .map(|pending| {
-                    if pending.left == 0 {
-                        let real_hash = InfoHash::from_bytes(&pending.bytes[..]);
-                        let needs_reset = real_hash != expected_hash;
+        for (&expected_hash, opt_pending) in &mut self.pending_map {
+            let should_reset = opt_pending.as_mut().is_some_and(|pending| {
+                if pending.left == 0 {
+                    let real_hash = InfoHash::from_bytes(&pending.bytes[..]);
+                    let needs_reset = real_hash != expected_hash;
 
-                        // If we dont need a reset, we finished and validation passed!
-                        completed_downloads_available |= !needs_reset;
+                    // If we dont need a reset, we finished and validation passed!
+                    completed_downloads_available |= !needs_reset;
 
-                        // If we need a reset, we finished and validation failed!
-                        needs_reset
-                    } else {
-                        false
-                    }
-                })
-                .unwrap_or(false);
+                    // If we need a reset, we finished and validation failed!
+                    needs_reset
+                } else {
+                    false
+                }
+            });
 
             if should_reset {
                 *opt_pending = None;
@@ -496,7 +484,7 @@ impl Sink for UtMetadataModule {
         self.check_stream_unblock();
 
         // Check if we need to block the sink, if so, set the task
-        if start_send.as_ref().map(|result| result.is_not_ready()).unwrap_or(false) {
+        if start_send.as_ref().map(futures::AsyncSink::is_not_ready).unwrap_or(false) {
             self.opt_sink = Some(task::current());
         }
         start_send

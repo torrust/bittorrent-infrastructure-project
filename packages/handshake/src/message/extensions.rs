@@ -20,11 +20,13 @@ pub struct Extensions {
 
 impl Extensions {
     /// Create a new `Extensions` with zero extensions.
+    #[must_use]
     pub fn new() -> Extensions {
         Extensions::with_bytes([0u8; NUM_EXTENSION_BYTES])
     }
 
     /// Create a new `Extensions` by parsing the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Extensions> {
         parse_extension_bits(bytes)
     }
@@ -48,6 +50,7 @@ impl Extensions {
     }
 
     /// Check if a given extension is activated.
+    #[must_use]
     pub fn contains(&self, extension: Extension) -> bool {
         let active_bit = extension as usize;
         let byte_index = active_bit / 8;
@@ -69,6 +72,7 @@ impl Extensions {
     /// Create a union of the two extensions.
     ///
     /// This is useful for getting the extensions that both clients support.
+    #[must_use]
     pub fn union(&self, ext: &Extensions) -> Extensions {
         let mut result_ext = Extensions::new();
 

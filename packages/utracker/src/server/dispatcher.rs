@@ -57,7 +57,7 @@ impl<H> ServerDispatcher<H>
 where
     H: ServerHandler,
 {
-    /// Create a new ServerDispatcher.
+    /// Create a new `ServerDispatcher`.
     fn new(handler: H) -> ServerDispatcher<H> {
         ServerDispatcher { handler }
     }

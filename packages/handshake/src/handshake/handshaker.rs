@@ -39,6 +39,7 @@ pub struct HandshakerBuilder {
 
 impl HandshakerBuilder {
     /// Create a new `HandshakerBuilder`.
+    #[must_use]
     pub fn new() -> HandshakerBuilder {
         let default_v4_addr = Ipv4Addr::new(0, 0, 0, 0);
         let default_v4_port = 0;
@@ -59,7 +60,7 @@ impl HandshakerBuilder {
 
     /// Address that the host will listen on.
     ///
-    /// Defaults to IN_ADDR_ANY using port 0 (any free port).
+    /// Defaults to `IN_ADDR_ANY` using port 0 (any free port).
     pub fn with_bind_addr(&mut self, addr: SocketAddr) -> &mut HandshakerBuilder {
         self.bind = addr;
 
@@ -125,6 +126,7 @@ impl<S> Handshaker<S> {
     ///
     /// This is an enhanced version of `Stream::split` in that the returned `Sink` implements
     /// `DiscoveryInfo` so it can be cloned and passed in to different peer discovery services.
+    #[must_use]
     pub fn into_parts(self) -> (HandshakerSink, HandshakerStream<S>) {
         (self.sink, self.stream)
     }

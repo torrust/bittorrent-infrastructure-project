@@ -49,6 +49,7 @@ impl<'a> BencodeRef<'a> {
     }
 
     /// Get a byte slice of the current bencode byte representation.
+    #[must_use]
     pub fn buffer(&self) -> &'a [u8] {
         match self.inner {
             InnerBencodeRef::Int(_, buffer) => buffer,
