@@ -2,8 +2,8 @@
 extern crate bip_bencode;
 extern crate bip_handshake;
 extern crate bip_util;
-extern crate bytes;
 extern crate byteorder;
+extern crate bytes;
 extern crate crossbeam;
 #[macro_use]
 extern crate error_chain;
@@ -23,32 +23,36 @@ mod message;
 mod protocol;
 
 pub use codec::PeerProtocolCodec;
-pub use protocol::{PeerProtocol, NestedPeerProtocol};
-pub use manager::{ManagedMessage, PeerManager, PeerManagerSink, PeerManagerStream, IPeerManagerMessage, OPeerManagerMessage, MessageId};
 pub use manager::builder::PeerManagerBuilder;
 pub use manager::peer_info::PeerInfo;
+pub use manager::{
+    IPeerManagerMessage, ManagedMessage, MessageId, OPeerManagerMessage, PeerManager, PeerManagerSink, PeerManagerStream,
+};
+pub use protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Serializable and deserializable protocol messages.
 pub mod messages {
     /// Builder types for protocol messages.
     pub mod builders {
-        pub use message::{ExtendedMessageBuilder};
+        pub use message::ExtendedMessageBuilder;
     }
 
-    pub use message::{BitFieldIter, BitFieldMessage, CancelMessage, ExtendedMessage, HaveMessage, PieceMessage, PortMessage,
-        RequestMessage, UtMetadataRequestMessage, UtMetadataDataMessage, UtMetadataRejectMessage, BitsExtensionMessage, ExtendedType,
-        NullProtocolMessage, PeerExtensionProtocolMessage, PeerWireProtocolMessage, UtMetadataMessage};
+    pub use message::{
+        BitFieldIter, BitFieldMessage, BitsExtensionMessage, CancelMessage, ExtendedMessage, ExtendedType, HaveMessage,
+        NullProtocolMessage, PeerExtensionProtocolMessage, PeerWireProtocolMessage, PieceMessage, PortMessage, RequestMessage,
+        UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
+    };
 }
 
 /// `PeerManager` error types.
 pub mod error {
-    pub use manager::error::{PeerManagerError, PeerManagerErrorKind, PeerManagerResultExt, PeerManagerResult};
+    pub use manager::error::{PeerManagerError, PeerManagerErrorKind, PeerManagerResult, PeerManagerResultExt};
 }
 
 /// Implementations of `PeerProtocol`.
 pub mod protocols {
-    pub use protocol::unit::UnitProtocol;
-    pub use protocol::null::NullProtocol;
-    pub use protocol::wire::PeerWireProtocol;
     pub use protocol::extension::PeerExtensionProtocol;
+    pub use protocol::null::NullProtocol;
+    pub use protocol::unit::UnitProtocol;
+    pub use protocol::wire::PeerWireProtocol;
 }

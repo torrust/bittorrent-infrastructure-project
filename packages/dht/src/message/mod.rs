@@ -1,20 +1,19 @@
 use bip_bencode::{Bencode, BencodeConvert, BencodeConvertError};
-
-use message::request::RequestType;
-use message::response::{ResponseType, ExpectedResponse};
-use message::error::ErrorMessage;
 use error::{DhtError, DhtErrorKind, DhtResult};
+use message::error::ErrorMessage;
+use message::request::RequestType;
+use message::response::{ExpectedResponse, ResponseType};
 
 pub mod compact_info;
 
+pub mod error;
 pub mod request;
 pub mod response;
-pub mod error;
 
-pub mod ping;
+pub mod announce_peer;
 pub mod find_node;
 pub mod get_peers;
-pub mod announce_peer;
+pub mod ping;
 
 // Top level message keys
 const TRANSACTION_ID_KEY: &'static str = "t";
@@ -61,7 +60,8 @@ pub enum MessageType<'a> {
 
 impl<'a> MessageType<'a> {
     pub fn new<T>(message: &'a Bencode<'a>, trans_mapper: T) -> DhtResult<MessageType<'a>>
-        where T: Fn(&[u8]) -> ExpectedResponse
+    where
+        T: Fn(&[u8]) -> ExpectedResponse,
     {
         let validate = MessageValidate;
         let msg_root = r#try!(validate.convert_dict(message, ROOT_ID_KEY));
@@ -84,9 +84,9 @@ impl<'a> MessageType<'a> {
                 let err_message = r#try!(ErrorMessage::from_parts(msg_root, trans_id));
                 Ok(MessageType::Error(err_message))
             }
-            unknown => {
-                Err(DhtError::from_kind(DhtErrorKind::InvalidMessage { code: unknown.to_owned() }))
-            }
+            unknown => Err(DhtError::from_kind(DhtErrorKind::InvalidMessage {
+                code: unknown.to_owned(),
+            })),
         }
     }
 }

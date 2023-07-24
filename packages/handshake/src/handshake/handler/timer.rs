@@ -1,21 +1,27 @@
 use std::time::Duration;
 
 use futures::Future;
-use tokio_timer::{Timer, TimeoutError, Timeout};
+use tokio_timer::{Timeout, TimeoutError, Timer};
 
 #[derive(Clone)]
 pub struct HandshakeTimer {
-    timer:    Timer,
-    duration: Duration
+    timer: Timer,
+    duration: Duration,
 }
 
 impl HandshakeTimer {
     pub fn new(timer: Timer, duration: Duration) -> HandshakeTimer {
-        HandshakeTimer{ timer: timer, duration: duration }
+        HandshakeTimer {
+            timer: timer,
+            duration: duration,
+        }
     }
 
     pub fn timeout<F, E>(&self, future: F) -> Timeout<F>
-        where F: Future<Error=E>, E: From<TimeoutError<F>> {
+    where
+        F: Future<Error = E>,
+        E: From<TimeoutError<F>>,
+    {
         self.timer.timeout(future, self.duration)
     }
 }
@@ -24,11 +30,11 @@ impl HandshakeTimer {
 mod tests {
     use std::time::Duration;
 
-    use super::HandshakeTimer;
-
     use futures::future::{self, Future};
     use tokio_timer;
-    
+
+    use super::HandshakeTimer;
+
     #[test]
     fn positive_finish_before_timeout() {
         let timer = HandshakeTimer::new(tokio_timer::wheel().build(), Duration::from_millis(50));

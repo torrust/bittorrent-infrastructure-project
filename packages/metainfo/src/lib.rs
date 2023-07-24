@@ -77,8 +77,7 @@ mod parse;
 
 pub mod iter;
 
+pub use accessor::{Accessor, DirectAccessor, FileAccessor, IntoAccessor, PieceAccess};
 pub use bip_util::bt::InfoHash;
-
-pub use accessor::{Accessor, IntoAccessor, DirectAccessor, FileAccessor, PieceAccess};
-pub use builder::{MetainfoBuilder, PieceLength, InfoBuilder};
-pub use metainfo::{Info, Metainfo, File};
+pub use builder::{InfoBuilder, MetainfoBuilder, PieceLength};
+pub use metainfo::{File, Info, Metainfo};

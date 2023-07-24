@@ -1,21 +1,24 @@
 use std::net::SocketAddr;
 
-use message::protocol::Protocol;
-
 use bip_util::bt::InfoHash;
+use message::protocol::Protocol;
 
 /// Message used to initiate a handshake with the `Handshaker`.
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct InitiateMessage {
     prot: Protocol,
     hash: InfoHash,
-    addr: SocketAddr
+    addr: SocketAddr,
 }
 
 impl InitiateMessage {
     /// Create a new `InitiateMessage`.
     pub fn new(prot: Protocol, hash: InfoHash, addr: SocketAddr) -> InitiateMessage {
-        InitiateMessage{ prot: prot, hash: hash, addr: addr }
+        InitiateMessage {
+            prot: prot,
+            hash: hash,
+            addr: addr,
+        }
     }
 
     /// Protocol that we want to connect to the peer with.

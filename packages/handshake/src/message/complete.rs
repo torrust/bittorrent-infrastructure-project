@@ -1,24 +1,30 @@
 use std::net::SocketAddr;
 
-use message::protocol::Protocol;
-use message::extensions::{Extensions};
-
 use bip_util::bt::{InfoHash, PeerId};
+use message::extensions::Extensions;
+use message::protocol::Protocol;
 
 /// Message containing completed handshaking information.
 pub struct CompleteMessage<S> {
     prot: Protocol,
-    ext:  Extensions,
+    ext: Extensions,
     hash: InfoHash,
-    pid:  PeerId,
+    pid: PeerId,
     addr: SocketAddr,
-    sock: S
+    sock: S,
 }
 
 impl<S> CompleteMessage<S> {
     /// Create a new `CompleteMessage` over the given socket S.
     pub fn new(prot: Protocol, ext: Extensions, hash: InfoHash, pid: PeerId, addr: SocketAddr, sock: S) -> CompleteMessage<S> {
-        CompleteMessage{ prot: prot, ext: ext, hash: hash, pid: pid, addr: addr, sock: sock }
+        CompleteMessage {
+            prot: prot,
+            ext: ext,
+            hash: hash,
+            pid: pid,
+            addr: addr,
+            sock: sock,
+        }
     }
 
     /// Protocol that this peer is operating over.

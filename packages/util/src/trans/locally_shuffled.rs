@@ -1,8 +1,7 @@
-use std::ops::Add;
 use std::num::Wrapping;
+use std::ops::Add;
 
 use num::{Bounded, One, Zero};
-
 use trans::{SequentialIds, TransactionIds};
 
 const TRANSACTION_ID_PREALLOC_LEN: usize = 2048;
@@ -20,12 +19,14 @@ const TRANSACTION_ID_PREALLOC_LEN: usize = 2048;
 /// transaction type (such as u64) but also works with smaller types.
 pub struct LocallyShuffledIds<T> {
     sequential: SequentialIds<T>,
-    stored_ids: Vec<T>
+    stored_ids: Vec<T>,
 }
 
 impl<T> LocallyShuffledIds<T>
-    where T: One + Zero + Clone + Eq + Bounded + Default,
-          Wrapping<T>: Add<Wrapping<T>, Output = Wrapping<T>> {
+where
+    T: One + Zero + Clone + Eq + Bounded + Default,
+    Wrapping<T>: Add<Wrapping<T>, Output = Wrapping<T>>,
+{
     /// Create a new LocallyShuffledIds struct.
     pub fn new() -> LocallyShuffledIds<T> {
         LocallyShuffledIds::start_at(T::zero())
@@ -33,7 +34,10 @@ impl<T> LocallyShuffledIds<T>
 
     /// Create a new LocallyShuffledIds struct at the starting value.
     pub fn start_at(start: T) -> LocallyShuffledIds<T> {
-        LocallyShuffledIds{ sequential: SequentialIds::start_at(start), stored_ids: Vec::new() }
+        LocallyShuffledIds {
+            sequential: SequentialIds::start_at(start),
+            stored_ids: Vec::new(),
+        }
     }
 
     /// Refills our stored ids list with new ids and resets our current index.
@@ -67,8 +71,10 @@ impl<T> LocallyShuffledIds<T>
 }
 
 impl<T> TransactionIds<T> for LocallyShuffledIds<T>
-    where T: One + Zero + Clone + Eq + Bounded + Default,
-          Wrapping<T>: Add<Wrapping<T>, Output = Wrapping<T>>{
+where
+    T: One + Zero + Clone + Eq + Bounded + Default,
+    Wrapping<T>: Add<Wrapping<T>, Output = Wrapping<T>>,
+{
     fn generate(&mut self) -> T {
         self.stored_ids.pop().unwrap_or_else(|| {
             self.refill_stored_ids();
@@ -80,8 +86,9 @@ impl<T> TransactionIds<T> for LocallyShuffledIds<T>
 
 #[cfg(test)]
 mod tests {
-    use super::LocallyShuffledIds;
     use trans::TransactionIds;
+
+    use super::LocallyShuffledIds;
 
     #[test]
     fn positive_single_prealloc_u8_overflow() {

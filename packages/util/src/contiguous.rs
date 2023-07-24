@@ -19,10 +19,15 @@ pub trait ContiguousBuffer<T> {
     /// Read the used capacity of the buffer.
     ///
     /// Implementations will never pass in an empty slice.
-    fn read<F>(&self, receive: F) where F: FnMut(&[T]);
+    fn read<F>(&self, receive: F)
+    where
+        F: FnMut(&[T]);
 }
 
-impl<T> ContiguousBuffer<T> for Vec<T> where T: Clone {
+impl<T> ContiguousBuffer<T> for Vec<T>
+where
+    T: Clone,
+{
     fn capacity(&self) -> usize {
         self.capacity()
     }
@@ -46,7 +51,9 @@ impl<T> ContiguousBuffer<T> for Vec<T> where T: Clone {
     }
 
     fn read<F>(&self, mut receive: F)
-        where F: FnMut(&[T]) {
+    where
+        F: FnMut(&[T]),
+    {
         if self.length() > 0 {
             receive(&self[..]);
         }
@@ -57,18 +64,18 @@ impl<T> ContiguousBuffer<T> for Vec<T> where T: Clone {
 
 /// Struct for providing a ContiguousBuffer abstraction over many contiguous buffers.
 pub struct ContiguousBuffers<T> {
-    buffers: Vec<T>
+    buffers: Vec<T>,
 }
 
 impl<T> ContiguousBuffers<T> {
     /// Create a new empty ContiguousBuffers struct.
     pub fn new() -> ContiguousBuffers<T> {
-         ContiguousBuffers{ buffers: Vec::new() }
+        ContiguousBuffers { buffers: Vec::new() }
     }
 
     /// Create a new ContiguousBuffers struct with an initial element.
     pub fn with_buffer(buffer: T) -> ContiguousBuffers<T> {
-        ContiguousBuffers{ buffers: vec![buffer] }
+        ContiguousBuffers { buffers: vec![buffer] }
     }
 
     /// Pack a value T at the end of the contiguous buffers.
@@ -78,14 +85,20 @@ impl<T> ContiguousBuffers<T> {
 
     /// Unpack all values T and pass them to the given closure.
     pub fn unpack<F>(self, mut accept: F)
-        where F: FnMut(ContiguousBuffers<T>) {
+    where
+        F: FnMut(ContiguousBuffers<T>),
+    {
         for buffer in self.buffers {
             accept(ContiguousBuffers::with_buffer(buffer));
         }
     }
 }
 
-impl<T, I> ContiguousBuffer<I> for ContiguousBuffers<T> where T: ContiguousBuffer<I>, I: Clone {
+impl<T, I> ContiguousBuffer<I> for ContiguousBuffers<T>
+where
+    T: ContiguousBuffer<I>,
+    I: Clone,
+{
     fn capacity(&self) -> usize {
         self.buffers.iter().map(|buffer| buffer.capacity()).sum()
     }
@@ -123,7 +136,9 @@ impl<T, I> ContiguousBuffer<I> for ContiguousBuffers<T> where T: ContiguousBuffe
     }
 
     fn read<F>(&self, mut receive: F)
-        where F: FnMut(&[I]) {
+    where
+        F: FnMut(&[I]),
+    {
         for buffer in self.buffers.iter() {
             buffer.read(&mut receive);
         }
@@ -191,7 +206,9 @@ mod tests {
         let buffers: ContiguousBuffers<Vec<u8>> = ContiguousBuffers::new();
 
         let mut times_called = 0;
-        buffers.read(|_| { times_called += 1; });
+        buffers.read(|_| {
+            times_called += 1;
+        });
 
         assert_eq!(0, times_called);
     }
@@ -201,7 +218,9 @@ mod tests {
         let buffers: ContiguousBuffers<Vec<u8>> = ContiguousBuffers::with_buffer(Vec::with_capacity(10));
 
         let mut times_called = 0;
-        buffers.read(|_| { times_called += 1; });
+        buffers.read(|_| {
+            times_called += 1;
+        });
 
         assert_eq!(0, times_called);
     }
@@ -213,7 +232,9 @@ mod tests {
         buffers.pack(ContiguousBuffers::with_buffer(Vec::with_capacity(1)));
 
         let mut times_called = 0;
-        buffers.read(|_| { times_called += 1; });
+        buffers.read(|_| {
+            times_called += 1;
+        });
 
         assert_eq!(0, times_called);
     }
@@ -226,8 +247,8 @@ mod tests {
 
         let mut times_called = 0;
         let mut read_buffer = Vec::new();
-        buffers.read(|buffer| { 
-            times_called += 1; 
+        buffers.read(|buffer| {
+            times_called += 1;
             read_buffer.extend_from_slice(buffer);
         });
 
@@ -243,8 +264,8 @@ mod tests {
 
         let mut times_called = 0;
         let mut read_buffer = Vec::new();
-        buffers.read(|buffer| { 
-            times_called += 1; 
+        buffers.read(|buffer| {
+            times_called += 1;
             read_buffer.extend_from_slice(buffer);
         });
 
@@ -262,8 +283,8 @@ mod tests {
 
         let mut times_called = 0;
         let mut read_buffer = Vec::new();
-        buffers.read(|buffer| { 
-            times_called += 1; 
+        buffers.read(|buffer| {
+            times_called += 1;
             read_buffer.extend_from_slice(buffer);
         });
 
@@ -281,8 +302,8 @@ mod tests {
 
         let mut times_called = 0;
         let mut read_buffer = Vec::new();
-        buffers.read(|buffer| { 
-            times_called += 1; 
+        buffers.read(|buffer| {
+            times_called += 1;
             read_buffer.extend_from_slice(buffer);
         });
 

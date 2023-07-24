@@ -1,35 +1,23 @@
-use ControlMessage;
-use bip_handshake::InfoHash;
-use bip_metainfo::Info;
-use bip_metainfo::Metainfo;
-use bip_peer::PeerInfo;
-use bip_peer::messages::{ExtendedMessage, ExtendedType};
-use bip_peer::messages::UtMetadataDataMessage;
-use bip_peer::messages::UtMetadataMessage;
-use bip_peer::messages::UtMetadataRejectMessage;
-use bip_peer::messages::UtMetadataRequestMessage;
-use bip_peer::messages::builders::ExtendedMessageBuilder;
-use bytes::BytesMut;
-use discovery::IDiscoveryMessage;
-use discovery::ODiscoveryMessage;
-use discovery::error::{DiscoveryError, DiscoveryErrorKind};
-use extended::ExtendedListener;
-use extended::ExtendedPeerInfo;
-use futures::Async;
-use futures::AsyncSink;
-use futures::Poll;
-use futures::Sink;
-use futures::StartSend;
-use futures::Stream;
-use futures::task;
-use futures::task::Task;
-use rand::{self, Rng};
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::collections::VecDeque;
 use std::collections::hash_map::Entry;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::Write;
 use std::time::Duration;
+
+use bip_handshake::InfoHash;
+use bip_metainfo::{Info, Metainfo};
+use bip_peer::messages::builders::ExtendedMessageBuilder;
+use bip_peer::messages::{
+    ExtendedMessage, ExtendedType, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
+};
+use bip_peer::PeerInfo;
+use bytes::BytesMut;
+use discovery::error::{DiscoveryError, DiscoveryErrorKind};
+use discovery::{IDiscoveryMessage, ODiscoveryMessage};
+use extended::{ExtendedListener, ExtendedPeerInfo};
+use futures::task::Task;
+use futures::{task, Async, AsyncSink, Poll, Sink, StartSend, Stream};
+use rand::{self, Rng};
+use ControlMessage;
 
 const REQUEST_TIMEOUT_MILLIS: u64 = 2000;
 const MAX_REQUEST_SIZE: usize = 16 * 1024;
@@ -96,23 +84,20 @@ impl UtMetadataModule {
         let info_hash = metainfo.info().info_hash();
 
         match self.completed_map.entry(info_hash) {
-            Entry::Occupied(_) => {
-                Err(DiscoveryError::from_kind(DiscoveryErrorKind::InvalidMetainfoExists { hash: info_hash }))
-            },
+            Entry::Occupied(_) => Err(DiscoveryError::from_kind(DiscoveryErrorKind::InvalidMetainfoExists {
+                hash: info_hash,
+            })),
             Entry::Vacant(vac) => {
                 let info_bytes = metainfo.info().to_bytes();
                 vac.insert(info_bytes);
 
                 Ok(AsyncSink::Ready)
-            },
+            }
         }
     }
 
     fn remove_torrent(&mut self, metainfo: Metainfo) -> StartSend<IDiscoveryMessage, DiscoveryError> {
-        if self.completed_map
-            .remove(&metainfo.info().info_hash())
-            .is_none()
-        {
+        if self.completed_map.remove(&metainfo.info().info_hash()).is_none() {
             Err(DiscoveryError::from_kind(DiscoveryErrorKind::InvalidMetainfoNotExists {
                 hash: metainfo.info().info_hash(),
             }))
@@ -130,9 +115,7 @@ impl UtMetadataModule {
             .their_message()
             .and_then(|msg| msg.query_id(&ExtendedType::UtMetadata))
             .is_some();
-        let opt_metadata_size = ext_info
-            .their_message()
-            .and_then(ExtendedMessage::metadata_size);
+        let opt_metadata_size = ext_info.their_message().and_then(ExtendedMessage::metadata_size);
 
         info!(
             "Our Support For UtMetadata Is {:?} And {:?} Support For UtMetadata Is {:?} With Metdata Size {:?}",
@@ -146,18 +129,14 @@ impl UtMetadataModule {
             (true, true, Some(metadata_size)) => {
                 self.active_peers
                     .entry(*info.hash())
-                    .or_insert_with(|| {
-                        ActivePeers {
-                            peers: HashSet::new(),
-                            metadata_size: metadata_size,
-                        }
+                    .or_insert_with(|| ActivePeers {
+                        peers: HashSet::new(),
+                        metadata_size: metadata_size,
                     })
                     .peers
                     .insert(info);
-            },
-            _ => {
-                ()
-            },
+            }
+            _ => (),
         }
 
         Ok(AsyncSink::Ready)
@@ -195,13 +174,11 @@ impl UtMetadataModule {
                 }
 
                 // Push request back to pending
-                pending_map
-                    .get_mut(&request.sent_to.hash())
-                    .map(|opt_pending| {
-                        opt_pending.as_mut().map(|pending| {
-                            pending.messages.push(request.message);
-                        })
-                    });
+                pending_map.get_mut(&request.sent_to.hash()).map(|opt_pending| {
+                    opt_pending.as_mut().map(|pending| {
+                        pending.messages.push(request.message);
+                    })
+                });
             }
 
             !is_expired
@@ -223,11 +200,16 @@ impl UtMetadataModule {
         Ok(AsyncSink::Ready)
     }
 
-    fn recv_request(&mut self, info: PeerInfo, request: UtMetadataRequestMessage) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    fn recv_request(
+        &mut self,
+        info: PeerInfo,
+        request: UtMetadataRequestMessage,
+    ) -> StartSend<IDiscoveryMessage, DiscoveryError> {
         if self.peer_requests.len() == MAX_PEER_REQUESTS {
-            Ok(AsyncSink::NotReady(
-                IDiscoveryMessage::ReceivedUtMetadataMessage(info, UtMetadataMessage::Request(request)),
-            ))
+            Ok(AsyncSink::NotReady(IDiscoveryMessage::ReceivedUtMetadataMessage(
+                info,
+                UtMetadataMessage::Request(request),
+            )))
         } else {
             self.peer_requests.push_back(PeerRequest {
                 send_to: info,
@@ -240,7 +222,8 @@ impl UtMetadataModule {
 
     fn recv_data(&mut self, info: PeerInfo, data: UtMetadataDataMessage) -> StartSend<IDiscoveryMessage, DiscoveryError> {
         // See if we can find the request that we made to the peer for that piece
-        let opt_index = self.active_requests
+        let opt_index = self
+            .active_requests
             .iter()
             .position(|request| request.sent_to == info && request.message.piece() == data.piece());
 
@@ -269,14 +252,10 @@ impl UtMetadataModule {
     //-------------------------------------------------------------------------------//
 
     fn retrieve_completed_download(&mut self) -> Option<Result<ODiscoveryMessage, DiscoveryError>> {
-        let opt_completed_hash = self.pending_map
+        let opt_completed_hash = self
+            .pending_map
             .iter()
-            .find(|&(_, ref opt_pending)| {
-                opt_pending
-                    .as_ref()
-                    .map(|pending| pending.left == 0)
-                    .unwrap_or(false)
-            })
+            .find(|&(_, ref opt_pending)| opt_pending.as_ref().map(|pending| pending.left == 0).unwrap_or(false))
             .map(|(hash, _)| *hash);
 
         opt_completed_hash.and_then(|completed_hash| {
@@ -286,12 +265,8 @@ impl UtMetadataModule {
             self.active_peers.remove(&completed_hash);
 
             match Info::from_bytes(&completed.bytes[..]) {
-                Ok(info) => {
-                    Some(Ok(ODiscoveryMessage::DownloadedMetainfo(info.into())))
-                },
-                Err(_) => {
-                    self.retrieve_completed_download()
-                },
+                Ok(info) => Some(Ok(ODiscoveryMessage::DownloadedMetainfo(info.into()))),
+                Err(_) => self.retrieve_completed_download(),
             }
         })
     }
@@ -302,7 +277,8 @@ impl UtMetadataModule {
                 .as_ref()
                 .map(|pending| !pending.messages.is_empty())
                 .unwrap_or(false);
-            let has_active_peers = self.active_peers
+            let has_active_peers = self
+                .active_peers
                 .get(hash)
                 .map(|peers| !peers.peers.is_empty())
                 .unwrap_or(false);
@@ -320,7 +296,11 @@ impl UtMetadataModule {
                 self.active_requests
                     .push(generate_active_request(selected_message, *selected_peer));
 
-                info!("Requesting Piece {:?} For Hash {:?}", selected_message.piece(), selected_peer.hash());
+                info!(
+                    "Requesting Piece {:?} For Hash {:?}",
+                    selected_message.piece(),
+                    selected_peer.hash()
+                );
                 return Some(Ok(ODiscoveryMessage::SendUtMetadataMessage(
                     *selected_peer,
                     UtMetadataMessage::Request(selected_message),
@@ -347,7 +327,10 @@ impl UtMetadataModule {
                     info_payload.extend_from_slice(info_slice);
                     let message = UtMetadataDataMessage::new(piece, info_slice.len() as i64, info_payload.freeze());
 
-                    return Some(Ok(ODiscoveryMessage::SendUtMetadataMessage(request.send_to, UtMetadataMessage::Data(message))));
+                    return Some(Ok(ODiscoveryMessage::SendUtMetadataMessage(
+                        request.send_to,
+                        UtMetadataMessage::Data(message),
+                    )));
                 } else {
                     // Peer asked for a piece outside of the range...dont respond to that
                 }
@@ -365,7 +348,8 @@ impl UtMetadataModule {
         // Initialize PeningInfo once we get peers that have told us the metadata size
         for (hash, opt_pending) in self.pending_map.iter_mut() {
             if opt_pending.is_none() {
-                let opt_pending_info = self.active_peers
+                let opt_pending_info = self
+                    .active_peers
                     .get(hash)
                     .map(|active_peers| pending_info_from_metadata_size(active_peers.metadata_size));
 
@@ -427,8 +411,8 @@ impl UtMetadataModule {
         let peer_requests_available = !self.peer_requests.is_empty();
 
         // Check if stream is currently blocked AND either we can queue more requests OR we can service some requests OR we have complete downloads
-        let should_unblock =
-            self.opt_stream.is_some() && ((free_task_queue_space && tasks_available) || peer_requests_available || downloads_available);
+        let should_unblock = self.opt_stream.is_some()
+            && ((free_task_queue_space && tasks_available) || peer_requests_available || downloads_available);
 
         if should_unblock {
             self.opt_stream.take().unwrap().notify();
@@ -500,45 +484,23 @@ impl Sink for UtMetadataModule {
 
     fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
         let start_send = match item {
-            IDiscoveryMessage::Control(ControlMessage::AddTorrent(metainfo)) => {
-                self.add_torrent(metainfo)
-            },
-            IDiscoveryMessage::Control(ControlMessage::RemoveTorrent(metainfo)) => {
-                self.remove_torrent(metainfo)
-            },
+            IDiscoveryMessage::Control(ControlMessage::AddTorrent(metainfo)) => self.add_torrent(metainfo),
+            IDiscoveryMessage::Control(ControlMessage::RemoveTorrent(metainfo)) => self.remove_torrent(metainfo),
             // Dont add the peer yet, use listener to get notified when they send extension messages
-            IDiscoveryMessage::Control(ControlMessage::PeerConnected(_)) => {
-                Ok(AsyncSink::Ready)
-            },
-            IDiscoveryMessage::Control(ControlMessage::PeerDisconnected(info)) => {
-                self.remove_peer(info)
-            },
-            IDiscoveryMessage::Control(ControlMessage::Tick(duration)) => {
-                self.apply_tick(duration)
-            },
-            IDiscoveryMessage::DownloadMetainfo(hash) => {
-                self.download_metainfo(hash)
-            },
-            IDiscoveryMessage::ReceivedUtMetadataMessage(info, UtMetadataMessage::Request(msg)) => {
-                self.recv_request(info, msg)
-            },
-            IDiscoveryMessage::ReceivedUtMetadataMessage(info, UtMetadataMessage::Data(msg)) => {
-                self.recv_data(info, msg)
-            },
-            IDiscoveryMessage::ReceivedUtMetadataMessage(info, UtMetadataMessage::Reject(msg)) => {
-                self.recv_reject(info, msg)
-            },
+            IDiscoveryMessage::Control(ControlMessage::PeerConnected(_)) => Ok(AsyncSink::Ready),
+            IDiscoveryMessage::Control(ControlMessage::PeerDisconnected(info)) => self.remove_peer(info),
+            IDiscoveryMessage::Control(ControlMessage::Tick(duration)) => self.apply_tick(duration),
+            IDiscoveryMessage::DownloadMetainfo(hash) => self.download_metainfo(hash),
+            IDiscoveryMessage::ReceivedUtMetadataMessage(info, UtMetadataMessage::Request(msg)) => self.recv_request(info, msg),
+            IDiscoveryMessage::ReceivedUtMetadataMessage(info, UtMetadataMessage::Data(msg)) => self.recv_data(info, msg),
+            IDiscoveryMessage::ReceivedUtMetadataMessage(info, UtMetadataMessage::Reject(msg)) => self.recv_reject(info, msg),
         };
 
         // Check if we need to unblock the stream after performing our work
         self.check_stream_unblock();
 
         // Check if we need to block the sink, if so, set the task
-        if start_send
-            .as_ref()
-            .map(|result| result.is_not_ready())
-            .unwrap_or(false)
-        {
+        if start_send.as_ref().map(|result| result.is_not_ready()).unwrap_or(false) {
             self.opt_sink = Some(task::current());
         }
         start_send
@@ -557,7 +519,8 @@ impl Stream for UtMetadataModule {
         // Check if we completed any downloads
         // Or if we can send any requests
         // Or if we can send any responses
-        let opt_result = self.retrieve_completed_download()
+        let opt_result = self
+            .retrieve_completed_download()
             .or_else(|| self.retrieve_piece_request())
             .or_else(|| self.retrieve_piece_response());
 
@@ -566,13 +529,11 @@ impl Stream for UtMetadataModule {
 
         // Check if we need to block the stream, if so, set the task
         match opt_result {
-            Some(result) => {
-                result.map(|value| Async::Ready(Some(value)))
-            },
+            Some(result) => result.map(|value| Async::Ready(Some(value))),
             None => {
                 self.opt_stream = Some(task::current());
                 Ok(Async::NotReady)
-            },
+            }
         }
     }
 }

@@ -1,8 +1,7 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 
-use chrono::{Duration, UTC, DateTime};
-
 use bt::{self, NodeId};
+use chrono::{DateTime, Duration, UTC};
 use net::IpAddr;
 
 /// Allows us to time travel into the future.

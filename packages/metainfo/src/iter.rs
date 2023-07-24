@@ -1,7 +1,6 @@
 //! Iterators over torrent file information.
 
 use bip_util::sha;
-
 use metainfo::File;
 
 /// Iterator over each File within the MetainfoFile.
@@ -12,10 +11,7 @@ pub struct Files<'a> {
 
 impl<'a> Files<'a> {
     pub fn new(files: &'a [File]) -> Files<'a> {
-        Files {
-            index: 0,
-            files: files,
-        }
+        Files { index: 0, files: files }
     }
 }
 

@@ -1,8 +1,7 @@
 use std::io::{self, Write};
 
-use protocol::{PeerProtocol, NestedPeerProtocol};
-
 use bytes::Bytes;
+use protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Unit protocol which will always return a unit if called.
 pub struct UnitProtocol;
@@ -26,7 +25,9 @@ impl PeerProtocol for UnitProtocol {
     }
 
     fn write_bytes<W>(&mut self, _message: &Self::ProtocolMessage, _writer: W) -> io::Result<()>
-        where W: Write {
+    where
+        W: Write,
+    {
         Ok(())
     }
 
@@ -36,7 +37,7 @@ impl PeerProtocol for UnitProtocol {
 }
 
 impl<M> NestedPeerProtocol<M> for UnitProtocol {
-    fn received_message(&mut self, _message: &M) { }
+    fn received_message(&mut self, _message: &M) {}
 
-    fn sent_message(&mut self, _message: &M) { }
+    fn sent_message(&mut self, _message: &M) {}
 }

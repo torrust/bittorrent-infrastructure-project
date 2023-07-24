@@ -1,25 +1,17 @@
+use std::collections::hash_map::Entry;
+use std::collections::{HashMap, HashSet, VecDeque};
 
-
-use ControlMessage;
 use bip_handshake::InfoHash;
 use bip_metainfo::Metainfo;
-use bip_peer::PeerInfo;
 use bip_peer::messages::{BitFieldMessage, HaveMessage};
+use bip_peer::PeerInfo;
 use bit_set::BitSet;
 use bytes::{BufMut, BytesMut};
-use futures::{Async, AsyncSink, Sink};
-use futures::Poll;
-use futures::StartSend;
-use futures::Stream;
-use futures::task;
 use futures::task::Task;
-use revelation::IRevealMessage;
-use revelation::ORevealMessage;
+use futures::{task, Async, AsyncSink, Poll, Sink, StartSend, Stream};
 use revelation::error::{RevealError, RevealErrorKind};
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::collections::VecDeque;
-use std::collections::hash_map::Entry;
+use revelation::{IRevealMessage, ORevealMessage};
+use ControlMessage;
 
 /// Revelation module that will honestly report any pieces we have to peers.
 pub struct HonestRevealModule {
@@ -51,9 +43,9 @@ impl HonestRevealModule {
         let info_hash = metainfo.info().info_hash();
 
         match self.torrents.entry(info_hash) {
-            Entry::Occupied(_) => {
-                Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoExists { hash: info_hash }))
-            },
+            Entry::Occupied(_) => Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoExists {
+                hash: info_hash,
+            })),
             Entry::Vacant(vac) => {
                 let num_pieces = metainfo.info().pieces().count();
 
@@ -68,7 +60,7 @@ impl HonestRevealModule {
                 vac.insert(peers_info);
 
                 Ok(AsyncSink::Ready)
-            },
+            }
         }
     }
 
@@ -76,7 +68,9 @@ impl HonestRevealModule {
         let info_hash = metainfo.info().info_hash();
 
         if self.torrents.remove(&info_hash).is_none() {
-            Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists { hash: info_hash }))
+            Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                hash: info_hash,
+            }))
         } else {
             Ok(AsyncSink::Ready)
         }
@@ -110,7 +104,11 @@ impl HonestRevealModule {
 
                 Ok(AsyncSink::Ready)
             })
-            .unwrap_or_else(|| Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists { hash: info_hash })))
+            .unwrap_or_else(|| {
+                Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                    hash: info_hash,
+                }))
+            })
     }
 
     fn remove_peer(&mut self, peer: PeerInfo) -> StartSend<IRevealMessage, RevealError> {
@@ -123,7 +121,11 @@ impl HonestRevealModule {
 
                 Ok(AsyncSink::Ready)
             })
-            .unwrap_or_else(|| Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists { hash: info_hash })))
+            .unwrap_or_else(|| {
+                Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                    hash: info_hash,
+                }))
+            })
     }
 
     fn insert_piece(&mut self, hash: InfoHash, index: u64) -> StartSend<IRevealMessage, RevealError> {
@@ -148,7 +150,11 @@ impl HonestRevealModule {
                     Ok(AsyncSink::Ready)
                 }
             })
-            .unwrap_or_else(|| Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists { hash: hash })))
+            .unwrap_or_else(|| {
+                Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                    hash: hash,
+                }))
+            })
     }
 
     //------------------------------------------------------//
@@ -184,24 +190,14 @@ impl Sink for HonestRevealModule {
 
     fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
         let result = match item {
-            IRevealMessage::Control(ControlMessage::AddTorrent(metainfo)) => {
-                self.add_torrent(&metainfo)
-            },
-            IRevealMessage::Control(ControlMessage::RemoveTorrent(metainfo)) => {
-                self.remove_torrent(&metainfo)
-            },
-            IRevealMessage::Control(ControlMessage::PeerConnected(info)) => {
-                self.add_peer(info)
-            },
-            IRevealMessage::Control(ControlMessage::PeerDisconnected(info)) => {
-                self.remove_peer(info)
-            },
-            IRevealMessage::FoundGoodPiece(hash, index) => {
-                self.insert_piece(hash, index)
-            },
-            IRevealMessage::Control(ControlMessage::Tick(_)) | IRevealMessage::ReceivedBitField(_, _) | IRevealMessage::ReceivedHave(_, _) => {
-                Ok(AsyncSink::Ready)
-            },
+            IRevealMessage::Control(ControlMessage::AddTorrent(metainfo)) => self.add_torrent(&metainfo),
+            IRevealMessage::Control(ControlMessage::RemoveTorrent(metainfo)) => self.remove_torrent(&metainfo),
+            IRevealMessage::Control(ControlMessage::PeerConnected(info)) => self.add_peer(info),
+            IRevealMessage::Control(ControlMessage::PeerDisconnected(info)) => self.remove_peer(info),
+            IRevealMessage::FoundGoodPiece(hash, index) => self.insert_piece(hash, index),
+            IRevealMessage::Control(ControlMessage::Tick(_))
+            | IRevealMessage::ReceivedBitField(_, _)
+            | IRevealMessage::ReceivedHave(_, _) => Ok(AsyncSink::Ready),
         };
 
         self.check_stream_unblock();
@@ -219,9 +215,7 @@ impl Stream for HonestRevealModule {
     type Error = RevealError;
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        let next_item = self.out_queue
-            .pop_front()
-            .map(|item| Ok(Async::Ready(Some(item))));
+        let next_item = self.out_queue.pop_front().map(|item| Ok(Async::Ready(Some(item))));
 
         next_item.unwrap_or_else(|| {
             self.opt_stream = Some(task::current());
@@ -233,8 +227,6 @@ impl Stream for HonestRevealModule {
 
 #[cfg(test)]
 mod tests {
-    use super::HonestRevealModule;
-    use ControlMessage;
     use bip_handshake::Extensions;
     use bip_metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
     use bip_peer::PeerInfo;
@@ -242,8 +234,11 @@ mod tests {
     use bip_util::bt::InfoHash;
     use futures::{Async, Sink, Stream};
     use futures_test::harness::Harness;
-    use revelation::{IRevealMessage, ORevealMessage};
     use revelation::error::RevealErrorKind;
+    use revelation::{IRevealMessage, ORevealMessage};
+    use ControlMessage;
+
+    use super::HonestRevealModule;
 
     fn metainfo(num_pieces: usize) -> Metainfo {
         let data = vec![0u8; num_pieces];
@@ -258,7 +253,12 @@ mod tests {
     }
 
     fn peer_info(hash: InfoHash) -> PeerInfo {
-        PeerInfo::new("0.0.0.0:0".parse().unwrap(), [0u8; bt::PEER_ID_LEN].into(), hash, Extensions::new())
+        PeerInfo::new(
+            "0.0.0.0:0".parse().unwrap(),
+            [0u8; bt::PEER_ID_LEN].into(),
+            hash,
+            Extensions::new(),
+        )
     }
 
     #[test]
@@ -289,20 +289,16 @@ mod tests {
         block_send
             .send(IRevealMessage::Control(ControlMessage::AddTorrent(metainfo)))
             .unwrap();
-        block_send
-            .send(IRevealMessage::FoundGoodPiece(info_hash, 0))
-            .unwrap();
+        block_send.send(IRevealMessage::FoundGoodPiece(info_hash, 0)).unwrap();
         block_send
             .send(IRevealMessage::Control(ControlMessage::PeerConnected(peer_info)))
             .unwrap();
 
         let (info, bitfield) = match block_recv.next().unwrap().unwrap() {
-            ORevealMessage::SendBitField(info, bitfield) => {
-                (info, bitfield)
-            },
+            ORevealMessage::SendBitField(info, bitfield) => (info, bitfield),
             _ => {
                 panic!("Received Unexpected Message")
-            },
+            }
         };
 
         assert_eq!(peer_info, info);
@@ -323,26 +319,18 @@ mod tests {
         block_send
             .send(IRevealMessage::Control(ControlMessage::AddTorrent(metainfo)))
             .unwrap();
-        block_send
-            .send(IRevealMessage::FoundGoodPiece(info_hash, 0))
-            .unwrap();
-        block_send
-            .send(IRevealMessage::FoundGoodPiece(info_hash, 8))
-            .unwrap();
-        block_send
-            .send(IRevealMessage::FoundGoodPiece(info_hash, 15))
-            .unwrap();
+        block_send.send(IRevealMessage::FoundGoodPiece(info_hash, 0)).unwrap();
+        block_send.send(IRevealMessage::FoundGoodPiece(info_hash, 8)).unwrap();
+        block_send.send(IRevealMessage::FoundGoodPiece(info_hash, 15)).unwrap();
         block_send
             .send(IRevealMessage::Control(ControlMessage::PeerConnected(peer_info)))
             .unwrap();
 
         let (info, bitfield) = match block_recv.next().unwrap().unwrap() {
-            ORevealMessage::SendBitField(info, bitfield) => {
-                (info, bitfield)
-            },
+            ORevealMessage::SendBitField(info, bitfield) => (info, bitfield),
             _ => {
                 panic!("Received Unexpected Message")
-            },
+            }
         };
 
         assert_eq!(peer_info, info);
@@ -368,13 +356,7 @@ mod tests {
             .send(IRevealMessage::Control(ControlMessage::PeerConnected(peer_info)))
             .unwrap();
 
-        assert!(
-            non_block_recv
-                .poll_next()
-                .as_ref()
-                .map(Async::is_not_ready)
-                .unwrap_or(false)
-        );
+        assert!(non_block_recv.poll_next().as_ref().map(Async::is_not_ready).unwrap_or(false));
     }
 
     #[test]
@@ -389,17 +371,15 @@ mod tests {
             .send(IRevealMessage::Control(ControlMessage::AddTorrent(metainfo)))
             .unwrap();
 
-        let error = block_send
-            .send(IRevealMessage::FoundGoodPiece(info_hash, 8))
-            .unwrap_err();
+        let error = block_send.send(IRevealMessage::FoundGoodPiece(info_hash, 8)).unwrap_err();
         match error.kind() {
             &RevealErrorKind::InvalidPieceOutOfRange { hash, index } => {
                 assert_eq!(info_hash, hash);
                 assert_eq!(8, index);
-            },
+            }
             _ => {
                 panic!("Received Unexpected Message")
-            },
+            }
         };
     }
 
@@ -414,27 +394,19 @@ mod tests {
         block_send
             .send(IRevealMessage::Control(ControlMessage::AddTorrent(metainfo)))
             .unwrap();
-        block_send
-            .send(IRevealMessage::FoundGoodPiece(info_hash, 0))
-            .unwrap();
-        block_send
-            .send(IRevealMessage::FoundGoodPiece(info_hash, 1))
-            .unwrap();
-        block_send
-            .send(IRevealMessage::FoundGoodPiece(info_hash, 2))
-            .unwrap();
+        block_send.send(IRevealMessage::FoundGoodPiece(info_hash, 0)).unwrap();
+        block_send.send(IRevealMessage::FoundGoodPiece(info_hash, 1)).unwrap();
+        block_send.send(IRevealMessage::FoundGoodPiece(info_hash, 2)).unwrap();
 
-        let error = block_send
-            .send(IRevealMessage::FoundGoodPiece(info_hash, 3))
-            .unwrap_err();
+        let error = block_send.send(IRevealMessage::FoundGoodPiece(info_hash, 3)).unwrap_err();
         match error.kind() {
             &RevealErrorKind::InvalidPieceOutOfRange { hash, index } => {
                 assert_eq!(info_hash, hash);
                 assert_eq!(3, index);
-            },
+            }
             _ => {
                 panic!("Received Unexpected Message")
-            },
+            }
         };
     }
 }

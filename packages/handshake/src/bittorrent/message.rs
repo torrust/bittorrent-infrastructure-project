@@ -1,19 +1,17 @@
-use std::io;
-use std::u8;
 use std::io::Write;
-
-use message::protocol::Protocol;
-use message::extensions::{self, Extensions};
+use std::{io, u8};
 
 use bip_util::bt::{self, InfoHash, PeerId};
-use nom::{IResult};
+use message::extensions::{self, Extensions};
+use message::protocol::Protocol;
+use nom::IResult;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct HandshakeMessage {
     prot: Protocol,
-    ext:  Extensions,
+    ext: Extensions,
     hash: InfoHash,
-    pid:  PeerId
+    pid: PeerId,
 }
 
 impl HandshakeMessage {
@@ -21,11 +19,19 @@ impl HandshakeMessage {
     pub fn from_parts(prot: Protocol, ext: Extensions, hash: InfoHash, pid: PeerId) -> HandshakeMessage {
         if let Protocol::Custom(ref custom) = prot {
             if custom.len() > u8::max_value() as usize {
-                panic!("bip_handshake: Handshake Message With Protocol Length Greater Than {} Found", u8::max_value())
+                panic!(
+                    "bip_handshake: Handshake Message With Protocol Length Greater Than {} Found",
+                    u8::max_value()
+                )
             }
         }
 
-        HandshakeMessage{ prot: prot, ext: ext, hash: hash, pid: pid }
+        HandshakeMessage {
+            prot: prot,
+            ext: ext,
+            hash: hash,
+            pid: pid,
+        }
     }
 
     pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], HandshakeMessage> {
@@ -33,11 +39,13 @@ impl HandshakeMessage {
     }
 
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write {
+    where
+        W: Write,
+    {
         r#try!(self.prot.write_bytes(&mut writer));
         r#try!(self.ext.write_bytes(&mut writer));
         r#try!(writer.write_all(self.hash.as_ref()));
-        
+
         r#try!(writer.write_all(self.pid.as_ref()));
 
         Ok(())
@@ -84,11 +92,11 @@ fn parse_remote_pid(bytes: &[u8]) -> IResult<&[u8], PeerId> {
 mod tests {
     use std::io::Write;
 
-    use super::{HandshakeMessage};
+    use bip_util::bt::{self, InfoHash, PeerId};
     use message::extensions::{self, Extensions};
     use message::protocol::Protocol;
 
-    use bip_util::bt::{self, PeerId, InfoHash};
+    use super::HandshakeMessage;
 
     fn any_peer_id() -> PeerId {
         [22u8; bt::PEER_ID_LEN].into()
@@ -111,8 +119,7 @@ mod tests {
         let exp_hash = any_info_hash();
         let exp_pid = any_peer_id();
 
-        let exp_message = HandshakeMessage::from_parts(exp_protocol.clone(),
-            exp_extensions, exp_hash, exp_pid);
+        let exp_message = HandshakeMessage::from_parts(exp_protocol.clone(), exp_extensions, exp_hash, exp_pid);
 
         exp_protocol.write_bytes(&mut buffer).unwrap();
         exp_extensions.write_bytes(&mut buffer).unwrap();
@@ -133,8 +140,7 @@ mod tests {
         let exp_hash = any_info_hash();
         let exp_pid = any_peer_id();
 
-        let exp_message = HandshakeMessage::from_parts(exp_protocol.clone(),
-            exp_extensions, exp_hash, exp_pid);
+        let exp_message = HandshakeMessage::from_parts(exp_protocol.clone(), exp_extensions, exp_hash, exp_pid);
 
         exp_protocol.write_bytes(&mut buffer).unwrap();
         exp_extensions.write_bytes(&mut buffer).unwrap();
@@ -155,8 +161,7 @@ mod tests {
         let exp_hash = any_info_hash();
         let exp_pid = any_peer_id();
 
-        let exp_message = HandshakeMessage::from_parts(exp_protocol.clone(),
-            exp_extensions, exp_hash, exp_pid);
+        let exp_message = HandshakeMessage::from_parts(exp_protocol.clone(), exp_extensions, exp_hash, exp_pid);
 
         exp_protocol.write_bytes(&mut buffer).unwrap();
         exp_extensions.write_bytes(&mut buffer).unwrap();

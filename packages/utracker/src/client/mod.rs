@@ -1,19 +1,18 @@
 use std::io;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-
-use bip_handshake::{DiscoveryInfo, InitiateMessage};
-use bip_util::bt::{InfoHash};
-use bip_util::trans::{TransactionIds, LocallyShuffledIds};
-use futures::future::Either;
-use futures::sink::Sink;
-use umio::external::{Sender};
+use std::sync::Arc;
 
 use announce::{AnnounceResponse, ClientState};
+use bip_handshake::{DiscoveryInfo, InitiateMessage};
+use bip_util::bt::InfoHash;
+use bip_util::trans::{LocallyShuffledIds, TransactionIds};
 use client::dispatcher::DispatchMessage;
 use client::error::ClientResult;
+use futures::future::Either;
+use futures::sink::Sink;
 use scrape::ScrapeResponse;
+use umio::external::Sender;
 
 mod dispatcher;
 pub mod error;
@@ -105,8 +104,9 @@ pub struct TrackerClient {
 impl TrackerClient {
     /// Create a new TrackerClient.
     pub fn new<H>(bind: SocketAddr, handshaker: H) -> io::Result<TrackerClient>
-    where H: Sink + DiscoveryInfo + Send + 'static,
-          H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>
+    where
+        H: Sink + DiscoveryInfo + Send + 'static,
+        H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>,
     {
         TrackerClient::with_capacity(bind, handshaker, DEFAULT_CAPACITY)
     }
@@ -114,12 +114,10 @@ impl TrackerClient {
     /// Create a new TrackerClient with the given message capacity.
     ///
     /// Panics if capacity == usize::max_value().
-    pub fn with_capacity<H>(bind: SocketAddr,
-                            handshaker: H,
-                            capacity: usize)
-                            -> io::Result<TrackerClient>
-    where H: Sink + DiscoveryInfo + Send + 'static,
-          H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>
+    pub fn with_capacity<H>(bind: SocketAddr, handshaker: H, capacity: usize) -> io::Result<TrackerClient>
+    where
+        H: Sink + DiscoveryInfo + Send + 'static,
+        H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>,
     {
         // Need channel capacity to be 1 more in case channel is saturated and client
         // is dropped so shutdown message can get through in the worst case
@@ -130,14 +128,11 @@ impl TrackerClient {
         // Limit the capacity of messages (channel capacity - 1)
         let limiter = RequestLimiter::new(capacity);
 
-        dispatcher::create_dispatcher(bind, handshaker, chan_capacity, limiter.clone())
-            .map(|chan| {
-                TrackerClient {
-                    send: chan,
-                    limiter: limiter,
-                    generator: TokenGenerator::new(),
-                }
-            })
+        dispatcher::create_dispatcher(bind, handshaker, chan_capacity, limiter.clone()).map(|chan| TrackerClient {
+            send: chan,
+            limiter: limiter,
+            generator: TokenGenerator::new(),
+        })
     }
 
     /// Execute an asynchronous request to the given tracker.
@@ -173,13 +168,15 @@ pub struct ClientToken(u32);
 
 /// Generates tokens which double as transaction ids.
 struct TokenGenerator {
-    generator: LocallyShuffledIds<u32>
+    generator: LocallyShuffledIds<u32>,
 }
 
 impl TokenGenerator {
     /// Create a new TokenGenerator.
     pub fn new() -> TokenGenerator {
-        TokenGenerator{ generator: LocallyShuffledIds::<u32>::new() }
+        TokenGenerator {
+            generator: LocallyShuffledIds::<u32>::new(),
+        }
     }
 
     /// Generate a new ClientToken.

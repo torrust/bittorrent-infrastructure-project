@@ -2,17 +2,15 @@ use std::io::{self, Cursor};
 use std::net::SocketAddr;
 use std::thread;
 
-use nom::IResult;
-use umio::{ELoopBuilder, Dispatcher, Provider};
-
 use announce::AnnounceRequest;
 use error::ErrorResponse;
-use request::{self, TrackerRequest, RequestType};
-use response::{TrackerResponse, ResponseType};
+use nom::IResult;
+use request::{self, RequestType, TrackerRequest};
+use response::{ResponseType, TrackerResponse};
 use scrape::ScrapeRequest;
 use server::handler::ServerHandler;
-
 use umio::external::Sender;
+use umio::{Dispatcher, ELoopBuilder, Provider};
 
 const EXPECTED_PACKET_LENGTH: usize = 1500;
 
@@ -23,7 +21,8 @@ pub enum DispatchMessage {
 
 /// Create a new background dispatcher to service requests.
 pub fn create_dispatcher<H>(bind: SocketAddr, handler: H) -> io::Result<Sender<DispatchMessage>>
-    where H: ServerHandler + 'static
+where
+    H: ServerHandler + 'static,
 {
     let builder = ELoopBuilder::new()
         .channel_capacity(1)
@@ -47,13 +46,15 @@ pub fn create_dispatcher<H>(bind: SocketAddr, handler: H) -> io::Result<Sender<D
 
 /// Dispatcher that executes requests asynchronously.
 struct ServerDispatcher<H>
-    where H: ServerHandler
+where
+    H: ServerHandler,
 {
     handler: H,
 }
 
 impl<H> ServerDispatcher<H>
-    where H: ServerHandler
+where
+    H: ServerHandler,
 {
     /// Create a new ServerDispatcher.
     fn new(handler: H) -> ServerDispatcher<H> {
@@ -61,10 +62,12 @@ impl<H> ServerDispatcher<H>
     }
 
     /// Forward the request on to the appropriate handler method.
-    fn process_request<'a, 'b>(&mut self,
-                               provider: &mut Provider<'a, ServerDispatcher<H>>,
-                               request: TrackerRequest<'b>,
-                               addr: SocketAddr) {
+    fn process_request<'a, 'b>(
+        &mut self,
+        provider: &mut Provider<'a, ServerDispatcher<H>>,
+        request: TrackerRequest<'b>,
+        addr: SocketAddr,
+    ) {
         let conn_id = request.connection_id();
         let trans_id = request.transaction_id();
 
@@ -84,10 +87,7 @@ impl<H> ServerDispatcher<H>
     }
 
     /// Forward a connect request on to the appropriate handler method.
-    fn forward_connect<'a>(&mut self,
-                           provider: &mut Provider<'a, ServerDispatcher<H>>,
-                           trans_id: u32,
-                           addr: SocketAddr) {
+    fn forward_connect<'a>(&mut self, provider: &mut Provider<'a, ServerDispatcher<H>>, trans_id: u32, addr: SocketAddr) {
         self.handler.connect(addr, |result| {
             let response_type = match result {
                 Ok(conn_id) => ResponseType::Connect(conn_id),
@@ -100,12 +100,14 @@ impl<H> ServerDispatcher<H>
     }
 
     /// Forward an announce request on to the appropriate handler method.
-    fn forward_announce<'a, 'b>(&mut self,
-                                provider: &mut Provider<'a, ServerDispatcher<H>>,
-                                trans_id: u32,
-                                conn_id: u64,
-                                request: &AnnounceRequest<'b>,
-                                addr: SocketAddr) {
+    fn forward_announce<'a, 'b>(
+        &mut self,
+        provider: &mut Provider<'a, ServerDispatcher<H>>,
+        trans_id: u32,
+        conn_id: u64,
+        request: &AnnounceRequest<'b>,
+        addr: SocketAddr,
+    ) {
         self.handler.announce(addr, conn_id, request, |result| {
             let response_type = match result {
                 Ok(response) => ResponseType::Announce(response),
@@ -118,12 +120,14 @@ impl<H> ServerDispatcher<H>
     }
 
     /// Forward a scrape request on to the appropriate handler method.
-    fn forward_scrape<'a, 'b>(&mut self,
-                              provider: &mut Provider<'a, ServerDispatcher<H>>,
-                              trans_id: u32,
-                              conn_id: u64,
-                              request: &ScrapeRequest<'b>,
-                              addr: SocketAddr) {
+    fn forward_scrape<'a, 'b>(
+        &mut self,
+        provider: &mut Provider<'a, ServerDispatcher<H>>,
+        trans_id: u32,
+        conn_id: u64,
+        request: &ScrapeRequest<'b>,
+        addr: SocketAddr,
+    ) {
         self.handler.scrape(addr, conn_id, request, |result| {
             let response_type = match result {
                 Ok(response) => ResponseType::Scrape(response),
@@ -137,10 +141,9 @@ impl<H> ServerDispatcher<H>
 }
 
 /// Write the given tracker response through to the given provider.
-fn write_response<'a, 'b, H>(provider: &mut Provider<'a, ServerDispatcher<H>>,
-                             response: TrackerResponse<'b>,
-                             addr: SocketAddr)
-    where H: ServerHandler
+fn write_response<'a, 'b, H>(provider: &mut Provider<'a, ServerDispatcher<H>>, response: TrackerResponse<'b>, addr: SocketAddr)
+where
+    H: ServerHandler,
 {
     provider.outgoing(|buffer| {
         let mut cursor = Cursor::new(buffer);
@@ -155,15 +158,13 @@ fn write_response<'a, 'b, H>(provider: &mut Provider<'a, ServerDispatcher<H>>,
 }
 
 impl<H> Dispatcher for ServerDispatcher<H>
-    where H: ServerHandler
+where
+    H: ServerHandler,
 {
     type Timeout = ();
     type Message = DispatchMessage;
 
-    fn incoming<'a>(&mut self,
-                    mut provider: Provider<'a, Self>,
-                    message: &[u8],
-                    addr: SocketAddr) {
+    fn incoming<'a>(&mut self, mut provider: Provider<'a, Self>, message: &[u8], addr: SocketAddr) {
         let request = match TrackerRequest::from_bytes(message) {
             IResult::Done(_, req) => req,
             _ => return, // TODO: Add Logging

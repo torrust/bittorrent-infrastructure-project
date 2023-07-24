@@ -5,7 +5,7 @@ extern crate test;
 
 #[cfg(test)]
 mod benches {
-    use bip_metainfo::{Metainfo, MetainfoBuilder, DirectAccessor};
+    use bip_metainfo::{DirectAccessor, Metainfo, MetainfoBuilder};
     use test::Bencher;
 
     #[bench]

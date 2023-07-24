@@ -5,10 +5,9 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 use bip_util::bt::{self, InfoHash, PeerId};
 use bip_util::convert;
-use byteorder::{WriteBytesExt, BigEndian};
-use nom::{IResult, be_i32, be_i64, be_u32, be_u16, be_u8};
-
+use byteorder::{BigEndian, WriteBytesExt};
 use contact::CompactPeers;
+use nom::{be_i32, be_i64, be_u16, be_u32, be_u8, IResult};
 use option::AnnounceOptions;
 
 const IMPLIED_IPV4_ID: [u8; 4] = [0u8; 4];
@@ -38,15 +37,16 @@ pub struct AnnounceRequest<'a> {
 
 impl<'a> AnnounceRequest<'a> {
     /// Create a new AnnounceRequest.
-    pub fn new(hash: InfoHash,
-               peer_id: PeerId,
-               state: ClientState,
-               ip: SourceIP,
-               key: u32,
-               num_want: DesiredPeers,
-               port: u16,
-               options: AnnounceOptions<'a>)
-               -> AnnounceRequest<'a> {
+    pub fn new(
+        hash: InfoHash,
+        peer_id: PeerId,
+        state: ClientState,
+        ip: SourceIP,
+        key: u32,
+        num_want: DesiredPeers,
+        port: u16,
+        options: AnnounceOptions<'a>,
+    ) -> AnnounceRequest<'a> {
         AnnounceRequest {
             info_hash: hash,
             peer_id: peer_id,
@@ -71,7 +71,8 @@ impl<'a> AnnounceRequest<'a> {
 
     /// Write the AnnounceRequest to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         r#try!(writer.write_all(self.info_hash.as_ref()));
         r#try!(writer.write_all(self.peer_id.as_ref()));
@@ -151,9 +152,10 @@ impl<'a> AnnounceRequest<'a> {
 }
 
 /// Parse an AnnounceRequest with the given SourceIP type constructor.
-fn parse_request<'a>(bytes: &'a [u8],
-                     ip_type: fn(bytes: &[u8]) -> IResult<&[u8], SourceIP>)
-                     -> IResult<&'a [u8], AnnounceRequest<'a>> {
+fn parse_request<'a>(
+    bytes: &'a [u8],
+    ip_type: fn(bytes: &[u8]) -> IResult<&[u8], SourceIP>,
+) -> IResult<&'a [u8], AnnounceRequest<'a>> {
     do_parse!(bytes,
         info_hash:  map!(take!(bt::INFO_HASH_LEN), |bytes| InfoHash::from_hash(bytes).unwrap()) >>
         peer_id:    map!(take!(bt::PEER_ID_LEN), |bytes| PeerId::from_hash(bytes).unwrap()) >>
@@ -180,11 +182,7 @@ pub struct AnnounceResponse<'a> {
 
 impl<'a> AnnounceResponse<'a> {
     /// Create a new AnnounceResponse
-    pub fn new(interval: i32,
-               leechers: i32,
-               seeders: i32,
-               peers: CompactPeers<'a>)
-               -> AnnounceResponse<'a> {
+    pub fn new(interval: i32, leechers: i32, seeders: i32, peers: CompactPeers<'a>) -> AnnounceResponse<'a> {
         AnnounceResponse {
             interval: interval,
             leechers: leechers,
@@ -205,7 +203,8 @@ impl<'a> AnnounceResponse<'a> {
 
     /// Write the AnnounceResponse to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         r#try!(writer.write_i32::<BigEndian>(self.interval));
         r#try!(writer.write_i32::<BigEndian>(self.leechers));
@@ -250,9 +249,10 @@ impl<'a> AnnounceResponse<'a> {
 }
 
 /// Parse an AnnounceResponse with the given CompactPeers type constructor.
-fn parse_respone<'a>(bytes: &'a [u8],
-                     peers_type: fn(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>>)
-                     -> IResult<&'a [u8], AnnounceResponse<'a>> {
+fn parse_respone<'a>(
+    bytes: &'a [u8],
+    peers_type: fn(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>>,
+) -> IResult<&'a [u8], AnnounceResponse<'a>> {
     do_parse!(bytes,
         interval: be_i32 >>
         leechers: be_i32 >>
@@ -275,11 +275,7 @@ pub struct ClientState {
 
 impl ClientState {
     /// Create a new ClientState.
-    pub fn new(bytes_downloaded: i64,
-               bytes_left: i64,
-               bytes_uploaded: i64,
-               event: AnnounceEvent)
-               -> ClientState {
+    pub fn new(bytes_downloaded: i64, bytes_left: i64, bytes_uploaded: i64, event: AnnounceEvent) -> ClientState {
         ClientState {
             downloaded: bytes_downloaded,
             left: bytes_left,
@@ -295,7 +291,8 @@ impl ClientState {
 
     /// Write the ClientState to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         r#try!(writer.write_i64::<BigEndian>(self.downloaded));
         r#try!(writer.write_i64::<BigEndian>(self.left));
@@ -360,7 +357,8 @@ impl AnnounceEvent {
 
     /// Write the AnnounceEvent to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         r#try!(writer.write_i32::<BigEndian>(self.as_id()));
 
@@ -415,17 +413,14 @@ impl SourceIP {
 
     /// Write the SourceIP to the given writer.
     pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         match self {
             &SourceIP::ImpliedV4 => self.write_bytes_slice(writer, &IMPLIED_IPV4_ID[..]),
             &SourceIP::ImpliedV6 => self.write_bytes_slice(writer, &IMPLIED_IPV6_ID[..]),
-            &SourceIP::ExplicitV4(addr) => {
-                self.write_bytes_slice(writer, &convert::ipv4_to_bytes_be(addr)[..])
-            }
-            &SourceIP::ExplicitV6(addr) => {
-                self.write_bytes_slice(writer, &convert::ipv6_to_bytes_be(addr)[..])
-            }
+            &SourceIP::ExplicitV4(addr) => self.write_bytes_slice(writer, &convert::ipv4_to_bytes_be(addr)[..]),
+            &SourceIP::ExplicitV6(addr) => self.write_bytes_slice(writer, &convert::ipv6_to_bytes_be(addr)[..]),
         }
     }
 
@@ -446,7 +441,8 @@ impl SourceIP {
 
     /// Write the given byte slice to the given writer.
     fn write_bytes_slice<W>(&self, mut writer: W, bytes: &[u8]) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         writer.write_all(bytes)
     }
@@ -493,7 +489,8 @@ impl DesiredPeers {
 
     /// Write the DesiredPeers to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         let write_value = match self {
             &DesiredPeers::Default => DEFAULT_NUM_WANT,
@@ -515,18 +512,17 @@ fn parse_desired(bytes: &[u8]) -> IResult<&[u8], DesiredPeers> {
 
 #[cfg(test)]
 mod tests {
-    use std::net::Ipv4Addr;
     use std::io::Write;
+    use std::net::Ipv4Addr;
 
     use bip_util::bt::{InfoHash, PeerId};
     use bip_util::convert;
-    use byteorder::{WriteBytesExt, BigEndian};
-    use nom::IResult;
-
+    use byteorder::{BigEndian, WriteBytesExt};
     use contact::{CompactPeers, CompactPeersV4, CompactPeersV6};
+    use nom::IResult;
     use option::AnnounceOptions;
-    use super::{SourceIP, AnnounceEvent, ClientState, AnnounceRequest, DesiredPeers,
-                AnnounceResponse};
+
+    use super::{AnnounceEvent, AnnounceRequest, AnnounceResponse, ClientState, DesiredPeers, SourceIP};
 
     #[test]
     fn positive_write_request() {
@@ -541,14 +537,16 @@ mod tests {
         let num_want = 34;
         let port = 6969;
         let options = AnnounceOptions::new();
-        let request = AnnounceRequest::new(info_hash.into(),
-                                           peer_id.into(),
-                                           state,
-                                           SourceIP::ExplicitV4(ip),
-                                           key,
-                                           DesiredPeers::Specified(num_want),
-                                           port,
-                                           options.clone());
+        let request = AnnounceRequest::new(
+            info_hash.into(),
+            peer_id.into(),
+            state,
+            SourceIP::ExplicitV4(ip),
+            key,
+            DesiredPeers::Specified(num_want),
+            port,
+            options.clone(),
+        );
 
         request.write_bytes(&mut received).unwrap();
 
@@ -577,8 +575,7 @@ mod tests {
         peers.insert("127.0.0.1:2342".parse().unwrap());
         peers.insert("127.0.0.2:0".parse().unwrap());
 
-        let response =
-            AnnounceResponse::new(interval, leechers, seeders, CompactPeers::V4(peers.clone()));
+        let response = AnnounceResponse::new(interval, leechers, seeders, CompactPeers::V4(peers.clone()));
 
         response.write_bytes(&mut received).unwrap();
 
@@ -685,7 +682,6 @@ mod tests {
 
         assert_eq!(&received[..], &expected[..]);
     }
-
 
     #[test]
     fn positive_write_source_ipv4_explicit() {
@@ -813,14 +809,8 @@ mod tests {
         let received_v4 = AnnounceResponse::from_bytes_v4(&bytes);
         let received_v6 = AnnounceResponse::from_bytes_v6(&bytes);
 
-        let expected_v4 = AnnounceResponse::new(interval,
-                                                leechers,
-                                                seeders,
-                                                CompactPeers::V4(CompactPeersV4::new()));
-        let expected_v6 = AnnounceResponse::new(interval,
-                                                leechers,
-                                                seeders,
-                                                CompactPeers::V6(CompactPeersV6::new()));
+        let expected_v4 = AnnounceResponse::new(interval, leechers, seeders, CompactPeers::V4(CompactPeersV4::new()));
+        let expected_v6 = AnnounceResponse::new(interval, leechers, seeders, CompactPeers::V6(CompactPeersV6::new()));
 
         assert_eq!(received_v4, IResult::Done(&b""[..], expected_v4));
         assert_eq!(received_v6, IResult::Done(&b""[..], expected_v6));
@@ -852,10 +842,8 @@ mod tests {
         let received_v4 = AnnounceResponse::from_bytes_v4(&bytes_v4);
         let received_v6 = AnnounceResponse::from_bytes_v6(&bytes_v6);
 
-        let expected_v4 =
-            AnnounceResponse::new(interval, leechers, seeders, CompactPeers::V4(peers_v4));
-        let expected_v6 =
-            AnnounceResponse::new(interval, leechers, seeders, CompactPeers::V6(peers_v6));
+        let expected_v4 = AnnounceResponse::new(interval, leechers, seeders, CompactPeers::V4(peers_v4));
+        let expected_v6 = AnnounceResponse::new(interval, leechers, seeders, CompactPeers::V6(peers_v6));
 
         assert_eq!(received_v4, IResult::Done(&b""[..], expected_v4));
         assert_eq!(received_v6, IResult::Done(&b""[..], expected_v6));
@@ -986,7 +974,6 @@ mod tests {
 
         assert_eq!(received, IResult::Done(&b""[..], expected));
     }
-
 
     #[test]
     fn negative_parse_incomplete_v4_source() {

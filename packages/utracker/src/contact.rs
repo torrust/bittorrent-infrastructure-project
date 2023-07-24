@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 use std::io::{self, Write};
-use std::net::{SocketAddrV4, SocketAddrV6, SocketAddr};
+use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use bip_util::convert;
 use nom::{IResult, Needed};
@@ -40,7 +40,8 @@ impl<'a> CompactPeers<'a> {
 
     /// Write the underlying CompactPeers to the given writer.
     pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         match self {
             &CompactPeers::V4(ref peers) => peers.write_bytes(writer),
@@ -51,12 +52,8 @@ impl<'a> CompactPeers<'a> {
     /// Iterator over all of the contact information.
     pub fn iter<'b>(&'b self) -> CompactPeersIter<'b> {
         match self {
-            &CompactPeers::V4(ref peers) => {
-                CompactPeersIter::new(CompactPeersIterType::V4(peers.iter()))
-            }
-            &CompactPeers::V6(ref peers) => {
-                CompactPeersIter::new(CompactPeersIterType::V6(peers.iter()))
-            }
+            &CompactPeers::V4(ref peers) => CompactPeersIter::new(CompactPeersIterType::V4(peers.iter())),
+            &CompactPeers::V6(ref peers) => CompactPeersIter::new(CompactPeersIterType::V6(peers.iter())),
         }
     }
 
@@ -113,7 +110,9 @@ pub struct CompactPeersV4<'a> {
 impl<'a> CompactPeersV4<'a> {
     /// Create a new CompactPeersV4.
     pub fn new() -> CompactPeersV4<'a> {
-        CompactPeersV4 { peers: Cow::Owned(Vec::new()) }
+        CompactPeersV4 {
+            peers: Cow::Owned(Vec::new()),
+        }
     }
 
     /// Construct a CompactPeersV4 from the given bytes.
@@ -123,7 +122,8 @@ impl<'a> CompactPeersV4<'a> {
 
     /// Write the CompactPeersV4 to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         r#try!(writer.write_all(&*self.peers));
 
@@ -144,7 +144,9 @@ impl<'a> CompactPeersV4<'a> {
 
     /// Create an owned version of CompactPeersV4.
     pub fn to_owned(&self) -> CompactPeersV4<'static> {
-        CompactPeersV4 { peers: Cow::Owned((*self.peers).to_vec()) }
+        CompactPeersV4 {
+            peers: Cow::Owned((*self.peers).to_vec()),
+        }
     }
 }
 
@@ -156,7 +158,12 @@ fn parse_peers_v4<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV4<'a>> 
     } else {
         let end_of_bytes = &bytes[bytes.len()..bytes.len()];
 
-        IResult::Done(end_of_bytes, CompactPeersV4 { peers: Cow::Borrowed(bytes) })
+        IResult::Done(
+            end_of_bytes,
+            CompactPeersV4 {
+                peers: Cow::Borrowed(bytes),
+            },
+        )
     }
 }
 
@@ -172,10 +179,7 @@ pub struct CompactPeersV4Iter<'a> {
 impl<'a> CompactPeersV4Iter<'a> {
     /// Create a new CompactPeersV4Iter.
     fn new(peers: &'a [u8]) -> CompactPeersV4Iter<'a> {
-        CompactPeersV4Iter {
-            peers: peers,
-            offset: 0,
-        }
+        CompactPeersV4Iter { peers: peers, offset: 0 }
     }
 }
 
@@ -188,11 +192,13 @@ impl<'a> Iterator for CompactPeersV4Iter<'a> {
         } else {
             let mut sock_bytes = [0u8; SOCKET_ADDR_V4_BYTES];
 
-            for (src, dst) in self.peers
+            for (src, dst) in self
+                .peers
                 .iter()
                 .skip(self.offset)
                 .take(SOCKET_ADDR_V4_BYTES)
-                .zip(sock_bytes.iter_mut()) {
+                .zip(sock_bytes.iter_mut())
+            {
                 *dst = *src;
             }
             self.offset += SOCKET_ADDR_V4_BYTES;
@@ -213,7 +219,9 @@ pub struct CompactPeersV6<'a> {
 impl<'a> CompactPeersV6<'a> {
     /// Create a new CompactPeersV6.
     pub fn new() -> CompactPeersV6<'a> {
-        CompactPeersV6 { peers: Cow::Owned(Vec::new()) }
+        CompactPeersV6 {
+            peers: Cow::Owned(Vec::new()),
+        }
     }
 
     /// Construct a CompactPeersV6 from the given bytes.
@@ -223,7 +231,8 @@ impl<'a> CompactPeersV6<'a> {
 
     /// Write the CompactPeersV6 to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
-        where W: Write
+    where
+        W: Write,
     {
         r#try!(writer.write_all(&*self.peers));
 
@@ -244,7 +253,9 @@ impl<'a> CompactPeersV6<'a> {
 
     /// Create an owned version of CompactPeersV6.
     pub fn to_owned(&self) -> CompactPeersV6<'static> {
-        CompactPeersV6 { peers: Cow::Owned((*self.peers).to_vec()) }
+        CompactPeersV6 {
+            peers: Cow::Owned((*self.peers).to_vec()),
+        }
     }
 }
 
@@ -256,7 +267,12 @@ fn parse_peers_v6<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV6<'a>> 
     } else {
         let end_of_bytes = &bytes[bytes.len()..bytes.len()];
 
-        IResult::Done(end_of_bytes, CompactPeersV6 { peers: Cow::Borrowed(bytes) })
+        IResult::Done(
+            end_of_bytes,
+            CompactPeersV6 {
+                peers: Cow::Borrowed(bytes),
+            },
+        )
     }
 }
 
@@ -272,10 +288,7 @@ pub struct CompactPeersV6Iter<'a> {
 impl<'a> CompactPeersV6Iter<'a> {
     /// Create a new CompactPeersV6Iter.
     fn new(peers: &'a [u8]) -> CompactPeersV6Iter<'a> {
-        CompactPeersV6Iter {
-            peers: peers,
-            offset: 0,
-        }
+        CompactPeersV6Iter { peers: peers, offset: 0 }
     }
 }
 
@@ -288,11 +301,13 @@ impl<'a> Iterator for CompactPeersV6Iter<'a> {
         } else {
             let mut sock_bytes = [0u8; SOCKET_ADDR_V6_BYTES];
 
-            for (src, dst) in self.peers
+            for (src, dst) in self
+                .peers
                 .iter()
                 .skip(self.offset)
                 .take(SOCKET_ADDR_V6_BYTES)
-                .zip(sock_bytes.iter_mut()) {
+                .zip(sock_bytes.iter_mut())
+            {
                 *dst = *src;
             }
             self.offset += SOCKET_ADDR_V6_BYTES;
@@ -428,8 +443,9 @@ mod tests {
 
     #[test]
     fn positive_parse_peer_v6() {
-        let bytes = [0xAD, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00, 0x23,
-                     0x4A, 0x55, 0xBD, 1, 0];
+        let bytes = [
+            0xAD, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00, 0x23, 0x4A, 0x55, 0xBD, 1, 0,
+        ];
 
         let received = CompactPeersV6::from_bytes(&bytes);
         let mut expected = CompactPeersV6::new();
@@ -441,9 +457,10 @@ mod tests {
 
     #[test]
     fn positive_parse_peers_v6() {
-        let bytes = [0xAD, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00, 0x23,
-                     0x4A, 0x55, 0xBD, 1, 0, 0xDA, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D,
-                     0x3A, 0x00, 0x00, 0x23, 0x4A, 0x55, 0xBD, 2, 0];
+        let bytes = [
+            0xAD, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00, 0x23, 0x4A, 0x55, 0xBD, 1, 0, 0xDA, 0xBB,
+            0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00, 0x23, 0x4A, 0x55, 0xBD, 2, 0,
+        ];
 
         let received = CompactPeersV6::from_bytes(&bytes);
         let mut expected = CompactPeersV6::new();
@@ -474,8 +491,9 @@ mod tests {
         peers.insert("[ADBB:234A:55BD:FF34:3D3A::234A:55BD]:256".parse().unwrap());
         peers.write_bytes(&mut received).unwrap();
 
-        let expected = [0xAD, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00,
-                        0x23, 0x4A, 0x55, 0xBD, 1, 0];
+        let expected = [
+            0xAD, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00, 0x23, 0x4A, 0x55, 0xBD, 1, 0,
+        ];
 
         assert_eq!(&received[..], &expected[..]);
     }
@@ -489,9 +507,10 @@ mod tests {
         peers.insert("[DABB:234A:55BD:FF34:3D3A::234A:55BD]:512".parse().unwrap());
         peers.write_bytes(&mut received).unwrap();
 
-        let expected = [0xAD, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00,
-                        0x23, 0x4A, 0x55, 0xBD, 1, 0, 0xDA, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF,
-                        0x34, 0x3D, 0x3A, 0x00, 0x00, 0x23, 0x4A, 0x55, 0xBD, 2, 0];
+        let expected = [
+            0xAD, 0xBB, 0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00, 0x23, 0x4A, 0x55, 0xBD, 1, 0, 0xDA, 0xBB,
+            0x23, 0x4A, 0x55, 0xBD, 0xFF, 0x34, 0x3D, 0x3A, 0x00, 0x00, 0x23, 0x4A, 0x55, 0xBD, 2, 0,
+        ];
 
         assert_eq!(&received[..], &expected[..]);
     }

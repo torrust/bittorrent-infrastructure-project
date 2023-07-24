@@ -2,7 +2,7 @@ use std::sync::mpsc::{self, TrySendError};
 
 mod split_sender;
 
-pub use send::split_sender::{SplitSender, SplitSenderAck, split_sender};
+pub use send::split_sender::{split_sender, SplitSender, SplitSenderAck};
 
 /// Trait for generic sender implementations.
 pub trait TrySender<T: Send>: Send {
@@ -25,11 +25,9 @@ impl<T: Send> TrySender<T> for mpsc::Sender<T> {
 
 impl<T: Send> TrySender<T> for mpsc::SyncSender<T> {
     fn try_send(&self, data: T) -> Option<T> {
-        self.try_send(data).err().and_then(|err| {
-            match err {
-                TrySendError::Full(data) => Some(data),
-                TrySendError::Disconnected(_) => panic!("bip_util: mpsc::SyncSender Signaled A Hang Up"),
-            }
+        self.try_send(data).err().and_then(|err| match err {
+            TrySendError::Full(data) => Some(data),
+            TrySendError::Disconnected(_) => panic!("bip_util: mpsc::SyncSender Signaled A Hang Up"),
         })
     }
 }

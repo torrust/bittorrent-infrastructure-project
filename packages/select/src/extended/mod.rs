@@ -1,14 +1,12 @@
-use ControlMessage;
-use bip_peer::PeerInfo;
-use bip_peer::messages::ExtendedMessage;
-use bip_peer::messages::builders::ExtendedMessageBuilder;
-use error::UberError;
-use futures::Async;
-use futures::Poll;
-use futures::Stream;
-use futures::task;
-use futures::task::Task;
 use std::collections::{HashMap, VecDeque};
+
+use bip_peer::messages::builders::ExtendedMessageBuilder;
+use bip_peer::messages::ExtendedMessage;
+use bip_peer::PeerInfo;
+use error::UberError;
+use futures::task::Task;
+use futures::{task, Async, Poll, Stream};
+use ControlMessage;
 
 /// Enumeration of extended messages that can be sent to the extended module.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -109,10 +107,10 @@ impl ExtendedModule {
                 self.peers.insert(info, ext_peer_info);
                 self.out_queue
                     .push_back(OExtendedMessage::SendExtendedMessage(info, ext_message));
-            },
+            }
             IExtendedMessage::Control(ControlMessage::PeerDisconnected(info)) => {
                 self.peers.remove(&info);
-            },
+            }
             IExtendedMessage::RecievedExtendedMessage(info, ext_message) => {
                 let ext_peer_info = self.peers.get_mut(&info).unwrap();
                 ext_peer_info.update_theirs(ext_message);
@@ -120,10 +118,8 @@ impl ExtendedModule {
                 for d_module in d_modules {
                     d_module.on_update(&info, &ext_peer_info);
                 }
-            },
-            _ => {
-                ()
-            },
+            }
+            _ => (),
         }
 
         self.check_stream_unblock();
