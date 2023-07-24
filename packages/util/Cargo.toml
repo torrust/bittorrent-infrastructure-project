@@ -1,23 +1,23 @@
 [package]
-name          = "bip_util"
-version       = "0.5.0"
-description   = "Utilities for the Bittorrent Infrastructure Project"
+name = "util"
+version = "0.5.0"
+description = "Utilities for the Bittorrent Infrastructure Project"
+keywords = ["utility"]
 
-authors       = ["Andrew <amiller4421@gmail.com>"]
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
 
-homepage      = "https://github.com/GGist/bip-rs"
-repository    = "https://github.com/GGist/bip-rs/tree/master/bip_util"
-documentation = "http://ggist.github.io/bip-rs/bip_util/index.html"
-
-keywords      = ["utility"]
-
-license       = "MIT/Apache-2.0"
 
 [dependencies]
-chrono        = "0.2.0"
-num           = "0.1.0"
-rand          = "0.3.0"
-rust-crypto   = "0.2.0"
-
-[features]
-unstable      = []
+chrono = "0.2.0"
+num = "0.1.0"
+rand = "0.3.0"
+rust-crypto = "0.2.0"

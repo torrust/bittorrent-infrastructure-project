@@ -1,30 +1,31 @@
 [package]
-name          = "bip_utracker"
-version       = "0.4.0"
-description   = "Communication with bittorrent UDP trackers"
+name = "utracker"
+version = "0.4.0"
+description = "Communication with bittorrent UDP trackers"
+keywords = ["tracker", "bittorrent", "udp"]
 
-authors       = ["Andrew <amiller4421@gmail.com>"]
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
 
-homepage      = "https://github.com/GGist/bip-rs"
-repository    = "https://github.com/GGist/bip-rs/tree/master/bip_utracker"
-documentation = "https://docs.rs/bip_utracker/"
-
-keywords      = ["tracker", "bittorrent", "udp"]
-
-license       = "MIT/Apache-2.0"
 
 [dependencies]
-bip_handshake = { version = "0.7" }
-bip_util      = { version = "0.5" }
-byteorder     = "1.1"
-chrono        = "0.4"
-futures       = "0.1"
-nom           = "3.2"
-rand          = "0.3"
-umio          = "0.3"
+handshake = { path = "../handshake" }
+util = { path = "../util" }
 
-[features]
-unstable      = []
+byteorder = "1.1"
+chrono = "0.4"
+futures = "0.1"
+nom = "3.2"
+rand = "0.3"
+umio = "0.3"
 
 [[test]]
 name = "test"
