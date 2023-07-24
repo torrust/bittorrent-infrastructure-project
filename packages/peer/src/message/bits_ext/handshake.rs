@@ -237,7 +237,7 @@ impl ExtendedMessage {
             let res_extended_message = BencodeRef::decode(&*raw_bencode, BDecodeOpt::default())
                 .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))
                 .and_then(|bencode| {
-                    let ben_dict = try!(bencode::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY));
+                    let ben_dict = r#try!(bencode::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY));
                     
                     let id_map = bencode::parse_id_map(ben_dict);
                     let our_id = bencode::parse_client_id(ben_dict);
@@ -263,7 +263,7 @@ impl ExtendedMessage {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write {
         let real_length = 2 + self.bencode_size();
-        try!(message::write_length_id_pair(&mut writer, real_length as u32, Some(bits_ext::EXTENDED_MESSAGE_ID)));
+        r#try!(message::write_length_id_pair(&mut writer, real_length as u32, Some(bits_ext::EXTENDED_MESSAGE_ID)));
 
         writer.write_all(&[bits_ext::EXTENDED_MESSAGE_HANDSHAKE_ID]);
 

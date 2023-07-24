@@ -27,9 +27,9 @@ impl UtMetadataMessage {
 
         match BencodeRef::decode(bytes.clone().as_ref(), decode_opts) {
             Ok(bencode) => {
-                let bencode_dict = try!(bencode::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY));
-                let msg_type = try!(bencode::parse_message_type(bencode_dict));
-                let piece = try!(bencode::parse_piece_index(bencode_dict));
+                let bencode_dict = r#try!(bencode::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY));
+                let msg_type = r#try!(bencode::parse_message_type(bencode_dict));
+                let piece = r#try!(bencode::parse_piece_index(bencode_dict));
 
                 let bencode_bytes = bytes.split_to(bencode.buffer().len());
                 let extra_bytes = bytes;
@@ -38,7 +38,7 @@ impl UtMetadataMessage {
                     REQUEST_MESSAGE_TYPE_ID => Ok(UtMetadataMessage::Request(UtMetadataRequestMessage::with_bytes(piece, bencode_bytes))),
                     REJECT_MESSAGE_TYPE_ID  => Ok(UtMetadataMessage::Reject(UtMetadataRejectMessage::with_bytes(piece, bencode_bytes))),
                     DATA_MESSAGE_TYPE_ID    => {
-                        let total_size = try!(bencode::parse_total_size(bencode_dict));
+                        let total_size = r#try!(bencode::parse_total_size(bencode_dict));
 
                         Ok(UtMetadataMessage::Data(UtMetadataDataMessage::with_bytes(piece, total_size, extra_bytes, bencode_bytes)))
                     },
@@ -144,7 +144,7 @@ impl UtMetadataDataMessage {
             bencode::TOTAL_SIZE_KEY   => ben_int!(self.total_size)
         }).encode();
 
-        try!(writer.write_all(encoded_bytes.as_ref()));
+        r#try!(writer.write_all(encoded_bytes.as_ref()));
 
         writer.write_all(self.data.as_ref())
     }

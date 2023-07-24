@@ -59,7 +59,7 @@ pub fn create_dispatcher<H>(bind: SocketAddr,
         .bind_address(bind)
         .buffer_length(EXPECTED_PACKET_LENGTH);
 
-    let mut eloop = try!(builder.build());
+    let mut eloop = r#try!(builder.build());
     let channel = eloop.channel();
 
     let dispatch = ClientDispatcher::new(handshaker, bind, limiter);

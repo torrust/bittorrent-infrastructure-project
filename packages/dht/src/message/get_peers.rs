@@ -31,12 +31,12 @@ impl<'a> GetPeersRequest<'a> {
         let validate = RequestValidate::new(trans_id);
 
         let node_id_bytes =
-            try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
-        let node_id = try!(validate.validate_node_id(node_id_bytes));
+            r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
+        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
 
         let info_hash_bytes =
-            try!(validate.lookup_and_convert_bytes(rqst_root, message::INFO_HASH_KEY));
-        let info_hash = try!(validate.validate_info_hash(info_hash_bytes));
+            r#try!(validate.lookup_and_convert_bytes(rqst_root, message::INFO_HASH_KEY));
+        let info_hash = r#try!(validate.validate_info_hash(info_hash_bytes));
 
         Ok(GetPeersRequest::new(trans_id, node_id, info_hash))
     }
@@ -104,8 +104,8 @@ impl<'a> GetPeersResponse<'a> {
                       -> DhtResult<GetPeersResponse<'a>> {
         let validate = ResponseValidate::new(trans_id);
 
-        let node_id_bytes = try!(validate.lookup_and_convert_bytes(rsp_root, message::NODE_ID_KEY));
-        let node_id = try!(validate.validate_node_id(node_id_bytes));
+        let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rsp_root, message::NODE_ID_KEY));
+        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
 
         let token = validate.lookup_and_convert_bytes(rsp_root, message::TOKEN_KEY).ok();
 
@@ -116,16 +116,16 @@ impl<'a> GetPeersResponse<'a> {
         // stick with the more compact single byte array like that used for nodes.
         let info_type = match (maybe_nodes, maybe_values) {
             (Ok(nodes), Ok(values)) => {
-                let nodes_info = try!(validate.validate_nodes(nodes));
-                let values_info = try!(validate.validate_values(values));
+                let nodes_info = r#try!(validate.validate_nodes(nodes));
+                let values_info = r#try!(validate.validate_values(values));
                 CompactInfoType::Both(nodes_info, values_info)
             }
             (Ok(nodes), Err(_)) => {
-                let nodes_info = try!(validate.validate_nodes(nodes));
+                let nodes_info = r#try!(validate.validate_nodes(nodes));
                 CompactInfoType::Nodes(nodes_info)
             }
             (Err(_), Ok(values)) => {
-                let values_info = try!(validate.validate_values(values));
+                let values_info = r#try!(validate.validate_values(values));
                 CompactInfoType::Values(values_info)
             }
             (Err(_), Err(_)) => {

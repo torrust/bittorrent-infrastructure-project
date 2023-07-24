@@ -26,7 +26,7 @@ impl<'a> ErrorResponse<'a> {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(writer.write_all(self.message.as_bytes()));
+        r#try!(writer.write_all(self.message.as_bytes()));
 
         Ok(())
     }

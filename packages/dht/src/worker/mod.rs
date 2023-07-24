@@ -82,7 +82,7 @@ pub fn start_mainline_dht<H>(send_socket: UdpSocket,
 
     // TODO: Utilize the security extension.
     let routing_table = RoutingTable::new(table::random_node_id());
-    let message_sender = try!(handler::create_dht_handler(routing_table,
+    let message_sender = r#try!(handler::create_dht_handler(routing_table,
                                                           outgoing,
                                                           read_only,
                                                           handshaker,

@@ -59,10 +59,10 @@ impl<'a> TrackerResponse<'a> {
     {
         match self.response_type() {
             &ResponseType::Connect(id) => {
-                try!(writer.write_u32::<BigEndian>(::CONNECT_ACTION_ID));
-                try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                r#try!(writer.write_u32::<BigEndian>(::CONNECT_ACTION_ID));
+                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
 
-                try!(writer.write_u64::<BigEndian>(id));
+                r#try!(writer.write_u64::<BigEndian>(id));
             }
             &ResponseType::Announce(ref req) => {
                 let action_id = match req.peers() {
@@ -70,22 +70,22 @@ impl<'a> TrackerResponse<'a> {
                     &CompactPeers::V6(_) => ::ANNOUNCE_IPV6_ACTION_ID,
                 };
 
-                try!(writer.write_u32::<BigEndian>(action_id));
-                try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                r#try!(writer.write_u32::<BigEndian>(action_id));
+                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
 
-                try!(req.write_bytes(writer));
+                r#try!(req.write_bytes(writer));
             }
             &ResponseType::Scrape(ref req) => {
-                try!(writer.write_u32::<BigEndian>(::SCRAPE_ACTION_ID));
-                try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                r#try!(writer.write_u32::<BigEndian>(::SCRAPE_ACTION_ID));
+                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
 
-                try!(req.write_bytes(writer));
+                r#try!(req.write_bytes(writer));
             }
             &ResponseType::Error(ref err) => {
-                try!(writer.write_u32::<BigEndian>(ERROR_ACTION_ID));
-                try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                r#try!(writer.write_u32::<BigEndian>(ERROR_ACTION_ID));
+                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
 
-                try!(err.write_bytes(writer));
+                r#try!(err.write_bytes(writer));
             }
         };
 

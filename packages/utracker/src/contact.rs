@@ -125,7 +125,7 @@ impl<'a> CompactPeersV4<'a> {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(writer.write_all(&*self.peers));
+        r#try!(writer.write_all(&*self.peers));
 
         Ok(())
     }
@@ -225,7 +225,7 @@ impl<'a> CompactPeersV6<'a> {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(writer.write_all(&*self.peers));
+        r#try!(writer.write_all(&*self.peers));
 
         Ok(())
     }

@@ -139,11 +139,11 @@ impl<S> DiscoveryInfo for Handshaker<S> {
 impl<S> Handshaker<S> where S: AsyncRead + AsyncWrite + 'static {
     fn with_builder<T>(builder: &HandshakerBuilder, transport: T, handle: Handle) -> io::Result<Handshaker<T::Socket>>
         where T: Transport<Socket=S> + 'static {
-        let listener = try!(transport.listen(&builder.bind, &handle));
+        let listener = r#try!(transport.listen(&builder.bind, &handle));
 
         // Resolve our "real" public port
         let open_port = if builder.port == 0 {
-            try!(listener.local_addr()).port()
+            r#try!(listener.local_addr()).port()
         } else { builder.port };
 
         let config = builder.config;

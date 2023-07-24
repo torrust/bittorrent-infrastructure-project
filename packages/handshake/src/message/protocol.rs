@@ -28,8 +28,8 @@ impl Protocol {
             &Protocol::Custom(ref prot) => (prot.len(), &prot[..])
         };
 
-        try!(writer.write_all(&[len as u8][..]));
-        try!(writer.write_all(bytes));
+        r#try!(writer.write_all(&[len as u8][..]));
+        r#try!(writer.write_all(bytes));
 
         Ok(())
     }

@@ -43,8 +43,8 @@ impl Transport for TcpTransport {
     }
 
     fn listen(&self, addr: &SocketAddr, handle: &Handle) -> io::Result<Self::Listener> {
-        let listener = try!(TcpListener::bind(addr, handle));
-        let listen_addr = try!(listener.local_addr());
+        let listener = r#try!(TcpListener::bind(addr, handle));
+        let listen_addr = r#try!(listener.local_addr());
 
         Ok(TcpListenerStream::new(listen_addr, listener.incoming()))
     }

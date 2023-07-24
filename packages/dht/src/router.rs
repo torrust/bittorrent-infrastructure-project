@@ -40,7 +40,7 @@ impl Router {
     // }
 
     pub fn ipv4_addr(&self) -> io::Result<SocketAddrV4> {
-        let addrs = try!(self.socket_addrs());
+        let addrs = r#try!(self.socket_addrs());
 
         addrs.filter_map(map_ipv4)
             .next()
@@ -48,7 +48,7 @@ impl Router {
     }
 
     pub fn ipv6_addr(&self) -> io::Result<SocketAddrV6> {
-        let addrs = try!(self.socket_addrs());
+        let addrs = r#try!(self.socket_addrs());
 
         addrs.filter_map(map_ipv6)
             .next()
@@ -56,7 +56,7 @@ impl Router {
     }
 
     pub fn socket_addr(&self) -> io::Result<SocketAddr> {
-        let mut addrs = try!(self.socket_addrs());
+        let mut addrs = r#try!(self.socket_addrs());
 
         addrs.next().ok_or(Error::new(ErrorKind::Other, "No SocketAddresses Found For Host"))
     }

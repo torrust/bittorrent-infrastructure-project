@@ -21,13 +21,13 @@ impl MainlineDht {
     fn with_builder<H>(builder: DhtBuilder, handshaker: H) -> io::Result<MainlineDht>
         where H: Handshaker + 'static
     {
-        let send_sock = try!(UdpSocket::bind(&builder.src_addr));
-        let recv_sock = try!(send_sock.try_clone());
+        let send_sock = r#try!(UdpSocket::bind(&builder.src_addr));
+        let recv_sock = r#try!(send_sock.try_clone());
 
-        let kill_sock = try!(send_sock.try_clone());
-        let kill_addr = try!(send_sock.local_addr());
+        let kill_sock = r#try!(send_sock.try_clone());
+        let kill_addr = r#try!(send_sock.local_addr());
 
-        let send = try!(worker::start_mainline_dht(send_sock,
+        let send = r#try!(worker::start_mainline_dht(send_sock,
                                                    recv_sock,
                                                    builder.read_only,
                                                    builder.ext_addr,

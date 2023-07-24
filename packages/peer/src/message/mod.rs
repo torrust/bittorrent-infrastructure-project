@@ -160,7 +160,7 @@ impl<P> PeerWireProtocolMessage<P>
 fn write_length_id_pair<W>(mut writer: W, length: u32, opt_id: Option<u8>) -> io::Result<()>
     where W: Write
 {
-    try!(writer.write_u32::<BigEndian>(length));
+    r#try!(writer.write_u32::<BigEndian>(length));
 
     if let Some(id) = opt_id {
         writer.write_u8(id)

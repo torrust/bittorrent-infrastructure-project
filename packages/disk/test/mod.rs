@@ -128,7 +128,7 @@ impl Accessor for MultiFileDirectAccessor {
     fn access_pieces<C>(&self, mut callback: C) -> io::Result<()>
         where C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()> {
         for &(ref buffer, _) in self.files.iter() {
-            try!(callback(PieceAccess::Compute(&mut &buffer[..])))
+            r#try!(callback(PieceAccess::Compute(&mut &buffer[..])))
         }
 
         Ok(())
