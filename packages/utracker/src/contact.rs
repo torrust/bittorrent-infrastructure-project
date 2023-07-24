@@ -4,8 +4,8 @@ use std::borrow::Cow;
 use std::io::{self, Write};
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 
-use bip_util::convert;
 use nom::{IResult, Needed};
+use util::convert;
 
 const SOCKET_ADDR_V4_BYTES: usize = 6;
 const SOCKET_ADDR_V6_BYTES: usize = 18;
@@ -125,7 +125,7 @@ impl<'a> CompactPeersV4<'a> {
     where
         W: Write,
     {
-        r#try!(writer.write_all(&*self.peers));
+        (writer.write_all(&*self.peers))?;
 
         Ok(())
     }
@@ -234,7 +234,7 @@ impl<'a> CompactPeersV6<'a> {
     where
         W: Write,
     {
-        r#try!(writer.write_all(&*self.peers));
+        (writer.write_all(&*self.peers))?;
 
         Ok(())
     }

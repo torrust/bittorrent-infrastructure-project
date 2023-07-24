@@ -1,11 +1,13 @@
 // We don't really use PingRequests for our current algorithms, but that may change in the future!
 #![allow(unused)]
 
-use bip_bencode::{Bencode, BencodeConvert, Dictionary};
-use bip_util::bt::NodeId;
-use error::DhtResult;
-use message;
-use message::request::{self, RequestValidate};
+use bencode::ext::BRefAccessExt;
+use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeRef};
+use util::bt::NodeId;
+
+use crate::error::DhtResult;
+use crate::message;
+use crate::message::request::{self, RequestValidate};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct PingRequest<'a> {
@@ -21,11 +23,14 @@ impl<'a> PingRequest<'a> {
         }
     }
 
-    pub fn from_parts(rqst_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<PingRequest<'a>> {
+    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B::BType>, trans_id: &'a [u8]) -> DhtResult<PingRequest<'a>>
+    where
+        B: for<'a_> BRefAccess<BKey = &'a [u8], BType = BencodeRef<'a>>,
+    {
         let validate = RequestValidate::new(trans_id);
 
-        let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
-        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
+        let node_id_bytes = (validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY))?;
+        let node_id = (validate.validate_node_id(node_id_bytes))?;
 
         Ok(PingRequest::new(trans_id, node_id))
     }
@@ -67,8 +72,11 @@ impl<'a> PingResponse<'a> {
         }
     }
 
-    pub fn from_parts(rsp_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<PingResponse<'a>> {
-        let request = r#try!(PingRequest::from_parts(rsp_root, trans_id));
+    pub fn from_parts<B>(rsp_root: &dyn BDictAccess<B::BKey, B::BType>, trans_id: &'a [u8]) -> DhtResult<PingResponse<'a>>
+    where
+        B: for<'a_> BRefAccess<BKey = &'a [u8], BType = BencodeRef<'a>>,
+    {
+        let request = (PingRequest::from_parts::<BencodeRef>(rsp_root, trans_id))?;
 
         Ok(PingResponse::new(request.trans_id, request.node_id))
     }

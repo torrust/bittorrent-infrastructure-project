@@ -1,8 +1,8 @@
 [package]
-name = "lpd"
-version = "0.0.1"
+name        = "lpd"
+version     = "0.0.1"
 description = "Implementation of the bittorrent Local Peer/Service Discovery mechanism"
-keywords = ["peer", "discovery", "local", "service"]
+keywords    = ["peer", "discovery", "local", "service"]
 
 authors.workspace = true
 categories.workspace = true

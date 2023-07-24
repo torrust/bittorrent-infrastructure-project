@@ -1,7 +1,7 @@
-extern crate bip_metainfo;
-extern crate bip_util;
 extern crate bytes;
 extern crate crossbeam;
+extern crate metainfo;
+extern crate util;
 #[macro_use]
 extern crate error_chain;
 extern crate futures;
@@ -24,12 +24,12 @@ pub use memory::block::{Block, BlockMetadata, BlockMut};
 
 /// Built in objects implementing `FileSystem`.
 pub mod fs {
-    pub use disk::fs::native::{NativeFile, NativeFileSystem};
+    pub use crate::disk::fs::native::{NativeFile, NativeFileSystem};
 }
 
 /// Built in objects implementing `FileSystem` for caching.
 pub mod fs_cache {
-    pub use disk::fs::cache::file_handle::FileHandleCache;
+    pub use crate::disk::fs::cache::file_handle::FileHandleCache;
 }
 
-pub use bip_util::bt::InfoHash;
+pub use util::bt::InfoHash;

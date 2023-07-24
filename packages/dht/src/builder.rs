@@ -3,12 +3,12 @@ use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::mpsc::{self, Receiver};
 
-use bip_handshake::Handshaker;
-use bip_util::bt::InfoHash;
-use bip_util::net;
 use mio::Sender;
-use router::Router;
-use worker::{self, DhtEvent, OneshotTask, ShutdownCause};
+use util::bt::InfoHash;
+use util::net;
+
+use crate::router::Router;
+use crate::worker::{self, DhtEvent, OneshotTask, ShutdownCause};
 
 /// Maintains a Distributed Hash (Routing) Table.
 pub struct MainlineDht {
@@ -19,23 +19,23 @@ impl MainlineDht {
     /// Start the MainlineDht with the given DhtBuilder and Handshaker.
     fn with_builder<H>(builder: DhtBuilder, handshaker: H) -> io::Result<MainlineDht>
     where
-        H: Handshaker + 'static,
+        H: crate::handshaker_trait::HandshakerTrait + 'static,
     {
-        let send_sock = r#try!(UdpSocket::bind(&builder.src_addr));
-        let recv_sock = r#try!(send_sock.try_clone());
+        let send_sock = (UdpSocket::bind(&builder.src_addr))?;
+        let recv_sock = (send_sock.try_clone())?;
 
-        let kill_sock = r#try!(send_sock.try_clone());
-        let kill_addr = r#try!(send_sock.local_addr());
+        let kill_sock = (send_sock.try_clone())?;
+        let kill_addr = (send_sock.local_addr())?;
 
-        let send = r#try!(worker::start_mainline_dht(
+        let send = (worker::start_mainline_dht(
             send_sock,
             recv_sock,
             builder.read_only,
             builder.ext_addr,
             handshaker,
             kill_sock,
-            kill_addr
-        ));
+            kill_addr,
+        ))?;
 
         let nodes: Vec<SocketAddr> = builder.nodes.into_iter().collect();
         let routers: Vec<Router> = builder.routers.into_iter().collect();
@@ -185,7 +185,7 @@ impl DhtBuilder {
     /// Start a mainline DHT with the current configuration.
     pub fn start_mainline<H>(self, handshaker: H) -> io::Result<MainlineDht>
     where
-        H: Handshaker + 'static,
+        H: crate::handshaker_trait::HandshakerTrait + 'static,
     {
         MainlineDht::with_builder(self, handshaker)
     }

@@ -3,8 +3,9 @@
 use std::io;
 
 use bytes::{BufMut, BytesMut};
-use protocol::PeerProtocol;
 use tokio_io::codec::{Decoder, Encoder};
+
+use crate::protocol::PeerProtocol;
 
 /// Codec operating over some `PeerProtocol`.
 pub struct PeerProtocolCodec<P> {
@@ -45,7 +46,7 @@ where
     fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<Self::Item>> {
         let src_len = src.len();
 
-        let bytes = match r#try!(self.protocol.bytes_needed(src.as_ref())) {
+        let bytes = match (self.protocol.bytes_needed(src.as_ref()))? {
             Some(needed) if self.max_payload.map(|max_payload| needed > max_payload).unwrap_or(false) => {
                 return Err(io::Error::new(
                     io::ErrorKind::Other,
@@ -79,10 +80,10 @@ mod tests {
     use std::io::{self, Write};
 
     use bytes::{Bytes, BytesMut};
-    use protocol::PeerProtocol;
     use tokio_io::codec::Decoder;
 
     use super::PeerProtocolCodec;
+    use crate::protocol::PeerProtocol;
 
     struct ConsumeProtocol;
 

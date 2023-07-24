@@ -6,9 +6,9 @@ use std::fmt::{self, Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
 
-use bip_util::bt::NodeId;
-use bip_util::test;
 use chrono::{DateTime, Duration, UTC};
+use util::bt::NodeId;
+use util::test;
 
 // TODO: Should remove as_* functions and replace them with from_requested, from_responded, etc to hide the logic
 // of the nodes initial status.
@@ -255,10 +255,11 @@ mod tests {
     use std::iter;
     use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
-    use bip_util::bt::NodeId;
-    use bip_util::test as bip_test;
     use chrono::Duration;
-    use routing::node::{Node, NodeStatus};
+    use util::bt::NodeId;
+    use util::test as bip_test;
+
+    use crate::routing::node::{Node, NodeStatus};
 
     #[test]
     fn positive_encode_node() {

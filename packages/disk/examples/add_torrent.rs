@@ -1,14 +1,14 @@
-extern crate bip_disk;
-extern crate bip_metainfo;
+extern crate disk;
 extern crate futures;
+extern crate metainfo;
 
 use std::fs::File;
 use std::io::{self, BufRead, Read, Write};
 
-use bip_disk::fs::NativeFileSystem;
-use bip_disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
-use bip_metainfo::Metainfo;
+use disk::fs::NativeFileSystem;
+use disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
 use futures::{Future, Sink, Stream};
+use metainfo::Metainfo;
 
 fn main() {
     println!("Utility For Allocating Disk Space For A Torrent File");

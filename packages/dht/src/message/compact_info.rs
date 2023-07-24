@@ -1,9 +1,13 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::ops::Deref;
+use std::pin::Pin;
+use std::rc::Rc;
 
-use bip_bencode::Bencode;
-use bip_util::bt::{self, NodeId};
-use bip_util::error::{LengthError, LengthErrorKind, LengthResult};
-use bip_util::sha::ShaHash;
+use bencode::ext::BRefAccessExt;
+use bencode::{BRefAccess, BencodeRef};
+use util::bt::{self, NodeId};
+use util::error::{LengthError, LengthErrorKind, LengthResult};
+use util::sha::ShaHash;
 
 // TODO: Update this module to accept data sources as both a slice of bytes and probably
 // a wrapper around a closest nodes iterator. Eventually when the interfaces are updated
@@ -72,17 +76,23 @@ impl<'a> Iterator for CompactNodeInfoIter<'a> {
 
 // ----------------------------------------------------------------------------//
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct CompactValueInfo<'a> {
-    values: &'a [Bencode<'a>],
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct CompactValueInfo<'a, B, C>
+where
+    B: BRefAccess<BKey = &'a [u8], BType = C>,
+{
+    values: Box<std::vec::Vec<Box<B>>>,
 }
 
-impl<'a> CompactValueInfo<'a> {
+impl<'a, B, C> CompactValueInfo<'a, B, C>
+where
+    B: BRefAccess<BKey = &'a [u8], BType = C>,
+{
     /// Creates a new CompactValueInfo container for the given values.
     ///
     /// It is VERY important that the values have been checked to contain only
     /// bencoded bytes and not other types as that will result in a panic.
-    pub fn new(values: &'a [Bencode<'a>]) -> LengthResult<CompactValueInfo<'a>> {
+    pub fn new(values: Box<std::vec::Vec<Box<B>>>) -> LengthResult<CompactValueInfo<'a, B, C>> {
         for (index, node) in values.iter().enumerate() {
             // TODO: Do not unwrap here please
             let compact_value = node.bytes().unwrap();
@@ -99,14 +109,17 @@ impl<'a> CompactValueInfo<'a> {
         Ok(CompactValueInfo { values: values })
     }
 
-    pub fn values(&self) -> &'a [Bencode<'a>] {
-        self.values
+    pub fn values(&self) -> &Box<std::vec::Vec<Box<B>>> {
+        &self.values
     }
 }
 
-impl<'a> IntoIterator for CompactValueInfo<'a> {
+impl<'a, B, C> IntoIterator for CompactValueInfo<'a, B, C>
+where
+    B: BRefAccess<BKey = &'a [u8], BType = C> + 'a,
+{
     type Item = SocketAddrV4;
-    type IntoIter = CompactValueInfoIter<'a>;
+    type IntoIter = CompactValueInfoIter<'a, B, C>;
 
     fn into_iter(self) -> Self::IntoIter {
         CompactValueInfoIter {
@@ -116,13 +129,19 @@ impl<'a> IntoIterator for CompactValueInfo<'a> {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct CompactValueInfoIter<'a> {
-    values: &'a [Bencode<'a>],
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct CompactValueInfoIter<'a, B, C>
+where
+    B: BRefAccess<BKey = &'a [u8], BType = C>,
+{
+    values: Box<std::vec::Vec<Box<B>>>,
     pos: usize,
 }
 
-impl<'a> Iterator for CompactValueInfoIter<'a> {
+impl<'a, B, C> Iterator for CompactValueInfoIter<'a, B, C>
+where
+    B: BRefAccess<BKey = &'a [u8], BType = C>,
+{
     type Item = SocketAddrV4;
 
     fn next(&mut self) -> Option<SocketAddrV4> {
@@ -172,9 +191,11 @@ fn socket_v4_from_bytes_be(bytes: &[u8]) -> LengthResult<SocketAddrV4> {
 mod tests {
     use std::net::{Ipv4Addr, SocketAddrV4};
 
-    use bip_util::bt::NodeId;
-    use bip_util::sha::ShaHash;
-    use message::compact_info::{CompactNodeInfo, CompactValueInfo};
+    use bencode::{ben_bytes, ben_list, BDecodeOpt, BRefAccess, BencodeRef};
+    use util::bt::NodeId;
+    use util::sha::ShaHash;
+
+    use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
 
     #[test]
     fn positive_compact_nodes_empty() {
@@ -218,8 +239,8 @@ mod tests {
 
     #[test]
     fn positive_compact_values_empty() {
-        let bencode_values = Vec::new();
-        let compact_value = CompactValueInfo::new(&bencode_values[..]).unwrap();
+        let bencode_values: Box<Vec<Box<&BencodeRef>>> = Box::new(Vec::new());
+        let compact_value = CompactValueInfo::new(bencode_values).unwrap();
 
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
 
@@ -229,8 +250,14 @@ mod tests {
     #[test]
     fn positive_compact_values_one() {
         let bytes = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
-        let bencode_values = ben_list!(ben_bytes!(&bytes));
-        let compact_value = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
+        let bencode_values = ben_list!(ben_bytes!(&bytes[..]));
+
+        let b_bytes = bencode_values.bytes().unwrap();
+
+        let b_ref = BencodeRef::decode(b_bytes, BDecodeOpt::default()).unwrap();
+        let b_info = Box::new(vec![Box::new(b_ref)]);
+
+        let compact_value = CompactValueInfo::new(b_info).unwrap();
 
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
         assert_eq!(collected_info.len(), 1);
@@ -242,8 +269,14 @@ mod tests {
     fn positive_compact_values_many() {
         let bytes_one = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
         let bytes_two = [10, 0, 0, 1, (6889 >> 8) as u8, (6889 & 0x00FF) as u8];
-        let bencode_values = ben_list!(ben_bytes!(&bytes_one), ben_bytes!(&bytes_two));
-        let compact_value = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
+        let bencode_values = ben_list!(ben_bytes!(&bytes_one[..]), ben_bytes!(&bytes_two[..]));
+
+        let b_bytes = bencode_values.bytes().unwrap();
+
+        let b_ref = BencodeRef::decode(b_bytes, BDecodeOpt::default()).unwrap();
+        let b_info = Box::new(vec![Box::new(b_ref)]);
+
+        let compact_value = CompactValueInfo::new(b_info).unwrap();
 
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
         assert_eq!(collected_info.len(), 2);

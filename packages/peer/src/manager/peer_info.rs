@@ -1,8 +1,8 @@
 use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
 
-use bip_handshake::Extensions;
-use bip_util::bt::{InfoHash, PeerId};
+use handshake::Extensions;
+use util::bt::{InfoHash, PeerId};
 
 /// Information that uniquely identifies a peer.
 ///

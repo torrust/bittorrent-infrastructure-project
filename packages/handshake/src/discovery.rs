@@ -1,4 +1,4 @@
-use bip_util::bt::PeerId;
+use util::bt::PeerId;
 
 /// Trait for advertisement information that other peers can discover.
 pub trait DiscoveryInfo {

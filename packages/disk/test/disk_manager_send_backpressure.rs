@@ -1,18 +1,19 @@
-use bip_disk::{DiskManagerBuilder, IDiskMessage};
-use bip_metainfo::{Metainfo, MetainfoBuilder, PieceLength};
+use disk::{DiskManagerBuilder, IDiskMessage};
 use futures::future::Future;
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::{future, AsyncSink};
+use metainfo::{Metainfo, MetainfoBuilder, PieceLength};
 use tokio_core::reactor::Core;
-use {InMemoryFileSystem, MultiFileDirectAccessor};
+
+use crate::{InMemoryFileSystem, MultiFileDirectAccessor};
 
 #[test]
 fn positive_disk_manager_send_backpressure() {
     // Create some "files" as random bytes
-    let data_a = (::random_buffer(50), "/path/to/file/a".into());
-    let data_b = (::random_buffer(2000), "/path/to/file/b".into());
-    let data_c = (::random_buffer(0), "/path/to/file/c".into());
+    let data_a = (crate::random_buffer(50), "/path/to/file/a".into());
+    let data_b = (crate::random_buffer(2000), "/path/to/file/b".into());
+    let data_c = (crate::random_buffer(0), "/path/to/file/c".into());
 
     // Create our accessor for our in memory files and create a torrent file for them
     let files_accessor =

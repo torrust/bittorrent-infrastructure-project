@@ -1,11 +1,11 @@
 #![feature(test)]
 
-extern crate bip_bencode;
+extern crate bencode;
 extern crate test;
 
 #[cfg(test)]
 mod benches {
-    use bip_bencode::{BDecodeOpt, BencodeRef};
+    use bencode::{BDecodeOpt, BencodeRef};
     use test::Bencher;
 
     #[bench]

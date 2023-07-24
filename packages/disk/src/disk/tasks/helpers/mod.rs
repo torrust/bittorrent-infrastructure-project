@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use bip_metainfo::File;
+use metainfo::File;
 
 pub mod piece_accessor;
 pub mod piece_checker;

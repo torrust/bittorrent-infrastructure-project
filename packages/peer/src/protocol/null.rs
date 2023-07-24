@@ -1,8 +1,9 @@
 use std::io::{self, Write};
 
 use bytes::Bytes;
-use message::NullProtocolMessage;
-use protocol::{NestedPeerProtocol, PeerProtocol};
+
+use crate::message::NullProtocolMessage;
+use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Null protocol which will return an error if called.
 ///

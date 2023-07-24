@@ -1,8 +1,10 @@
-use bip_bencode::{Bencode, BencodeConvert, BencodeConvertError};
-use error::{DhtError, DhtErrorKind, DhtResult};
-use message::error::ErrorMessage;
-use message::request::RequestType;
-use message::response::{ExpectedResponse, ResponseType};
+use bencode::ext::BRefAccessExt;
+use bencode::{BConvert, BRefAccess, BencodeConvertError, BencodeRef};
+
+use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::message::error::ErrorMessage;
+use crate::message::request::RequestType;
+use crate::message::response::{ExpectedResponse, ResponseType};
 
 pub mod compact_info;
 
@@ -41,7 +43,7 @@ const TOKEN_KEY: &'static str = "token";
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 struct MessageValidate;
 
-impl BencodeConvert for MessageValidate {
+impl BConvert for MessageValidate {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
@@ -59,29 +61,30 @@ pub enum MessageType<'a> {
 }
 
 impl<'a> MessageType<'a> {
-    pub fn new<T>(message: &'a Bencode<'a>, trans_mapper: T) -> DhtResult<MessageType<'a>>
+    pub fn new<B, T>(message: &'a B, trans_mapper: T) -> DhtResult<MessageType<'a>>
     where
+        B: for<'a_> BRefAccess<BKey = &'a [u8], BType = BencodeRef<'a>>,
         T: Fn(&[u8]) -> ExpectedResponse,
     {
         let validate = MessageValidate;
-        let msg_root = r#try!(validate.convert_dict(message, ROOT_ID_KEY));
+        let msg_root = (validate.convert_dict(message, ROOT_ID_KEY))?;
 
-        let trans_id = r#try!(validate.lookup_and_convert_bytes(msg_root, TRANSACTION_ID_KEY));
-        let msg_type = r#try!(validate.lookup_and_convert_str(msg_root, MESSAGE_TYPE_KEY));
+        let trans_id = (validate.lookup_and_convert_bytes(msg_root, TRANSACTION_ID_KEY))?;
+        let msg_type = (validate.lookup_and_convert_str(msg_root, MESSAGE_TYPE_KEY))?;
 
         match msg_type {
             REQUEST_TYPE_KEY => {
-                let rqst_type = r#try!(validate.lookup_and_convert_str(msg_root, REQUEST_TYPE_KEY));
-                let rqst_msg = r#try!(RequestType::from_parts(msg_root, trans_id, rqst_type));
+                let rqst_type = (validate.lookup_and_convert_str(msg_root, REQUEST_TYPE_KEY))?;
+                let rqst_msg = (RequestType::from_parts::<BencodeRef>(msg_root, trans_id, rqst_type))?;
                 Ok(MessageType::Request(rqst_msg))
             }
             RESPONSE_TYPE_KEY => {
                 let rsp_type = trans_mapper(trans_id);
-                let rsp_message = r#try!(ResponseType::from_parts(msg_root, trans_id, rsp_type));
+                let rsp_message = (ResponseType::from_parts::<BencodeRef>(msg_root, trans_id, rsp_type))?;
                 Ok(MessageType::Response(rsp_message))
             }
             ERROR_TYPE_KEY => {
-                let err_message = r#try!(ErrorMessage::from_parts(msg_root, trans_id));
+                let err_message = (ErrorMessage::from_parts::<BencodeRef>(msg_root, trans_id))?;
                 Ok(MessageType::Error(err_message))
             }
             unknown => Err(DhtError::from_kind(DhtErrorKind::InvalidMessage {

@@ -2,11 +2,12 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 
-use accessor::{Accessor, PieceAccess};
-use bip_util::sha::ShaHash;
-use builder::buffer::{PieceBuffer, PieceBuffers};
 use crossbeam::sync::MsQueue;
-use error::ParseResult;
+use util::sha::ShaHash;
+
+use crate::accessor::{Accessor, PieceAccess};
+use crate::builder::buffer::{PieceBuffer, PieceBuffers};
+use crate::error::ParseResult;
 
 /// Messages sent to the master hasher.
 pub enum MasterMessage {
@@ -86,7 +87,7 @@ where
 
     // Our closure may be called multiple times, save partial pieces buffers between calls
     let mut opt_piece_buffer = None;
-    r#try!(accessor.access_pieces(|piece_access| {
+    (accessor.access_pieces(|piece_access| {
         match piece_access {
             PieceAccess::Compute(piece_region) => {
                 let mut curr_piece_buffer = if let Some(piece_buffer) = opt_piece_buffer.take() {
@@ -97,7 +98,7 @@ where
 
                 let mut end_of_region = false;
                 while !end_of_region {
-                    end_of_region = r#try!(curr_piece_buffer.write_bytes(|buffer| piece_region.read(buffer))) == 0;
+                    end_of_region = (curr_piece_buffer.write_bytes(|buffer| piece_region.read(buffer)))? == 0;
 
                     if curr_piece_buffer.is_whole() {
                         work.push(WorkerMessage::HashPiece(piece_index, curr_piece_buffer));
@@ -121,7 +122,7 @@ where
         }
 
         Ok(())
-    }));
+    }))?;
 
     // If we still have a partial piece left over, push it to the workers
     if let Some(piece_buffer) = opt_piece_buffer {
@@ -203,10 +204,11 @@ mod tests {
     use std::path::Path;
     use std::sync::mpsc;
 
-    use accessor::{Accessor, PieceAccess};
-    use bip_util::sha::ShaHash;
-    use builder::worker;
     use rand::{self, Rng};
+    use util::sha::ShaHash;
+
+    use crate::accessor::{Accessor, PieceAccess};
+    use crate::builder::worker;
 
     // Keep these numbers fairly small to avoid lengthy tests
     const DEFAULT_PIECE_LENGTH: usize = 1024;
@@ -266,7 +268,7 @@ mod tests {
             for range in self.buffer_ranges.iter() {
                 let mut next_region = Cursor::new(self.contiguous_buffer.index(range.clone()));
 
-                r#try!(callback(PieceAccess::Compute(&mut next_region)));
+                (callback(PieceAccess::Compute(&mut next_region)))?;
             }
 
             Ok(())
@@ -345,7 +347,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH * 1,
             DEFAULT_PIECE_LENGTH * 50,
         ];
-        for &region_length in region_lengths.into_iter() {
+        for region_length in region_lengths.into_iter() {
             accessor.create_region(region_length);
         }
 
@@ -361,7 +363,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH * 1,
             DEFAULT_PIECE_LENGTH * 50,
         ];
-        for &region_length in region_lengths.into_iter() {
+        for region_length in region_lengths.into_iter() {
             accessor.create_region(region_length);
         }
 
@@ -378,7 +380,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH * 1,
             (DEFAULT_PIECE_LENGTH * 2 - 1) * 2,
         ];
-        for &region_length in region_lengths.into_iter() {
+        for region_length in region_lengths.into_iter() {
             accessor.create_region(region_length);
         }
 
@@ -395,7 +397,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH * 1,
             (DEFAULT_PIECE_LENGTH * 2 - 1) * 2,
         ];
-        for &region_length in region_lengths.into_iter() {
+        for region_length in region_lengths.into_iter() {
             accessor.create_region(region_length);
         }
 

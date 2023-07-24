@@ -1,17 +1,17 @@
-extern crate bip_dht;
-extern crate bip_handshake;
-extern crate bip_util;
+extern crate dht;
+extern crate handshake;
 extern crate log;
+extern crate util;
 
 use std::collections::HashSet;
 use std::io::{self, Read};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, ToSocketAddrs};
 use std::thread::{self};
 
-use bip_dht::{DhtBuilder, Router};
-use bip_handshake::Handshaker;
-use bip_util::bt::{InfoHash, PeerId};
+use dht::handshaker_trait::HandshakerTrait;
+use dht::{DhtBuilder, Router};
 use log::{LogLevel, LogLevelFilter, LogMetadata, LogRecord};
+use util::bt::{InfoHash, PeerId};
 
 struct SimpleLogger;
 
@@ -32,7 +32,7 @@ struct SimpleHandshaker {
     count: usize,
 }
 
-impl Handshaker for SimpleHandshaker {
+impl HandshakerTrait for SimpleHandshaker {
     /// Type of stream used to receive connections from.
     type MetadataEnvelope = ();
 

@@ -1,24 +1,25 @@
 use std::net::SocketAddr;
 
-use bip_util::bt::PeerId;
-use bittorrent::framed::FramedHandshake;
-use bittorrent::message::HandshakeMessage;
-use filter::filters::Filters;
 use futures::future::Future;
 use futures::sink::Sink;
 use futures::stream::Stream;
-use handshake::handler;
-use handshake::handler::timer::HandshakeTimer;
-use handshake::handler::HandshakeType;
-use message::complete::CompleteMessage;
-use message::extensions::Extensions;
-use message::initiate::InitiateMessage;
 use tokio_io::{AsyncRead, AsyncWrite};
+use util::bt::PeerId;
+
+use crate::bittorrent::framed::FramedHandshake;
+use crate::bittorrent::message::HandshakeMessage;
+use crate::filter::filters::Filters;
+use crate::handshake::handler;
+use crate::handshake::handler::timer::HandshakeTimer;
+use crate::handshake::handler::HandshakeType;
+use crate::message::complete::CompleteMessage;
+use crate::message::extensions::Extensions;
+use crate::message::initiate::InitiateMessage;
 
 pub fn execute_handshake<S>(
     item: HandshakeType<S>,
     context: &(Extensions, PeerId, Filters, HandshakeTimer),
-) -> Box<Future<Item = Option<CompleteMessage<S>>, Error = ()>>
+) -> Box<dyn Future<Item = Option<CompleteMessage<S>>, Error = ()>>
 where
     S: AsyncRead + AsyncWrite + 'static,
 {
@@ -37,7 +38,7 @@ fn initiate_handshake<S>(
     pid: PeerId,
     filters: Filters,
     timer: HandshakeTimer,
-) -> Box<Future<Item = Option<CompleteMessage<S>>, Error = ()>>
+) -> Box<dyn Future<Item = Option<CompleteMessage<S>>, Error = ()>>
 where
     S: AsyncRead + AsyncWrite + 'static,
 {
@@ -97,7 +98,7 @@ fn complete_handshake<S>(
     pid: PeerId,
     filters: Filters,
     timer: HandshakeTimer,
-) -> Box<Future<Item = Option<CompleteMessage<S>>, Error = ()>>
+) -> Box<dyn Future<Item = Option<CompleteMessage<S>>, Error = ()>>
 where
     S: AsyncRead + AsyncWrite + 'static,
 {
@@ -151,16 +152,16 @@ mod tests {
     use std::io::Cursor;
     use std::time::Duration;
 
-    use bip_util::bt::{self, InfoHash, PeerId};
-    use filter::filters::Filters;
     use futures::future::{self, Future};
-    use handshake::handler::timer::HandshakeTimer;
-    use message::extensions::{self, Extensions};
-    use message::initiate::InitiateMessage;
-    use message::protocol::Protocol;
     use tokio_timer;
+    use util::bt::{self, InfoHash, PeerId};
 
     use super::HandshakeMessage;
+    use crate::filter::filters::Filters;
+    use crate::handshake::handler::timer::HandshakeTimer;
+    use crate::message::extensions::{self, Extensions};
+    use crate::message::initiate::InitiateMessage;
+    use crate::message::protocol::Protocol;
 
     fn any_peer_id() -> PeerId {
         [22u8; bt::PEER_ID_LEN].into()

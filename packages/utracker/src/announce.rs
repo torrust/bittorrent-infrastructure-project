@@ -3,12 +3,13 @@
 use std::io::{self, Write};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-use bip_util::bt::{self, InfoHash, PeerId};
-use bip_util::convert;
 use byteorder::{BigEndian, WriteBytesExt};
-use contact::CompactPeers;
 use nom::{be_i32, be_i64, be_u16, be_u32, be_u8, IResult};
-use option::AnnounceOptions;
+use util::bt::{self, InfoHash, PeerId};
+use util::convert;
+
+use crate::contact::CompactPeers;
+use crate::option::AnnounceOptions;
 
 const IMPLIED_IPV4_ID: [u8; 4] = [0u8; 4];
 const IMPLIED_IPV6_ID: [u8; 16] = [0u8; 16];
@@ -74,19 +75,19 @@ impl<'a> AnnounceRequest<'a> {
     where
         W: Write,
     {
-        r#try!(writer.write_all(self.info_hash.as_ref()));
-        r#try!(writer.write_all(self.peer_id.as_ref()));
+        (writer.write_all(self.info_hash.as_ref()))?;
+        (writer.write_all(self.peer_id.as_ref()))?;
 
-        r#try!(self.state.write_bytes(&mut writer));
-        r#try!(self.ip.write_bytes(&mut writer));
+        (self.state.write_bytes(&mut writer))?;
+        (self.ip.write_bytes(&mut writer))?;
 
-        r#try!(writer.write_u32::<BigEndian>(self.key));
+        (writer.write_u32::<BigEndian>(self.key))?;
 
-        r#try!(self.num_want.write_bytes(&mut writer));
+        (self.num_want.write_bytes(&mut writer))?;
 
-        r#try!(writer.write_u16::<BigEndian>(self.port));
+        (writer.write_u16::<BigEndian>(self.port))?;
 
-        r#try!(self.options.write_bytes(&mut writer));
+        (self.options.write_bytes(&mut writer))?;
 
         Ok(())
     }
@@ -206,11 +207,11 @@ impl<'a> AnnounceResponse<'a> {
     where
         W: Write,
     {
-        r#try!(writer.write_i32::<BigEndian>(self.interval));
-        r#try!(writer.write_i32::<BigEndian>(self.leechers));
-        r#try!(writer.write_i32::<BigEndian>(self.seeders));
+        (writer.write_i32::<BigEndian>(self.interval))?;
+        (writer.write_i32::<BigEndian>(self.leechers))?;
+        (writer.write_i32::<BigEndian>(self.seeders))?;
 
-        r#try!(self.peers.write_bytes(&mut writer));
+        (self.peers.write_bytes(&mut writer))?;
 
         Ok(())
     }
@@ -294,11 +295,11 @@ impl ClientState {
     where
         W: Write,
     {
-        r#try!(writer.write_i64::<BigEndian>(self.downloaded));
-        r#try!(writer.write_i64::<BigEndian>(self.left));
-        r#try!(writer.write_i64::<BigEndian>(self.uploaded));
+        (writer.write_i64::<BigEndian>(self.downloaded))?;
+        (writer.write_i64::<BigEndian>(self.left))?;
+        (writer.write_i64::<BigEndian>(self.uploaded))?;
 
-        r#try!(self.event.write_bytes(&mut writer));
+        (self.event.write_bytes(&mut writer))?;
 
         Ok(())
     }
@@ -360,7 +361,7 @@ impl AnnounceEvent {
     where
         W: Write,
     {
-        r#try!(writer.write_i32::<BigEndian>(self.as_id()));
+        (writer.write_i32::<BigEndian>(self.as_id()))?;
 
         Ok(())
     }
@@ -496,7 +497,7 @@ impl DesiredPeers {
             &DesiredPeers::Default => DEFAULT_NUM_WANT,
             &DesiredPeers::Specified(count) => count,
         };
-        r#try!(writer.write_i32::<BigEndian>(write_value));
+        (writer.write_i32::<BigEndian>(write_value))?;
 
         Ok(())
     }
@@ -515,14 +516,14 @@ mod tests {
     use std::io::Write;
     use std::net::Ipv4Addr;
 
-    use bip_util::bt::{InfoHash, PeerId};
-    use bip_util::convert;
     use byteorder::{BigEndian, WriteBytesExt};
-    use contact::{CompactPeers, CompactPeersV4, CompactPeersV6};
     use nom::IResult;
-    use option::AnnounceOptions;
+    use util::bt::{InfoHash, PeerId};
+    use util::convert;
 
     use super::{AnnounceEvent, AnnounceRequest, AnnounceResponse, ClientState, DesiredPeers, SourceIP};
+    use crate::contact::{CompactPeers, CompactPeersV4, CompactPeersV6};
+    use crate::option::AnnounceOptions;
 
     #[test]
     fn positive_write_request() {

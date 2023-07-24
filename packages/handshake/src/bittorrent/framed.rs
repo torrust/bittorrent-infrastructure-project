@@ -1,6 +1,5 @@
 use std::io::{self, Cursor};
 
-use bittorrent::message::{self, HandshakeMessage};
 use bytes::buf::BufMut;
 use bytes::BytesMut;
 use futures::sink::Sink;
@@ -8,6 +7,8 @@ use futures::stream::Stream;
 use futures::{Async, AsyncSink, Poll, StartSend};
 use nom::IResult;
 use tokio_io::{AsyncRead, AsyncWrite};
+
+use crate::bittorrent::message::{self, HandshakeMessage};
 
 enum HandshakeState {
     Waiting,
@@ -52,7 +53,7 @@ where
 
     fn start_send(&mut self, item: HandshakeMessage) -> StartSend<Self::SinkItem, Self::SinkError> {
         self.write_buffer.reserve(item.write_len());
-        r#try!(item.write_bytes(self.write_buffer.by_ref().writer()));
+        (item.write_bytes(self.write_buffer.by_ref().writer()))?;
 
         Ok(AsyncSink::Ready)
     }
@@ -147,15 +148,15 @@ where
 mod tests {
     use std::io::{Cursor, Write};
 
-    use bip_util::bt::{self, InfoHash, PeerId};
-    use bittorrent::message::HandshakeMessage;
     use futures::sink::Sink;
     use futures::stream::Stream;
     use futures::Future;
-    use message::extensions::{self, Extensions};
-    use message::protocol::Protocol;
+    use util::bt::{self, InfoHash, PeerId};
 
     use super::FramedHandshake;
+    use crate::bittorrent::message::HandshakeMessage;
+    use crate::message::extensions::{self, Extensions};
+    use crate::message::protocol::Protocol;
 
     fn any_peer_id() -> PeerId {
         [22u8; bt::PEER_ID_LEN].into()

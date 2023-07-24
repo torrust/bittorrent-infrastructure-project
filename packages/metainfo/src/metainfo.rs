@@ -2,14 +2,15 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-use accessor::{Accessor, IntoAccessor, PieceAccess};
-use bip_bencode::{BDecodeOpt, BDictAccess, BRefAccess, BencodeRef};
-use bip_util::bt::InfoHash;
-use bip_util::sha::{self, ShaHash};
-use builder::{InfoBuilder, MetainfoBuilder, PieceLength};
-use error::{ParseError, ParseErrorKind, ParseResult};
-use iter::{Files, Pieces};
-use parse;
+use bencode::{BDecodeOpt, BDictAccess, BRefAccess, BencodeRef};
+use util::bt::InfoHash;
+use util::sha::{self, ShaHash};
+
+use crate::accessor::{Accessor, IntoAccessor, PieceAccess};
+use crate::builder::{InfoBuilder, MetainfoBuilder, PieceLength};
+use crate::error::{ParseError, ParseErrorKind, ParseResult};
+use crate::iter::{Files, Pieces};
+use crate::parse;
 
 /// Contains optional metadata for a torrent file.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -101,8 +102,8 @@ impl From<Info> for Metainfo {
 
 /// Parses the given metainfo bytes and builds a Metainfo from them.
 fn parse_meta_bytes(bytes: &[u8]) -> ParseResult<Metainfo> {
-    let root_bencode = r#try!(BencodeRef::decode(bytes, BDecodeOpt::default()));
-    let root_dict = r#try!(parse::parse_root_dict(&root_bencode));
+    let root_bencode = (BencodeRef::decode(bytes, BDecodeOpt::default()))?;
+    let root_dict = (parse::parse_root_dict(&root_bencode))?;
 
     let announce = parse::parse_announce_url(root_dict).map(|e| e.to_owned());
 
@@ -117,8 +118,8 @@ fn parse_meta_bytes(bytes: &[u8]) -> ParseResult<Metainfo> {
     let opt_created_by = parse::parse_created_by(root_dict).map(|e| e.to_owned());
     let opt_creation_date = parse::parse_creation_date(root_dict);
 
-    let info_bencode = r#try!(parse::parse_info_bencode(root_dict));
-    let info = r#try!(parse_info_dictionary(info_bencode));
+    let info_bencode = (parse::parse_info_bencode(root_dict))?;
+    let info = (parse_info_dictionary(info_bencode))?;
 
     Ok(Metainfo {
         comment: opt_comment,
@@ -247,7 +248,7 @@ impl Accessor for Info {
         C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
     {
         for piece in self.pieces() {
-            r#try!(callback(PieceAccess::PreComputed(ShaHash::from_hash(piece).unwrap())));
+            (callback(PieceAccess::PreComputed(ShaHash::from_hash(piece).unwrap())))?;
         }
 
         Ok(())
@@ -256,7 +257,7 @@ impl Accessor for Info {
 
 /// Parses the given info dictionary bytes and builds a Metainfo from them.
 fn parse_info_bytes(bytes: &[u8]) -> ParseResult<Info> {
-    let info_bencode = r#try!(BencodeRef::decode(bytes, BDecodeOpt::default()));
+    let info_bencode = (BencodeRef::decode(bytes, BDecodeOpt::default()))?;
 
     parse_info_dictionary(&info_bencode)
 }
@@ -265,24 +266,24 @@ fn parse_info_bytes(bytes: &[u8]) -> ParseResult<Info> {
 fn parse_info_dictionary<'a>(info_bencode: &BencodeRef<'a>) -> ParseResult<Info> {
     let info_hash = InfoHash::from_bytes(info_bencode.buffer());
 
-    let info_dict = r#try!(parse::parse_root_dict(info_bencode));
-    let piece_len = r#try!(parse::parse_piece_length(info_dict));
+    let info_dict = (parse::parse_root_dict(info_bencode))?;
+    let piece_len = (parse::parse_piece_length(info_dict))?;
     let is_private = parse::parse_private(info_dict);
 
-    let pieces = r#try!(parse::parse_pieces(info_dict));
-    let piece_buffers = r#try!(allocate_pieces(pieces));
+    let pieces = (parse::parse_pieces(info_dict))?;
+    let piece_buffers = (allocate_pieces(pieces))?;
 
     if is_multi_file_torrent(info_dict) {
-        let file_directory = r#try!(parse::parse_name(info_dict));
+        let file_directory = (parse::parse_name(info_dict))?;
         let mut file_directory_path = PathBuf::new();
         file_directory_path.push(file_directory);
 
-        let files_bencode = r#try!(parse::parse_files_list(info_dict));
+        let files_bencode = (parse::parse_files_list(info_dict))?;
 
         let mut files_list = Vec::with_capacity(files_bencode.len());
         for file_bencode in files_bencode {
-            let file_dict = r#try!(parse::parse_file_dict(file_bencode));
-            let file = r#try!(File::as_multi_file(file_dict));
+            let file_dict = (parse::parse_file_dict(file_bencode))?;
+            let file = (File::as_multi_file(file_dict))?;
 
             files_list.push(file);
         }
@@ -296,7 +297,7 @@ fn parse_info_dictionary<'a>(info_bencode: &BencodeRef<'a>) -> ParseResult<Info>
             file_directory: Some(file_directory_path),
         })
     } else {
-        let file = r#try!(File::as_single_file(info_dict));
+        let file = (File::as_single_file(info_dict))?;
 
         Ok(Info {
             info_hash: info_hash,
@@ -310,7 +311,7 @@ fn parse_info_dictionary<'a>(info_bencode: &BencodeRef<'a>) -> ParseResult<Info>
 }
 
 /// Returns whether or not this is a multi file torrent.
-fn is_multi_file_torrent<B>(info_dict: &BDictAccess<B::BKey, B>) -> bool
+fn is_multi_file_torrent<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> bool
 where
     B: BRefAccess,
 {
@@ -350,13 +351,13 @@ pub struct File {
 
 impl File {
     /// Parse the info dictionary and generate a single file File.
-    fn as_single_file<B>(info_dict: &BDictAccess<B::BKey, B>) -> ParseResult<File>
+    fn as_single_file<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<File>
     where
         B: BRefAccess,
     {
-        let length = r#try!(parse::parse_length(info_dict));
+        let length = (parse::parse_length(info_dict))?;
         let md5sum = parse::parse_md5sum(info_dict).map(|m| m.to_owned());
-        let name = r#try!(parse::parse_name(info_dict));
+        let name = (parse::parse_name(info_dict))?;
 
         Ok(File {
             len: length,
@@ -366,18 +367,18 @@ impl File {
     }
 
     /// Parse the file dictionary and generate a multi file File.
-    fn as_multi_file<B>(file_dict: &BDictAccess<B::BKey, B>) -> ParseResult<File>
+    fn as_multi_file<B>(file_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<File>
     where
         B: BRefAccess<BType = B>,
     {
-        let length = r#try!(parse::parse_length(file_dict));
+        let length = parse::parse_length(file_dict)?;
         let md5sum = parse::parse_md5sum(file_dict).map(|m| m.to_owned());
 
-        let path_list_bencode = r#try!(parse::parse_path_list(file_dict));
+        let path_list_bencode = (parse::parse_path_list(file_dict))?;
 
         let mut path_buf = PathBuf::new();
         for path_bencode in path_list_bencode {
-            let path = r#try!(parse::parse_path_str(path_bencode));
+            let path = (parse::parse_path_str(path_bencode))?;
 
             path_buf.push(path);
         }
@@ -411,11 +412,12 @@ impl File {
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use bip_bencode::{BMutAccess, BencodeMut};
-    use bip_util::bt::InfoHash;
-    use bip_util::sha;
-    use metainfo::Metainfo;
-    use parse;
+    use bencode::{BMutAccess, BencodeMut};
+    use util::bt::InfoHash;
+    use util::sha;
+
+    use crate::metainfo::Metainfo;
+    use crate::parse;
 
     /// Helper function for manually constructing a metainfo file based on the parameters given.
     ///

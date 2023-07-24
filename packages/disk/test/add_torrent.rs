@@ -1,17 +1,18 @@
-use bip_disk::{DiskManagerBuilder, FileSystem, IDiskMessage, ODiskMessage};
-use bip_metainfo::{Metainfo, MetainfoBuilder, PieceLength};
+use disk::{DiskManagerBuilder, FileSystem, IDiskMessage, ODiskMessage};
 use futures::future::{Future, Loop};
 use futures::sink::Sink;
 use futures::stream::Stream;
+use metainfo::{Metainfo, MetainfoBuilder, PieceLength};
 use tokio_core::reactor::Core;
-use {InMemoryFileSystem, MultiFileDirectAccessor};
+
+use crate::{InMemoryFileSystem, MultiFileDirectAccessor};
 
 #[test]
 fn positive_add_torrent() {
     // Create some "files" as random bytes
-    let data_a = (::random_buffer(50), "/path/to/file/a".into());
-    let data_b = (::random_buffer(2000), "/path/to/file/b".into());
-    let data_c = (::random_buffer(0), "/path/to/file/c".into());
+    let data_a = (crate::random_buffer(50), "/path/to/file/a".into());
+    let data_b = (crate::random_buffer(2000), "/path/to/file/b".into());
+    let data_c = (crate::random_buffer(0), "/path/to/file/c".into());
 
     // Create our accessor for our in memory files and create a torrent file for them
     let files_accessor =
@@ -33,7 +34,7 @@ fn positive_add_torrent() {
     let mut core = Core::new().unwrap();
 
     // Run a core loop until we get the TorrentAdded message
-    let good_pieces = ::core_loop_with_timeout(&mut core, 500, (0, recv), |good_pieces, recv, msg| match msg {
+    let good_pieces = crate::core_loop_with_timeout(&mut core, 500, (0, recv), |good_pieces, recv, msg| match msg {
         ODiskMessage::TorrentAdded(_) => Loop::Break(good_pieces),
         ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue((good_pieces + 1, recv)),
         unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),

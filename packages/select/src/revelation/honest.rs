@@ -1,17 +1,18 @@
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use bip_handshake::InfoHash;
-use bip_metainfo::Metainfo;
-use bip_peer::messages::{BitFieldMessage, HaveMessage};
-use bip_peer::PeerInfo;
 use bit_set::BitSet;
 use bytes::{BufMut, BytesMut};
 use futures::task::Task;
 use futures::{task, Async, AsyncSink, Poll, Sink, StartSend, Stream};
-use revelation::error::{RevealError, RevealErrorKind};
-use revelation::{IRevealMessage, ORevealMessage};
-use ControlMessage;
+use handshake::InfoHash;
+use metainfo::Metainfo;
+use peer::messages::{BitFieldMessage, HaveMessage};
+use peer::PeerInfo;
+
+use crate::revelation::error::{RevealError, RevealErrorKind};
+use crate::revelation::{IRevealMessage, ORevealMessage};
+use crate::ControlMessage;
 
 /// Revelation module that will honestly report any pieces we have to peers.
 pub struct HonestRevealModule {
@@ -227,18 +228,18 @@ impl Stream for HonestRevealModule {
 
 #[cfg(test)]
 mod tests {
-    use bip_handshake::Extensions;
-    use bip_metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
-    use bip_peer::PeerInfo;
-    use bip_util::bt;
-    use bip_util::bt::InfoHash;
     use futures::{Async, Sink, Stream};
     use futures_test::harness::Harness;
-    use revelation::error::RevealErrorKind;
-    use revelation::{IRevealMessage, ORevealMessage};
-    use ControlMessage;
+    use handshake::Extensions;
+    use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
+    use peer::PeerInfo;
+    use util::bt;
+    use util::bt::InfoHash;
 
     use super::HonestRevealModule;
+    use crate::revelation::error::RevealErrorKind;
+    use crate::revelation::{IRevealMessage, ORevealMessage};
+    use crate::ControlMessage;
 
     fn metainfo(num_pieces: usize) -> Metainfo {
         let data = vec![0u8; num_pieces];

@@ -6,12 +6,13 @@ use futures::future::{self, Future, Loop};
 use futures::sink::Sink;
 use futures::stream::{MergedItem, Stream};
 use futures::sync::mpsc::{self, Sender};
-use manager::builder::PeerManagerBuilder;
-use manager::future::{PersistentError, PersistentStream, RecurringTimeoutError, RecurringTimeoutStream};
-use manager::peer_info::PeerInfo;
-use manager::{IPeerManagerMessage, ManagedMessage, OPeerManagerMessage};
 use tokio_core::reactor::Handle;
 use tokio_timer::Timer;
+
+use crate::manager::builder::PeerManagerBuilder;
+use crate::manager::future::{PersistentError, PersistentStream, RecurringTimeoutError, RecurringTimeoutStream};
+use crate::manager::peer_info::PeerInfo;
+use crate::manager::{IPeerManagerMessage, ManagedMessage, OPeerManagerMessage};
 
 // Separated from MergedError to
 enum PeerError {

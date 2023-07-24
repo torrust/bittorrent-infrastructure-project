@@ -1,11 +1,13 @@
 // TODO: Remove this when announces are implemented
 #![allow(unused)]
 
-use bip_bencode::{Bencode, BencodeConvert, Dictionary};
-use bip_util::bt::{InfoHash, NodeId};
-use error::DhtResult;
-use message;
-use message::request::{self, RequestValidate};
+use bencode::ext::BRefAccessExt;
+use bencode::{ben_bytes, ben_int, ben_map, BConvert, BDictAccess, BListAccess, BRefAccess, BencodeRef};
+use util::bt::{InfoHash, NodeId};
+
+use crate::error::DhtResult;
+use crate::message;
+use crate::message::request::{self, RequestValidate};
 
 const PORT_KEY: &'static str = "port";
 const IMPLIED_PORT_KEY: &'static str = "implied_port";
@@ -44,16 +46,22 @@ impl<'a> AnnouncePeerRequest<'a> {
         }
     }
 
-    pub fn from_parts(rqst_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerRequest<'a>> {
+    pub fn from_parts<B>(
+        rqst_root: &'a dyn BDictAccess<B::BKey, B::BType>,
+        trans_id: &'a [u8],
+    ) -> DhtResult<AnnouncePeerRequest<'a>>
+    where
+        B: for<'a_> BRefAccess<BKey = &'a [u8], BType = BencodeRef<'a>>,
+    {
         let validate = RequestValidate::new(trans_id);
 
-        let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
-        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
+        let node_id_bytes = (validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY))?;
+        let node_id = (validate.validate_node_id(node_id_bytes))?;
 
-        let info_hash_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::INFO_HASH_KEY));
-        let info_hash = r#try!(validate.validate_info_hash(info_hash_bytes));
+        let info_hash_bytes = (validate.lookup_and_convert_bytes(rqst_root, message::INFO_HASH_KEY))?;
+        let info_hash = (validate.validate_info_hash(info_hash_bytes))?;
 
-        let token = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::TOKEN_KEY));
+        let token = (validate.lookup_and_convert_bytes(rqst_root, message::TOKEN_KEY))?;
         let port = validate.lookup_and_convert_int(rqst_root, PORT_KEY);
 
         // Technically, the specification says that the value is either 0 or 1 but goes on to say that
@@ -62,7 +70,7 @@ impl<'a> AnnouncePeerRequest<'a> {
             Some(Some(n)) if n != 0 => ConnectPort::Implied,
             _ => {
                 // If we hit this, the port either was not provided or it was of the wrong bencode type
-                let port_number = r#try!(port) as u16;
+                let port_number = (port)? as u16;
                 ConnectPort::Explicit(port_number)
             }
         };
@@ -129,11 +137,17 @@ impl<'a> AnnouncePeerResponse<'a> {
         }
     }
 
-    pub fn from_parts(rqst_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerResponse<'a>> {
+    pub fn from_parts<B>(
+        rqst_root: &dyn BDictAccess<B::BKey, B::BType>,
+        trans_id: &'a [u8],
+    ) -> DhtResult<AnnouncePeerResponse<'a>>
+    where
+        B: BRefAccess,
+    {
         let validate = RequestValidate::new(&trans_id);
 
-        let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
-        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
+        let node_id_bytes = (validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY))?;
+        let node_id = (validate.validate_node_id(node_id_bytes))?;
 
         Ok(AnnouncePeerResponse::new(trans_id, node_id))
     }

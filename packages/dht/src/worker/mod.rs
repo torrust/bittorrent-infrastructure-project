@@ -2,12 +2,12 @@ use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::mpsc;
 
-use bip_handshake::Handshaker;
-use bip_util::bt::InfoHash;
 use mio;
-use router::Router;
-use routing::table::{self, RoutingTable};
-use transaction::TransactionID;
+use util::bt::InfoHash;
+
+use crate::router::Router;
+use crate::routing::table::{self, RoutingTable};
+use crate::transaction::TransactionID;
 
 pub mod bootstrap;
 pub mod handler;
@@ -77,20 +77,13 @@ pub fn start_mainline_dht<H>(
     kill_addr: SocketAddr,
 ) -> io::Result<mio::Sender<OneshotTask>>
 where
-    H: Handshaker + 'static,
+    H: crate::handshaker_trait::HandshakerTrait + 'static,
 {
     let outgoing = messenger::create_outgoing_messenger(send_socket);
 
     // TODO: Utilize the security extension.
     let routing_table = RoutingTable::new(table::random_node_id());
-    let message_sender = r#try!(handler::create_dht_handler(
-        routing_table,
-        outgoing,
-        read_only,
-        handshaker,
-        kill_sock,
-        kill_addr
-    ));
+    let message_sender = (handler::create_dht_handler(routing_table, outgoing, read_only, handshaker, kill_sock, kill_addr))?;
 
     messenger::create_incoming_messenger(recv_socket, message_sender.clone());
 

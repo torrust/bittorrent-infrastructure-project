@@ -1,5 +1,5 @@
-extern crate bip_handshake;
 extern crate futures;
+extern crate handshake;
 extern crate tokio_core;
 
 use std::io::{self, BufRead, Write};
@@ -7,9 +7,9 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::thread;
 use std::time::Duration;
 
-use bip_handshake::transports::TcpTransport;
-use bip_handshake::{HandshakerBuilder, InitiateMessage, Protocol};
 use futures::{Future, Sink, Stream};
+use handshake::transports::TcpTransport;
+use handshake::{HandshakerBuilder, InitiateMessage, Protocol};
 use tokio_core::reactor::Core;
 
 fn main() {
@@ -17,13 +17,13 @@ fn main() {
     let stdin = io::stdin();
     let mut lines = stdin.lock().lines();
 
-    stdout.write(b"Enter An InfoHash In Hex Format: ").unwrap();
+    stdout.write_all(b"Enter An InfoHash In Hex Format: ").unwrap();
     stdout.flush().unwrap();
 
     let hex_hash = lines.next().unwrap().unwrap();
     let hash = hex_to_bytes(&hex_hash).into();
 
-    stdout.write(b"Enter An Address And Port (eg: addr:port): ").unwrap();
+    stdout.write_all(b"Enter An Address And Port (eg: addr:port): ").unwrap();
     stdout.flush().unwrap();
 
     let str_addr = lines.next().unwrap().unwrap();

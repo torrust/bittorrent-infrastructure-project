@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 
-use bip_metainfo::Metainfo;
-use bip_util::bt::InfoHash;
-use disk::tasks::helpers::piece_checker::PieceCheckerState;
-use disk::ODiskMessage;
 use futures::sink::{Sink, Wait};
 use futures::sync::mpsc::Sender;
+use metainfo::Metainfo;
+use util::bt::InfoHash;
+
+use crate::disk::tasks::helpers::piece_checker::PieceCheckerState;
+use crate::disk::ODiskMessage;
 
 pub struct DiskManagerContext<F> {
     torrents: Arc<RwLock<HashMap<InfoHash, Mutex<MetainfoState>>>>,

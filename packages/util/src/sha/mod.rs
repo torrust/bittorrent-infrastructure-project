@@ -1,10 +1,10 @@
 use std::ops::BitXor;
 
-use error::{LengthError, LengthErrorKind, LengthResult};
+use crate::error::{LengthError, LengthErrorKind, LengthResult};
 
 mod builder;
 
-pub use sha::builder::ShaHashBuilder;
+pub use crate::sha::builder::ShaHashBuilder;
 
 /// Length of a SHA-1 hash.
 pub const SHA_HASH_LEN: usize = 20;

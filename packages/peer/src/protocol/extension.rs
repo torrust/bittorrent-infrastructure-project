@@ -1,8 +1,9 @@
 use std::io::{self, Write};
 
 use bytes::Bytes;
-use message::{ExtendedMessage, PeerExtensionProtocolMessage};
-use protocol::{NestedPeerProtocol, PeerProtocol};
+
+use crate::message::{ExtendedMessage, PeerExtensionProtocolMessage};
+use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Protocol for `BEP 10` peer extensions.
 pub struct PeerExtensionProtocol<P> {

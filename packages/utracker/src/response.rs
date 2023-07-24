@@ -2,12 +2,13 @@
 
 use std::io::{self, Write};
 
-use announce::AnnounceResponse;
 use byteorder::{BigEndian, WriteBytesExt};
-use contact::CompactPeers;
-use error::ErrorResponse;
 use nom::{be_u32, be_u64, IResult};
-use scrape::ScrapeResponse;
+
+use crate::announce::AnnounceResponse;
+use crate::contact::CompactPeers;
+use crate::error::ErrorResponse;
+use crate::scrape::ScrapeResponse;
 
 /// Error action ids only occur in responses.
 const ERROR_ACTION_ID: u32 = 3;
@@ -59,33 +60,33 @@ impl<'a> TrackerResponse<'a> {
     {
         match self.response_type() {
             &ResponseType::Connect(id) => {
-                r#try!(writer.write_u32::<BigEndian>(::CONNECT_ACTION_ID));
-                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                (writer.write_u32::<BigEndian>(crate::CONNECT_ACTION_ID))?;
+                (writer.write_u32::<BigEndian>(self.transaction_id()))?;
 
-                r#try!(writer.write_u64::<BigEndian>(id));
+                (writer.write_u64::<BigEndian>(id))?;
             }
             &ResponseType::Announce(ref req) => {
                 let action_id = match req.peers() {
-                    &CompactPeers::V4(_) => ::ANNOUNCE_IPV4_ACTION_ID,
-                    &CompactPeers::V6(_) => ::ANNOUNCE_IPV6_ACTION_ID,
+                    &CompactPeers::V4(_) => crate::ANNOUNCE_IPV4_ACTION_ID,
+                    &CompactPeers::V6(_) => crate::ANNOUNCE_IPV6_ACTION_ID,
                 };
 
-                r#try!(writer.write_u32::<BigEndian>(action_id));
-                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                (writer.write_u32::<BigEndian>(action_id))?;
+                (writer.write_u32::<BigEndian>(self.transaction_id()))?;
 
-                r#try!(req.write_bytes(writer));
+                (req.write_bytes(writer))?;
             }
             &ResponseType::Scrape(ref req) => {
-                r#try!(writer.write_u32::<BigEndian>(::SCRAPE_ACTION_ID));
-                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                (writer.write_u32::<BigEndian>(crate::SCRAPE_ACTION_ID))?;
+                (writer.write_u32::<BigEndian>(self.transaction_id()))?;
 
-                r#try!(req.write_bytes(writer));
+                (req.write_bytes(writer))?;
             }
             &ResponseType::Error(ref err) => {
-                r#try!(writer.write_u32::<BigEndian>(ERROR_ACTION_ID));
-                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                (writer.write_u32::<BigEndian>(ERROR_ACTION_ID))?;
+                (writer.write_u32::<BigEndian>(self.transaction_id()))?;
 
-                r#try!(err.write_bytes(writer));
+                (err.write_bytes(writer))?;
             }
         };
 
@@ -113,17 +114,17 @@ impl<'a> TrackerResponse<'a> {
 
 fn parse_response<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerResponse<'a>> {
     switch!(bytes, tuple!(be_u32, be_u32),
-        (::CONNECT_ACTION_ID, tid)  => map!(be_u64, |cid| TrackerResponse::new(tid, ResponseType::Connect(cid)) ) |
-        (::ANNOUNCE_IPV4_ACTION_ID, tid) => map!(call!(AnnounceResponse::from_bytes_v4), |ann_res| {
+        (crate::CONNECT_ACTION_ID, tid)  => map!(be_u64, |cid| TrackerResponse::new(tid, ResponseType::Connect(cid)) ) |
+        (crate::ANNOUNCE_IPV4_ACTION_ID, tid) => map!(call!(AnnounceResponse::from_bytes_v4), |ann_res| {
             TrackerResponse::new(tid, ResponseType::Announce(ann_res))
         }) |
-        (::SCRAPE_ACTION_ID, tid)   => map!(call!(ScrapeResponse::from_bytes), |scr_res| {
+        (crate::SCRAPE_ACTION_ID, tid)   => map!(call!(ScrapeResponse::from_bytes), |scr_res| {
             TrackerResponse::new(tid, ResponseType::Scrape(scr_res))
         }) |
         (ERROR_ACTION_ID, tid)    => map!(call!(ErrorResponse::from_bytes), |err_res| {
             TrackerResponse::new(tid, ResponseType::Error(err_res))
         }) |
-        (::ANNOUNCE_IPV6_ACTION_ID, tid) => map!(call!(AnnounceResponse::from_bytes_v6), |ann_req| {
+        (crate::ANNOUNCE_IPV6_ACTION_ID, tid) => map!(call!(AnnounceResponse::from_bytes_v6), |ann_req| {
             TrackerResponse::new(tid, ResponseType::Announce(ann_req))
         })
     )

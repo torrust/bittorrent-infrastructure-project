@@ -2,16 +2,16 @@ use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::mpsc::SyncSender;
 
-use bip_handshake::Handshaker;
-use bip_util::bt::{self, NodeId};
-use message::find_node::FindNodeRequest;
 use mio::{EventLoop, Timeout};
-use routing::bucket::Bucket;
-use routing::node::{Node, NodeStatus};
-use routing::table::{self, BucketContents, RoutingTable};
-use transaction::{MIDGenerator, TransactionID};
-use worker::handler::DhtHandler;
-use worker::ScheduledTask;
+use util::bt::{self, NodeId};
+
+use crate::message::find_node::FindNodeRequest;
+use crate::routing::bucket::Bucket;
+use crate::routing::node::{Node, NodeStatus};
+use crate::routing::table::{self, BucketContents, RoutingTable};
+use crate::transaction::{MIDGenerator, TransactionID};
+use crate::worker::handler::DhtHandler;
+use crate::worker::ScheduledTask;
 
 const BOOTSTRAP_INITIAL_TIMEOUT: u64 = 2500;
 const BOOTSTRAP_NODE_TIMEOUT: u64 = 500;
@@ -62,7 +62,7 @@ impl TableBootstrap {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> BootstrapStatus
     where
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         // Reset the bootstrap state
         self.active_messages.clear();
@@ -110,7 +110,7 @@ impl TableBootstrap {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> BootstrapStatus
     where
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         // Process the message transaction id
         let timeout = if let Some(t) = self.active_messages.get(trans_id) {
@@ -150,7 +150,7 @@ impl TableBootstrap {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> BootstrapStatus
     where
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         if self.active_messages.remove(trans_id).is_none() {
             warn!(
@@ -176,7 +176,7 @@ impl TableBootstrap {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> BootstrapStatus
     where
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         let target_id = flip_id_bit_at_index(self.table_id, self.curr_bootstrap_bucket);
 
@@ -243,7 +243,7 @@ impl TableBootstrap {
     ) -> BootstrapStatus
     where
         I: Iterator<Item = &'a Node>,
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         info!("bip_dht: bootstrap::send_bootstrap_requests {}", self.curr_bootstrap_bucket);
 

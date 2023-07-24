@@ -1,3 +1,3 @@
-extern crate bip_peer;
+extern crate peer;
 
 fn main() {}

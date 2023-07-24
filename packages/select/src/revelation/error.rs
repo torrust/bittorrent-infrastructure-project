@@ -1,7 +1,7 @@
 //! Module for revelation error types.
 
-use bip_handshake::InfoHash;
-use bip_peer::PeerInfo;
+use handshake::InfoHash;
+use peer::PeerInfo;
 
 error_chain! {
     types {

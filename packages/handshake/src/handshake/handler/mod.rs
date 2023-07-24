@@ -1,15 +1,16 @@
 use std::net::SocketAddr;
 
-use bip_util::bt::{InfoHash, PeerId};
-use filter::filters::Filters;
-use filter::FilterDecision;
 use futures::future::{self, Future, IntoFuture, Loop};
 use futures::sink::Sink;
 use futures::stream::Stream;
-use message::extensions::Extensions;
-use message::initiate::InitiateMessage;
-use message::protocol::Protocol;
 use tokio_core::reactor::Handle;
+use util::bt::{InfoHash, PeerId};
+
+use crate::filter::filters::Filters;
+use crate::filter::FilterDecision;
+use crate::message::extensions::Extensions;
+use crate::message::initiate::InitiateMessage;
+use crate::message::protocol::Protocol;
 
 pub mod handshaker;
 pub mod initiator;

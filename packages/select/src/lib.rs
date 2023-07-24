@@ -1,10 +1,10 @@
-extern crate bip_handshake;
-extern crate bip_metainfo;
-extern crate bip_peer;
-extern crate bip_util;
-extern crate bip_utracker;
 extern crate bit_set;
 extern crate bytes;
+extern crate handshake;
+extern crate metainfo;
+extern crate peer;
+extern crate util;
+extern crate utracker;
 #[macro_use]
 extern crate error_chain;
 extern crate futures;
@@ -17,8 +17,8 @@ extern crate futures_test;
 
 use std::time::Duration;
 
-use bip_metainfo::Metainfo;
-use bip_peer::PeerInfo;
+use metainfo::Metainfo;
+use peer::PeerInfo;
 
 pub mod discovery;
 pub mod error;

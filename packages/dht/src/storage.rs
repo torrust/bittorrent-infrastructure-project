@@ -2,8 +2,8 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 
-use bip_util::bt::InfoHash;
 use chrono::{DateTime, Duration, UTC};
+use util::bt::InfoHash;
 
 const MAX_ITEMS_STORED: usize = 500;
 
@@ -200,9 +200,10 @@ impl Eq for ItemExpiration {}
 
 #[cfg(test)]
 mod tests {
-    use bip_util::{bt, test as bip_test};
     use chrono::Duration;
-    use storage::{self, AnnounceStorage};
+    use util::{bt, test as bip_test};
+
+    use crate::storage::{self, AnnounceStorage};
 
     #[test]
     fn positive_add_and_retrieve_contact() {

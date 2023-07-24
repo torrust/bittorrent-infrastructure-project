@@ -1,10 +1,12 @@
-use bip_bencode::{Bencode, BencodeConvert, Dictionary};
-use bip_util::bt::NodeId;
-use error::DhtResult;
-use message;
+use bencode::ext::BRefAccessExt;
+use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess};
 use message::compact_info::CompactNodeInfo;
 use message::request::{self, RequestValidate};
 use message::response::ResponseValidate;
+use util::bt::NodeId;
+
+use crate::error::DhtResult;
+use crate::message;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct FindNodeRequest<'a> {
@@ -26,18 +28,21 @@ impl<'a> FindNodeRequest<'a> {
     ///
     /// The target_key argument is provided for cases where, due to forward compatibility,
     /// the target key we are interested in could fall under the target key or another key.
-    pub fn from_parts(
-        rqst_root: &Dictionary<'a, Bencode<'a>>,
+    pub fn from_parts<B>(
+        rqst_root: &dyn BDictAccess<B::BKey, B::BType>,
         trans_id: &'a [u8],
         target_key: &str,
-    ) -> DhtResult<FindNodeRequest<'a>> {
+    ) -> DhtResult<FindNodeRequest<'a>>
+    where
+        B: BRefAccess,
+    {
         let validate = RequestValidate::new(trans_id);
 
-        let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
-        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
+        let node_id_bytes = (validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY))?;
+        let node_id = (validate.validate_node_id(node_id_bytes))?;
 
-        let target_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, target_key));
-        let target_id = r#try!(validate.validate_node_id(target_id_bytes));
+        let target_id_bytes = (validate.lookup_and_convert_bytes(rqst_root, target_key))?;
+        let target_id = (validate.validate_node_id(target_id_bytes))?;
 
         Ok(FindNodeRequest::new(trans_id, node_id, target_id))
     }
@@ -79,7 +84,7 @@ pub struct FindNodeResponse<'a> {
 impl<'a> FindNodeResponse<'a> {
     pub fn new(trans_id: &'a [u8], node_id: NodeId, nodes: &'a [u8]) -> DhtResult<FindNodeResponse<'a>> {
         let validate = ResponseValidate::new(trans_id);
-        let compact_nodes = r#try!(validate.validate_nodes(nodes));
+        let compact_nodes = (validate.validate_nodes(nodes))?;
 
         Ok(FindNodeResponse {
             trans_id: trans_id,
@@ -88,13 +93,16 @@ impl<'a> FindNodeResponse<'a> {
         })
     }
 
-    pub fn from_parts(rsp_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<FindNodeResponse<'a>> {
+    pub fn from_parts<B>(rsp_root: &'a dyn BDictAccess<B::BKey, B::BType>, trans_id: &'a [u8]) -> DhtResult<FindNodeResponse<'a>>
+    where
+        B: BRefAccess,
+    {
         let validate = ResponseValidate::new(trans_id);
 
-        let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rsp_root, message::NODE_ID_KEY));
-        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
+        let node_id_bytes = (validate.lookup_and_convert_bytes(rsp_root, message::NODE_ID_KEY))?;
+        let node_id = (validate.validate_node_id(node_id_bytes))?;
 
-        let nodes = r#try!(validate.lookup_and_convert_bytes(rsp_root, message::NODES_KEY));
+        let nodes = (validate.lookup_and_convert_bytes(rsp_root, message::NODES_KEY))?;
 
         FindNodeResponse::new(trans_id, node_id, nodes)
     }

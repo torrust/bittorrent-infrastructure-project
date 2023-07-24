@@ -1,12 +1,13 @@
 use std::collections::{HashMap, VecDeque};
 
-use bip_peer::messages::builders::ExtendedMessageBuilder;
-use bip_peer::messages::ExtendedMessage;
-use bip_peer::PeerInfo;
-use error::UberError;
 use futures::task::Task;
 use futures::{task, Async, Poll, Stream};
-use ControlMessage;
+use peer::messages::builders::ExtendedMessageBuilder;
+use peer::messages::ExtendedMessage;
+use peer::PeerInfo;
+
+use crate::error::UberError;
+use crate::ControlMessage;
 
 /// Enumeration of extended messages that can be sent to the extended module.
 #[derive(Clone, Debug, PartialEq, Eq)]

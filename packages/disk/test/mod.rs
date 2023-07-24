@@ -1,10 +1,10 @@
-extern crate bip_disk;
-extern crate bip_metainfo;
-extern crate bip_util;
 extern crate bytes;
+extern crate disk;
 extern crate futures;
+extern crate metainfo;
 extern crate rand;
 extern crate tokio_core;
+extern crate util;
 
 use std::cmp;
 use std::collections::HashMap;
@@ -13,15 +13,15 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use bip_disk::{BlockMetadata, BlockMut, FileSystem, IDiskMessage};
-use bip_metainfo::{Accessor, IntoAccessor, PieceAccess};
-use bip_util::bt::InfoHash;
 use bytes::BytesMut;
+use disk::{BlockMetadata, BlockMut, FileSystem, IDiskMessage};
 use futures::future::{self, Future, Loop};
 use futures::sink::{Sink, Wait};
 use futures::stream::Stream;
+use metainfo::{Accessor, IntoAccessor, PieceAccess};
 use rand::Rng;
 use tokio_core::reactor::{Core, Timeout};
+use util::bt::InfoHash;
 
 mod add_torrent;
 mod complete_torrent;
@@ -145,7 +145,7 @@ impl Accessor for MultiFileDirectAccessor {
         C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
     {
         for &(ref buffer, _) in self.files.iter() {
-            r#try!(callback(PieceAccess::Compute(&mut &buffer[..])))
+            (callback(PieceAccess::Compute(&mut &buffer[..])))?
         }
 
         Ok(())

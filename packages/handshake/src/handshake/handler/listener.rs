@@ -1,10 +1,11 @@
 use std::net::SocketAddr;
 
-use filter::filters::Filters;
 use futures::future::Future;
 use futures::{Async, Poll};
-use handshake::handler;
-use handshake::handler::HandshakeType;
+
+use crate::filter::filters::Filters;
+use crate::handshake::handler;
+use crate::handshake::handler::HandshakeType;
 
 pub struct ListenerHandler<S> {
     opt_item: Option<HandshakeType<S>>,
@@ -35,13 +36,13 @@ impl<S> Future for ListenerHandler<S> {
 
 #[cfg(test)]
 mod tests {
-    use filter::filters::test_filters::{BlockAddrFilter, BlockProtocolFilter};
-    use filter::filters::Filters;
     use futures::Future;
-    use handshake::handler::HandshakeType;
-    use message::protocol::Protocol;
 
     use super::ListenerHandler;
+    use crate::filter::filters::test_filters::{BlockAddrFilter, BlockProtocolFilter};
+    use crate::filter::filters::Filters;
+    use crate::handshake::handler::HandshakeType;
+    use crate::message::protocol::Protocol;
 
     #[test]
     fn positive_empty_filter() {

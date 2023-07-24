@@ -2,19 +2,19 @@ use std::collections::{HashMap, HashSet};
 use std::net::{SocketAddr, SocketAddrV4};
 use std::sync::mpsc::SyncSender;
 
-use bip_handshake::Handshaker;
-use bip_util::bt::{self, InfoHash, NodeId};
-use bip_util::net;
-use bip_util::sha::ShaHash;
-use message::announce_peer::{AnnouncePeerRequest, ConnectPort};
-use message::get_peers::{CompactInfoType, GetPeersRequest, GetPeersResponse};
 use mio::{EventLoop, Timeout};
-use routing::bucket;
-use routing::node::{Node, NodeStatus};
-use routing::table::RoutingTable;
-use transaction::{MIDGenerator, TransactionID};
-use worker::handler::DhtHandler;
-use worker::ScheduledTask;
+use util::bt::{self, InfoHash, NodeId};
+use util::net;
+use util::sha::ShaHash;
+
+use crate::message::announce_peer::{AnnouncePeerRequest, ConnectPort};
+use crate::message::get_peers::{CompactInfoType, GetPeersRequest, GetPeersResponse};
+use crate::routing::bucket;
+use crate::routing::node::{Node, NodeStatus};
+use crate::routing::table::RoutingTable;
+use crate::transaction::{MIDGenerator, TransactionID};
+use crate::worker::handler::DhtHandler;
+use crate::worker::ScheduledTask;
 
 const LOOKUP_TIMEOUT_MS: u64 = 1500;
 const ENDGAME_TIMEOUT_MS: u64 = 1500;
@@ -72,7 +72,7 @@ impl TableLookup {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> Option<TableLookup>
     where
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         // Pick a buckets worth of nodes and put them into the all_sorted_nodes list
         let mut all_sorted_nodes = Vec::with_capacity(bucket::MAX_BUCKET_SIZE);
@@ -128,7 +128,7 @@ impl TableLookup {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> LookupStatus
     where
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         // Process the message transaction id
         let (dist_to_beat, timeout) = if let Some(lookup) = self.active_lookups.remove(trans_id) {
@@ -156,13 +156,13 @@ impl TableLookup {
             CompactInfoType::Nodes(n) => (None, Some(n)),
             CompactInfoType::Values(v) => {
                 self.recv_values = true;
-                (Some(v.into_iter().collect()), None)
+                (Some(v.clone().into_iter().collect()), None)
             }
-            CompactInfoType::Both(n, v) => (Some(v.into_iter().collect()), Some(n)),
+            CompactInfoType::Both(n, v) => (Some(v.clone().into_iter().collect()), Some(n)),
         };
 
         // Check if we beat the distance, get the next distance to beat
-        let (iterate_nodes, next_dist_to_beat) = if let Some(nodes) = opt_nodes {
+        let (iterate_nodes, next_dist_to_beat) = if let Some(&nodes) = opt_nodes {
             let requested_nodes = &self.requested_nodes;
 
             // Filter for nodes that we have already requested from
@@ -252,7 +252,7 @@ impl TableLookup {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> LookupStatus
     where
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         if self.active_lookups.remove(trans_id).is_none() {
             warn!(
@@ -348,7 +348,7 @@ impl TableLookup {
     ) -> LookupStatus
     where
         I: Iterator<Item = (&'a Node, DistanceToBeat)>,
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         // Loop through the given nodes
         let mut messages_sent = 0;
@@ -399,7 +399,7 @@ impl TableLookup {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> LookupStatus
     where
-        H: Handshaker,
+        H: crate::handshaker_trait::HandshakerTrait,
     {
         // Entering the endgame phase
         self.in_endgame = true;

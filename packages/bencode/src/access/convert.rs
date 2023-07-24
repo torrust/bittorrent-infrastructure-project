@@ -1,7 +1,7 @@
-use access::bencode::{BRefAccess, BRefAccessExt};
-use access::dict::BDictAccess;
-use access::list::BListAccess;
-use error::{BencodeConvertError, BencodeConvertErrorKind};
+use super::bencode::{BRefAccess, BRefAccessExt};
+use super::dict::BDictAccess;
+use super::list::BListAccess;
+use crate::error::{BencodeConvertError, BencodeConvertErrorKind};
 
 /// Trait for extended casting of bencode objects and converting conversion errors into application specific errors.
 pub trait BConvertExt: BConvert {
@@ -36,23 +36,27 @@ pub trait BConvertExt: BConvert {
     /// See BConvert::lookup_and_convert_bytes.
     fn lookup_and_convert_bytes_ext<'a, B, K1, K2>(
         &self,
-        dictionary: &BDictAccess<K1, B>,
+        dictionary: &dyn BDictAccess<K1, B>,
         key: K2,
     ) -> Result<&'a [u8], Self::Error>
     where
         B: BRefAccessExt<'a>,
         K2: AsRef<[u8]>,
     {
-        self.convert_bytes_ext(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_bytes_ext((self.lookup(dictionary, &key))?, &key)
     }
 
     /// See BConvert::lookup_and_convert_str.
-    fn lookup_and_convert_str_ext<'a, B, K1, K2>(&self, dictionary: &BDictAccess<K1, B>, key: K2) -> Result<&'a str, Self::Error>
+    fn lookup_and_convert_str_ext<'a, B, K1, K2>(
+        &self,
+        dictionary: &dyn BDictAccess<K1, B>,
+        key: K2,
+    ) -> Result<&'a str, Self::Error>
     where
         B: BRefAccessExt<'a>,
         K2: AsRef<[u8]>,
     {
-        self.convert_str_ext(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_str_ext((self.lookup(dictionary, &key))?, &key)
     }
 }
 
@@ -114,7 +118,7 @@ pub trait BConvert {
     /// Attempty to convert the given bencode value into a list.
     ///
     /// Error key is used to generate an appropriate error message should the operation return an error.
-    fn convert_list<'a, B, E>(&self, bencode: &'a B, error_key: E) -> Result<&'a BListAccess<B::BType>, Self::Error>
+    fn convert_list<'a, B, E>(&self, bencode: &'a B, error_key: E) -> Result<&'a dyn BListAccess<B::BType>, Self::Error>
     where
         B: BRefAccess,
         E: AsRef<[u8]>,
@@ -130,7 +134,7 @@ pub trait BConvert {
     /// Attempt to convert the given bencode value into a dictionary.
     ///
     /// Error key is used to generate an appropriate error message should the operation return an error.
-    fn convert_dict<'a, B, E>(&self, bencode: &'a B, error_key: E) -> Result<&'a BDictAccess<B::BKey, B::BType>, Self::Error>
+    fn convert_dict<'a, B, E>(&self, bencode: &'a B, error_key: E) -> Result<&'a dyn BDictAccess<B::BKey, B::BType>, Self::Error>
     where
         B: BRefAccess,
         E: AsRef<[u8]>,
@@ -144,7 +148,7 @@ pub trait BConvert {
     }
 
     /// Look up a value in a dictionary of bencoded values using the given key.
-    fn lookup<'a, B, K1, K2>(&self, dictionary: &'a BDictAccess<K1, B>, key: K2) -> Result<&'a B, Self::Error>
+    fn lookup<'a, B, K1, K2>(&self, dictionary: &'a dyn BDictAccess<K1, B>, key: K2) -> Result<&'a B, Self::Error>
     where
         B: BRefAccess,
         K2: AsRef<[u8]>,
@@ -162,59 +166,63 @@ pub trait BConvert {
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to an integer.
-    fn lookup_and_convert_int<B, K1, K2>(&self, dictionary: &BDictAccess<K1, B>, key: K2) -> Result<i64, Self::Error>
+    fn lookup_and_convert_int<B, K1, K2>(&self, dictionary: &dyn BDictAccess<K1, B>, key: K2) -> Result<i64, Self::Error>
     where
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_int(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_int((self.lookup(dictionary, &key))?, &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a series of bytes.
     fn lookup_and_convert_bytes<'a, B, K1, K2>(
         &self,
-        dictionary: &'a BDictAccess<K1, B>,
+        dictionary: &'a dyn BDictAccess<K1, B>,
         key: K2,
     ) -> Result<&'a [u8], Self::Error>
     where
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_bytes(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_bytes((self.lookup(dictionary, &key))?, &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a UTF-8 string.
-    fn lookup_and_convert_str<'a, B, K1, K2>(&self, dictionary: &'a BDictAccess<K1, B>, key: K2) -> Result<&'a str, Self::Error>
+    fn lookup_and_convert_str<'a, B, K1, K2>(
+        &self,
+        dictionary: &'a dyn BDictAccess<K1, B>,
+        key: K2,
+    ) -> Result<&'a str, Self::Error>
     where
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_str(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_str((self.lookup(dictionary, &key))?, &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a list.
     fn lookup_and_convert_list<'a, B, K1, K2>(
         &self,
-        dictionary: &'a BDictAccess<K1, B>,
+        dictionary: &'a dyn BDictAccess<K1, B>,
         key: K2,
-    ) -> Result<&'a BListAccess<B::BType>, Self::Error>
+    ) -> Result<&'a dyn BListAccess<B::BType>, Self::Error>
     where
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_list(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_list((self.lookup(dictionary, &key))?, &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a dictionary.
     fn lookup_and_convert_dict<'a, B, K1, K2>(
         &self,
-        dictionary: &'a BDictAccess<K1, B>,
+        dictionary: &'a dyn BDictAccess<K1, B>,
         key: K2,
-    ) -> Result<&'a BDictAccess<B::BKey, B::BType>, Self::Error>
+    ) -> Result<&'a dyn BDictAccess<B::BKey, B::BType>, Self::Error>
     where
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_dict(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_dict((self.lookup(dictionary, &key))?, &key)
     }
 }

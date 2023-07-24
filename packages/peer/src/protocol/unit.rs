@@ -1,7 +1,8 @@
 use std::io::{self, Write};
 
 use bytes::Bytes;
-use protocol::{NestedPeerProtocol, PeerProtocol};
+
+use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Unit protocol which will always return a unit if called.
 pub struct UnitProtocol;

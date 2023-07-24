@@ -1,6 +1,6 @@
-extern crate bip_util;
 extern crate bytes;
 extern crate futures;
+extern crate util;
 #[macro_use]
 extern crate nom;
 extern crate rand;
@@ -30,7 +30,7 @@ pub use transport::Transport;
 
 /// Built in objects implementing `Transport`.
 pub mod transports {
-    pub use transport::{TcpListenerStream, TcpTransport};
+    pub use crate::transport::{TcpListenerStream, TcpTransport};
 }
 
-pub use bip_util::bt::{InfoHash, PeerId};
+pub use util::bt::{InfoHash, PeerId};

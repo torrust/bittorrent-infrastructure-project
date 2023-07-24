@@ -1,9 +1,10 @@
 use std::net::UdpSocket;
 use std::time::Duration;
 
-use bip_utracker::request::{self, RequestType, TrackerRequest};
-use bip_utracker::TrackerServer;
-use MockTrackerHandler;
+use utracker::request::{self, RequestType, TrackerRequest};
+use utracker::TrackerServer;
+
+use crate::MockTrackerHandler;
 
 #[test]
 #[allow(unused)]

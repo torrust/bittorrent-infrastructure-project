@@ -1,12 +1,14 @@
-use bip_bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
-use bip_util::bt::{InfoHash, NodeId};
-use error::{DhtError, DhtErrorKind, DhtResult};
-use message;
+use bencode::ext::BRefAccessExt;
+use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError, BencodeRef};
 use message::announce_peer::AnnouncePeerRequest;
 use message::error::{ErrorCode, ErrorMessage};
 use message::find_node::FindNodeRequest;
 use message::get_peers::GetPeersRequest;
 use message::ping::PingRequest;
+use util::bt::{InfoHash, NodeId};
+
+use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::message;
 
 pub const REQUEST_ARGS_KEY: &'static str = "a";
 
@@ -54,7 +56,7 @@ impl<'a> RequestValidate<'a> {
     }
 }
 
-impl<'a> BencodeConvert for RequestValidate<'a> {
+impl<'a> BConvert for RequestValidate<'a> {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
@@ -74,38 +76,45 @@ pub enum RequestType<'a> {
 }
 
 impl<'a> RequestType<'a> {
-    pub fn from_parts(root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8], rqst_type: &str) -> DhtResult<RequestType<'a>> {
+    pub fn from_parts<B>(
+        root: &'a dyn BDictAccess<B::BKey, B::BType>,
+        trans_id: &'a [u8],
+        rqst_type: &str,
+    ) -> DhtResult<RequestType<'a>>
+    where
+        B: for<'a_> BRefAccess<BKey = &'a [u8], BType = BencodeRef<'a>>,
+    {
         let validate = RequestValidate::new(trans_id);
-        let rqst_root = r#try!(validate.lookup_and_convert_dict(root, REQUEST_ARGS_KEY));
+        let rqst_root = (validate.lookup_and_convert_dict(root, REQUEST_ARGS_KEY))?;
 
         match rqst_type {
             PING_TYPE_KEY => {
-                let ping_rqst = r#try!(PingRequest::from_parts(rqst_root, trans_id));
+                let ping_rqst = (PingRequest::from_parts::<BencodeRef>(rqst_root, trans_id))?;
                 Ok(RequestType::Ping(ping_rqst))
             }
             FIND_NODE_TYPE_KEY => {
-                let find_node_rqst = r#try!(FindNodeRequest::from_parts(rqst_root, trans_id, message::TARGET_ID_KEY));
+                let find_node_rqst = (FindNodeRequest::from_parts::<BencodeRef>(rqst_root, trans_id, message::TARGET_ID_KEY))?;
                 Ok(RequestType::FindNode(find_node_rqst))
             }
             GET_PEERS_TYPE_KEY => {
-                let get_peers_rqst = r#try!(GetPeersRequest::from_parts(rqst_root, trans_id));
+                let get_peers_rqst = (GetPeersRequest::from_parts::<BencodeRef>(rqst_root, trans_id))?;
                 Ok(RequestType::GetPeers(get_peers_rqst))
             }
             ANNOUNCE_PEER_TYPE_KEY => {
-                let announce_peer_rqst = r#try!(AnnouncePeerRequest::from_parts(rqst_root, trans_id));
+                let announce_peer_rqst = (AnnouncePeerRequest::from_parts::<BencodeRef>(rqst_root, trans_id))?;
                 Ok(RequestType::AnnouncePeer(announce_peer_rqst))
             }
             // GET_DATA_TYPE_KEY => {
-            // let get_data_rqst = r#try!(GetDataRequest::new(rqst_root, trans_id));
+            // let get_data_rqst = try!(GetDataRequest::new(rqst_root, trans_id));
             // Ok(RequestType::GetData(get_data_rqst))
             // },
             // PUT_DATA_TYPE_KEY => {
-            // let put_data_rqst = r#try!(PutDataRequest::new(rqst_root, trans_id));
+            // let put_data_rqst = try!(PutDataRequest::new(rqst_root, trans_id));
             // Ok(RequestType::PutData(put_data_rqst))
             // },
             unknown => {
-                if let Some(target_key) = forward_compatible_find_node(rqst_root) {
-                    let find_node_rqst = r#try!(FindNodeRequest::from_parts(rqst_root, trans_id, target_key));
+                if let Some(target_key) = forward_compatible_find_node::<BencodeRef>(rqst_root) {
+                    let find_node_rqst = (FindNodeRequest::from_parts::<BencodeRef>(rqst_root, trans_id, target_key))?;
                     Ok(RequestType::FindNode(find_node_rqst))
                 } else {
                     let error_message = ErrorMessage::new(
@@ -124,7 +133,10 @@ impl<'a> RequestType<'a> {
 /// Mainline dht extension for forward compatibility.
 ///
 /// Treat unsupported messages with either a target id key or info hash key as find node messages.
-fn forward_compatible_find_node<'a>(rqst_root: &Dictionary<'a, Bencode<'a>>) -> Option<&'static str> {
+fn forward_compatible_find_node<'a, B>(rqst_root: &dyn BDictAccess<B::BKey, B::BType>) -> Option<&'static str>
+where
+    B: BRefAccess,
+{
     match (
         rqst_root.lookup(message::TARGET_ID_KEY.as_bytes()),
         rqst_root.lookup(message::INFO_HASH_KEY.as_bytes()),

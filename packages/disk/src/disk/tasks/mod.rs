@@ -1,15 +1,16 @@
-use bip_metainfo::Metainfo;
-use bip_util::bt::InfoHash;
-use disk::fs::FileSystem;
-use disk::tasks::context::DiskManagerContext;
-use disk::tasks::helpers::piece_accessor::PieceAccessor;
-use disk::tasks::helpers::piece_checker::{PieceChecker, PieceCheckerState, PieceState};
-use disk::{IDiskMessage, ODiskMessage};
-use error::{BlockError, BlockErrorKind, BlockResult, TorrentError, TorrentErrorKind, TorrentResult};
 use futures::sink::Wait;
 use futures::sync::mpsc::Sender;
 use futures_cpupool::CpuPool;
-use memory::block::{Block, BlockMut};
+use metainfo::Metainfo;
+use util::bt::InfoHash;
+
+use crate::disk::fs::FileSystem;
+use crate::disk::tasks::context::DiskManagerContext;
+use crate::disk::tasks::helpers::piece_accessor::PieceAccessor;
+use crate::disk::tasks::helpers::piece_checker::{PieceChecker, PieceCheckerState, PieceState};
+use crate::disk::{IDiskMessage, ODiskMessage};
+use crate::error::{BlockError, BlockErrorKind, BlockResult, TorrentError, TorrentErrorKind, TorrentResult};
+use crate::memory::block::{Block, BlockMut};
 
 pub mod context;
 mod helpers;
@@ -69,7 +70,7 @@ where
     F: FileSystem,
 {
     let info_hash = file.info().info_hash();
-    let mut init_state = r#try!(PieceChecker::init_state(context.filesystem(), file.info()));
+    let mut init_state = (PieceChecker::init_state(context.filesystem(), file.info()))?;
 
     // In case we are resuming a download, we need to send the diff for the newly added torrent
     send_piece_diff(&mut init_state, info_hash, blocking_sender, true);
@@ -112,7 +113,7 @@ where
     });
 
     if found_hash {
-        Ok(r#try!(sync_result))
+        Ok((sync_result)?)
     } else {
         Err(TorrentError::from_kind(TorrentErrorKind::InfoHashNotFound { hash: hash }))
     }
@@ -134,7 +135,7 @@ where
     });
 
     if found_hash {
-        Ok(r#try!(access_result))
+        Ok((access_result)?)
     } else {
         Err(BlockError::from_kind(BlockErrorKind::InfoHashNotFound { hash: info_hash }))
     }
@@ -176,7 +177,7 @@ where
     });
 
     if found_hash {
-        Ok(r#try!(block_result))
+        Ok((block_result)?)
     } else {
         Err(BlockError::from_kind(BlockErrorKind::InfoHashNotFound { hash: info_hash }))
     }

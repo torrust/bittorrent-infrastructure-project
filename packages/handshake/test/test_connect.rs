@@ -1,10 +1,10 @@
-use bip_handshake::transports::TcpTransport;
-use bip_handshake::{DiscoveryInfo, HandshakerBuilder, InitiateMessage, Protocol};
-use bip_util::bt::{self};
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::Future;
+use handshake::transports::TcpTransport;
+use handshake::{DiscoveryInfo, HandshakerBuilder, InitiateMessage, Protocol};
 use tokio_core::reactor::Core;
+use util::bt::{self};
 
 #[test]
 fn positive_connect() {

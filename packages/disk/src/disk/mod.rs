@@ -1,7 +1,8 @@
-use bip_metainfo::Metainfo;
-use bip_util::bt::InfoHash;
-use error::{BlockError, TorrentError};
-use memory::block::{Block, BlockMut};
+use metainfo::Metainfo;
+use util::bt::InfoHash;
+
+use crate::error::{BlockError, TorrentError};
+use crate::memory::block::{Block, BlockMut};
 
 pub mod builder;
 pub mod fs;

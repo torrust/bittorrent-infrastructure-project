@@ -1,11 +1,13 @@
-use bip_bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
-use bip_util::bt::NodeId;
-use error::{DhtError, DhtErrorKind, DhtResult};
-use message::announce_peer::AnnouncePeerResponse;
-use message::compact_info::{CompactNodeInfo, CompactValueInfo};
-use message::find_node::FindNodeResponse;
-use message::get_peers::GetPeersResponse;
-use message::ping::PingResponse;
+use bencode::ext::BRefAccessExt;
+use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError, BencodeRef};
+use util::bt::NodeId;
+
+use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::message::announce_peer::AnnouncePeerResponse;
+use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
+use crate::message::find_node::FindNodeResponse;
+use crate::message::get_peers::GetPeersResponse;
+use crate::message::ping::PingResponse;
 
 pub const RESPONSE_ARGS_KEY: &'static str = "r";
 
@@ -46,7 +48,10 @@ impl<'a> ResponseValidate<'a> {
         })
     }
 
-    pub fn validate_values<'b>(&self, values: &'b [Bencode<'a>]) -> DhtResult<CompactValueInfo<'b>> {
+    pub fn validate_values<'b, B, C>(self, values: Box<std::vec::Vec<Box<B>>>) -> DhtResult<CompactValueInfo<'b, B, C>>
+    where
+        B: BRefAccess<BKey = &'b [u8], BType = C>,
+    {
         for bencode in values.iter() {
             match bencode.bytes() {
                 Some(_) => (),
@@ -58,7 +63,9 @@ impl<'a> ResponseValidate<'a> {
             }
         }
 
-        CompactValueInfo::new(values).map_err(|_| {
+        let compact_error = CompactValueInfo::new(values);
+
+        compact_error.map_err(|_| {
             DhtError::from_kind(DhtErrorKind::InvalidResponse {
                 details: format!("TID {:?} Found Values Structrue With Wrong Number Of Bytes", self.trans_id),
             })
@@ -66,7 +73,7 @@ impl<'a> ResponseValidate<'a> {
     }
 }
 
-impl<'a> BencodeConvert for ResponseValidate<'a> {
+impl<'a> BConvert for ResponseValidate<'a> {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
@@ -87,7 +94,7 @@ pub enum ExpectedResponse {
     None,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum ResponseType<'a> {
     Ping(PingResponse<'a>),
     FindNode(FindNodeResponse<'a>),
@@ -97,29 +104,32 @@ pub enum ResponseType<'a> {
 }
 
 impl<'a> ResponseType<'a> {
-    pub fn from_parts(
-        root: &'a Dictionary<'a, Bencode<'a>>,
+    pub fn from_parts<B>(
+        root: &'a dyn BDictAccess<B::BKey, B::BType>,
         trans_id: &'a [u8],
         rsp_type: ExpectedResponse,
-    ) -> DhtResult<ResponseType<'a>> {
+    ) -> DhtResult<ResponseType<'a>>
+    where
+        B: for<'a_> BRefAccess<BKey = &'a [u8], BType = BencodeRef<'a>>,
+    {
         let validate = ResponseValidate::new(trans_id);
-        let rqst_root = r#try!(validate.lookup_and_convert_dict(root, RESPONSE_ARGS_KEY));
+        let rqst_root = (validate.lookup_and_convert_dict(root, RESPONSE_ARGS_KEY))?;
 
         match rsp_type {
             ExpectedResponse::Ping => {
-                let ping_rsp = r#try!(PingResponse::from_parts(rqst_root, trans_id));
+                let ping_rsp = (PingResponse::from_parts::<BencodeRef>(rqst_root, trans_id))?;
                 Ok(ResponseType::Ping(ping_rsp))
             }
             ExpectedResponse::FindNode => {
-                let find_node_rsp = r#try!(FindNodeResponse::from_parts(rqst_root, trans_id));
+                let find_node_rsp = (FindNodeResponse::from_parts::<BencodeRef>(rqst_root, trans_id))?;
                 Ok(ResponseType::FindNode(find_node_rsp))
             }
             ExpectedResponse::GetPeers => {
-                let get_peers_rsp = r#try!(GetPeersResponse::from_parts(rqst_root, trans_id));
+                let get_peers_rsp = (GetPeersResponse::from_parts::<BencodeRef>(rqst_root, trans_id))?;
                 Ok(ResponseType::GetPeers(get_peers_rsp))
             }
             ExpectedResponse::AnnouncePeer => {
-                let announce_peer_rsp = r#try!(AnnouncePeerResponse::from_parts(rqst_root, trans_id));
+                let announce_peer_rsp = (AnnouncePeerResponse::from_parts::<BencodeRef>(rqst_root, trans_id))?;
                 Ok(ResponseType::AnnouncePeer(announce_peer_rsp))
             }
             ExpectedResponse::GetData => {

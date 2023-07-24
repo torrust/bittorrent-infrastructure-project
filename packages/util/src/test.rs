@@ -1,8 +1,10 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 
-use bt::{self, NodeId};
 use chrono::{DateTime, Duration, UTC};
-use net::IpAddr;
+
+use crate::bt;
+use crate::bt::NodeId;
+use crate::net::IpAddr;
 
 /// Allows us to time travel into the future.
 pub fn travel_into_future(offset: Duration) -> DateTime<UTC> {

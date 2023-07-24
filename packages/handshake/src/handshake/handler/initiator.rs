@@ -1,17 +1,18 @@
-use filter::filters::Filters;
 use futures::future::{self, Future};
-use handshake::handler;
-use handshake::handler::timer::HandshakeTimer;
-use handshake::handler::HandshakeType;
-use message::initiate::InitiateMessage;
 use tokio_core::reactor::Handle;
-use transport::Transport;
+
+use crate::filter::filters::Filters;
+use crate::handshake::handler;
+use crate::handshake::handler::timer::HandshakeTimer;
+use crate::handshake::handler::HandshakeType;
+use crate::message::initiate::InitiateMessage;
+use crate::transport::Transport;
 
 /// Handle the initiation of connections, which are returned as a HandshakeType.
 pub fn initiator_handler<T>(
     item: InitiateMessage,
     context: &(T, Filters, Handle, HandshakeTimer),
-) -> Box<Future<Item = Option<HandshakeType<T::Socket>>, Error = ()>>
+) -> Box<dyn Future<Item = Option<HandshakeType<T::Socket>>, Error = ()>>
 where
     T: Transport,
 {
@@ -44,17 +45,18 @@ where
 mod tests {
     use std::time::Duration;
 
-    use bip_util::bt::{self, InfoHash, PeerId};
-    use filter::filters::test_filters::{BlockAddrFilter, BlockPeerIdFilter, BlockProtocolFilter};
-    use filter::filters::Filters;
     use futures::Future;
-    use handshake::handler::timer::HandshakeTimer;
-    use handshake::handler::HandshakeType;
-    use message::initiate::InitiateMessage;
-    use message::protocol::Protocol;
     use tokio_core::reactor::Core;
     use tokio_timer;
-    use transport::test_transports::MockTransport;
+    use util::bt::{self, InfoHash, PeerId};
+
+    use crate::filter::filters::test_filters::{BlockAddrFilter, BlockPeerIdFilter, BlockProtocolFilter};
+    use crate::filter::filters::Filters;
+    use crate::handshake::handler::timer::HandshakeTimer;
+    use crate::handshake::handler::HandshakeType;
+    use crate::message::initiate::InitiateMessage;
+    use crate::message::protocol::Protocol;
+    use crate::transport::test_transports::MockTransport;
 
     fn any_peer_id() -> PeerId {
         [22u8; bt::PEER_ID_LEN].into()

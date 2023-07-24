@@ -1,9 +1,10 @@
-use bip_util::bt::{self};
-use bip_utracker::announce::{AnnounceEvent, ClientState};
-use bip_utracker::{ClientError, ClientRequest, TrackerClient};
 use futures::future::Either;
 use futures::stream::Stream;
-use handshaker;
+use util::bt::{self};
+use utracker::announce::{AnnounceEvent, ClientState};
+use utracker::{ClientError, ClientRequest, TrackerClient};
+
+use crate::handshaker;
 
 #[test]
 #[allow(unused)]

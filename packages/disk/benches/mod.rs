@@ -1,9 +1,9 @@
 #![feature(test)]
 
-extern crate bip_disk;
-extern crate bip_metainfo;
 extern crate bytes;
+extern crate disk;
 extern crate futures;
+extern crate metainfo;
 extern crate rand;
 extern crate test;
 
@@ -11,13 +11,13 @@ extern crate test;
 mod benches {
     use std::fs;
 
-    use bip_disk::fs::NativeFileSystem;
-    use bip_disk::fs_cache::FileHandleCache;
-    use bip_disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, InfoHash, ODiskMessage};
-    use bip_metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
     use bytes::BytesMut;
+    use disk::fs::NativeFileSystem;
+    use disk::fs_cache::FileHandleCache;
+    use disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, InfoHash, ODiskMessage};
     use futures::sink::{self, Sink};
     use futures::stream::{self, Stream};
+    use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
     use rand::{self, Rng};
     use test::Bencher;
 

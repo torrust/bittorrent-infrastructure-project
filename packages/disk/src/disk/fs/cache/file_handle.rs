@@ -2,8 +2,9 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use disk::fs::FileSystem;
 use lru_cache::LruCache;
+
+use crate::disk::fs::FileSystem;
 
 /// Caches file handles to prevent going to the OS for every call to open a file.
 ///
@@ -61,7 +62,7 @@ where
                 }
             }
             let path_buf = path.as_ref().to_path_buf();
-            let file = Arc::new(Mutex::new(r#try!(fs.open_file(path))));
+            let file = Arc::new(Mutex::new((fs.open_file(path))?));
 
             cache.insert(path_buf, file.clone());
 

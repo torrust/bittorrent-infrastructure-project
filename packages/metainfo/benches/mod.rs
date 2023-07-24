@@ -1,11 +1,11 @@
 #![feature(test)]
 
-extern crate bip_metainfo;
+extern crate metainfo;
 extern crate test;
 
 #[cfg(test)]
 mod benches {
-    use bip_metainfo::{DirectAccessor, Metainfo, MetainfoBuilder};
+    use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder};
     use test::Bencher;
 
     #[bench]

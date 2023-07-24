@@ -1,6 +1,6 @@
-extern crate bip_metainfo;
+extern crate metainfo;
 
-use bip_metainfo::MetainfoBuilder;
+use metainfo::MetainfoBuilder;
 
 const TRACKER: &'static str = "udp://foo.bar.baz:6969";
 const DATE: i64 = 1517651523851;

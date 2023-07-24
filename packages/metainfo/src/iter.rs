@@ -1,7 +1,8 @@
 //! Iterators over torrent file information.
 
-use bip_util::sha;
-use metainfo::File;
+use util::sha;
+
+use crate::metainfo::File;
 
 /// Iterator over each File within the MetainfoFile.
 pub struct Files<'a> {
