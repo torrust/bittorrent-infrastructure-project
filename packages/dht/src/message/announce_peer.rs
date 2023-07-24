@@ -9,8 +9,8 @@ use crate::error::DhtResult;
 use crate::message;
 use crate::message::request::{self, RequestValidate};
 
-const PORT_KEY: &'static str = "port";
-const IMPLIED_PORT_KEY: &'static str = "implied_port";
+const PORT_KEY: &str = "port";
+const IMPLIED_PORT_KEY: &str = "implied_port";
 
 // TODO: Integrate the Token type into the request message.
 
@@ -38,11 +38,11 @@ impl<'a> AnnouncePeerRequest<'a> {
         port: ConnectPort,
     ) -> AnnouncePeerRequest<'a> {
         AnnouncePeerRequest {
-            trans_id: trans_id,
-            node_id: node_id,
-            info_hash: info_hash,
-            token: token,
-            port: port,
+            trans_id,
+            node_id,
+            info_hash,
+            token,
+            port,
         }
     }
 
@@ -131,10 +131,7 @@ pub struct AnnouncePeerResponse<'a> {
 
 impl<'a> AnnouncePeerResponse<'a> {
     pub fn new(trans_id: &'a [u8], node_id: NodeId) -> AnnouncePeerResponse<'a> {
-        AnnouncePeerResponse {
-            trans_id: trans_id,
-            node_id: node_id,
-        }
+        AnnouncePeerResponse { trans_id, node_id }
     }
 
     pub fn from_parts<B>(
@@ -144,7 +141,7 @@ impl<'a> AnnouncePeerResponse<'a> {
     where
         B: BRefAccess,
     {
-        let validate = RequestValidate::new(&trans_id);
+        let validate = RequestValidate::new(trans_id);
 
         let node_id_bytes = (validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY))?;
         let node_id = (validate.validate_node_id(node_id_bytes))?;

@@ -28,7 +28,7 @@ pub struct TableRefresh {
 impl TableRefresh {
     pub fn new(id_generator: MIDGenerator) -> TableRefresh {
         TableRefresh {
-            id_generator: id_generator,
+            id_generator,
             curr_refresh_bucket: 0,
         }
     }

@@ -16,10 +16,7 @@ where
     F: FileSystem,
 {
     pub fn new(fs: F, info_dict: &'a Info) -> PieceAccessor<'a, F> {
-        PieceAccessor {
-            fs: fs,
-            info_dict: info_dict,
-        }
+        PieceAccessor { fs, info_dict }
     }
 
     pub fn read_piece(&self, piece_buffer: &mut [u8], message: &BlockMetadata) -> io::Result<()> {
@@ -46,14 +43,14 @@ where
     where
         C: FnMut(F::File, u64, usize, usize) -> io::Result<()>,
     {
-        let piece_length = self.info_dict.piece_length() as u64;
+        let piece_length = self.info_dict.piece_length();
 
         let mut total_bytes_to_skip = (message.piece_index() * piece_length) + message.block_offset();
         let mut total_bytes_accessed = 0;
         let total_block_length = message.block_length() as u64;
 
         for file in self.info_dict.files() {
-            let total_file_size = file.length() as u64;
+            let total_file_size = file.length();
 
             let mut bytes_to_access = total_file_size;
             let min_bytes_to_skip = cmp::min(total_bytes_to_skip, bytes_to_access);

@@ -47,7 +47,7 @@ pub fn ipv6_to_bytes_be(v6_addr: Ipv6Addr) -> [u8; 16] {
 
 // Convert a port to an array of 2 bytes big endian.
 pub fn port_to_bytes_be(port: u16) -> [u8; 2] {
-    [(port >> 8) as u8, (port >> 0) as u8]
+    [(port >> 8) as u8, port as u8]
 }
 
 /// Convert a v4 socket address to an array of 6 bytes big endian.
@@ -158,7 +158,7 @@ mod tests {
         let sock_addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 1600);
 
         let received = super::sock_v4_to_bytes_be(sock_addr);
-        let expected = [127, 0, 0, 1, (1600 >> 8) as u8, (1600 >> 0) as u8];
+        let expected = [127, 0, 0, 1, (1600 >> 8) as u8, 1600 as u8];
 
         assert_eq!(received, expected);
     }
@@ -168,26 +168,7 @@ mod tests {
         let sock_addr = SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), 1821, 0, 0);
 
         let received = super::sock_v6_to_bytes_be(sock_addr);
-        let expected = [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            (1821 >> 8) as u8,
-            (1821 >> 0) as u8,
-        ];
+        let expected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (1821 >> 8) as u8, 1821 as u8];
 
         assert_eq!(received, expected);
     }

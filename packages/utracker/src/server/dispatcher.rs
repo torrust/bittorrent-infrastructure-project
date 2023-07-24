@@ -59,14 +59,14 @@ where
 {
     /// Create a new ServerDispatcher.
     fn new(handler: H) -> ServerDispatcher<H> {
-        ServerDispatcher { handler: handler }
+        ServerDispatcher { handler }
     }
 
     /// Forward the request on to the appropriate handler method.
-    fn process_request<'a, 'b>(
+    fn process_request(
         &mut self,
-        provider: &mut Provider<'a, ServerDispatcher<H>>,
-        request: TrackerRequest<'b>,
+        provider: &mut Provider<'_, ServerDispatcher<H>>,
+        request: TrackerRequest<'_>,
         addr: SocketAddr,
     ) {
         let conn_id = request.connection_id();
@@ -78,17 +78,17 @@ where
                     self.forward_connect(provider, trans_id, addr);
                 } // TODO: Add Logging
             }
-            &RequestType::Announce(ref req) => {
+            RequestType::Announce(req) => {
                 self.forward_announce(provider, trans_id, conn_id, req, addr);
             }
-            &RequestType::Scrape(ref req) => {
+            RequestType::Scrape(req) => {
                 self.forward_scrape(provider, trans_id, conn_id, req, addr);
             }
         };
     }
 
     /// Forward a connect request on to the appropriate handler method.
-    fn forward_connect<'a>(&mut self, provider: &mut Provider<'a, ServerDispatcher<H>>, trans_id: u32, addr: SocketAddr) {
+    fn forward_connect(&mut self, provider: &mut Provider<'_, ServerDispatcher<H>>, trans_id: u32, addr: SocketAddr) {
         self.handler.connect(addr, |result| {
             let response_type = match result {
                 Ok(conn_id) => ResponseType::Connect(conn_id),
@@ -101,12 +101,12 @@ where
     }
 
     /// Forward an announce request on to the appropriate handler method.
-    fn forward_announce<'a, 'b>(
+    fn forward_announce(
         &mut self,
-        provider: &mut Provider<'a, ServerDispatcher<H>>,
+        provider: &mut Provider<'_, ServerDispatcher<H>>,
         trans_id: u32,
         conn_id: u64,
-        request: &AnnounceRequest<'b>,
+        request: &AnnounceRequest<'_>,
         addr: SocketAddr,
     ) {
         self.handler.announce(addr, conn_id, request, |result| {
@@ -121,12 +121,12 @@ where
     }
 
     /// Forward a scrape request on to the appropriate handler method.
-    fn forward_scrape<'a, 'b>(
+    fn forward_scrape(
         &mut self,
-        provider: &mut Provider<'a, ServerDispatcher<H>>,
+        provider: &mut Provider<'_, ServerDispatcher<H>>,
         trans_id: u32,
         conn_id: u64,
-        request: &ScrapeRequest<'b>,
+        request: &ScrapeRequest<'_>,
         addr: SocketAddr,
     ) {
         self.handler.scrape(addr, conn_id, request, |result| {
@@ -142,7 +142,7 @@ where
 }
 
 /// Write the given tracker response through to the given provider.
-fn write_response<'a, 'b, H>(provider: &mut Provider<'a, ServerDispatcher<H>>, response: TrackerResponse<'b>, addr: SocketAddr)
+fn write_response<H>(provider: &mut Provider<'_, ServerDispatcher<H>>, response: TrackerResponse<'_>, addr: SocketAddr)
 where
     H: ServerHandler,
 {
@@ -165,7 +165,7 @@ where
     type Timeout = ();
     type Message = DispatchMessage;
 
-    fn incoming<'a>(&mut self, mut provider: Provider<'a, Self>, message: &[u8], addr: SocketAddr) {
+    fn incoming(&mut self, mut provider: Provider<'_, Self>, message: &[u8], addr: SocketAddr) {
         let request = match TrackerRequest::from_bytes(message) {
             IResult::Done(_, req) => req,
             _ => return, // TODO: Add Logging
@@ -174,11 +174,11 @@ where
         self.process_request(&mut provider, request, addr);
     }
 
-    fn notify<'a>(&mut self, mut provider: Provider<'a, Self>, message: DispatchMessage) {
+    fn notify(&mut self, mut provider: Provider<'_, Self>, message: DispatchMessage) {
         match message {
             DispatchMessage::Shutdown => provider.shutdown(),
         }
     }
 
-    fn timeout<'a>(&mut self, _: Provider<'a, Self>, _: ()) {}
+    fn timeout(&mut self, _: Provider<'_, Self>, _: ()) {}
 }

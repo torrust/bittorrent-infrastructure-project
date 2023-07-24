@@ -1,4 +1,3 @@
-use bencode::ext::BRefAccessExt;
 use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError, BencodeRef};
 use message::announce_peer::AnnouncePeerRequest;
 use message::error::{ErrorCode, ErrorMessage};
@@ -10,13 +9,13 @@ use util::bt::{InfoHash, NodeId};
 use crate::error::{DhtError, DhtErrorKind, DhtResult};
 use crate::message;
 
-pub const REQUEST_ARGS_KEY: &'static str = "a";
+pub const REQUEST_ARGS_KEY: &str = "a";
 
 // Top level request methods
-pub const PING_TYPE_KEY: &'static str = "ping";
-pub const FIND_NODE_TYPE_KEY: &'static str = "find_node";
-pub const GET_PEERS_TYPE_KEY: &'static str = "get_peers";
-pub const ANNOUNCE_PEER_TYPE_KEY: &'static str = "announce_peer";
+pub const PING_TYPE_KEY: &str = "ping";
+pub const FIND_NODE_TYPE_KEY: &str = "find_node";
+pub const GET_PEERS_TYPE_KEY: &str = "get_peers";
+pub const ANNOUNCE_PEER_TYPE_KEY: &str = "announce_peer";
 // const GET_DATA_TYPE_KEY:          &'static str = "get";
 // const PUT_DATA_TYPE_KEY:          &'static str = "put";
 
@@ -28,7 +27,7 @@ pub struct RequestValidate<'a> {
 
 impl<'a> RequestValidate<'a> {
     pub fn new(trans_id: &'a [u8]) -> RequestValidate<'a> {
-        RequestValidate { trans_id: trans_id }
+        RequestValidate { trans_id }
     }
 
     pub fn validate_node_id(&self, node_id: &[u8]) -> DhtResult<NodeId> {

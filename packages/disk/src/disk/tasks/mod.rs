@@ -91,7 +91,7 @@ where
     if context.remove_torrent(hash) {
         Ok(())
     } else {
-        Err(TorrentError::from_kind(TorrentErrorKind::InfoHashNotFound { hash: hash }))
+        Err(TorrentError::from_kind(TorrentErrorKind::InfoHashNotFound { hash }))
     }
 }
 
@@ -115,7 +115,7 @@ where
     if found_hash {
         Ok((sync_result)?)
     } else {
-        Err(TorrentError::from_kind(TorrentErrorKind::InfoHashNotFound { hash: hash }))
+        Err(TorrentError::from_kind(TorrentErrorKind::InfoHashNotFound { hash }))
     }
 }
 
@@ -153,7 +153,7 @@ where
     let info_hash = metadata.info_hash();
 
     let mut block_result = Ok(());
-    let found_hash = context.update_torrent(info_hash, |metainfo_file, mut checker_state| {
+    let found_hash = context.update_torrent(info_hash, |metainfo_file, checker_state| {
         info!(
             "Processsing Block, Acquired Torrent Lock For {:?}",
             metainfo_file.info().info_hash()
@@ -162,10 +162,10 @@ where
         let piece_accessor = PieceAccessor::new(context.filesystem(), metainfo_file.info());
 
         // Write Out Piece Out To The Filesystem And Recalculate The Diff
-        block_result = piece_accessor.write_piece(&block, &metadata).and_then(|_| {
+        block_result = piece_accessor.write_piece(block, &metadata).and_then(|_| {
             checker_state.add_pending_block(metadata);
 
-            PieceChecker::with_state(context.filesystem(), metainfo_file.info(), &mut checker_state).calculate_diff()
+            PieceChecker::with_state(context.filesystem(), metainfo_file.info(), checker_state).calculate_diff()
         });
 
         send_piece_diff(checker_state, metainfo_file.info().info_hash(), blocking_sender, false);

@@ -1,13 +1,12 @@
 use std::collections::BTreeMap;
 
-use bencode::ext::BRefAccessExt;
 use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeMut, BencodeRef};
 use message::compact_info::{CompactNodeInfo, CompactValueInfo};
 use message::request::{self, RequestValidate};
 use message::response::{self, ResponseValidate};
 use util::bt::{InfoHash, NodeId};
 
-use crate::error::{self, DhtError, DhtErrorKind, DhtResult};
+use crate::error::{DhtError, DhtErrorKind, DhtResult};
 use crate::message;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
@@ -20,9 +19,9 @@ pub struct GetPeersRequest<'a> {
 impl<'a> GetPeersRequest<'a> {
     pub fn new(trans_id: &'a [u8], node_id: NodeId, info_hash: InfoHash) -> GetPeersRequest<'a> {
         GetPeersRequest {
-            trans_id: trans_id,
-            node_id: node_id,
-            info_hash: info_hash,
+            trans_id,
+            node_id,
+            info_hash,
         }
     }
 
@@ -42,7 +41,7 @@ impl<'a> GetPeersRequest<'a> {
     }
 
     pub fn transaction_id(&self) -> &'a [u8] {
-        &self.trans_id
+        self.trans_id
     }
 
     pub fn node_id(&self) -> NodeId {
@@ -99,10 +98,10 @@ where
         info_type: CompactInfoType<'a, BencodeRef<'a>, BencodeRef<'a>>,
     ) -> GetPeersResponse<'a> {
         GetPeersResponse {
-            trans_id: trans_id,
-            node_id: node_id,
-            token: token,
-            info_type: info_type,
+            trans_id,
+            node_id,
+            token,
+            info_type,
         }
     }
 

@@ -11,7 +11,7 @@ where
 {
     match val.kind() {
         BencodeRefKind::Int(n) => encode_int(n, bytes),
-        BencodeRefKind::Bytes(n) => encode_bytes(&n, bytes),
+        BencodeRefKind::Bytes(n) => encode_bytes(n, bytes),
         BencodeRefKind::List(n) => encode_list(n, bytes),
         BencodeRefKind::Dict(n) => encode_dict(n, bytes),
     }
@@ -30,7 +30,7 @@ fn encode_bytes(list: &[u8], bytes: &mut Vec<u8>) {
 
     bytes.push(crate::BYTE_LEN_END);
 
-    bytes.extend(list.iter().map(|n| *n));
+    bytes.extend(list.iter().copied());
 }
 
 fn encode_list<T>(list: &dyn BListAccess<T>, bytes: &mut Vec<u8>)
@@ -59,9 +59,9 @@ where
 
     bytes.push(crate::DICT_START);
     // Iterate And Dictionary Encode The (String, Bencode) Pairs
-    for &(ref key, ref value) in sort_dict.iter() {
+    for (key, value) in sort_dict.iter() {
         encode_bytes(key.as_ref(), bytes);
-        encode(*value, bytes);
+        encode(value, bytes);
     }
     bytes.push(crate::BEN_END);
 }

@@ -1,10 +1,6 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
-use std::ops::Deref;
-use std::pin::Pin;
-use std::rc::Rc;
 
-use bencode::ext::BRefAccessExt;
-use bencode::{BRefAccess, BencodeRef};
+use bencode::BRefAccess;
 use util::bt::{self, NodeId};
 use util::error::{LengthError, LengthErrorKind, LengthResult};
 use util::sha::ShaHash;
@@ -30,7 +26,7 @@ impl<'a> CompactNodeInfo<'a> {
                 BYTES_PER_COMPACT_NODE_INFO,
             ))
         } else {
-            Ok(CompactNodeInfo { nodes: nodes })
+            Ok(CompactNodeInfo { nodes })
         }
     }
 
@@ -106,7 +102,7 @@ where
             }
         }
 
-        Ok(CompactValueInfo { values: values })
+        Ok(CompactValueInfo { values })
     }
 
     pub fn values(&self) -> &Box<std::vec::Vec<Box<B>>> {
@@ -239,7 +235,7 @@ mod tests {
 
     #[test]
     fn positive_compact_values_empty() {
-        let bencode_values: Box<Vec<Box<&BencodeRef>>> = Box::new(Vec::new());
+        let bencode_values: Box<Vec<Box<&BencodeRef>>> = Box::default();
         let compact_value = CompactValueInfo::new(bencode_values).unwrap();
 
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();

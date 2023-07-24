@@ -10,7 +10,6 @@ use futures::future::Either;
 use futures::sink::{Sink, Wait};
 use handshake::{DiscoveryInfo, InitiateMessage, Protocol};
 use nom::IResult;
-use rand;
 use umio::external::{self, Timeout};
 use umio::{Dispatcher, ELoopBuilder, Provider};
 use util::bt::PeerId;
@@ -103,19 +102,19 @@ where
         ClientDispatcher {
             handshaker: handshaker.wait(),
             pid: peer_id,
-            port: port,
+            port,
             bound_addr: bind,
             active_requests: HashMap::new(),
             id_cache: ConnectIdCache::new(),
-            limiter: limiter,
+            limiter,
         }
     }
 
     /// Shutdown the current dispatcher, notifying all pending requests.
-    pub fn shutdown<'a>(&mut self, provider: &mut Provider<'a, ClientDispatcher<H>>) {
+    pub fn shutdown(&mut self, provider: &mut Provider<'_, ClientDispatcher<H>>) {
         // Notify all active requests with the appropriate error
         for token_index in 0..self.active_requests.len() {
-            let next_token = *self.active_requests.keys().skip(token_index).next().unwrap();
+            let next_token = *self.active_requests.keys().nth(token_index).unwrap();
 
             self.notify_client(next_token, Err(ClientError::ClientShutdown));
         }
@@ -135,9 +134,9 @@ where
     }
 
     /// Process a request to be sent to the given address and associated with the given token.
-    pub fn send_request<'a>(
+    pub fn send_request(
         &mut self,
-        provider: &mut Provider<'a, ClientDispatcher<H>>,
+        provider: &mut Provider<'_, ClientDispatcher<H>>,
         addr: SocketAddr,
         token: ClientToken,
         request: ClientRequest,
@@ -157,11 +156,11 @@ where
     }
 
     /// Process a response received from some tracker and match it up against our sent requests.
-    pub fn recv_response<'a, 'b>(
+    pub fn recv_response(
         &mut self,
-        provider: &mut Provider<'a, ClientDispatcher<H>>,
+        provider: &mut Provider<'_, ClientDispatcher<H>>,
         addr: SocketAddr,
-        response: TrackerResponse<'b>,
+        response: TrackerResponse<'_>,
     ) {
         let token = ClientToken(response.transaction_id());
 
@@ -190,7 +189,7 @@ where
         } else {
             // Match the request type against the response type and update our client
             match (conn_timer.message_params().1, response.response_type()) {
-                (&ClientRequest::Announce(hash, _), &ResponseType::Announce(ref res)) => {
+                (&ClientRequest::Announce(hash, _), ResponseType::Announce(res)) => {
                     // Forward contact information on to the handshaker
                     for addr in res.peers().iter() {
                         self.handshaker
@@ -200,10 +199,10 @@ where
 
                     self.notify_client(token, Ok(ClientResponse::Announce(res.to_owned())));
                 }
-                (&ClientRequest::Scrape(..), &ResponseType::Scrape(ref res)) => {
+                (&ClientRequest::Scrape(..), ResponseType::Scrape(res)) => {
                     self.notify_client(token, Ok(ClientResponse::Scrape(res.to_owned())));
                 }
-                (_, &ResponseType::Error(ref res)) => {
+                (_, ResponseType::Error(res)) => {
                     self.notify_client(token, Err(ClientError::ServerMessage(res.to_owned())));
                 }
                 _ => {
@@ -216,7 +215,7 @@ where
     /// Process an existing request, either re requesting a connection id or sending the actual request again.
     ///
     /// If this call is the result of a timeout, that will decide whether to cancel the request or not.
-    fn process_request<'a>(&mut self, provider: &mut Provider<'a, ClientDispatcher<H>>, token: ClientToken, timed_out: bool) {
+    fn process_request(&mut self, provider: &mut Provider<'_, ClientDispatcher<H>>, token: ClientToken, timed_out: bool) {
         let mut conn_timer = if let Some(conn_timer) = self.active_requests.remove(&token) {
             conn_timer
         } else {
@@ -305,7 +304,7 @@ where
     type Timeout = DispatchTimeout;
     type Message = DispatchMessage;
 
-    fn incoming<'a>(&mut self, mut provider: Provider<'a, Self>, message: &[u8], addr: SocketAddr) {
+    fn incoming(&mut self, mut provider: Provider<'_, Self>, message: &[u8], addr: SocketAddr) {
         let response = match TrackerResponse::from_bytes(message) {
             IResult::Done(_, rsp) => rsp,
             _ => return, // TODO: Add Logging
@@ -314,7 +313,7 @@ where
         self.recv_response(&mut provider, addr, response);
     }
 
-    fn notify<'a>(&mut self, mut provider: Provider<'a, Self>, message: DispatchMessage) {
+    fn notify(&mut self, mut provider: Provider<'_, Self>, message: DispatchMessage) {
         match message {
             DispatchMessage::Request(addr, token, req_type) => {
                 self.send_request(&mut provider, addr, token, req_type);
@@ -324,7 +323,7 @@ where
         }
     }
 
-    fn timeout<'a>(&mut self, mut provider: Provider<'a, Self>, timeout: DispatchTimeout) {
+    fn timeout(&mut self, mut provider: Provider<'_, Self>, timeout: DispatchTimeout) {
         match timeout {
             DispatchTimeout::Connect(token) => self.process_request(&mut provider, token, true),
             DispatchTimeout::CleanUp => {
@@ -353,9 +352,9 @@ impl ConnectTimer {
     /// Create a new ConnectTimer.
     pub fn new(addr: SocketAddr, request: ClientRequest) -> ConnectTimer {
         ConnectTimer {
-            addr: addr,
+            addr,
             attempt: 0,
-            request: request,
+            request,
             timeout_id: None,
         }
     }

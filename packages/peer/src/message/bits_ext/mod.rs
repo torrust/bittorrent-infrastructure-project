@@ -46,14 +46,14 @@ impl BitsExtensionMessage {
     {
         match self {
             &BitsExtensionMessage::Port(msg) => msg.write_bytes(writer),
-            &BitsExtensionMessage::Extended(ref msg) => msg.write_bytes(writer),
+            BitsExtensionMessage::Extended(msg) => msg.write_bytes(writer),
         }
     }
 
     pub fn message_size(&self) -> usize {
         match self {
             &BitsExtensionMessage::Port(_) => PORT_MESSAGE_LEN as usize,
-            &BitsExtensionMessage::Extended(ref msg) => BASE_EXTENDED_MESSAGE_LEN as usize + msg.bencode_size(),
+            BitsExtensionMessage::Extended(msg) => BASE_EXTENDED_MESSAGE_LEN as usize + msg.bencode_size(),
         }
     }
 }
@@ -66,12 +66,12 @@ fn parse_extension(mut bytes: Bytes) -> IResult<(), io::Result<BitsExtensionMess
         ignore_input!(switch!(header_bytes.as_ref(), throwaway_input!(tuple!(be_u32, be_u8)),
             (PORT_MESSAGE_LEN, PORT_MESSAGE_ID) => map!(
                 call!(PortMessage::parse_bytes, bytes.split_off(message::HEADER_LEN)),
-                |res_port| res_port.map(|port| BitsExtensionMessage::Port(port))
+                |res_port| res_port.map(BitsExtensionMessage::Port)
             )
         )) | ignore_input!(switch!(header_bytes.as_ref(), throwaway_input!(tuple!(be_u32, be_u8, be_u8)),
             (message_len, EXTENDED_MESSAGE_ID, EXTENDED_MESSAGE_HANDSHAKE_ID) => map!(
                 call!(ExtendedMessage::parse_bytes, bytes.split_off(message::HEADER_LEN + 1), message_len - 2),
-                |res_extended| res_extended.map(|extended| BitsExtensionMessage::Extended(extended))
+                |res_extended| res_extended.map(BitsExtensionMessage::Extended)
             )
         ))
     )

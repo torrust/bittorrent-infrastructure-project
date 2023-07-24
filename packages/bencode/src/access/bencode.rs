@@ -19,7 +19,7 @@ pub trait BRefAccess: Sized {
     type BType: BRefAccess<BKey = Self::BKey>;
 
     /// Access the bencode as a `BencodeRefKind`.
-    fn kind<'a>(&'a self) -> BencodeRefKind<'a, Self::BKey, Self::BType>;
+    fn kind(&self) -> BencodeRefKind<'_, Self::BKey, Self::BType>;
 
     /// Attempt to access the bencode as a `str`.
     fn str(&self) -> Option<&str>;
@@ -57,7 +57,7 @@ where
     type BKey = T::BKey;
     type BType = T::BType;
 
-    fn kind<'b>(&'b self) -> BencodeRefKind<'b, Self::BKey, Self::BType> {
+    fn kind(&self) -> BencodeRefKind<'_, Self::BKey, Self::BType> {
         (*self).kind()
     }
 
@@ -110,7 +110,7 @@ pub enum BencodeMutKind<'a, K: 'a, V: 'a> {
 /// Trait for write access to some bencode type.
 pub trait BMutAccess: Sized + BRefAccess {
     /// Access the bencode as a `BencodeMutKind`.
-    fn kind_mut<'a>(&'a mut self) -> BencodeMutKind<'a, Self::BKey, Self::BType>;
+    fn kind_mut(&mut self) -> BencodeMutKind<'_, Self::BKey, Self::BType>;
 
     /// Attempt to access the bencode as a mutable `BListAccess`.
     fn list_mut(&mut self) -> Option<&mut dyn BListAccess<Self::BType>>;

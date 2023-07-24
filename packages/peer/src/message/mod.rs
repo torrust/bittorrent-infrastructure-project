@@ -143,13 +143,13 @@ where
             &PeerWireProtocolMessage::UnInterested => {
                 write_length_id_pair(writer, UNINTERESTED_MESSAGE_LEN, Some(UNINTERESTED_MESSAGE_ID))
             }
-            &PeerWireProtocolMessage::Have(ref msg) => msg.write_bytes(writer),
-            &PeerWireProtocolMessage::BitField(ref msg) => msg.write_bytes(writer),
-            &PeerWireProtocolMessage::Request(ref msg) => msg.write_bytes(writer),
-            &PeerWireProtocolMessage::Piece(ref msg) => msg.write_bytes(writer),
-            &PeerWireProtocolMessage::Cancel(ref msg) => msg.write_bytes(writer),
-            &PeerWireProtocolMessage::BitsExtension(ref ext) => ext.write_bytes(writer),
-            &PeerWireProtocolMessage::ProtExtension(ref ext) => ext_protocol.write_bytes(ext, writer),
+            PeerWireProtocolMessage::Have(msg) => msg.write_bytes(writer),
+            PeerWireProtocolMessage::BitField(msg) => msg.write_bytes(writer),
+            PeerWireProtocolMessage::Request(msg) => msg.write_bytes(writer),
+            PeerWireProtocolMessage::Piece(msg) => msg.write_bytes(writer),
+            PeerWireProtocolMessage::Cancel(msg) => msg.write_bytes(writer),
+            PeerWireProtocolMessage::BitsExtension(ext) => ext.write_bytes(writer),
+            PeerWireProtocolMessage::ProtExtension(ext) => ext_protocol.write_bytes(ext, writer),
         }
     }
 
@@ -161,12 +161,12 @@ where
             &PeerWireProtocolMessage::Interested => INTERESTED_MESSAGE_LEN as usize,
             &PeerWireProtocolMessage::UnInterested => UNINTERESTED_MESSAGE_LEN as usize,
             &PeerWireProtocolMessage::Have(_) => HAVE_MESSAGE_LEN as usize,
-            &PeerWireProtocolMessage::BitField(ref msg) => BASE_BITFIELD_MESSAGE_LEN as usize + msg.bitfield().len(),
+            PeerWireProtocolMessage::BitField(msg) => BASE_BITFIELD_MESSAGE_LEN as usize + msg.bitfield().len(),
             &PeerWireProtocolMessage::Request(_) => REQUEST_MESSAGE_LEN as usize,
-            &PeerWireProtocolMessage::Piece(ref msg) => BASE_PIECE_MESSAGE_LEN as usize + msg.block().len(),
+            PeerWireProtocolMessage::Piece(msg) => BASE_PIECE_MESSAGE_LEN as usize + msg.block().len(),
             &PeerWireProtocolMessage::Cancel(_) => CANCEL_MESSAGE_LEN as usize,
-            &PeerWireProtocolMessage::BitsExtension(ref ext) => ext.message_size(),
-            &PeerWireProtocolMessage::ProtExtension(ref ext) => ext_protocol.message_size(ext),
+            PeerWireProtocolMessage::BitsExtension(ext) => ext.message_size(),
+            PeerWireProtocolMessage::ProtExtension(ext) => ext_protocol.message_size(ext),
         };
 
         MESSAGE_LENGTH_LEN_BYTES + message_specific_len

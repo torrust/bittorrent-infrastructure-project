@@ -21,9 +21,9 @@ impl ScrapeStats {
     /// Create a new ScrapeStats.
     pub fn new(seeders: i32, downloaded: i32, leechers: i32) -> ScrapeStats {
         ScrapeStats {
-            seeders: seeders,
-            downloaded: downloaded,
-            leechers: leechers,
+            seeders,
+            downloaded,
+            leechers,
         }
     }
 
@@ -85,7 +85,7 @@ impl<'a> ScrapeRequest<'a> {
     where
         W: Write,
     {
-        writer.write_all(&*self.hashes)
+        writer.write_all(&self.hashes)
     }
 
     /// Add the InfoHash to the current request.
@@ -96,8 +96,8 @@ impl<'a> ScrapeRequest<'a> {
     }
 
     /// Iterator over all of the hashes in the request.
-    pub fn iter<'b>(&'b self) -> ScrapeRequestIter<'b> {
-        ScrapeRequestIter::new(&*self.hashes)
+    pub fn iter(&self) -> ScrapeRequestIter<'_> {
+        ScrapeRequestIter::new(&self.hashes)
     }
 
     /// Create an owned version of ScrapeRequest.
@@ -108,7 +108,7 @@ impl<'a> ScrapeRequest<'a> {
     }
 }
 
-fn parse_request<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], ScrapeRequest<'a>> {
+fn parse_request(bytes: &[u8]) -> IResult<&[u8], ScrapeRequest<'_>> {
     let remainder_bytes = bytes.len() % bt::INFO_HASH_LEN;
 
     if remainder_bytes != 0 {
@@ -153,7 +153,7 @@ impl<'a> ScrapeResponse<'a> {
     where
         W: Write,
     {
-        writer.write_all(&*self.stats)
+        writer.write_all(&self.stats)
     }
 
     /// Add the scrape statistics to the current response.
@@ -173,8 +173,8 @@ impl<'a> ScrapeResponse<'a> {
     ///
     /// Ordering of the status corresponds to the ordering of the InfoHash in the
     /// initial request.
-    pub fn iter<'b>(&'b self) -> ScrapeResponseIter<'b> {
-        ScrapeResponseIter::new(&*self.stats)
+    pub fn iter(&self) -> ScrapeResponseIter<'_> {
+        ScrapeResponseIter::new(&self.stats)
     }
 
     /// Create an owned version of ScrapeResponse.
@@ -185,7 +185,7 @@ impl<'a> ScrapeResponse<'a> {
     }
 }
 
-fn parse_response<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], ScrapeResponse<'a>> {
+fn parse_response(bytes: &[u8]) -> IResult<&[u8], ScrapeResponse<'_>> {
     let remainder_bytes = bytes.len() % SCRAPE_STATS_BYTES;
 
     if remainder_bytes != 0 {

@@ -95,7 +95,7 @@ impl From<Info> for Metainfo {
             encoding: None,
             created_by: None,
             creation_date: None,
-            info: info,
+            info,
         }
     }
 }
@@ -109,7 +109,7 @@ fn parse_meta_bytes(bytes: &[u8]) -> ParseResult<Metainfo> {
 
     let opt_announce_list = {
         parse::parse_announce_list(root_dict)
-            .and_then(|list| Some(parse::convert_announce_list(list)))
+            .map(|list| parse::convert_announce_list(list))
             .or(None)
     };
 
@@ -123,12 +123,12 @@ fn parse_meta_bytes(bytes: &[u8]) -> ParseResult<Metainfo> {
 
     Ok(Metainfo {
         comment: opt_comment,
-        announce: announce,
+        announce,
         announce_list: opt_announce_list,
         encoding: opt_encoding,
         created_by: opt_created_by,
         creation_date: opt_creation_date,
-        info: info,
+        info,
     })
 }
 
@@ -186,7 +186,7 @@ impl Info {
     /// Ordering of pieces yielded in the iterator is guaranteed to be the order in
     /// which they are found in the torrent file as this is necessary to refer to
     /// pieces by their index to other peers.
-    pub fn pieces<'a>(&'a self) -> Pieces<'a> {
+    pub fn pieces(&self) -> Pieces<'_> {
         Pieces::new(&self.pieces)
     }
 
@@ -195,7 +195,7 @@ impl Info {
     /// Ordering of files yielded in the iterator is guaranteed to be the order in
     /// which they are found in the torrent file as this is necessary to reconstruct
     /// pieces received from peers.
-    pub fn files<'a>(&'a self) -> Files<'a> {
+    pub fn files(&self) -> Files<'_> {
         Files::new(&self.files)
     }
 
@@ -263,7 +263,7 @@ fn parse_info_bytes(bytes: &[u8]) -> ParseResult<Info> {
 }
 
 /// Parses the given info dictionary and builds an Info from it.
-fn parse_info_dictionary<'a>(info_bencode: &BencodeRef<'a>) -> ParseResult<Info> {
+fn parse_info_dictionary(info_bencode: &BencodeRef<'_>) -> ParseResult<Info> {
     let info_hash = InfoHash::from_bytes(info_bencode.buffer());
 
     let info_dict = (parse::parse_root_dict(info_bencode))?;
@@ -289,22 +289,22 @@ fn parse_info_dictionary<'a>(info_bencode: &BencodeRef<'a>) -> ParseResult<Info>
         }
 
         Ok(Info {
-            info_hash: info_hash,
+            info_hash,
             files: files_list,
             pieces: piece_buffers,
-            piece_len: piece_len,
-            is_private: is_private,
+            piece_len,
+            is_private,
             file_directory: Some(file_directory_path),
         })
     } else {
         let file = (File::as_single_file(info_dict))?;
 
         Ok(Info {
-            info_hash: info_hash,
+            info_hash,
             files: vec![file],
             pieces: piece_buffers,
-            piece_len: piece_len,
-            is_private: is_private,
+            piece_len,
+            is_private,
             file_directory: None,
         })
     }
@@ -362,7 +362,7 @@ impl File {
         Ok(File {
             len: length,
             path: name.to_owned().into(),
-            md5sum: md5sum,
+            md5sum,
         })
     }
 
@@ -386,7 +386,7 @@ impl File {
         Ok(File {
             len: length,
             path: path_buf,
-            md5sum: md5sum,
+            md5sum,
         })
     }
 
@@ -460,7 +460,7 @@ mod tests {
                     .map(|&p| info_dict_access.insert(parse::PRIVATE_KEY.into(), ben_int!(p)));
 
                 directory
-                    .and_then(|d| {
+                    .map(|d| {
                         // We intended to build a multi file torrent since we provided a directory
                         info_dict_access.insert(parse::NAME_KEY.into(), ben_bytes!(d));
 
@@ -470,7 +470,7 @@ mod tests {
                             {
                                 let bencode_files_access = bencode_files.list_mut().unwrap();
 
-                                for &(ref opt_len, ref opt_md5, ref opt_paths) in files.iter() {
+                                for (opt_len, opt_md5, opt_paths) in files.iter() {
                                     let opt_bencode_paths = opt_paths.as_ref().map(|paths| {
                                         let mut bencode_paths = BencodeMut::new_list();
 
@@ -500,7 +500,7 @@ mod tests {
                             info_dict_access.insert(parse::FILES_KEY.into(), bencode_files);
                         });
 
-                        Some(d)
+                        d
                     })
                     .or_else(|| {
                         // We intended to build a single file torrent if a directory was not specified

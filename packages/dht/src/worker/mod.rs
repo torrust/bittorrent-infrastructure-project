@@ -2,7 +2,6 @@ use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::mpsc;
 
-use mio;
 use util::bt::InfoHash;
 
 use crate::router::Router;

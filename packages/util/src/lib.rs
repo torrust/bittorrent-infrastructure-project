@@ -35,7 +35,6 @@ pub mod trans;
 pub mod error;
 
 //----------------------------------------------------------------------------//
-use std::mem;
 
 /// Applies a Fisher-Yates shuffle on the given list.
 pub fn fisher_shuffle<T: Default>(list: &mut [T]) {
@@ -44,8 +43,8 @@ pub fn fisher_shuffle<T: Default>(list: &mut [T]) {
 
         // Can't push the src_val directly into the swap_index in case i and swap_index
         // are the same value (we will end up setting our index to the default value).
-        let src_val = mem::replace(&mut list[i], T::default());
-        let dst_val = mem::replace(&mut list[swap_index], T::default());
+        let src_val = std::mem::take(&mut list[i]);
+        let dst_val = std::mem::take(&mut list[swap_index]);
 
         list[i] = dst_val;
         list[swap_index] = src_val;

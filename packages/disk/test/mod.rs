@@ -109,7 +109,7 @@ struct MultiFileDirectAccessor {
 
 impl MultiFileDirectAccessor {
     pub fn new(dir: PathBuf, files: Vec<(Vec<u8>, PathBuf)>) -> MultiFileDirectAccessor {
-        MultiFileDirectAccessor { dir: dir, files: files }
+        MultiFileDirectAccessor { dir, files }
     }
 }
 
@@ -133,8 +133,8 @@ impl Accessor for MultiFileDirectAccessor {
     where
         C: FnMut(u64, &Path),
     {
-        for &(ref buffer, ref path) in self.files.iter() {
-            callback(buffer.len() as u64, &*path)
+        for (buffer, path) in self.files.iter() {
+            callback(buffer.len() as u64, path)
         }
 
         Ok(())
@@ -144,7 +144,7 @@ impl Accessor for MultiFileDirectAccessor {
     where
         C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
     {
-        for &(ref buffer, _) in self.files.iter() {
+        for (buffer, _) in self.files.iter() {
             (callback(PieceAccess::Compute(&mut &buffer[..])))?
         }
 
@@ -173,7 +173,7 @@ impl InMemoryFileSystem {
     {
         let mut lock_files = self.files.lock().unwrap();
 
-        call(&mut *lock_files)
+        call(&mut lock_files)
     }
 }
 

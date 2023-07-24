@@ -94,8 +94,8 @@ impl FileAccessor {
         };
 
         Ok(FileAccessor {
-            absolute_path: absolute_path,
-            directory_name: directory_name,
+            absolute_path,
+            directory_name,
         })
     }
 }
@@ -183,8 +183,8 @@ impl<'a> DirectAccessor<'a> {
     /// Create a new DirectAccessor from the given file name and contents.
     pub fn new(file_name: &'a str, file_contents: &'a [u8]) -> DirectAccessor<'a> {
         DirectAccessor {
-            file_name: file_name,
-            file_contents: file_contents,
+            file_name,
+            file_contents,
         }
     }
 }

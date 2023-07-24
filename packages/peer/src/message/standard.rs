@@ -14,9 +14,7 @@ pub struct HaveMessage {
 
 impl HaveMessage {
     pub fn new(piece_index: u32) -> HaveMessage {
-        HaveMessage {
-            piece_index: piece_index,
-        }
+        HaveMessage { piece_index }
     }
 
     pub fn parse_bytes(_input: (), bytes: Bytes) -> IResult<(), io::Result<HaveMessage>> {
@@ -53,7 +51,7 @@ pub struct BitFieldMessage {
 
 impl BitFieldMessage {
     pub fn new(bytes: Bytes) -> BitFieldMessage {
-        BitFieldMessage { bytes: bytes }
+        BitFieldMessage { bytes }
     }
 
     pub fn parse_bytes(_input: (), mut bytes: Bytes, len: u32) -> IResult<(), io::Result<BitFieldMessage>> {
@@ -99,10 +97,7 @@ pub struct BitFieldIter {
 
 impl BitFieldIter {
     fn new(bytes: Bytes) -> BitFieldIter {
-        BitFieldIter {
-            bytes: bytes,
-            cur_bit: 0,
-        }
+        BitFieldIter { bytes, cur_bit: 0 }
     }
 }
 
@@ -113,7 +108,7 @@ impl Iterator for BitFieldIter {
         let byte_in_bytes = self.cur_bit / 8;
         let bit_in_byte = self.cur_bit % 8;
 
-        let opt_byte = self.bytes.get(byte_in_bytes).map(|byte| *byte);
+        let opt_byte = self.bytes.get(byte_in_bytes).copied();
         opt_byte.and_then(|byte| {
             let have_message = HaveMessage::new(self.cur_bit as u32);
             self.cur_bit += 1;
@@ -140,9 +135,9 @@ pub struct RequestMessage {
 impl RequestMessage {
     pub fn new(piece_index: u32, block_offset: u32, block_length: usize) -> RequestMessage {
         RequestMessage {
-            piece_index: piece_index,
-            block_offset: block_offset,
-            block_length: block_length,
+            piece_index,
+            block_offset,
+            block_length,
         }
     }
 
@@ -197,9 +192,9 @@ impl PieceMessage {
     pub fn new(piece_index: u32, block_offset: u32, block: Bytes) -> PieceMessage {
         // TODO: Check that users Bytes wont overflow a u32
         PieceMessage {
-            piece_index: piece_index,
-            block_offset: block_offset,
-            block: block,
+            piece_index,
+            block_offset,
+            block,
         }
     }
 
@@ -260,9 +255,9 @@ pub struct CancelMessage {
 impl CancelMessage {
     pub fn new(piece_index: u32, block_offset: u32, block_length: usize) -> CancelMessage {
         CancelMessage {
-            piece_index: piece_index,
-            block_offset: block_offset,
-            block_length: block_length,
+            piece_index,
+            block_offset,
+            block_length,
         }
     }
 

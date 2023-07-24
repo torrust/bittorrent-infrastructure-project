@@ -26,7 +26,7 @@ fn main() {
     output.flush().unwrap();
     let dst_path = input_lines.next().unwrap().unwrap();
 
-    match create_torrent(&src_path) {
+    match create_torrent(src_path) {
         Ok(bytes) => {
             let mut output_file = File::create(dst_path).unwrap();
             output_file.write_all(&bytes).unwrap();

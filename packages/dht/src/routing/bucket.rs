@@ -40,12 +40,12 @@ impl Bucket {
     }
 
     /// Iterator over all good nodes in the bucket.
-    pub fn good_nodes<'a>(&'a self) -> GoodNodes<'a> {
+    pub fn good_nodes(&self) -> GoodNodes<'_> {
         GoodNodes::new(&self.nodes)
     }
 
     /// Iterator over all good nodes and questionable nodes in the bucket.
-    pub fn pingable_nodes<'a>(&'a self) -> PingableNodes<'a> {
+    pub fn pingable_nodes(&self) -> PingableNodes<'_> {
         PingableNodes::new(&self.nodes)
     }
 
@@ -58,9 +58,7 @@ impl Bucket {
 
     /// Indicates if the bucket needs to be refreshed.
     pub fn needs_refresh(&self) -> bool {
-        self.nodes
-            .iter()
-            .fold(true, |prev, node| prev && node.status() != NodeStatus::Good)
+        self.nodes.iter().all(|node| node.status() != NodeStatus::Good)
     }
 
     /// Attempt to add the given Node to the bucket if it is not in a bad state.
@@ -242,13 +240,13 @@ mod tests {
         let new_good_node = Node::as_good(unused_id, dummy_addr);
 
         // Make sure the node is NOT in the bucket
-        assert!(bucket.good_nodes().find(|node| &&new_good_node == node).is_none());
+        assert!(!bucket.good_nodes().any(|node| &&new_good_node == &node));
 
         // Try to add it
         bucket.add_node(new_good_node.clone());
 
         // Make sure the node is NOT in the bucket
-        assert!(bucket.good_nodes().find(|node| &&new_good_node == node).is_none());
+        assert!(!bucket.good_nodes().any(|node| &&new_good_node == &node));
     }
 
     #[test]
@@ -276,7 +274,7 @@ mod tests {
         let new_questionable_node = Node::as_questionable(unused_id, dummy_addr);
 
         // Make sure the node is NOT in the bucket
-        assert!(bucket.pingable_nodes().find(|node| &&new_questionable_node == node).is_none());
+        assert!(!bucket.pingable_nodes().any(|node| &&new_questionable_node == &node));
 
         // Try to add it
         bucket.add_node(new_questionable_node.clone());

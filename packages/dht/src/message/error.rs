@@ -9,7 +9,7 @@ use bencode::{BConvert, BDecodeOpt, BDictAccess, BListAccess, BRefAccess, Bencod
 use crate::error::{DhtError, DhtErrorKind, DhtResult};
 use crate::message;
 
-const ERROR_ARGS_KEY: &'static str = "e";
+const ERROR_ARGS_KEY: &str = "e";
 const NUM_ERROR_ARGS: usize = 2;
 
 const GENERIC_ERROR_CODE: u8 = 201;
@@ -39,9 +39,9 @@ impl ErrorCode {
     }
 }
 
-impl Into<u8> for ErrorCode {
-    fn into(self) -> u8 {
-        match self {
+impl From<ErrorCode> for u8 {
+    fn from(val: ErrorCode) -> Self {
+        match val {
             ErrorCode::GenericError => GENERIC_ERROR_CODE,
             ErrorCode::ServerError => SERVER_ERROR_CODE,
             ErrorCode::ProtocolError => PROTOCOL_ERROR_CODE,
@@ -69,7 +69,7 @@ impl ErrorValidate {
         let a = BencodeRef::decode(args[0].bytes().unwrap().clone(), BDecodeOpt::default()).unwrap();
         let b = BencodeRef::decode(args[1].bytes().unwrap().clone(), BDecodeOpt::default()).unwrap();
 
-        let code = (self.convert_int(a, &format!("{}[0]", ERROR_ARGS_KEY)))?.clone();
+        let code = (self.convert_int(a, format!("{}[0]", ERROR_ARGS_KEY)))?;
         let message = String::from(self.convert_str(&b, &format!("{}[1]", ERROR_ARGS_KEY))?);
 
         Ok((code as u8, message))
@@ -102,8 +102,8 @@ impl<'a> ErrorMessage<'a> {
 
         ErrorMessage {
             trans_id: trans_id_cow,
-            code: code,
-            message: message,
+            code,
+            message,
         }
     }
 
@@ -124,11 +124,11 @@ impl<'a> ErrorMessage<'a> {
         Ok(ErrorMessage {
             trans_id: trans_id_cow,
             code: error_code,
-            message: message,
+            message,
         })
     }
 
-    pub fn transaction_id<'b>(&'b self) -> &'b [u8] {
+    pub fn transaction_id(&self) -> &[u8] {
         &self.trans_id
     }
 
@@ -136,7 +136,7 @@ impl<'a> ErrorMessage<'a> {
         self.code
     }
 
-    pub fn error_message<'b>(&'b self) -> &'b str {
+    pub fn error_message(&self) -> &str {
         &self.message
     }
 

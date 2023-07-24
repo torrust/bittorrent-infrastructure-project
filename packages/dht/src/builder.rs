@@ -21,7 +21,7 @@ impl MainlineDht {
     where
         H: crate::handshaker_trait::HandshakerTrait + 'static,
     {
-        let send_sock = (UdpSocket::bind(&builder.src_addr))?;
+        let send_sock = (UdpSocket::bind(builder.src_addr))?;
         let recv_sock = (send_sock.try_clone())?;
 
         let kill_sock = (send_sock.try_clone())?;
@@ -44,7 +44,7 @@ impl MainlineDht {
             warn!("bip_dt: MainlineDht failed to send a start bootstrap message...");
         }
 
-        Ok(MainlineDht { send: send })
+        Ok(MainlineDht { send })
     }
 
     /// Perform a search for the given InfoHash with an optional announce on the closest nodes.

@@ -26,8 +26,8 @@ impl<'a> RequestType<'a> {
     pub fn to_owned(&self) -> RequestType<'static> {
         match self {
             &RequestType::Connect => RequestType::Connect,
-            &RequestType::Announce(ref req) => RequestType::Announce(req.to_owned()),
-            &RequestType::Scrape(ref req) => RequestType::Scrape(req.to_owned()),
+            RequestType::Announce(req) => RequestType::Announce(req.to_owned()),
+            RequestType::Scrape(req) => RequestType::Scrape(req.to_owned()),
         }
     }
 }
@@ -69,7 +69,7 @@ impl<'a> TrackerRequest<'a> {
                 (writer.write_u32::<BigEndian>(crate::CONNECT_ACTION_ID))?;
                 (writer.write_u32::<BigEndian>(self.transaction_id()))?;
             }
-            &RequestType::Announce(ref req) => {
+            RequestType::Announce(req) => {
                 let action_id = if req.source_ip().is_ipv4() {
                     crate::ANNOUNCE_IPV4_ACTION_ID
                 } else {
@@ -80,7 +80,7 @@ impl<'a> TrackerRequest<'a> {
 
                 (req.write_bytes(writer))?;
             }
-            &RequestType::Scrape(ref req) => {
+            RequestType::Scrape(req) => {
                 (writer.write_u32::<BigEndian>(crate::SCRAPE_ACTION_ID))?;
                 (writer.write_u32::<BigEndian>(self.transaction_id()))?;
 
@@ -119,7 +119,7 @@ impl<'a> TrackerRequest<'a> {
     }
 }
 
-fn parse_request<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerRequest<'a>> {
+fn parse_request(bytes: &[u8]) -> IResult<&[u8], TrackerRequest<'_>> {
     switch!(bytes, tuple!(be_u64, be_u32, be_u32),
         (CONNECT_ID_PROTOCOL_ID, crate::CONNECT_ACTION_ID, tid) => value!(
             TrackerRequest::new(CONNECT_ID_PROTOCOL_ID, tid, RequestType::Connect)

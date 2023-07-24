@@ -132,7 +132,7 @@ impl UtMetadataModule {
                     .entry(*info.hash())
                     .or_insert_with(|| ActivePeers {
                         peers: HashSet::new(),
-                        metadata_size: metadata_size,
+                        metadata_size,
                     })
                     .peers
                     .insert(info);
@@ -153,7 +153,7 @@ impl UtMetadataModule {
         };
 
         if empty_peers {
-            self.active_peers.remove(&info.hash());
+            self.active_peers.remove(info.hash());
         }
 
         Ok(AsyncSink::Ready)
@@ -170,12 +170,12 @@ impl UtMetadataModule {
 
             if is_expired {
                 // Peer didnt respond to our request, remove from active peers
-                if let Some(active) = active_peers.get_mut(&request.sent_to.hash()) {
+                if let Some(active) = active_peers.get_mut(request.sent_to.hash()) {
                     active.peers.remove(&request.sent_to);
                 }
 
                 // Push request back to pending
-                pending_map.get_mut(&request.sent_to.hash()).map(|opt_pending| {
+                pending_map.get_mut(request.sent_to.hash()).map(|opt_pending| {
                     opt_pending.as_mut().map(|pending| {
                         pending.messages.push(request.message);
                     })
@@ -194,9 +194,7 @@ impl UtMetadataModule {
     }
 
     fn download_metainfo(&mut self, hash: InfoHash) -> StartSend<IDiscoveryMessage, DiscoveryError> {
-        if !self.pending_map.contains_key(&hash) {
-            self.pending_map.insert(hash, None);
-        }
+        self.pending_map.entry(hash).or_insert(None);
 
         Ok(AsyncSink::Ready)
     }
@@ -212,10 +210,7 @@ impl UtMetadataModule {
                 UtMetadataMessage::Request(request),
             )))
         } else {
-            self.peer_requests.push_back(PeerRequest {
-                send_to: info,
-                request: request,
-            });
+            self.peer_requests.push_back(PeerRequest { send_to: info, request });
 
             Ok(AsyncSink::Ready)
         }
@@ -232,7 +227,7 @@ impl UtMetadataModule {
         if let Some(index) = opt_index {
             self.active_requests.swap_remove(index);
 
-            if let Some(&mut Some(ref mut pending)) = self.pending_map.get_mut(&info.hash()) {
+            if let Some(&mut Some(ref mut pending)) = self.pending_map.get_mut(info.hash()) {
                 let data_offset = (data.piece() as usize) * MAX_REQUEST_SIZE;
 
                 pending.left -= 1;
@@ -256,7 +251,7 @@ impl UtMetadataModule {
         let opt_completed_hash = self
             .pending_map
             .iter()
-            .find(|&(_, ref opt_pending)| opt_pending.as_ref().map(|pending| pending.left == 0).unwrap_or(false))
+            .find(|(_, opt_pending)| opt_pending.as_ref().map(|pending| pending.left == 0).unwrap_or(false))
             .map(|(hash, _)| *hash);
 
         opt_completed_hash.and_then(|completed_hash| {
@@ -433,7 +428,7 @@ impl UtMetadataModule {
 fn generate_active_request(message: UtMetadataRequestMessage, peer: PeerInfo) -> ActiveRequest {
     ActiveRequest {
         left: Duration::from_millis(REQUEST_TIMEOUT_MILLIS),
-        message: message,
+        message,
         sent_to: peer,
     }
 }
@@ -455,9 +450,9 @@ fn pending_info_from_metadata_size(metadata_size: i64) -> PendingInfo {
     }
 
     PendingInfo {
-        messages: messages,
+        messages,
         left: num_pieces,
-        bytes: bytes,
+        bytes,
     }
 }
 

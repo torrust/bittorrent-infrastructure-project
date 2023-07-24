@@ -90,7 +90,7 @@ fn check_index<F>(ref_filters: &[Box<dyn HandshakeFilter + Send + Sync>], filter
 where
     F: HandshakeFilter + PartialEq + Eq + 'static,
 {
-    for (index, ref_filter) in ref_filters.into_iter().enumerate() {
+    for (index, ref_filter) in ref_filters.iter().enumerate() {
         let opt_match = ref_filter
             .as_any()
             .downcast_ref::<F>()
@@ -122,7 +122,7 @@ pub mod test_filters {
 
     impl BlockAddrFilter {
         pub fn new(addr: SocketAddr) -> BlockAddrFilter {
-            BlockAddrFilter { addr: addr }
+            BlockAddrFilter { addr }
         }
     }
 
@@ -149,7 +149,7 @@ pub mod test_filters {
 
     impl BlockProtocolFilter {
         pub fn new(prot: Protocol) -> BlockProtocolFilter {
-            BlockProtocolFilter { prot: prot }
+            BlockProtocolFilter { prot }
         }
     }
 
@@ -176,7 +176,7 @@ pub mod test_filters {
 
     impl BlockPeerIdFilter {
         pub fn new(pid: PeerId) -> BlockPeerIdFilter {
-            BlockPeerIdFilter { pid: pid }
+            BlockPeerIdFilter { pid }
         }
     }
 

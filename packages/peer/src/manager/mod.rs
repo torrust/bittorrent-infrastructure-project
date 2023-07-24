@@ -70,10 +70,7 @@ where
         let sink = PeerManagerSink::new(handle, timer, builder, res_send, peers.clone(), task_queue.clone());
         let stream = PeerManagerStream::new(res_recv, peers, task_queue);
 
-        PeerManager {
-            sink: sink,
-            stream: stream,
-        }
+        PeerManager { sink, stream }
     }
 
     /// Break the `PeerManager` into a sink and stream.
@@ -158,12 +155,12 @@ where
         task_queue: Arc<MsQueue<Task>>,
     ) -> PeerManagerSink<P> {
         PeerManagerSink {
-            handle: handle,
-            timer: timer,
-            build: build,
-            send: send,
-            peers: peers,
-            task_queue: task_queue,
+            handle,
+            timer,
+            build,
+            send,
+            peers,
+            task_queue,
         }
     }
 
@@ -221,7 +218,9 @@ where
 
         if took_lock {
             // Just notify a single person waiting on the lock to reduce contention
-            self.task_queue.try_pop().map(|task| task.notify());
+            if let Some(task) = self.task_queue.try_pop() {
+                task.notify()
+            }
         }
 
         result
@@ -269,7 +268,9 @@ where
 
         if took_lock {
             // Just notify a single person waiting on the lock to reduce contention
-            self.task_queue.try_pop().map(|task| task.notify());
+            if let Some(task) = self.task_queue.try_pop() {
+                task.notify()
+            }
         }
 
         result
@@ -294,9 +295,7 @@ where
                         Ok(AsyncSink::NotReady(IPeerManagerMessage::AddPeer(info, peer)))
                     } else {
                         match peers.entry(info) {
-                            Entry::Occupied(_) => {
-                                Err(PeerManagerError::from_kind(PeerManagerErrorKind::PeerNotFound { info: info }))
-                            }
+                            Entry::Occupied(_) => Err(PeerManagerError::from_kind(PeerManagerErrorKind::PeerNotFound { info })),
                             Entry::Vacant(vac) => {
                                 vac.insert(task::run_peer(peer, info, send.clone(), timer.clone(), builder, handle));
 
@@ -312,7 +311,7 @@ where
                 |info, _, _, _, _, peers| {
                     peers
                         .get_mut(&info)
-                        .ok_or_else(|| PeerManagerError::from_kind(PeerManagerErrorKind::PeerNotFound { info: info }))
+                        .ok_or_else(|| PeerManagerError::from_kind(PeerManagerErrorKind::PeerNotFound { info }))
                         .and_then(|send| {
                             send.start_send(IPeerManagerMessage::RemovePeer(info))
                                 .map_err(|_| panic!("bip_peer: PeerManager Failed To Send RemovePeer"))
@@ -325,7 +324,7 @@ where
                 |(info, mid, peer_message), _, _, _, _, peers| {
                     peers
                         .get_mut(&info)
-                        .ok_or_else(|| PeerManagerError::from_kind(PeerManagerErrorKind::PeerNotFound { info: info }))
+                        .ok_or_else(|| PeerManagerError::from_kind(PeerManagerErrorKind::PeerNotFound { info }))
                         .and_then(|send| {
                             send.start_send(IPeerManagerMessage::SendMessage(info, mid, peer_message))
                                 .map_err(|_| panic!("bip_peer: PeerManager Failed to Send SendMessage"))
@@ -375,9 +374,9 @@ where
         task_queue: Arc<MsQueue<Task>>,
     ) -> PeerManagerStream<P> {
         PeerManagerStream {
-            recv: recv,
-            peers: peers,
-            task_queue: task_queue,
+            recv,
+            peers,
+            task_queue,
             opt_pending: None,
         }
     }
@@ -414,7 +413,9 @@ where
 
         if took_lock {
             // Just notify a single person waiting on the lock to reduce contention
-            self.task_queue.try_pop().map(|task| task.notify());
+            if let Some(task) = self.task_queue.try_pop() {
+                task.notify()
+            }
         }
 
         result

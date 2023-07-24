@@ -86,7 +86,7 @@ impl TableLookup {
 
         // Call pick_initial_nodes with the all_sorted_nodes list as an iterator
         let initial_pick_nodes = pick_initial_nodes(all_sorted_nodes.iter_mut());
-        let initial_pick_nodes_filtered = initial_pick_nodes.iter().filter(|&&(_, good)| good).map(|&(ref node, _)| {
+        let initial_pick_nodes_filtered = initial_pick_nodes.iter().filter(|&&(_, good)| good).map(|(node, _)| {
             let distance_to_beat = node.id() ^ target_id;
 
             (node, distance_to_beat)
@@ -94,13 +94,13 @@ impl TableLookup {
 
         // Construct the lookup table structure
         let mut table_lookup = TableLookup {
-            table_id: table_id,
-            target_id: target_id,
+            table_id,
+            target_id,
             in_endgame: false,
             recv_values: false,
-            id_generator: id_generator,
-            will_announce: will_announce,
-            all_sorted_nodes: all_sorted_nodes,
+            id_generator,
+            will_announce,
+            all_sorted_nodes,
             announce_tokens: HashMap::new(),
             requested_nodes: HashSet::new(),
             active_lookups: HashMap::with_capacity(INITIAL_PICK_NUM),
@@ -118,11 +118,11 @@ impl TableLookup {
         self.target_id
     }
 
-    pub fn recv_response<'a, H>(
+    pub fn recv_response<H>(
         &mut self,
         node: Node,
         trans_id: &TransactionID,
-        msg: GetPeersResponse<'a>,
+        msg: GetPeersResponse<'_>,
         table: &RoutingTable,
         out: &SyncSender<(Vec<u8>, SocketAddr)>,
         event_loop: &mut EventLoop<DhtHandler<H>>,
@@ -194,7 +194,7 @@ impl TableLookup {
                 for (id, v4_addr) in nodes {
                     let addr = SocketAddr::V4(v4_addr);
                     let node = Node::as_questionable(id, addr);
-                    let will_ping = iterate_nodes.iter().find(|&&(ref n, _)| n == &node).is_some();
+                    let will_ping = iterate_nodes.iter().any(|(n, _)| n == &node);
 
                     insert_sorted_node(&mut self.all_sorted_nodes, self.target_id, node, will_ping);
                 }
@@ -221,20 +221,15 @@ impl TableLookup {
         if !self.in_endgame {
             // If the node gave us a closer id than its own to the target id, continue the search
             if let Some(ref nodes) = iterate_nodes {
-                let filtered_nodes = nodes
-                    .iter()
-                    .filter(|&&(_, good)| good)
-                    .map(|&(ref n, _)| (n, next_dist_to_beat));
+                let filtered_nodes = nodes.iter().filter(|&&(_, good)| good).map(|(n, _)| (n, next_dist_to_beat));
                 if self.start_request_round(filtered_nodes, table, out, event_loop) == LookupStatus::Failed {
                     return LookupStatus::Failed;
                 }
             }
 
             // If there are not more active lookups, start the endgame
-            if self.active_lookups.is_empty() {
-                if self.start_endgame_round(table, out, event_loop) == LookupStatus::Failed {
-                    return LookupStatus::Failed;
-                }
+            if self.active_lookups.is_empty() && self.start_endgame_round(table, out, event_loop) == LookupStatus::Failed {
+                return LookupStatus::Failed;
             }
         }
 
@@ -264,10 +259,8 @@ impl TableLookup {
 
         if !self.in_endgame {
             // If there are not more active lookups, start the endgame
-            if self.active_lookups.is_empty() {
-                if self.start_endgame_round(table, out, event_loop) == LookupStatus::Failed {
-                    return LookupStatus::Failed;
-                }
+            if self.active_lookups.is_empty() && self.start_endgame_round(table, out, event_loop) == LookupStatus::Failed {
+                return LookupStatus::Failed;
             }
         }
 
@@ -287,10 +280,10 @@ impl TableLookup {
             // Partial borrow so the filter function doesnt capture all of self
             let announce_tokens = &self.announce_tokens;
 
-            for &(_, ref node, _) in self
+            for (_, node, _) in self
                 .all_sorted_nodes
                 .iter()
-                .filter(|&&(_, ref node, _)| announce_tokens.contains_key(node))
+                .filter(|&(_, node, _)| announce_tokens.contains_key(node))
                 .take(ANNOUNCE_PICK_NUM)
             {
                 let trans_id = self.id_generator.generate();
@@ -315,7 +308,9 @@ impl TableLookup {
 
                 if !fatal_error {
                     // We requested from the node, marke it down if the node is in our routing table
-                    table.find_node(node).map(|n| n.local_request());
+                    if let Some(n) = table.find_node(node) {
+                        n.local_request()
+                    }
                 }
             }
         }
@@ -379,7 +374,9 @@ impl TableLookup {
             self.requested_nodes.insert(node.clone());
 
             // Update the node in the routing table
-            table.find_node(node).map(|n| n.local_request());
+            if let Some(n) = table.find_node(node) {
+                n.local_request()
+            }
 
             messages_sent += 1;
         }
@@ -437,7 +434,9 @@ impl TableLookup {
                 }
 
                 // Mark that we requested from the node in the RoutingTable
-                table.find_node(node).map(|n| n.local_request());
+                if let Some(n) = table.find_node(node) {
+                    n.local_request()
+                }
 
                 // Mark that we requested from the node
                 *req = true;

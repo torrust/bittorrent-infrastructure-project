@@ -17,10 +17,7 @@ pub struct PingRequest<'a> {
 
 impl<'a> PingRequest<'a> {
     pub fn new(trans_id: &'a [u8], node_id: NodeId) -> PingRequest<'a> {
-        PingRequest {
-            trans_id: trans_id,
-            node_id: node_id,
-        }
+        PingRequest { trans_id, node_id }
     }
 
     pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B::BType>, trans_id: &'a [u8]) -> DhtResult<PingRequest<'a>>
@@ -66,10 +63,7 @@ pub struct PingResponse<'a> {
 /// Reuse functionality of ping request since the structures are identical.
 impl<'a> PingResponse<'a> {
     pub fn new(trans_id: &'a [u8], node_id: NodeId) -> PingResponse<'a> {
-        PingResponse {
-            trans_id: trans_id,
-            node_id: node_id,
-        }
+        PingResponse { trans_id, node_id }
     }
 
     pub fn from_parts<B>(rsp_root: &dyn BDictAccess<B::BKey, B::BType>, trans_id: &'a [u8]) -> DhtResult<PingResponse<'a>>

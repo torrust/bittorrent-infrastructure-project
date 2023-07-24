@@ -2,10 +2,10 @@ extern crate metainfo;
 
 use metainfo::MetainfoBuilder;
 
-const TRACKER: &'static str = "udp://foo.bar.baz:6969";
+const TRACKER: &str = "udp://foo.bar.baz:6969";
 const DATE: i64 = 1517651523851;
-const COMMENT: &'static str = "Foo bar baz";
-const CREATED_BY: &'static str = "Fridge";
+const COMMENT: &str = "Foo bar baz";
+const CREATED_BY: &str = "Fridge";
 
 #[test]
 fn positive_set_trackers() {

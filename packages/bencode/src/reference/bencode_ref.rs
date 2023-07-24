@@ -21,9 +21,9 @@ pub enum InnerBencodeRef<'a> {
     Dict(BTreeMap<&'a [u8], BencodeRef<'a>>, &'a [u8]),
 }
 
-impl<'a> Into<BencodeRef<'a>> for InnerBencodeRef<'a> {
-    fn into(self) -> BencodeRef<'a> {
-        BencodeRef { inner: self }
+impl<'a> From<InnerBencodeRef<'a>> for BencodeRef<'a> {
+    fn from(val: InnerBencodeRef<'a>) -> Self {
+        BencodeRef { inner: val }
     }
 }
 
@@ -66,7 +66,7 @@ impl<'a> BRefAccess for BencodeRef<'a> {
     fn kind<'b>(&'b self) -> BencodeRefKind<'b, &'a [u8], BencodeRef<'a>> {
         match self.inner {
             InnerBencodeRef::Int(n, _) => BencodeRefKind::Int(n),
-            InnerBencodeRef::Bytes(ref n, _) => BencodeRefKind::Bytes(n),
+            InnerBencodeRef::Bytes(n, _) => BencodeRefKind::Bytes(n),
             InnerBencodeRef::List(ref n, _) => BencodeRefKind::List(n),
             InnerBencodeRef::Dict(ref n, _) => BencodeRefKind::Dict(n),
         }
@@ -117,7 +117,7 @@ impl<'a> BRefAccessExt<'a> for BencodeRef<'a> {
 
     fn bytes_ext(&self) -> Option<&'a [u8]> {
         match self.inner {
-            InnerBencodeRef::Bytes(ref n, _) => Some(&n[0..]),
+            InnerBencodeRef::Bytes(n, _) => Some(&n[0..]),
             _ => None,
         }
     }

@@ -36,7 +36,7 @@ fn positive_complete_torrent() {
     let (good_pieces, recv) = crate::core_loop_with_timeout(&mut core, 500, (0, recv), |good_pieces, recv, msg| match msg {
         ODiskMessage::TorrentAdded(_) => Loop::Break((good_pieces, recv)),
         ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue((good_pieces + 1, recv)),
-        unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+        unexpected => panic!("Unexpected Message: {:?}", unexpected),
     });
 
     // Make sure we have no good pieces
@@ -81,7 +81,7 @@ fn positive_complete_torrent() {
     // Send piece 1 with good blocks
     crate::send_block(
         &mut blocking_send,
-        &files_bytes[(1024 + 0)..(1024 + 500)],
+        &files_bytes[1024..(1024 + 500)],
         metainfo_file.info().info_hash(),
         1,
         0,
@@ -110,7 +110,7 @@ fn positive_complete_torrent() {
     // Send piece 2 with good blocks
     crate::send_block(
         &mut blocking_send,
-        &files_bytes[(2048 + 0)..(2048 + 500)],
+        &files_bytes[2048..(2048 + 500)],
         metainfo_file.info().info_hash(),
         2,
         0,
@@ -140,7 +140,7 @@ fn positive_complete_torrent() {
                 ODiskMessage::FoundGoodPiece(_, index) => (Some(index), true),
                 ODiskMessage::FoundBadPiece(_, index) => (Some(index), false),
                 ODiskMessage::BlockProcessed(_) => (None, false),
-                unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+                unexpected => panic!("Unexpected Message: {:?}", unexpected),
             };
 
             let (piece_zero_good, piece_one_good, piece_two_good) = match opt_piece_index {
@@ -161,9 +161,9 @@ fn positive_complete_torrent() {
     );
 
     // Assert whether or not pieces were good
-    assert_eq!(false, piece_zero_good);
-    assert_eq!(true, piece_one_good);
-    assert_eq!(true, piece_two_good);
+    assert!(!piece_zero_good);
+    assert!(piece_one_good);
+    assert!(piece_two_good);
 
     // Resend piece 0 with good blocks
     crate::send_block(
@@ -207,7 +207,7 @@ fn positive_complete_torrent() {
                 ODiskMessage::FoundGoodPiece(_, index) => (Some(index), true),
                 ODiskMessage::FoundBadPiece(_, index) => (Some(index), false),
                 ODiskMessage::BlockProcessed(_) => (None, false),
-                unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+                unexpected => panic!("Unexpected Message: {:?}", unexpected),
             };
 
             let piece_zero_good = match opt_piece_index {
@@ -226,5 +226,5 @@ fn positive_complete_torrent() {
     );
 
     // Assert whether or not piece was good
-    assert_eq!(true, piece_zero_good);
+    assert!(piece_zero_good);
 }

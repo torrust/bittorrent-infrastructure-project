@@ -28,7 +28,7 @@ where
     pub fn new(inner: F, capacity: usize) -> FileHandleCache<F> {
         FileHandleCache {
             cache: Mutex::new(LruCache::new(capacity)),
-            inner: inner,
+            inner,
         }
     }
 

@@ -23,7 +23,7 @@ pub fn execute_handshake<S>(
 where
     S: AsyncRead + AsyncWrite + 'static,
 {
-    let &(ref ext, ref pid, ref filters, ref timer) = context;
+    let (ext, pid, filters, timer) = context;
 
     match item {
         HandshakeType::Initiate(sock, init_msg) => initiate_handshake(sock, init_msg, *ext, *pid, filters.clone(), timer.clone()),

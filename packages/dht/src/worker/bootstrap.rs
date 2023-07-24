@@ -47,8 +47,8 @@ impl TableBootstrap {
         let router_filter: HashSet<SocketAddr> = routers.collect();
 
         TableBootstrap {
-            table_id: table_id,
-            id_generator: id_generator,
+            table_id,
+            id_generator,
             starting_nodes: nodes,
             starting_routers: router_filter,
             active_messages: HashMap::new(),
@@ -99,7 +99,7 @@ impl TableBootstrap {
     }
 
     pub fn is_router(&self, addr: &SocketAddr) -> bool {
-        self.starting_routers.contains(&addr)
+        self.starting_routers.contains(addr)
     }
 
     pub fn recv_response<'a, H>(
@@ -283,7 +283,7 @@ impl TableBootstrap {
 
         self.curr_bootstrap_bucket += 1;
         if self.curr_bootstrap_bucket == table::MAX_BUCKETS {
-            return BootstrapStatus::Completed;
+            BootstrapStatus::Completed
         } else if messages_sent == 0 {
             self.bootstrap_next_bucket(table, out, event_loop)
         } else {

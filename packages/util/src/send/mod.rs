@@ -25,8 +25,8 @@ impl<T: Send> TrySender<T> for mpsc::Sender<T> {
 
 impl<T: Send> TrySender<T> for mpsc::SyncSender<T> {
     fn try_send(&self, data: T) -> Option<T> {
-        self.try_send(data).err().and_then(|err| match err {
-            TrySendError::Full(data) => Some(data),
+        self.try_send(data).err().map(|err| match err {
+            TrySendError::Full(data) => data,
             TrySendError::Disconnected(_) => panic!("bip_util: mpsc::SyncSender Signaled A Hang Up"),
         })
     }

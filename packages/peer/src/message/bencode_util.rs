@@ -21,14 +21,14 @@ impl BConvert for IoErrorBencodeConvert {
 
 // ----------------------------------------------------------------------------//
 
-pub const ID_MAP_KEY: &'static [u8] = b"m";
-pub const CLIENT_ID_KEY: &'static [u8] = b"v";
-pub const CLIENT_TCP_PORT_KEY: &'static [u8] = b"p";
-pub const OUR_IP_KEY: &'static [u8] = b"yourip";
-pub const CLIENT_IPV6_ADDR_KEY: &'static [u8] = b"ipv6";
-pub const CLIENT_IPV4_ADDR_KEY: &'static [u8] = b"ipv4";
-pub const CLIENT_MAX_REQUESTS_KEY: &'static [u8] = b"reqq";
-pub const METADATA_SIZE_KEY: &'static [u8] = b"metadata_size";
+pub const ID_MAP_KEY: &[u8] = b"m";
+pub const CLIENT_ID_KEY: &[u8] = b"v";
+pub const CLIENT_TCP_PORT_KEY: &[u8] = b"p";
+pub const OUR_IP_KEY: &[u8] = b"yourip";
+pub const CLIENT_IPV6_ADDR_KEY: &[u8] = b"ipv6";
+pub const CLIENT_IPV4_ADDR_KEY: &[u8] = b"ipv4";
+pub const CLIENT_MAX_REQUESTS_KEY: &[u8] = b"reqq";
+pub const METADATA_SIZE_KEY: &[u8] = b"metadata_size";
 
 pub fn parse_id_map<K, V>(root: &dyn BDictAccess<K, V>) -> HashMap<ExtendedType, u8>
 where
@@ -159,9 +159,9 @@ fn parse_ipv6_addr(ipv6_bytes: &[u8]) -> Ipv6Addr {
 
 // ----------------------------------------------------------------------------//
 
-pub const MESSAGE_TYPE_KEY: &'static [u8] = b"msg_type";
-pub const PIECE_INDEX_KEY: &'static [u8] = b"piece";
-pub const TOTAL_SIZE_KEY: &'static [u8] = b"total_size";
+pub const MESSAGE_TYPE_KEY: &[u8] = b"msg_type";
+pub const PIECE_INDEX_KEY: &[u8] = b"piece";
+pub const TOTAL_SIZE_KEY: &[u8] = b"total_size";
 
 pub fn parse_message_type<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<u8>
 where
@@ -170,19 +170,18 @@ where
     CONVERT
         .lookup_and_convert_int(root, MESSAGE_TYPE_KEY)
         .map(|msg_type| msg_type as u8)
-        .into()
 }
 
 pub fn parse_piece_index<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<i64>
 where
     V: BRefAccess,
 {
-    CONVERT.lookup_and_convert_int(root, PIECE_INDEX_KEY).into()
+    CONVERT.lookup_and_convert_int(root, PIECE_INDEX_KEY)
 }
 
 pub fn parse_total_size<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<i64>
 where
     V: BRefAccess,
 {
-    CONVERT.lookup_and_convert_int(root, TOTAL_SIZE_KEY).into()
+    CONVERT.lookup_and_convert_int(root, TOTAL_SIZE_KEY)
 }

@@ -27,10 +27,7 @@ impl RoutingTable {
     pub fn new(node_id: NodeId) -> RoutingTable {
         let buckets = vec![Bucket::new()];
 
-        RoutingTable {
-            buckets: buckets,
-            node_id: node_id,
-        }
+        RoutingTable { buckets, node_id }
     }
 
     /// Return the node id of the RoutingTable.
@@ -43,12 +40,12 @@ impl RoutingTable {
     /// The closeness of nodes has a maximum granularity of a bucket. For most use
     /// cases this is fine since we will usually be performing lookups and aggregating
     /// a number of results equal to the size of a bucket.
-    pub fn closest_nodes<'a>(&'a self, node_id: NodeId) -> ClosestNodes<'a> {
+    pub fn closest_nodes(&self, node_id: NodeId) -> ClosestNodes<'_> {
         ClosestNodes::new(&self.buckets, self.node_id, node_id)
     }
 
     /// Iterator over all buckets in the routing table.
-    pub fn buckets<'a>(&'a self) -> Buckets<'a> {
+    pub fn buckets(&self) -> Buckets<'_> {
         Buckets::new(&self.buckets)
     }
 
@@ -57,7 +54,7 @@ impl RoutingTable {
         let bucket_index = leading_bit_count(self.node_id, node.id());
 
         // Check the sorted bucket
-        let opt_bucket_contents = if let Some(c) = self.buckets().skip(bucket_index).next() {
+        let opt_bucket_contents = if let Some(c) = self.buckets().nth(bucket_index) {
             // Got the sorted bucket
             Some(c)
         } else {
@@ -220,10 +217,7 @@ pub struct Buckets<'a> {
 
 impl<'a> Buckets<'a> {
     fn new(buckets: &'a [Bucket]) -> Buckets<'a> {
-        Buckets {
-            buckets: buckets,
-            index: 0,
-        }
+        Buckets { buckets, index: 0 }
     }
 }
 
@@ -287,11 +281,11 @@ impl<'a> ClosestNodes<'a> {
         let assorted_nodes = precompute_assorted_nodes(buckets, self_node_id);
 
         ClosestNodes {
-            buckets: buckets,
-            current_iter: current_iter,
+            buckets,
+            current_iter,
             current_index: start_index,
-            start_index: start_index,
-            assorted_nodes: assorted_nodes,
+            start_index,
+            assorted_nodes,
         }
     }
 }
@@ -339,10 +333,10 @@ impl<'a> Iterator for ClosestNodes<'a> {
 }
 
 /// Optionally returns the precomputed bucket positions for all assorted nodes.
-fn precompute_assorted_nodes<'a>(
-    buckets: &'a [Bucket],
+fn precompute_assorted_nodes(
+    buckets: &[Bucket],
     self_node_id: NodeId,
-) -> Option<[(usize, &'a Node, bool); bucket::MAX_BUCKET_SIZE]> {
+) -> Option<[(usize, &Node, bool); bucket::MAX_BUCKET_SIZE]> {
     if buckets.len() == MAX_BUCKETS {
         return None;
     }
@@ -367,7 +361,7 @@ fn precompute_assorted_nodes<'a>(
 }
 
 /// Optionally returns the filter iterator for the bucket at the specified index.
-fn bucket_iterator<'a>(buckets: &'a [Bucket], index: usize) -> Option<GoodNodes<'a>> {
+fn bucket_iterator(buckets: &[Bucket], index: usize) -> Option<GoodNodes<'_>> {
     if buckets.len() == MAX_BUCKETS {
         buckets
     } else {
@@ -378,7 +372,7 @@ fn bucket_iterator<'a>(buckets: &'a [Bucket], index: usize) -> Option<GoodNodes<
 }
 
 /// Converts the given iterator into a filter iterator to return only good nodes.
-fn good_node_filter<'a>(iter: Iter<'a, Node>) -> GoodNodes<'a> {
+fn good_node_filter(iter: Iter<'_, Node>) -> GoodNodes<'_> {
     iter.filter(is_good_node)
 }
 
@@ -493,10 +487,7 @@ mod tests {
 
         // First buckets should be empty
         assert_eq!(table.buckets().take(table::MAX_BUCKETS).count(), table::MAX_BUCKETS);
-        assert!(table
-            .buckets()
-            .take(table::MAX_BUCKETS)
-            .fold(true, |prev, contents| prev && contents.is_empty()));
+        assert!(table.buckets().take(table::MAX_BUCKETS).all(|contents| contents.is_empty()));
 
         // Last assorted bucket should show up
         assert_eq!(table.buckets().skip(table::MAX_BUCKETS).count(), 1);
@@ -544,7 +535,7 @@ mod tests {
             .buckets()
             .skip(1)
             .take(table::MAX_BUCKETS - 1)
-            .fold(true, |prev, contents| prev && contents.is_empty()));
+            .all(|contents| contents.is_empty()));
 
         // Last assorted bucket should show up
         assert_eq!(table.buckets().skip(table::MAX_BUCKETS).count(), 1);

@@ -17,7 +17,7 @@ fn positive_client_request_failed() {
     let send_token = {
         let mut client = TrackerClient::new("127.0.0.1:4503".parse().unwrap(), sink).unwrap();
 
-        let send_token = client
+        client
             .request(
                 server_addr,
                 ClientRequest::Announce(
@@ -25,9 +25,7 @@ fn positive_client_request_failed() {
                     ClientState::new(0, 0, 0, AnnounceEvent::None),
                 ),
             )
-            .unwrap();
-
-        send_token
+            .unwrap()
     };
     // Client is now dropped
 

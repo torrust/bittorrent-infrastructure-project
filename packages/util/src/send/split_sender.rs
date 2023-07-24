@@ -38,9 +38,9 @@ impl<S> SplitSender<S> {
     /// Create a new `SplitSender`.
     pub fn new(send: S, capacity: usize) -> SplitSender<S> {
         SplitSender {
-            send: send,
+            send,
             count: Arc::new(AtomicUsize::new(0)),
-            capacity: capacity,
+            capacity,
         }
     }
 

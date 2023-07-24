@@ -41,16 +41,16 @@ where
     /// Create a new PieceChecker with the given state.
     pub fn with_state(fs: F, info_dict: &'a Info, checker_state: &'a mut PieceCheckerState) -> PieceChecker<'a, F> {
         PieceChecker {
-            fs: fs,
-            info_dict: info_dict,
-            checker_state: checker_state,
+            fs,
+            info_dict,
+            checker_state,
         }
     }
 
     /// Calculate the diff of old to new good/bad pieces and store them in the piece checker state
     /// to be retrieved by the caller.
     pub fn calculate_diff(self) -> io::Result<()> {
-        let piece_length = self.info_dict.piece_length() as u64;
+        let piece_length = self.info_dict.piece_length();
         // TODO: Use Block Allocator
         let mut piece_buffer = vec![0u8; piece_length as usize];
 
@@ -64,8 +64,7 @@ where
             let expected_hash = InfoHash::from_hash(
                 info_dict
                     .pieces()
-                    .skip(message.piece_index() as usize)
-                    .next()
+                    .nth(message.piece_index() as usize)
                     .expect("bip_peer: Piece Checker Failed To Retrieve Expected Hash"),
             )
             .expect("bip_peer: Wrong Length Of Expected Hash Received");
@@ -81,8 +80,8 @@ where
     /// This is done once when a torrent file is added to see if we have any good pieces that
     /// the caller can use to skip (if the torrent was partially downloaded before).
     fn fill_checker_state(&mut self) -> io::Result<()> {
-        let piece_length = self.info_dict.piece_length() as u64;
-        let total_bytes: u64 = self.info_dict.files().map(|file| file.length() as u64).sum();
+        let piece_length = self.info_dict.piece_length();
+        let total_bytes: u64 = self.info_dict.files().map(|file| file.length()).sum();
 
         let full_pieces = total_bytes / piece_length;
         let last_piece_size = last_piece_size(self.info_dict);
@@ -94,7 +93,7 @@ where
 
         if last_piece_size != 0 {
             self.checker_state
-                .add_pending_block(BlockMetadata::with_default_hash(full_pieces, 0, last_piece_size as usize));
+                .add_pending_block(BlockMetadata::with_default_hash(full_pieces, 0, last_piece_size));
         }
 
         Ok(())
@@ -109,7 +108,7 @@ where
     fn validate_files_sizes(&mut self) -> TorrentResult<()> {
         for file in self.info_dict.files() {
             let file_path = helpers::build_path(self.info_dict.directory(), file);
-            let expected_size = file.length() as u64;
+            let expected_size = file.length();
 
             (self
                 .fs
@@ -129,9 +128,9 @@ where
                             .expect("bip_peer: Failed To Create File When Validating Sizes");
                     } else if !size_matches {
                         return Err(TorrentError::from_kind(TorrentErrorKind::ExistingFileSizeCheck {
-                            file_path: file_path,
-                            expected_size: expected_size,
-                            actual_size: actual_size,
+                            file_path,
+                            expected_size,
+                            actual_size,
                         }));
                     }
 
@@ -144,8 +143,8 @@ where
 }
 
 fn last_piece_size(info_dict: &Info) -> usize {
-    let piece_length = info_dict.piece_length() as u64;
-    let total_bytes: u64 = info_dict.files().map(|file| file.length() as u64).sum();
+    let piece_length = info_dict.piece_length();
+    let total_bytes: u64 = info_dict.files().map(|file| file.length()).sum();
 
     (total_bytes % piece_length) as usize
 }
@@ -176,8 +175,8 @@ impl PieceCheckerState {
             new_states: Vec::new(),
             old_states: HashSet::new(),
             pending_blocks: HashMap::new(),
-            total_blocks: total_blocks,
-            last_block_size: last_block_size,
+            total_blocks,
+            last_block_size,
         }
     }
 
@@ -216,8 +215,8 @@ impl PieceCheckerState {
         for messages in self
             .pending_blocks
             .values_mut()
-            .filter(|ref messages| piece_is_complete(total_blocks, last_block_size, piece_length, messages))
-            .filter(|ref messages| !old_states.contains(&PieceState::Good(messages[0].piece_index())))
+            .filter(|messages| piece_is_complete(total_blocks, last_block_size, piece_length, messages))
+            .filter(|messages| !old_states.contains(&PieceState::Good(messages[0].piece_index())))
         {
             let is_good = (callback(&messages[0]))?;
 
@@ -238,7 +237,7 @@ impl PieceCheckerState {
     fn merge_pieces(&mut self) {
         for (_, ref mut messages) in self.pending_blocks.iter_mut() {
             // Sort the messages by their block offset
-            messages.sort_by(|a, b| a.block_offset().cmp(&b.block_offset()));
+            messages.sort_by_key(|a| a.block_offset());
 
             let mut messages_len = messages.len();
             let mut merge_success = true;

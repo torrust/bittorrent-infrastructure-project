@@ -47,7 +47,7 @@ fn positive_remove_torrent() {
             }
             ODiskMessage::TorrentRemoved(_) => Loop::Break((blocking_send, good_pieces, recv)),
             ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue(((blocking_send, good_pieces + 1), recv)),
-            unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+            unexpected => panic!("Unexpected Message: {:?}", unexpected),
         },
     );
 

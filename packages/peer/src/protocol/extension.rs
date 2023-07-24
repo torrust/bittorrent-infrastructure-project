@@ -20,7 +20,7 @@ impl<P> PeerExtensionProtocol<P> {
         PeerExtensionProtocol {
             our_extended_msg: None,
             their_extended_msg: None,
-            custom_protocol: custom_protocol,
+            custom_protocol,
         }
     }
 }

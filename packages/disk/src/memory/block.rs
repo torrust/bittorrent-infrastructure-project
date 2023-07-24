@@ -17,10 +17,10 @@ pub struct BlockMetadata {
 impl BlockMetadata {
     pub fn new(info_hash: InfoHash, piece_index: u64, block_offset: u64, block_length: usize) -> BlockMetadata {
         BlockMetadata {
-            info_hash: info_hash,
-            piece_index: piece_index,
-            block_offset: block_offset,
-            block_length: block_length,
+            info_hash,
+            piece_index,
+            block_offset,
+            block_length,
         }
     }
 
@@ -63,10 +63,7 @@ pub struct Block {
 impl Block {
     /// Create a new `Block`.
     pub fn new(metadata: BlockMetadata, block_data: Bytes) -> Block {
-        Block {
-            metadata: metadata,
-            block_data: block_data,
-        }
+        Block { metadata, block_data }
     }
 
     /// Access the metadata for the block.
@@ -105,10 +102,7 @@ pub struct BlockMut {
 impl BlockMut {
     /// Create a new `BlockMut`.
     pub fn new(metadata: BlockMetadata, block_data: BytesMut) -> BlockMut {
-        BlockMut {
-            metadata: metadata,
-            block_data: block_data,
-        }
+        BlockMut { metadata, block_data }
     }
 
     /// Access the metadata for the block.

@@ -32,10 +32,10 @@ const BALANCED_MAX_PIECES_SIZE: usize = 40000;
 const BALANCED_MIN_PIECE_LENGTH: usize = 512 * 1024;
 
 const FILE_SIZE_MAX_PIECES_SIZE: usize = 20000;
-const FILE_SIZE_MIN_PIECE_LENGTH: usize = 1 * 1024 * 1024;
+const FILE_SIZE_MIN_PIECE_LENGTH: usize = 1024 * 1024;
 
 const TRANSFER_MAX_PIECES_SIZE: usize = 60000;
-const TRANSFER_MIN_PIECE_LENGTH: usize = 1 * 1024;
+const TRANSFER_MIN_PIECE_LENGTH: usize = 1024;
 
 /// Enumerates settings for piece length for generating a torrent file.
 pub enum PieceLength {
@@ -332,7 +332,7 @@ where
         // If the accessor specifies a directory OR there are mutliple files, we will build a multi file torrent
         // If the directory is not present but there are multiple files, the direcotry field will be set to empty
         match (&access_directory, files_info.len() > 1) {
-            (&Some(ref directory), _) => {
+            (Some(directory), _) => {
                 let mut bencode_files = BencodeMut::new_list();
 
                 {

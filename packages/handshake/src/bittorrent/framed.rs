@@ -31,7 +31,7 @@ pub struct FramedHandshake<S> {
 impl<S> FramedHandshake<S> {
     pub fn new(sock: S) -> FramedHandshake<S> {
         FramedHandshake {
-            sock: sock,
+            sock,
             write_buffer: BytesMut::with_capacity(1),
             read_buffer: vec![0],
             read_pos: 0,
@@ -63,7 +63,7 @@ where
             let write_result = self.sock.write_buf(&mut Cursor::new(&self.write_buffer));
 
             match try_nb!(write_result) {
-                Async::Ready(0) => return Err(io::Error::new(io::ErrorKind::WriteZero, "Failed To Write Bytes").into()),
+                Async::Ready(0) => return Err(io::Error::new(io::ErrorKind::WriteZero, "Failed To Write Bytes")),
                 Async::Ready(written) => {
                     self.write_buffer.split_to(written);
                 }
@@ -111,7 +111,7 @@ where
                     let expected_length = message::write_len_with_protocol_len(length);
 
                     if self.read_pos == expected_length {
-                        match HandshakeMessage::from_bytes(&*self.read_buffer) {
+                        match HandshakeMessage::from_bytes(&self.read_buffer) {
                             IResult::Done(_, message) => {
                                 self.state = HandshakeState::Finished;
 

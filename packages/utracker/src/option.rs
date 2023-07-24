@@ -48,9 +48,7 @@ impl<'a> AnnounceOptions<'a> {
         let mut raw_options = HashMap::new();
 
         map!(bytes, call!(parse_options, &mut raw_options), |_| {
-            AnnounceOptions {
-                raw_options: raw_options,
-            }
+            AnnounceOptions { raw_options }
         })
     }
 
@@ -87,7 +85,7 @@ impl<'a> AnnounceOptions<'a> {
     {
         self.raw_options
             .get(&O::option_byte())
-            .and_then(|bytes| O::read_option(&*bytes))
+            .and_then(|bytes| O::read_option(bytes))
     }
 
     /// Add an AnnounceOption to the current set of AnnounceOptions.
@@ -157,7 +155,7 @@ named!(parse_end_option<&[u8], bool>, map!(alt!(
 ), |_| true));
 
 /// Parse a noop byte.
-fn parse_no_option<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], bool> {
+fn parse_no_option(bytes: &[u8]) -> IResult<&[u8], bool> {
     map!(bytes, tag!([NO_OPERATION_BYTE]), |_| false)
 }
 
@@ -193,7 +191,7 @@ pub struct URLDataOption<'a> {
 impl<'a> URLDataOption<'a> {
     /// Create a new URLDataOption from the given bytes.
     pub fn new(url_data: &'a [u8]) -> URLDataOption<'a> {
-        URLDataOption { url_data: url_data }
+        URLDataOption { url_data }
     }
 }
 
@@ -211,7 +209,7 @@ impl<'a> AnnounceOption<'a> for URLDataOption<'a> {
     }
 
     fn write_option(&self, mut buffer: &mut [u8]) {
-        buffer.write_all(&self.url_data).unwrap();
+        buffer.write_all(self.url_data).unwrap();
     }
 }
 
@@ -258,7 +256,7 @@ mod tests {
         options.insert(&option);
         options.write_bytes(&mut received).unwrap();
 
-        let expected = [super::URL_DATA_BYTE, 2, 'A' as u8, 'A' as u8, super::END_OF_OPTIONS_BYTE];
+        let expected = [super::URL_DATA_BYTE, 2, b'A', b'A', super::END_OF_OPTIONS_BYTE];
 
         assert_eq!(&received[..], &expected[..]);
     }
@@ -277,7 +275,7 @@ mod tests {
 
         let mut expected = Vec::new();
         expected.write_all(&[super::URL_DATA_BYTE, 255]).unwrap();
-        expected.write_all(option_content.chunks(255).nth(0).unwrap()).unwrap();
+        expected.write_all(option_content.chunks(255).next().unwrap()).unwrap();
         expected.write_all(&[super::URL_DATA_BYTE, 1]).unwrap();
         expected.write_all(option_content.chunks(255).nth(1).unwrap()).unwrap();
         expected.write_all(&[super::END_OF_OPTIONS_BYTE]).unwrap();

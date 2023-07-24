@@ -26,9 +26,9 @@ impl<'a> ResponseType<'a> {
     pub fn to_owned(&self) -> ResponseType<'static> {
         match self {
             &ResponseType::Connect(id) => ResponseType::Connect(id),
-            &ResponseType::Announce(ref res) => ResponseType::Announce(res.to_owned()),
-            &ResponseType::Scrape(ref res) => ResponseType::Scrape(res.to_owned()),
-            &ResponseType::Error(ref err) => ResponseType::Error(err.to_owned()),
+            ResponseType::Announce(res) => ResponseType::Announce(res.to_owned()),
+            ResponseType::Scrape(res) => ResponseType::Scrape(res.to_owned()),
+            ResponseType::Error(err) => ResponseType::Error(err.to_owned()),
         }
     }
 }
@@ -65,7 +65,7 @@ impl<'a> TrackerResponse<'a> {
 
                 (writer.write_u64::<BigEndian>(id))?;
             }
-            &ResponseType::Announce(ref req) => {
+            ResponseType::Announce(req) => {
                 let action_id = match req.peers() {
                     &CompactPeers::V4(_) => crate::ANNOUNCE_IPV4_ACTION_ID,
                     &CompactPeers::V6(_) => crate::ANNOUNCE_IPV6_ACTION_ID,
@@ -76,13 +76,13 @@ impl<'a> TrackerResponse<'a> {
 
                 (req.write_bytes(writer))?;
             }
-            &ResponseType::Scrape(ref req) => {
+            ResponseType::Scrape(req) => {
                 (writer.write_u32::<BigEndian>(crate::SCRAPE_ACTION_ID))?;
                 (writer.write_u32::<BigEndian>(self.transaction_id()))?;
 
                 (req.write_bytes(writer))?;
             }
-            &ResponseType::Error(ref err) => {
+            ResponseType::Error(err) => {
                 (writer.write_u32::<BigEndian>(ERROR_ACTION_ID))?;
                 (writer.write_u32::<BigEndian>(self.transaction_id()))?;
 
@@ -112,7 +112,7 @@ impl<'a> TrackerResponse<'a> {
     }
 }
 
-fn parse_response<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerResponse<'a>> {
+fn parse_response(bytes: &[u8]) -> IResult<&[u8], TrackerResponse<'_>> {
     switch!(bytes, tuple!(be_u32, be_u32),
         (crate::CONNECT_ACTION_ID, tid)  => map!(be_u64, |cid| TrackerResponse::new(tid, ResponseType::Connect(cid)) ) |
         (crate::ANNOUNCE_IPV4_ACTION_ID, tid) => map!(call!(AnnounceResponse::from_bytes_v4), |ann_res| {

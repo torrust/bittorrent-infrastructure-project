@@ -24,8 +24,8 @@ impl LengthError {
     /// Create a `LengthError`.
     pub fn new(kind: LengthErrorKind, length: usize) -> LengthError {
         LengthError {
-            kind: kind,
-            length: length,
+            kind,
+            length,
             index: None,
         }
     }
@@ -33,8 +33,8 @@ impl LengthError {
     /// Create a `LengthError` for a given element index.
     pub fn with_index(kind: LengthErrorKind, length: usize, index: usize) -> LengthError {
         LengthError {
-            kind: kind,
-            length: length,
+            kind,
+            length,
             index: Some(index),
         }
     }

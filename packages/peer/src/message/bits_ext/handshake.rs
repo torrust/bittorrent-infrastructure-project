@@ -114,12 +114,8 @@ fn bencode_from_builder(builder: &ExtendedMessageBuilder, mut custom_entries: Ha
         IpAddr::V4(ipv4_addr) => convert::ipv4_to_bytes_be(ipv4_addr).to_vec(),
         IpAddr::V6(ipv6_addr) => convert::ipv6_to_bytes_be(ipv6_addr).to_vec(),
     });
-    let opt_client_ipv6_addr = builder
-        .our_ipv6_addr
-        .map(|client_ipv6_addr| convert::ipv6_to_bytes_be(client_ipv6_addr));
-    let opt_client_ipv4_addr = builder
-        .our_ipv4_addr
-        .map(|client_ipv4_addr| convert::ipv4_to_bytes_be(client_ipv4_addr));
+    let opt_client_ipv6_addr = builder.our_ipv6_addr.map(convert::ipv6_to_bytes_be);
+    let opt_client_ipv4_addr = builder.our_ipv4_addr.map(convert::ipv4_to_bytes_be);
 
     let mut root_map = BencodeMut::new_dict();
     let mut ben_id_map = BencodeMut::new_dict();
@@ -171,10 +167,10 @@ fn bencode_from_builder(builder: &ExtendedMessageBuilder, mut custom_entries: Ha
 // the ip that the sender sees us as. So if were sending this message, it would be
 // the ip we see the client as.
 
-const ROOT_ERROR_KEY: &'static str = "ExtendedMessage";
+const ROOT_ERROR_KEY: &str = "ExtendedMessage";
 
-const UT_METADATA_ID: &'static str = "ut_metadata";
-const UT_PEX_ID: &'static str = "ut_pex";
+const UT_METADATA_ID: &str = "ut_metadata";
+const UT_PEX_ID: &str = "ut_pex";
 
 /// Enumeration of extended types activated via `ExtendedMessage`.
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -199,7 +195,7 @@ impl ExtendedType {
         match self {
             &ExtendedType::UtMetadata => UT_METADATA_ID,
             &ExtendedType::UtPex => UT_PEX_ID,
-            &ExtendedType::Custom(ref id) => &**id,
+            ExtendedType::Custom(id) => id,
         }
     }
 }
@@ -251,7 +247,7 @@ impl ExtendedMessage {
             let raw_bencode = bytes.split_to(cast_len);
             let clone_raw_bencode = raw_bencode.clone();
 
-            let res_extended_message = BencodeRef::decode(&*raw_bencode, BDecodeOpt::default())
+            let res_extended_message = BencodeRef::decode(&raw_bencode, BDecodeOpt::default())
                 .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))
                 .and_then(|bencode| {
                     let ben_dict = (bencode_util::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY))?;
@@ -266,14 +262,14 @@ impl ExtendedMessage {
                     let metadata_size = bencode_util::parse_metadata_size(ben_dict);
 
                     Ok(ExtendedMessage {
-                        id_map: id_map,
-                        our_id: our_id,
-                        our_tcp_port: our_tcp_port,
-                        their_ip: their_ip,
-                        our_ipv6_addr: our_ipv6_addr,
-                        our_ipv4_addr: our_ipv4_addr,
-                        our_max_requests: our_max_requests,
-                        metadata_size: metadata_size,
+                        id_map,
+                        our_id,
+                        our_tcp_port,
+                        their_ip,
+                        our_ipv6_addr,
+                        our_ipv4_addr,
+                        our_max_requests,
+                        metadata_size,
                         raw_bencode: clone_raw_bencode,
                     })
                 });
@@ -304,12 +300,12 @@ impl ExtendedMessage {
 
     /// Query for the id corresponding to the given `ExtendedType`.
     pub fn query_id(&self, ext_type: &ExtendedType) -> Option<u8> {
-        self.id_map.get(ext_type).map(|id| *id)
+        self.id_map.get(ext_type).copied()
     }
 
     /// Retrieve our id from the message.
     pub fn our_id(&self) -> Option<&str> {
-        self.our_id.as_ref().map(|id| &**id)
+        self.our_id.as_deref()
     }
 
     /// Retrieve our tcp port from the message.
@@ -343,8 +339,8 @@ impl ExtendedMessage {
     }
 
     /// Retrieve a raw `BencodeRef` representing the current message.
-    pub fn bencode_ref<'a>(&'a self) -> BencodeRef<'a> {
+    pub fn bencode_ref(&self) -> BencodeRef<'_> {
         // We already verified that this is valid bencode
-        BencodeRef::decode(&*self.raw_bencode, BDecodeOpt::default()).unwrap()
+        BencodeRef::decode(&self.raw_bencode, BDecodeOpt::default()).unwrap()
     }
 }

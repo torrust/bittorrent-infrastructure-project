@@ -5,7 +5,7 @@ extern crate util;
 
 use std::collections::HashSet;
 use std::io::{self, Read};
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, ToSocketAddrs};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::thread::{self};
 
 use dht::handshaker_trait::HandshakerTrait;
@@ -61,9 +61,7 @@ impl HandshakerTrait for SimpleHandshaker {
     }
 
     /// Send the given Metadata back to the client.
-    fn metadata(&mut self, _: Self::MetadataEnvelope) {
-        ()
-    }
+    fn metadata(&mut self, _: Self::MetadataEnvelope) {}
 }
 
 fn main() {
@@ -97,8 +95,8 @@ fn main() {
     let stdin_lock = stdin.lock();
     for byte in stdin_lock.bytes() {
         match &[byte.unwrap()] {
-            b"a" => dht.search(hash.into(), true),
-            b"s" => dht.search(hash.into(), false),
+            b"a" => dht.search(hash, true),
+            b"s" => dht.search(hash, false),
             _ => (),
         }
     }

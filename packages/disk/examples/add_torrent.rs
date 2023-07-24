@@ -37,7 +37,7 @@ fn main() {
     let total_pieces = metainfo_file.info().pieces().count();
     disk_send.send(IDiskMessage::AddTorrent(metainfo_file)).wait().unwrap();
 
-    print!("\n");
+    println!();
 
     let mut good_pieces = 0;
     for recv_msg in disk_recv.wait() {
@@ -48,7 +48,7 @@ fn main() {
                 break;
             }
             ODiskMessage::FoundGoodPiece(_, _) => good_pieces += 1,
-            unexpected @ _ => panic!("Unexpected ODiskMessage {:?}", unexpected),
+            unexpected => panic!("Unexpected ODiskMessage {:?}", unexpected),
         }
     }
 }

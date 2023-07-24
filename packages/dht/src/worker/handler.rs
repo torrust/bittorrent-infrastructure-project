@@ -5,7 +5,6 @@ use std::sync::mpsc::{self, SyncSender};
 use std::{io, mem, thread};
 
 use bencode::{BDecodeOpt, BRefAccess, BencodeRef};
-use handshake::Handshaker;
 use log::LogLevel;
 use mio::{self, EventLoop, Handler};
 use util::bt::InfoHash;
@@ -138,20 +137,20 @@ where
         let future_actions = vec![PostBootstrapAction::Refresh(table_refresh, refresh_trans_id)];
 
         let detached = DetachedDhtHandler {
-            read_only: read_only,
-            handshaker: handshaker,
+            read_only,
+            handshaker,
             out_channel: out,
             token_store: TokenStore::new(),
-            aid_generator: aid_generator,
+            aid_generator,
             bootstrapping: false,
             routing_table: table,
             active_stores: AnnounceStorage::new(),
-            future_actions: future_actions,
+            future_actions,
             event_notifiers: Vec::new(),
         };
 
         DhtHandler {
-            detached: detached,
+            detached,
             table_actions: HashMap::new(),
         }
     }
@@ -374,7 +373,9 @@ where
             let node = Node::as_good(p.node_id(), addr);
 
             // Node requested from us, mark it in the Routingtable
-            work_storage.routing_table.find_node(&node).map(|n| n.remote_request());
+            if let Some(n) = work_storage.routing_table.find_node(&node) {
+                n.remote_request()
+            }
 
             let ping_rsp = PingResponse::new(p.transaction_id(), work_storage.routing_table.node_id());
             let ping_msg = ping_rsp.encode();
@@ -389,7 +390,9 @@ where
             let node = Node::as_good(f.node_id(), addr);
 
             // Node requested from us, mark it in the Routingtable
-            work_storage.routing_table.find_node(&node).map(|n| n.remote_request());
+            if let Some(n) = work_storage.routing_table.find_node(&node) {
+                n.remote_request()
+            }
 
             // Grab the closest nodes
             let mut closest_nodes_bytes = Vec::with_capacity(26 * 8);
@@ -411,7 +414,9 @@ where
             let node = Node::as_good(g.node_id(), addr);
 
             // Node requested from us, mark it in the Routingtable
-            work_storage.routing_table.find_node(&node).map(|n| n.remote_request());
+            if let Some(n) = work_storage.routing_table.find_node(&node) {
+                n.remote_request()
+            }
 
             // TODO: Move socket address serialization code into bip_util
             // TODO: Check what the maximum number of values we can give without overflowing a udp packet
@@ -488,7 +493,9 @@ where
             let node = Node::as_good(a.node_id(), addr);
 
             // Node requested from us, mark it in the Routingtable
-            work_storage.routing_table.find_node(&node).map(|n| n.remote_request());
+            if let Some(n) = work_storage.routing_table.find_node(&node) {
+                n.remote_request()
+            }
 
             // Validate the token
             let is_valid = match Token::new(a.token()) {
@@ -712,9 +719,7 @@ fn handle_start_bootstrap<H>(
 {
     let (work_storage, table_actions) = (&mut handler.detached, &mut handler.table_actions);
 
-    let router_iter = routers
-        .into_iter()
-        .filter_map(|r| r.ipv4_addr().ok().map(|v4| SocketAddr::V4(v4)));
+    let router_iter = routers.into_iter().filter_map(|r| r.ipv4_addr().ok().map(SocketAddr::V4));
 
     let mid_generator = work_storage.aid_generator.generate();
     let action_id = mid_generator.action_id();
@@ -736,7 +741,7 @@ fn handle_start_bootstrap<H>(
         BootstrapStatus::Completed => {
             // Check if our bootstrap was actually good
             if should_rebootstrap(&work_storage.routing_table) {
-                let (mut bootstrap, mut attempts) = match table_actions.get_mut(&action_id) {
+                let (bootstrap, attempts) = match table_actions.get_mut(&action_id) {
                     Some(&mut TableAction::Bootstrap(ref mut bootstrap, ref mut attempts)) => (bootstrap, attempts),
                     _ => panic!("bip_dht: Bug, in DhtHandler..."),
                 };

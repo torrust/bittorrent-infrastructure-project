@@ -10,7 +10,7 @@ use crate::manager::{ManagedMessage, PeerManager};
 const DEFAULT_PEER_CAPACITY: usize = 1000;
 const DEFAULT_SINK_BUFFER_CAPACITY: usize = 100;
 const DEFAULT_STREAM_BUFFER_CAPACITY: usize = 100;
-const DEFAULT_HEARTBEAT_INTERVAL_MILLIS: u64 = 1 * 60 * 1000;
+const DEFAULT_HEARTBEAT_INTERVAL_MILLIS: u64 = 60 * 1000;
 const DEFAULT_HEARTBEAT_TIMEOUT_MILLIS: u64 = 2 * 60 * 1000;
 
 /// Builder for configuring a `PeerManager`.

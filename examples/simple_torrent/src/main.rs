@@ -310,7 +310,7 @@ fn main() {
 
                             // Lookup the peer info given the block metadata
                             let mut request_map_mut = disk_request_map.borrow_mut();
-                            let mut peer_list = request_map_mut.get_mut(&metadata).unwrap();
+                            let peer_list = request_map_mut.get_mut(&metadata).unwrap();
                             let peer_info = peer_list.remove(1);
 
                             // Pack up our block into a peer wire protocol message and send it off to the peer
@@ -352,7 +352,7 @@ fn main() {
     ));
 
     // Generate data structure to track the requests we need to make, the requests that have been fulfilled, and an active peers list
-    let piece_requests = generate_requests(&metainfo.info(), 16 * 1024);
+    let piece_requests = generate_requests(metainfo.info(), 16 * 1024);
 
     // Have our disk manager allocate space for our torrent and start tracking it
     core.run(disk_manager_send.send(IDiskMessage::AddTorrent(metainfo.clone())))
@@ -369,10 +369,7 @@ fn main() {
                         match opt_item.unwrap() {
                             // Disk manager identified a good piece already downloaded
                             SelectState::GoodPiece(index) => {
-                                piece_requests = piece_requests
-                                    .into_iter()
-                                    .filter(|req| req.piece_index() != index as u32)
-                                    .collect();
+                                piece_requests.retain(|req| req.piece_index() != index as u32);
                                 Loop::Continue((select_recv, piece_requests, cur_pieces + 1))
                             }
                             // Disk manager is finished identifying good pieces, torrent has been added

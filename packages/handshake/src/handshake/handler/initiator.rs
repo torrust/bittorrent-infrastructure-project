@@ -16,7 +16,7 @@ pub fn initiator_handler<T>(
 where
     T: Transport,
 {
-    let &(ref transport, ref filters, ref handle, ref timer) = context;
+    let (transport, filters, handle, timer) = context;
 
     if handler::should_filter(
         Some(item.address()),

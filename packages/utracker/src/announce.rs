@@ -50,13 +50,13 @@ impl<'a> AnnounceRequest<'a> {
     ) -> AnnounceRequest<'a> {
         AnnounceRequest {
             info_hash: hash,
-            peer_id: peer_id,
-            state: state,
-            ip: ip,
-            key: key,
-            num_want: num_want,
-            port: port,
-            options: options,
+            peer_id,
+            state,
+            ip,
+            key,
+            num_want,
+            port,
+            options,
         }
     }
 
@@ -153,10 +153,7 @@ impl<'a> AnnounceRequest<'a> {
 }
 
 /// Parse an AnnounceRequest with the given SourceIP type constructor.
-fn parse_request<'a>(
-    bytes: &'a [u8],
-    ip_type: fn(bytes: &[u8]) -> IResult<&[u8], SourceIP>,
-) -> IResult<&'a [u8], AnnounceRequest<'a>> {
+fn parse_request(bytes: &[u8], ip_type: fn(bytes: &[u8]) -> IResult<&[u8], SourceIP>) -> IResult<&[u8], AnnounceRequest<'_>> {
     do_parse!(bytes,
         info_hash:  map!(take!(bt::INFO_HASH_LEN), |bytes| InfoHash::from_hash(bytes).unwrap()) >>
         peer_id:    map!(take!(bt::PEER_ID_LEN), |bytes| PeerId::from_hash(bytes).unwrap()) >>
@@ -185,10 +182,10 @@ impl<'a> AnnounceResponse<'a> {
     /// Create a new AnnounceResponse
     pub fn new(interval: i32, leechers: i32, seeders: i32, peers: CompactPeers<'a>) -> AnnounceResponse<'a> {
         AnnounceResponse {
-            interval: interval,
-            leechers: leechers,
-            seeders: seeders,
-            peers: peers,
+            interval,
+            leechers,
+            seeders,
+            peers,
         }
     }
 
@@ -281,7 +278,7 @@ impl ClientState {
             downloaded: bytes_downloaded,
             left: bytes_left,
             uploaded: bytes_uploaded,
-            event: event,
+            event,
         }
     }
 
@@ -452,23 +449,23 @@ impl SourceIP {
 fn parse_preference_v4(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
     alt!(bytes,
         tag!(IMPLIED_IPV4_ID) => { |_| SourceIP::ImpliedV4 } |
-        parse_ipv4            => { |ipv4| SourceIP::ExplicitV4(ipv4) }
+        parse_ipv4            => { SourceIP::ExplicitV4 }
     )
 }
 
 named!(parse_ipv4<&[u8], Ipv4Addr>,
-    map!(count_fixed!(u8, be_u8, 4), |b| convert::bytes_be_to_ipv4(b))
+    map!(count_fixed!(u8, be_u8, 4), convert::bytes_be_to_ipv4)
 );
 
 fn parse_preference_v6(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
     alt!(bytes,
         tag!(IMPLIED_IPV6_ID) => { |_| SourceIP::ImpliedV6 } |
-        parse_ipv6            => { |ipv6| SourceIP::ExplicitV6(ipv6) }
+        parse_ipv6            => { SourceIP::ExplicitV6 }
     )
 }
 
 named!(parse_ipv6<&[u8], Ipv6Addr>,
-    map!(count_fixed!(u8, be_u8, 16), |b| convert::bytes_be_to_ipv6(b))
+    map!(count_fixed!(u8, be_u8, 16), convert::bytes_be_to_ipv6)
 );
 
 // ----------------------------------------------------------------------------//

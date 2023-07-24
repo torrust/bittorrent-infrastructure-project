@@ -18,7 +18,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use dht::handshaker_trait::HandshakerTrait;
-use dht::{DhtBuilder, DhtEvent, Handshaker, Router};
+use dht::{DhtBuilder, DhtEvent, Router};
 use futures::future::{self, Either, Loop};
 use futures::sink::Wait;
 use futures::{Future, Sink, Stream};
@@ -79,9 +79,7 @@ where
             .unwrap();
     }
 
-    fn metadata(&mut self, _data: ()) {
-        ()
-    }
+    fn metadata(&mut self, _data: ()) {}
 }
 
 fn main() {

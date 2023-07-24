@@ -15,7 +15,7 @@ pub struct NativeFile {
 impl NativeFile {
     /// Create a new NativeFile.
     fn new(file: File) -> NativeFile {
-        NativeFile { file: file }
+        NativeFile { file }
     }
 }
 
@@ -44,7 +44,7 @@ impl FileSystem for NativeFileSystem {
         P: AsRef<Path> + Send + 'static,
     {
         let combine_path = combine_user_path(&path, &self.current_dir);
-        let file = (create_new_file(&combine_path))?;
+        let file = (create_new_file(combine_path))?;
 
         Ok(NativeFile::new(file))
     }

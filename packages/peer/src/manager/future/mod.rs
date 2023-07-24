@@ -51,10 +51,10 @@ where
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         self.stream
             .poll()
-            .map_err(|error| PersistentError::IoError(error))
+            .map_err(PersistentError::IoError)
             .and_then(|item| match item {
                 Async::Ready(None) => Err(PersistentError::Disconnect),
-                other @ _ => Ok(other),
+                other => Ok(other),
             })
     }
 }
@@ -90,10 +90,10 @@ impl<S> RecurringTimeoutStream<S> {
         let sleep = timer.sleep(dur);
 
         RecurringTimeoutStream {
-            dur: dur,
-            timer: timer,
-            sleep: sleep,
-            stream: stream,
+            dur,
+            timer,
+            sleep,
+            stream,
         }
     }
 }

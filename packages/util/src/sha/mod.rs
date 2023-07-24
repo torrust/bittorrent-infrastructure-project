@@ -34,7 +34,7 @@ impl ShaHash {
         }
     }
 
-    pub fn bits<'a>(&'a self) -> Bits<'a> {
+    pub fn bits(&self) -> Bits<'_> {
         Bits::new(&self.hash)
     }
 
@@ -49,9 +49,9 @@ impl AsRef<[u8]> for ShaHash {
     }
 }
 
-impl Into<[u8; SHA_HASH_LEN]> for ShaHash {
-    fn into(self) -> [u8; SHA_HASH_LEN] {
-        self.hash
+impl From<ShaHash> for [u8; SHA_HASH_LEN] {
+    fn from(val: ShaHash) -> Self {
+        val.hash
     }
 }
 
@@ -77,7 +77,7 @@ impl BitXor<ShaHash> for ShaHash {
 
     fn bitxor(mut self, rhs: ShaHash) -> ShaHash {
         for (src, dst) in rhs.hash.iter().zip(self.hash.iter_mut()) {
-            *dst = *src ^ *dst;
+            *dst ^= *src;
         }
 
         self
@@ -142,10 +142,7 @@ pub struct Bits<'a> {
 
 impl<'a> Bits<'a> {
     fn new(bytes: &'a [u8]) -> Bits<'a> {
-        Bits {
-            bytes: bytes,
-            bit_pos: 0,
-        }
+        Bits { bytes, bit_pos: 0 }
     }
 }
 
