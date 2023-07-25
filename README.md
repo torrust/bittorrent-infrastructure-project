@@ -5,7 +5,7 @@ Chat: irc.mozilla.org <a href="http://mibbit.com/?server=irc.mozilla.org&channel
 
 ## Bencode (bip_bencode) - [![Documentation](https://docs.rs/bip_bencode/badge.svg)](https://docs.rs/bip_bencode) [![Crate](http://meritbadge.herokuapp.com/bip_bencode)](https://crates.io/crates/bip_bencode)
 
-**About**: Bencode is the binary encoding used throughout bittorrent technologies from metainfo files to DHT messages. Bencode types include integers, byte arrays, lists, and dictionarys, of which the last two can hold any bencode type (they could be recursively constructed).
+**About**: Bencode is the binary encoding used throughout bittorrent technologies from metainfo files to DHT messages. Bencode types include integers, byte arrays, lists, and dictionaries, of which the last two can hold any bencode type (they could be recursively constructed).
 
 ## Disk (bip_disk) - [![Documentation](https://docs.rs/bip_disk/badge.svg)](https://docs.rs/bip_disk) [![Crate](http://meritbadge.herokuapp.com/bip_disk)](https://crates.io/crates/bip_disk)
 
@@ -17,7 +17,7 @@ Chat: irc.mozilla.org <a href="http://mibbit.com/?server=irc.mozilla.org&channel
 
 ## Peer (bip_peer) - [![Documentation](https://docs.rs/bip_peer/badge.svg)](https://docs.rs/bip_peer) [![Crate](http://meritbadge.herokuapp.com/bip_peer)](https://crates.io/crates/bip_peer)
 
-**About**: Communicating with bittorrent peers involves choking (telling someone we won't respond to them now), expressing interest (telling someone, if we were unchoked, we would be interested in some data they hold), as well as downloading and uploading blocks to peers. This package defines some common bittorrent messages, including those as part of the `ExtensionBits` in `bip_handshake`, as well as those included in the [extension protocol](http://www.bittorrent.org/beps/bep_0010.html). We also provide a `PeerManager` for heartbeating peers and multiplexing messages sent to/from peers so that clients have an easier time communicating asynchronously with many peers.
+**About**: Communicating with bittorrent peers involves choking (telling someone we won't respond to them now), expressing interest (telling someone, if we were unchoked, we would be interested in some data they hold), as well as downloading and uploading blocks to peers. This package defines some common bittorrent messages, including those as part of the `ExtensionBits` in `bip_handshake`, as well as those included in the [extension protocol](http://www.bittorrent.org/beps/bep_0010.html). We also provide a `PeerManager` for heart beating peers and multiplexing messages sent to/from peers so that clients have an easier time communicating asynchronously with many peers.
 
 ## Select (bip_select) - [![Documentation](https://docs.rs/bip_select/badge.svg)](https://docs.rs/bip_select) [![Crate](http://meritbadge.herokuapp.com/bip_select)](https://crates.io/crates/bip_select)
 
@@ -35,7 +35,7 @@ Chat: irc.mozilla.org <a href="http://mibbit.com/?server=irc.mozilla.org&channel
 
 ## Tracker (bip_utracker) - [![Documentation](https://docs.rs/bip_utracker/badge.svg)](https://docs.rs/bip_utracker) [![Crate](http://meritbadge.herokuapp.com/bip_utracker)](https://crates.io/crates/bip_utracker)
 
-**About**: Trackers provide a centralized solution to peer discovery within the bittorrent eco-system. Clients send messages to a specific set of trackers, updating them with any state changes that have occured pertaining to the download of files. However, using the start and stop events we can use trackers generically to either add or remove ourselves from a tracker for the purposes of peer discovery for any application.
+**About**: Trackers provide a centralized solution to peer discovery within the bittorrent eco-system. Clients send messages to a specific set of trackers, updating them with any state changes that have occurred pertaining to the download of files. However, using the start and stop events we can use trackers generically to either add or remove ourselves from a tracker for the purposes of peer discovery for any application.
 
 ## References
 

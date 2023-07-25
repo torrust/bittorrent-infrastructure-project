@@ -29,7 +29,7 @@ pub use self::port::PortMessage;
 /// Sent after the handshake if the corresponding extension bit is set.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BitsExtensionMessage {
-    /// Messsage for determining the port a peer's DHT is listening on.
+    /// Message for determining the port a peer's DHT is listening on.
     Port(PortMessage),
     /// Message for sending a peer the map of extensions we support.
     Extended(ExtendedMessage),

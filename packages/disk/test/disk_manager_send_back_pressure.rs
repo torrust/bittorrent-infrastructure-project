@@ -9,7 +9,7 @@ use tokio_core::reactor::Core;
 use crate::{InMemoryFileSystem, MultiFileDirectAccessor};
 
 #[test]
-fn positive_disk_manager_send_backpressure() {
+fn positive_disk_manager_send_back_pressure() {
     // Create some "files" as random bytes
     let data_a = (crate::random_buffer(50), "/path/to/file/a".into());
     let data_b = (crate::random_buffer(2000), "/path/to/file/b".into());
@@ -45,15 +45,15 @@ fn positive_disk_manager_send_backpressure() {
         .unwrap();
     match result {
         Ok(AsyncSink::NotReady(_)) => (),
-        _ => panic!("Unexpected Result From Backpressure Test"),
+        _ => panic!("Unexpected Result From Back Pressure Test"),
     };
 
-    // Receive from our stream to unblock the backpressure
+    // Receive from our stream to unblock the back pressure
     let m_recv = core.run(m_recv.into_future().map(|(_, recv)| recv).map_err(|_| ())).unwrap();
 
     // Try to send a remove message again which should go through
     let _ = core.run(m_send.send(IDiskMessage::RemoveTorrent(info_hash))).unwrap();
 
-    // Receive confirmation (just so the pool doesnt panic because we ended before it could send the message back)
+    // Receive confirmation (just so the pool doesn't panic because we ended before it could send the message back)
     let _ = core.run(m_recv.into_future().map(|(_, recv)| recv).map_err(|_| ())).unwrap();
 }

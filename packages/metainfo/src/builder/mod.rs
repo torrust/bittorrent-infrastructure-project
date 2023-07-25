@@ -10,8 +10,8 @@ use crate::parse;
 mod buffer;
 mod worker;
 
-// Piece length is inversly related to the file size.
-// Transfer reliability is inversly related to the piece length.
+// Piece length is inversely related to the file size.
+// Transfer reliability is inversely related to the piece length.
 // Transfer reliability is directly related to the file size.
 
 // These statements hold even today, although the piece lengths that were historically
@@ -339,8 +339,8 @@ where
         info_access.insert(parse::PIECE_LENGTH_KEY.into(), ben_int!(piece_length as i64));
         info_access.insert(parse::PIECES_KEY.into(), ben_bytes!(&pieces[..]));
 
-        // If the accessor specifies a directory OR there are mutliple files, we will build a multi file torrent
-        // If the directory is not present but there are multiple files, the direcotry field will be set to empty
+        // If the accessor specifies a directory OR there are multiple files, we will build a multi file torrent
+        // If the directory is not present but there are multiple files, the directory field will be set to empty
         match (&access_directory, files_info.len() > 1) {
             (Some(directory), _) => {
                 let mut bencode_files = BencodeMut::new_list();

@@ -159,7 +159,7 @@ where
 
 /// Panics if the size of `compact_info` is less than `BYTES_PER_COMPACT_NODE_INFO`.
 fn parts_from_compact_info(compact_info: &[u8]) -> (NodeId, SocketAddrV4) {
-    // Use unwarp here because we know these can never fail, but they arent statically guaranteed
+    // Use unwrap here because we know these can never fail, but they aren't statically guaranteed
     let node_id = ShaHash::from_hash(&compact_info[0..bt::NODE_ID_LEN]).unwrap();
 
     let compact_ip_offset = bt::NODE_ID_LEN + BYTES_PER_COMPACT_IP;

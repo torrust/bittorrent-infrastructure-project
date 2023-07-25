@@ -107,7 +107,7 @@ pub enum FilterDecision {
     ///
     /// Allowing a field that a previous filter blocked
     /// will have a whitelisting effect, where the block
-    /// will be overriden.
+    /// will be overridden.
     Allow = 3,
 }
 

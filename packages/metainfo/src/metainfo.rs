@@ -59,7 +59,7 @@ impl Metainfo {
         self.created_by.as_ref().map(|c| &c[..])
     }
 
-    /// String encoding format of the peices portion of the info dictionary.
+    /// String encoding format of the pieces portion of the info dictionary.
     #[must_use]
     pub fn encoding(&self) -> Option<&str> {
         self.encoding.as_ref().map(|e| &e[..])

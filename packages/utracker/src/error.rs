@@ -35,7 +35,7 @@ impl<'a> ErrorResponse<'a> {
         Ok(())
     }
 
-    /// Message describing the error that occured.
+    /// Message describing the error that occurred.
     #[must_use]
     pub fn message(&self) -> &str {
         &self.message

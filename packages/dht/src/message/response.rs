@@ -67,7 +67,7 @@ impl<'a> ResponseValidate<'a> {
 
         compact_error.map_err(|_| {
             DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                details: format!("TID {:?} Found Values Structrue With Wrong Number Of Bytes", self.trans_id),
+                details: format!("TID {:?} Found Values Structure With Wrong Number Of Bytes", self.trans_id),
             })
         })
     }

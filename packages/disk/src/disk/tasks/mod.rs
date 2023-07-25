@@ -155,7 +155,7 @@ where
     let mut block_result = Ok(());
     let found_hash = context.update_torrent(info_hash, |metainfo_file, checker_state| {
         info!(
-            "Processsing Block, Acquired Torrent Lock For {:?}",
+            "Processing Block, Acquired Torrent Lock For {:?}",
             metainfo_file.info().info_hash()
         );
 
@@ -171,7 +171,7 @@ where
         send_piece_diff(checker_state, metainfo_file.info().info_hash(), blocking_sender, false);
 
         info!(
-            "Processsing Block, Released Torrent Lock For {:?}",
+            "Processing Block, Released Torrent Lock For {:?}",
             metainfo_file.info().info_hash()
         );
     });

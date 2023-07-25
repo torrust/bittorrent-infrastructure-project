@@ -45,7 +45,7 @@ mod tests {
     use crate::trans::TransactionIds;
 
     #[test]
-    fn positive_sequentail_zero_initial() {
+    fn positive_sequential_zero_initial() {
         let mut sequential_ids = SequentialIds::<u8>::new();
 
         assert_eq!(0, sequential_ids.generate());
@@ -64,7 +64,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_sequentail_start_at() {
+    fn positive_sequential_start_at() {
         let mut sequential_ids = SequentialIds::<u8>::start_at(55);
 
         assert_eq!(55, sequential_ids.generate());

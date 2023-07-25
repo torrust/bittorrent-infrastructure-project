@@ -11,7 +11,7 @@ use util::bt;
 use crate::ConnectedChannel;
 
 #[test]
-fn positive_peer_manager_send_backpressure() {
+fn positive_peer_manager_send_back_pressure() {
     let mut core = Core::new().unwrap();
     let manager = PeerManagerBuilder::new().with_peer_capacity(1).build(core.handle());
 

@@ -110,7 +110,7 @@ fn main() {
     let (handshaker_send, handshaker_recv) = HandshakerBuilder::new()
         .with_extensions(extensions)
         .with_config(
-            // Set a low handshake timeout so we dont wait on peers that arent listening on tcp
+            // Set a low handshake timeout so we don't wait on peers that aren't listening on tcp
             HandshakerConfig::default().with_connect_timeout(Duration::from_millis(500)),
         )
         .build(TcpTransport, core.handle())
@@ -183,7 +183,7 @@ fn main() {
                         Either::A(OPeerManagerMessage::ReceivedMessage(
                             info,
                             PeerWireProtocolMessage::BitsExtension(BitsExtensionMessage::Extended(extended)),
-                        )) => Some(IUberMessage::Extended(IExtendedMessage::RecievedExtendedMessage(
+                        )) => Some(IUberMessage::Extended(IExtendedMessage::ReceivedExtendedMessage(
                             info, extended,
                         ))),
                         Either::A(OPeerManagerMessage::ReceivedMessage(

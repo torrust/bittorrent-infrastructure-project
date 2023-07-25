@@ -87,7 +87,7 @@ pub struct GetPeersResponse<'a> {
     trans_id: &'a [u8],
     node_id: NodeId,
     // It looks like bootstrap nodes don't provide a nodes key, probably
-    // because they are only used for bootstraping and not to announce to.
+    // because they are only used for bootstrapping and not to announce to.
     token: Option<&'a [u8]>,
     info_type: CompactInfoType<'a, BencodeRef<'a>, BencodeRef<'a>>,
 }

@@ -319,7 +319,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_pasre_url_data_eof() {
+    fn positive_parse_url_data_eof() {
         let bytes = [super::URL_DATA_BYTE, 5, 0, 0, 0, 0, 0];
         let url_data_bytes = [0, 0, 0, 0, 0];
 
@@ -435,10 +435,10 @@ mod tests {
     }
 
     #[test]
-    fn positive_parse_url_data_undivisible_chunks() {
+    fn positive_parse_url_data_nondivisible_chunks() {
         const NUM_BYTES: usize = u8::MAX as usize + 2;
 
-        // Add an option tag, length, and a single byte as the payload to create an undivisible
+        // Add an option tag, length, and a single byte as the payload to create an nondivisible
         // chunk (not evenly divisible by u8::MAX) to see if it serializes correctly.
         let mut bytes = [0u8; NUM_BYTES + 3];
         let mut url_data_bytes = Vec::new();

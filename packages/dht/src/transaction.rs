@@ -6,7 +6,7 @@ use util::convert;
 // approach to generating transaction ids.
 
 // We are going for a simple, stateless (for the most part) implementation for generating
-// the transaction ids. We chose to go this route because 1, we dont want to reuse transaction
+// the transaction ids. We chose to go this route because 1, we don't want to reuse transaction
 // ids used in recent requests that had subsequent responses as well because this would make us
 // vulnerable to nodes that we gave that transaction id to, they would know we would be reusing
 // it soon. And 2, that makes for an unscalable approach unless we also have a timeout for ids
@@ -29,7 +29,7 @@ use util::convert;
 // we may want to dynamically ban nodes that we feel are guessing our transaction ids.
 
 // IMPORTANT: Allocation markers (not the actual allocated ids) are not shifted so that we can deal with
-// overflow by manually checking since I dont want to rely on langauge level overflows and whether they
+// overflow by manually checking since I don't want to rely on language level overflows and whether they
 // cause a panic or not (debug and release should have similar semantics)!
 
 // Together these make up 8 bytes, or, a u64

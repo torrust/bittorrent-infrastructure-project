@@ -430,7 +430,9 @@ mod tests {
     fn positive_iterate_v6() {
         let mut peers = CompactPeersV6::new();
 
+        /* cspell:disable-next-line */
         let peer_one = "[ADBB:234A:55BD:FF34:3D3A:FFFF:234A:55BD]:256".parse().unwrap();
+        /* cspell:disable-next-line */
         let peer_two = "[ADBB:0000:55BD:FF34:3D3A::234A:55BD]:3923".parse().unwrap();
 
         peers.insert(peer_one);
@@ -462,6 +464,7 @@ mod tests {
         let received = CompactPeersV6::from_bytes(&bytes);
         let mut expected = CompactPeersV6::new();
 
+        /* cspell:disable-next-line */
         expected.insert("[ADBB:234A:55BD:FF34:3D3A::234A:55BD]:256".parse().unwrap());
 
         assert_eq!(received, IResult::Done(&b""[..], expected));
@@ -477,7 +480,9 @@ mod tests {
         let received = CompactPeersV6::from_bytes(&bytes);
         let mut expected = CompactPeersV6::new();
 
+        /* cspell:disable-next-line */
         expected.insert("[ADBB:234A:55BD:FF34:3D3A::234A:55BD]:256".parse().unwrap());
+        /* cspell:disable-next-line */
         expected.insert("[DABB:234A:55BD:FF34:3D3A::234A:55BD]:512".parse().unwrap());
 
         assert_eq!(received, IResult::Done(&b""[..], expected));
@@ -500,7 +505,10 @@ mod tests {
         let mut received = Vec::new();
 
         let mut peers = CompactPeersV6::new();
+
+        /* cspell:disable-next-line */
         peers.insert("[ADBB:234A:55BD:FF34:3D3A::234A:55BD]:256".parse().unwrap());
+
         peers.write_bytes(&mut received).unwrap();
 
         let expected = [
@@ -515,8 +523,12 @@ mod tests {
         let mut received = Vec::new();
 
         let mut peers = CompactPeersV6::new();
+
+        /* cspell:disable-next-line */
         peers.insert("[ADBB:234A:55BD:FF34:3D3A::234A:55BD]:256".parse().unwrap());
+        /* cspell:disable-next-line */
         peers.insert("[DABB:234A:55BD:FF34:3D3A::234A:55BD]:512".parse().unwrap());
+
         peers.write_bytes(&mut received).unwrap();
 
         let expected = [

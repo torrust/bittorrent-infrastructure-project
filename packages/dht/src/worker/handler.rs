@@ -221,7 +221,7 @@ where
     }
 }
 
-/// Broadcast the given event to all of the event nodifiers.
+/// Broadcast the given event to all of the event notifiers.
 fn broadcast_dht_event(notifiers: &mut Vec<mpsc::Sender<DhtEvent>>, event: DhtEvent) {
     notifiers.retain(|send| send.send(event).is_ok());
 }
@@ -372,7 +372,7 @@ where
             info!("bip_dht: Received a PingRequest...");
             let node = Node::as_good(p.node_id(), addr);
 
-            // Node requested from us, mark it in the Routingtable
+            // Node requested from us, mark it in the routing table
             if let Some(n) = work_storage.routing_table.find_node(&node) {
                 n.remote_request()
             }
@@ -389,7 +389,7 @@ where
             info!("bip_dht: Received a FindNodeRequest...");
             let node = Node::as_good(f.node_id(), addr);
 
-            // Node requested from us, mark it in the Routingtable
+            // Node requested from us, mark it in the routing table
             if let Some(n) = work_storage.routing_table.find_node(&node) {
                 n.remote_request()
             }
@@ -413,14 +413,14 @@ where
             info!("bip_dht: Received a GetPeersRequest...");
             let node = Node::as_good(g.node_id(), addr);
 
-            // Node requested from us, mark it in the Routingtable
+            // Node requested from us, mark it in the routing table
             if let Some(n) = work_storage.routing_table.find_node(&node) {
                 n.remote_request()
             }
 
             // TODO: Move socket address serialization code into bip_util
             // TODO: Check what the maximum number of values we can give without overflowing a udp packet
-            // Also, if we arent going to give all of the contacts, we may want to shuffle which ones we give
+            // Also, if we aren't going to give all of the contacts, we may want to shuffle which ones we give
             let mut contact_info_bytes = Vec::with_capacity(6 * 20);
             work_storage.active_stores.find_items(&g.info_hash(), |addr| {
                 let mut bytes = [0u8; 6];
@@ -466,7 +466,7 @@ where
                     .collect(),
             );
 
-            let comapct_info_type = if !contact_info_bencode.is_empty() {
+            let compact_info_type = if !contact_info_bencode.is_empty() {
                 CompactInfoType::Both(
                     CompactNodeInfo::new(&closest_nodes_bytes).unwrap(),
                     CompactValueInfo::new(info).unwrap(),
@@ -479,7 +479,7 @@ where
                 g.transaction_id(),
                 work_storage.routing_table.node_id(),
                 Some(token.as_ref()),
-                comapct_info_type,
+                compact_info_type,
             );
             let get_peers_msg = get_peers_rsp.encode();
 
@@ -492,7 +492,7 @@ where
             info!("bip_dht: Received an AnnouncePeerRequest...");
             let node = Node::as_good(a.node_id(), addr);
 
-            // Node requested from us, mark it in the Routingtable
+            // Node requested from us, mark it in the routing table
             if let Some(n) = work_storage.routing_table.find_node(&node) {
                 n.remote_request()
             }
@@ -529,7 +529,7 @@ where
                 AnnouncePeerResponse::new(a.transaction_id(), work_storage.routing_table.node_id()).encode()
             } else {
                 // Node unsuccessfully stored the value with us, send them an error message
-                // TODO: Spec doesnt actually say what error message to send, or even if we should send one...
+                // TODO: Spec doesn't actually say what error message to send, or even if we should send one...
                 warn!(
                     "bip_dht: AnnounceStorage failed to store contact information because it \
                        is full..."

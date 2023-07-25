@@ -37,7 +37,7 @@ where
         })
     }
 
-    /// Run the given closure with the file, the file offset, and the read/write buffer stard (inclusive) and end (exclusive) indices.
+    /// Run the given closure with the file, the file offset, and the read/write buffer start (inclusive) and end (exclusive) indices.
     /// TODO: We do not detect when/if the file size changes after the initial file size check, so the returned number of
     fn run_with_file_regions<C>(&self, message: &BlockMetadata, mut callback: C) -> io::Result<()>
     where

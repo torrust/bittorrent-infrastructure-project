@@ -89,7 +89,7 @@ impl HonestRevealModule {
                 // Add the peer to our list, so we send have messages to them
                 peers_info.peers.insert(peer);
 
-                // If our bitfield has any pieces in it, send the bitfield, otherwise, dont send it
+                // If our bitfield has any pieces in it, send the bitfield, otherwise, don't send it
                 if !peers_info.status.is_empty() {
                     // Get our current bitfield, write it to our shared bytes
                     let bitfield_slice = peers_info.status.get_ref().storage();
@@ -338,7 +338,7 @@ mod tests {
     }
 
     #[test]
-    fn negative_dont_send_empty_bitfield() {
+    fn negative_dose_not_send_empty_bitfield() {
         let (send, recv) = HonestRevealModule::new().split();
         let metainfo = metainfo(16);
         let info_hash = metainfo.info().info_hash();

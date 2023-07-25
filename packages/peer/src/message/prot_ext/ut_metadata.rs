@@ -22,7 +22,7 @@ pub enum UtMetadataMessage {
 
 impl UtMetadataMessage {
     pub fn parse_bytes(mut bytes: Bytes) -> io::Result<UtMetadataMessage> {
-        // Our bencode is pretty flat, and we dont want to enforce a full decode, as data
+        // Our bencode is pretty flat, and we don't want to enforce a full decode, as data
         // messages have the raw data appended outside of the bencode structure...
         let decode_opts = BDecodeOpt::new(2, false, false);
 

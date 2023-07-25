@@ -1,7 +1,7 @@
 /// Result type for a `LengthError`.
 pub type LengthResult<T> = Result<T, LengthError>;
 
-/// Enumeraters a set of length related errors.
+/// Enumerates a set of length related errors.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum LengthErrorKind {
     /// Length exceeded an expected size.

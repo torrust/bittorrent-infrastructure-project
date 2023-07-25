@@ -27,7 +27,7 @@ mod task;
 // We configure our tick duration based on this, could let users configure this in the future...
 const DEFAULT_TIMER_SLOTS: usize = 2048;
 
-/// Manages a set of peers with heartbeating heartbeating.
+/// Manages a set of peers with hearts beating.
 pub struct PeerManager<P>
 where
     P: Sink + Stream,
@@ -390,22 +390,22 @@ where
         let (result, took_lock) = if let Ok(mut guard) = self.peers.try_lock() {
             let result = call(item, &mut *guard);
 
-            // Nothing calling us will return NotReady, so we dont have to push to queue here
+            // Nothing calling us will return NotReady, so we don't have to push to queue here
 
             (result, true)
         } else {
-            // Couldnt get the lock, stash a task away
+            // Couldn't get the lock, stash a task away
             self.task_queue.push(futures_task::current());
 
             // Try to get the lock once more, in case of a race condition with stashing the task
             if let Ok(mut guard) = self.peers.try_lock() {
                 let result = call(item, &mut *guard);
 
-                // Nothing calling us will return NotReady, so we dont have to push to queue here
+                // Nothing calling us will return NotReady, so we don't have to push to queue here
 
                 (result, true)
             } else {
-                // If we couldnt get the lock, stash the item
+                // If we couldn't get the lock, stash the item
                 self.opt_pending = Some(not(item));
 
                 (Ok(Async::NotReady), false)
@@ -431,7 +431,7 @@ where
     type Error = ();
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        // Intercept and propogate any messages indicating the peer shutdown so we can remove them from our peer map
+        // Intercept and propagate any messages indicating the peer shutdown so we can remove them from our peer map
         let next_message = self
             .opt_pending
             .take()

@@ -180,7 +180,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_write_mutliple_buffers_partially_filled() {
+    fn positive_write_multiple_buffers_partially_filled() {
         let mut buffers = ContiguousBuffers::new();
         buffers.pack(ContiguousBuffers::with_buffer(Vec::with_capacity(1)));
         buffers.pack(ContiguousBuffers::with_buffer(Vec::with_capacity(5)));
@@ -276,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_read_mutliple_buffers_partially_filled() {
+    fn positive_read_multiple_buffers_partially_filled() {
         let mut buffers = ContiguousBuffers::new();
         buffers.pack(ContiguousBuffers::with_buffer(Vec::with_capacity(1)));
         buffers.pack(ContiguousBuffers::with_buffer(Vec::with_capacity(5)));

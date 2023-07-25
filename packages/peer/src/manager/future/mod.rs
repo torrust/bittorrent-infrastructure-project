@@ -74,7 +74,7 @@ pub enum RecurringTimeoutError {
 ///
 /// Whereas `tokio_timer::TimeoutStream` would be used for detecting if a
 /// client timed out, `RecurringTimeoutStream` could be used for a local
-/// stream to send heartbeats if, for example, the local client hadnt sent
+/// stream to send heartbeats if, for example, the local client had not sent
 /// any other message to the client for n seconds and we would like to send
 /// some heartbeat message in that case, but continue polling the stream.
 pub struct RecurringTimeoutStream<S> {

@@ -13,7 +13,7 @@ use util::test;
 // TODO: Should remove as_* functions and replace them with from_requested, from_responded, etc to hide the logic
 // of the nodes initial status.
 
-// TODO: Should address the subsecond lookup paper where questionable nodes should not automatically be replaced with
+// TODO: Should address the sub-second lookup paper where questionable nodes should not automatically be replaced with
 // good nodes, instead, questionable nodes should be pinged twice and then become available to be replaced. This reduces
 // GOOD node churn since after 15 minutes, a long lasting node could potentially be replaced by a short lived good node.
 // This strategy is actually what is vaguely specified in the standard?
@@ -60,7 +60,7 @@ impl Node {
     /// Create a questionable node that has responded to us before but never requested from us.
     pub fn as_questionable(id: NodeId, addr: SocketAddr) -> Node {
         let last_response_offset = Duration::minutes(MAX_LAST_SEEN_MINS);
-        // TODO: Dont use test helpers in actual code!!!
+        // TODO: don't use test helpers in actual code!!!
         let last_response = test::travel_into_past(last_response_offset);
 
         Node {
@@ -337,7 +337,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_node_idle_reqeusts() {
+    fn positive_node_idle_requests() {
         let node = Node::as_questionable(bip_test::dummy_node_id(), bip_test::dummy_socket_addr_v4());
 
         for _ in 0..super::MAX_REFRESH_REQUESTS {

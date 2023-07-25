@@ -35,9 +35,9 @@ impl<'a> RequestType<'a> {
 
 /// `TrackerRequest` which encapsulates any request sent to a tracker.
 pub struct TrackerRequest<'a> {
-    // Both the connection id and transaction id are techinically not unsigned according
+    // Both the connection id and transaction id are technically not unsigned according
     // to the spec, but since they are just bits we will keep them as unsigned since it
-    // doesnt really make sense to not have them as unsigned (easier to generate transactions).
+    // doesn't really make sense to not have them as unsigned (easier to generate transactions).
     connection_id: u64,
     transaction_id: u32,
     request_type: RequestType<'a>,

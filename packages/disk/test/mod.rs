@@ -25,7 +25,7 @@ use util::bt::InfoHash;
 
 mod add_torrent;
 mod complete_torrent;
-mod disk_manager_send_backpressure;
+mod disk_manager_send_back_pressure;
 mod load_block;
 mod process_block;
 mod remove_torrent;

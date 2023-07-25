@@ -10,6 +10,7 @@ mod benches {
 
     #[bench]
     fn bench_nested_lists(b: &mut Bencher) {
+        /* cspell:disable-next-line */
         let bencode = b"lllllllllllllllllllllllllllllllllllllllllllllllllleeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
         b.iter(|| BencodeRef::decode(&bencode[..], BDecodeOpt::new(50, true, true)).unwrap());

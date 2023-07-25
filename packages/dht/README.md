@@ -15,7 +15,7 @@ announced to.
 application. This is because the DHT will not immediately be usable by us until bootstrapping has completed, you can feel free to
 make requests, but they will be executed after the bootstrap has finished (which may take up to 30 seconds).
 
-- **Announce Expire**: Nodes in the DHT will expire the contact information for announces that have gone stale (havent heard from again
+- **Announce Expire**: Nodes in the DHT will expire the contact information for announces that have gone stale (haven't heard from again
 for a while). This means if you are still looking for peers, you will want to announce periodically. All nodes have different expire
 times, the spec mentions the 24 hour expire period, however, you may want to announce more often than that as peers are constantly leaving
 and joining the DHT, so if the nodes you announced to all left the DHT, you would be out of luck. Luckily, for each announce, we do
@@ -34,7 +34,7 @@ on the wrong port (the DHT source port), this is most likely why.
 
 - **DHT Spam**: Many nodes in the DHT will ban nodes that they feel are malicious. This includes sending a high number
 of requests, most likely for the same info hash, to the same node. As a user, you will not have control over what nodes we contact in a
-lookup/announce. Over time, we will get better at making sure our clients dont get banned, but to do your part, do not send an excessive
+lookup/announce. Over time, we will get better at making sure our clients don't get banned, but to do your part, do not send an excessive
 amount of lookups/announces for the same info hash in a short period of time. Symptoms of getting banned include receiving less and less
 contacts back when doing a search for an info hash. If you feel you have gotten banned, you can always restart the DHT since all nodes
 (should) treat the (node id, source address) as the unique identifier for nodes and we always get a new node id on startup.

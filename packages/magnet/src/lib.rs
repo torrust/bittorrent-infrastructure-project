@@ -118,6 +118,7 @@ impl MagnetLink {
     }
 }
 
+/* cspell:disable */
 #[cfg(test)]
 mod tests {
     use util::sha::ShaHash;
@@ -132,6 +133,7 @@ mod tests {
 &as=http%3A%2F%2Fdownload.wikimedia.org%2Fmediawiki%2F1.15%2Fmediawiki-1.15.1.tar.gz
 &xs=http%3A%2F%2Fcache.example.org%2FXRX2PEFXOOEJFRVUCX6HMZMKS5TWG4K5
 &xs=dchub://example.org";
+
         let link = crate::MagnetLink::parse(url).unwrap();
 
         let expected_info_hash = [
@@ -188,3 +190,4 @@ mod tests {
         );
     }
 }
+/* cSpell:enable */

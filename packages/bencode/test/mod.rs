@@ -8,6 +8,7 @@ fn positive_ben_map_macro() {
     })
     .encode();
 
+    /* cspell:disable-next-line */
     assert_eq!("d3:key5:valuee".as_bytes(), &result[..]);
 }
 
@@ -15,5 +16,6 @@ fn positive_ben_map_macro() {
 fn positive_ben_list_macro() {
     let result = (ben_list!(ben_int!(5))).encode();
 
+    /* cspell:disable-next-line */
     assert_eq!("li5ee".as_bytes(), &result[..]);
 }

@@ -46,7 +46,7 @@ impl HandshakerConfig {
     }
 
     /// Sets the handshake timeout that `Handshaker` uses to
-    /// make sure peers dont take too long to respond to us.
+    /// make sure peers don't take too long to respond to us.
     #[must_use]
     pub fn with_handshake_timeout(mut self, timeout: Duration) -> HandshakerConfig {
         self.handshake_timeout = timeout;
@@ -54,7 +54,7 @@ impl HandshakerConfig {
     }
 
     /// Sets the connect timeout that `Handshaker` uses to
-    /// make sure peers dont take too long to respond to our
+    /// make sure peers don't take too long to respond to our
     /// connection (regardless of the underlying transport).
     #[must_use]
     pub fn with_connect_timeout(mut self, timeout: Duration) -> HandshakerConfig {

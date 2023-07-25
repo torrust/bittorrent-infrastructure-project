@@ -137,7 +137,7 @@ fn can_split_bucket(num_buckets: usize, bucket_index: usize) -> bool {
 
 /// Generates a random `NodeId`.
 ///
-/// TODO: Shouldnt use this in the future to get an id for the routing table,
+/// TODO: Shouldn't use this in the future to get an id for the routing table,
 /// generate one from the security module to be compliant with the spec.
 pub fn random_node_id() -> NodeId {
     let mut random_sha_hash = [0u8; sha::SHA_HASH_LEN];
