@@ -57,7 +57,7 @@ where
 {
     CONVERT
         .lookup_and_convert_str(root, CLIENT_ID_KEY)
-        .map(|id| id.to_string())
+        .map(std::string::ToString::to_string)
         .ok()
 }
 
@@ -68,7 +68,13 @@ where
     CONVERT
         .lookup_and_convert_int(root, CLIENT_TCP_PORT_KEY)
         .ok()
-        .and_then(|port| if port as u16 as i64 == port { Some(port as u16) } else { None })
+        .and_then(|port| {
+            if i64::from(port as u16) == port {
+                Some(port as u16)
+            } else {
+                None
+            }
+        })
 }
 
 pub fn parse_our_ip<K, V>(root: &dyn BDictAccess<K, V>) -> Option<IpAddr>

@@ -45,6 +45,7 @@ impl<F> DiskManager<F> {
     /// Break the `DiskManager` into a sink and stream.
     ///
     /// The returned sink implements `Clone`.
+    #[must_use]
     pub fn into_parts(self) -> (DiskManagerSink<F>, DiskManagerStream) {
         (self.sink, self.stream)
     }
@@ -199,11 +200,13 @@ impl Stream for DiskManagerStream {
         info!("Polling DiskManagerStream For ODiskMessage");
 
         match self.recv.poll() {
-            res @ Ok(Async::Ready(Some(ODiskMessage::TorrentAdded(_))))
-            | res @ Ok(Async::Ready(Some(ODiskMessage::TorrentRemoved(_))))
-            | res @ Ok(Async::Ready(Some(ODiskMessage::TorrentSynced(_))))
-            | res @ Ok(Async::Ready(Some(ODiskMessage::BlockLoaded(_))))
-            | res @ Ok(Async::Ready(Some(ODiskMessage::BlockProcessed(_)))) => {
+            res @ Ok(Async::Ready(Some(
+                ODiskMessage::TorrentAdded(_)
+                | ODiskMessage::TorrentRemoved(_)
+                | ODiskMessage::TorrentSynced(_)
+                | ODiskMessage::BlockLoaded(_)
+                | ODiskMessage::BlockProcessed(_),
+            ))) => {
                 self.complete_work();
 
                 info!("Notifying DiskManager That We Can Submit More Work");

@@ -15,6 +15,7 @@ pub struct FindNodeRequest<'a> {
 }
 
 impl<'a> FindNodeRequest<'a> {
+    #[must_use]
     pub fn new(trans_id: &'a [u8], node_id: NodeId, target_id: NodeId) -> FindNodeRequest<'a> {
         FindNodeRequest {
             trans_id,
@@ -23,9 +24,9 @@ impl<'a> FindNodeRequest<'a> {
         }
     }
 
-    /// Create a FindNodeRequest from parts.
+    /// Create a `FindNodeRequest` from parts.
     ///
-    /// The target_key argument is provided for cases where, due to forward compatibility,
+    /// The `target_key` argument is provided for cases where, due to forward compatibility,
     /// the target key we are interested in could fall under the target key or another key.
     pub fn from_parts<B>(
         rqst_root: &dyn BDictAccess<B::BKey, B>,
@@ -46,18 +47,22 @@ impl<'a> FindNodeRequest<'a> {
         Ok(FindNodeRequest::new(trans_id, node_id, target_id))
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn target_id(&self) -> NodeId {
         self.target_id
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),
@@ -106,18 +111,22 @@ impl<'a> FindNodeResponse<'a> {
         FindNodeResponse::new(trans_id, node_id, nodes)
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn nodes(&self) -> CompactNodeInfo<'a> {
         self.nodes
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),

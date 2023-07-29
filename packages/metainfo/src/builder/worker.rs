@@ -268,7 +268,7 @@ mod tests {
         where
             C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
         {
-            for range in self.buffer_ranges.iter() {
+            for range in &self.buffer_ranges {
                 let mut next_region = Cursor::new(self.contiguous_buffer.index(range.clone()));
 
                 callback(PieceAccess::Compute(&mut next_region))?;

@@ -29,6 +29,7 @@ pub struct AnnouncePeerRequest<'a> {
 }
 
 impl<'a> AnnouncePeerRequest<'a> {
+    #[must_use]
     pub fn new(
         trans_id: &'a [u8],
         node_id: NodeId,
@@ -62,7 +63,7 @@ impl<'a> AnnouncePeerRequest<'a> {
 
         // Technically, the specification says that the value is either 0 or 1 but goes on to say that
         // if it is not zero, then the source port should be used. We will allow values other than 0 or 1.
-        let response_port = match rqst_root.lookup(IMPLIED_PORT_KEY.as_bytes()).map(|n| n.int()) {
+        let response_port = match rqst_root.lookup(IMPLIED_PORT_KEY.as_bytes()).map(bencode::BRefAccess::int) {
             Some(Some(n)) if n != 0 => ConnectPort::Implied,
             _ => {
                 // If we hit this, the port either was not provided or it was of the wrong bencode type
@@ -74,26 +75,32 @@ impl<'a> AnnouncePeerRequest<'a> {
         Ok(AnnouncePeerRequest::new(trans_id, node_id, info_hash, token, response_port))
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
+    #[must_use]
     pub fn token(&self) -> &'a [u8] {
         self.token
     }
 
+    #[must_use]
     pub fn connect_port(&self) -> ConnectPort {
         self.port
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         // In case a client errors out when the port key is not present, even when
         // implied port is specified, we will provide a dummy value in that case.
@@ -111,7 +118,7 @@ impl<'a> AnnouncePeerRequest<'a> {
                 message::NODE_ID_KEY => ben_bytes!(self.node_id.as_ref()),
                 IMPLIED_PORT_KEY => ben_int!(implied_value),
                 message::INFO_HASH_KEY => ben_bytes!(self.info_hash.as_ref()),
-                PORT_KEY => ben_int!(displayed_port as i64),
+                PORT_KEY => ben_int!(i64::from(displayed_port)),
                 message::TOKEN_KEY => ben_bytes!(self.token)
             }
         })
@@ -126,6 +133,7 @@ pub struct AnnouncePeerResponse<'a> {
 }
 
 impl<'a> AnnouncePeerResponse<'a> {
+    #[must_use]
     pub fn new(trans_id: &'a [u8], node_id: NodeId) -> AnnouncePeerResponse<'a> {
         AnnouncePeerResponse { trans_id, node_id }
     }
@@ -142,14 +150,17 @@ impl<'a> AnnouncePeerResponse<'a> {
         Ok(AnnouncePeerResponse::new(trans_id, node_id))
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),

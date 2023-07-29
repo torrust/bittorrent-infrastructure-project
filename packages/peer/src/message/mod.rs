@@ -200,9 +200,10 @@ fn parse_message_length(bytes: &[u8]) -> usize {
 
 /// Panics if the conversion from a u32 to usize is not valid.
 fn u32_to_usize(value: u32) -> usize {
-    if value as usize as u32 != value {
-        panic!("bip_peer: Cannot Convert u32 To usize, usize Is Less Than 32-Bits")
-    }
+    assert!(
+        value as usize as u32 == value,
+        "bip_peer: Cannot Convert u32 To usize, usize Is Less Than 32-Bits"
+    );
 
     value as usize
 }

@@ -20,6 +20,7 @@ pub struct GetPeersRequest<'a> {
 }
 
 impl<'a> GetPeersRequest<'a> {
+    #[must_use]
     pub fn new(trans_id: &'a [u8], node_id: NodeId, info_hash: InfoHash) -> GetPeersRequest<'a> {
         GetPeersRequest {
             trans_id,
@@ -43,18 +44,22 @@ impl<'a> GetPeersRequest<'a> {
         Ok(GetPeersRequest::new(trans_id, node_id, info_hash))
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),
@@ -100,6 +105,7 @@ where
     B: BRefAccess<BType = B> + Clone,
     B::BType: PartialEq + Eq + core::hash::Hash + Debug,
 {
+    #[must_use]
     pub fn new(
         trans_id: &'a [u8],
         node_id: NodeId,
@@ -154,24 +160,29 @@ where
         Ok(GetPeersResponse::<B>::new(trans_id, node_id, token, info_type))
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn token(&self) -> Option<&'a [u8]> {
         self.token
     }
 
+    #[must_use]
     pub fn info_type(self) -> CompactInfoType<'a, B> {
         self.info_type
     }
 }
 
 impl<'a> GetPeersResponse<'a, BencodeMut<'a>> {
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         let mut response_args = BTreeMap::new();
 
@@ -192,7 +203,7 @@ impl<'a> GetPeersResponse<'a, BencodeMut<'a>> {
                     let mut b_mut = BencodeMut::new_list();
                     let b_list = b_mut.list_mut().unwrap();
                     for b in values.values() {
-                        b_list.push(b.deref().to_owned());
+                        b_list.push(b.deref().clone());
                     }
                     b_mut
                 });
@@ -203,7 +214,7 @@ impl<'a> GetPeersResponse<'a, BencodeMut<'a>> {
                     let mut b_mut = BencodeMut::new_list();
                     let b_list = b_mut.list_mut().unwrap();
                     for b in values.values() {
-                        b_list.push(b.deref().to_owned());
+                        b_list.push(b.deref().clone());
                     }
                     b_mut
                 });

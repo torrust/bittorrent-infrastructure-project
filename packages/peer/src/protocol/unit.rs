@@ -9,6 +9,7 @@ pub struct UnitProtocol;
 
 impl UnitProtocol {
     /// Create a new `UnitProtocol`.
+    #[must_use]
     pub fn new() -> UnitProtocol {
         UnitProtocol
     }

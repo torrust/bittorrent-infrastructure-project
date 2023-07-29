@@ -106,7 +106,7 @@ mod tests {
         let recv_enum_item = handler.wait().unwrap();
 
         match recv_enum_item {
-            Some(HandshakeType::Complete(_, _)) | Some(HandshakeType::Initiate(_, _)) => panic!("Expected No HandshakeType"),
+            Some(HandshakeType::Complete(_, _) | HandshakeType::Initiate(_, _)) => panic!("Expected No HandshakeType"),
             None => (),
         }
     }

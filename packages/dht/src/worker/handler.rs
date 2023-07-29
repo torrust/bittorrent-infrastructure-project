@@ -81,7 +81,7 @@ where
 
 // ----------------------------------------------------------------------------//
 
-/// Actions that we can perform on our RoutingTable.
+/// Actions that we can perform on our `RoutingTable`.
 enum TableAction {
     /// Lookup action.
     Lookup(TableLookup),
@@ -93,7 +93,7 @@ enum TableAction {
     Bootstrap(TableBootstrap, usize),
 }
 
-/// Actions that we want to perform on our RoutingTable after bootstrapping finishes.
+/// Actions that we want to perform on our `RoutingTable` after bootstrapping finishes.
 enum PostBootstrapAction {
     /// Future lookup action.
     Lookup(InfoHash, bool),
@@ -101,7 +101,7 @@ enum PostBootstrapAction {
     Refresh(TableRefresh, TransactionID),
 }
 
-/// Storage for our EventLoop to invoke actions upon.
+/// Storage for our `EventLoop` to invoke actions upon.
 pub struct DhtHandler<H> {
     detached: DetachedDhtHandler<H>,
     table_actions: HashMap<ActionID, TableAction>,
@@ -227,7 +227,7 @@ fn broadcast_dht_event(notifiers: &mut Vec<mpsc::Sender<DhtEvent>>, event: DhtEv
     notifiers.retain(|send| send.send(event).is_ok());
 }
 
-/// Number of good nodes in the RoutingTable.
+/// Number of good nodes in the `RoutingTable`.
 fn num_good_nodes(table: &RoutingTable) -> usize {
     table
         .closest_nodes(table.node_id())
@@ -241,7 +241,7 @@ fn should_rebootstrap(table: &RoutingTable) -> bool {
 }
 
 /// Broadcast that the bootstrap has completed.
-/// IMPORTANT: Should call this instead of broadcast_dht_event()!
+/// IMPORTANT: Should call this instead of `broadcast_dht_event`()!
 fn broadcast_bootstrap_completed<H>(
     action_id: ActionID,
     table_actions: &mut HashMap<ActionID, TableAction>,
@@ -615,11 +615,11 @@ where
                     total += num_nodes;
 
                     if num_nodes != 0 {
-                        print!("Bucket {}: {} | ", index, num_nodes);
+                        print!("Bucket {index}: {num_nodes} | ");
                     }
                 }
 
-                print!("\nTotal: {}\n\n\n", total);
+                print!("\nTotal: {total}\n\n\n");
             }
         }
         Ok(MessageType::Response(ResponseType::GetPeers(g))) => {

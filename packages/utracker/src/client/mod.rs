@@ -21,7 +21,7 @@ pub mod error;
 /// Capacity of outstanding requests (assuming each request uses at most 1 timer at any time)
 const DEFAULT_CAPACITY: usize = 4096;
 
-/// Request made by the TrackerClient.
+/// Request made by the `TrackerClient`.
 #[derive(Debug)]
 pub enum ClientRequest {
     Announce(InfoHash, ClientState),
@@ -36,12 +36,14 @@ pub struct ClientMetadata {
 }
 
 impl ClientMetadata {
-    /// Create a new ClientMetadata container.
+    /// Create a new `ClientMetadata` container.
+    #[must_use]
     pub fn new(token: ClientToken, result: ClientResult<ClientResponse>) -> ClientMetadata {
         ClientMetadata { token, result }
     }
 
     /// Access the request token corresponding to this metadata.
+    #[must_use]
     pub fn token(&self) -> ClientToken {
         self.token
     }
@@ -52,7 +54,7 @@ impl ClientMetadata {
     }
 }
 
-/// Response received by the TrackerClient.
+/// Response received by the `TrackerClient`.
 #[derive(Debug)]
 pub enum ClientResponse {
     /// Announce response.
@@ -62,11 +64,12 @@ pub enum ClientResponse {
 }
 
 impl ClientResponse {
-    /// Optionally return a reference to the underyling AnnounceResponse.
+    /// Optionally return a reference to the underyling `AnnounceResponse`.
     ///
     /// If you know that the token associated with the response was retrived
-    /// from an AnnounceRequest, then unwrapping this value is guaranteed to
+    /// from an `AnnounceRequest`, then unwrapping this value is guaranteed to
     /// succeed.
+    #[must_use]
     pub fn announce_response(&self) -> Option<&AnnounceResponse<'static>> {
         match self {
             ClientResponse::Announce(res) => Some(res),
@@ -74,11 +77,12 @@ impl ClientResponse {
         }
     }
 
-    /// Optionally return a reference to the underyling ScrapeResponse.
+    /// Optionally return a reference to the underyling `ScrapeResponse`.
     ///
     /// If you know that the token associated with the response was retrived
-    /// from a ScrapeRequest, then unwrapping this value is guaranteed to
+    /// from a `ScrapeRequest`, then unwrapping this value is guaranteed to
     /// succeed.
+    #[must_use]
     pub fn scrape_response(&self) -> Option<&ScrapeResponse<'static>> {
         match self {
             &ClientResponse::Announce(_) => None,
@@ -100,7 +104,7 @@ pub struct TrackerClient {
 }
 
 impl TrackerClient {
-    /// Create a new TrackerClient.
+    /// Create a new `TrackerClient`.
     pub fn new<H>(bind: SocketAddr, handshaker: H) -> io::Result<TrackerClient>
     where
         H: Sink + DiscoveryInfo + Send + 'static,
@@ -109,9 +113,9 @@ impl TrackerClient {
         TrackerClient::with_capacity(bind, handshaker, DEFAULT_CAPACITY)
     }
 
-    /// Create a new TrackerClient with the given message capacity.
+    /// Create a new `TrackerClient` with the given message capacity.
     ///
-    /// Panics if capacity == usize::max_value().
+    /// Panics if capacity == `usize::max_value`().
     pub fn with_capacity<H>(bind: SocketAddr, handshaker: H, capacity: usize) -> io::Result<TrackerClient>
     where
         H: Sink + DiscoveryInfo + Send + 'static,
@@ -120,9 +124,10 @@ impl TrackerClient {
         // Need channel capacity to be 1 more in case channel is saturated and client
         // is dropped so shutdown message can get through in the worst case
         let (chan_capacity, would_overflow) = capacity.overflowing_add(1);
-        if would_overflow {
-            panic!("bip_utracker: Tracker Client Capacity Must Be Less Than Max Size");
-        }
+        assert!(
+            !would_overflow,
+            "bip_utracker: Tracker Client Capacity Must Be Less Than Max Size"
+        );
         // Limit the capacity of messages (channel capacity - 1)
         let limiter = RequestLimiter::new(capacity);
 
@@ -160,7 +165,7 @@ impl Drop for TrackerClient {
 
 // ----------------------------------------------------------------------------//
 
-/// Associates a ClientRequest with a ClientResponse.
+/// Associates a `ClientRequest` with a `ClientResponse`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ClientToken(u32);
 
@@ -170,14 +175,14 @@ struct TokenGenerator {
 }
 
 impl TokenGenerator {
-    /// Create a new TokenGenerator.
+    /// Create a new `TokenGenerator`.
     pub fn new() -> TokenGenerator {
         TokenGenerator {
             generator: LocallyShuffledIds::<u32>::new(),
         }
     }
 
-    /// Generate a new ClientToken.
+    /// Generate a new `ClientToken`.
     pub fn generate(&mut self) -> ClientToken {
         ClientToken(self.generator.generate())
     }
@@ -193,7 +198,7 @@ pub struct RequestLimiter {
 }
 
 impl RequestLimiter {
-    /// Creates a new RequestLimiter.
+    /// Creates a new `RequestLimiter`.
     pub fn new(capacity: usize) -> RequestLimiter {
         RequestLimiter {
             active: Arc::new(AtomicUsize::new(0)),

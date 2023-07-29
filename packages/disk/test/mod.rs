@@ -133,7 +133,7 @@ impl Accessor for MultiFileDirectAccessor {
     where
         C: FnMut(u64, &Path),
     {
-        for (buffer, path) in self.files.iter() {
+        for (buffer, path) in &self.files {
             callback(buffer.len() as u64, path)
         }
 
@@ -144,7 +144,7 @@ impl Accessor for MultiFileDirectAccessor {
     where
         C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
     {
-        for (buffer, _) in self.files.iter() {
+        for (buffer, _) in &self.files {
             callback(PieceAccess::Compute(&mut &buffer[..]))?
         }
 

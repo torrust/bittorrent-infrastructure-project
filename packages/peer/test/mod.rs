@@ -47,6 +47,7 @@ impl<I, O> Stream for ConnectedChannel<I, O> {
     }
 }
 
+#[must_use]
 pub fn connected_channel<I, O>(capacity: usize) -> (ConnectedChannel<I, O>, ConnectedChannel<O, I>) {
     let (send_one, recv_one) = mpsc::channel(capacity);
     let (send_two, recv_two) = mpsc::channel(capacity);

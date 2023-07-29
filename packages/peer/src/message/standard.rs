@@ -13,6 +13,7 @@ pub struct HaveMessage {
 }
 
 impl HaveMessage {
+    #[must_use]
     pub fn new(piece_index: u32) -> HaveMessage {
         HaveMessage { piece_index }
     }
@@ -30,6 +31,7 @@ impl HaveMessage {
         writer.write_u32::<BigEndian>(self.piece_index)
     }
 
+    #[must_use]
     pub fn piece_index(&self) -> u32 {
         self.piece_index
     }
@@ -133,6 +135,7 @@ pub struct RequestMessage {
 }
 
 impl RequestMessage {
+    #[must_use]
     pub fn new(piece_index: u32, block_offset: u32, block_length: usize) -> RequestMessage {
         RequestMessage {
             piece_index,
@@ -156,14 +159,17 @@ impl RequestMessage {
         writer.write_u32::<BigEndian>(self.block_length as u32)
     }
 
+    #[must_use]
     pub fn piece_index(&self) -> u32 {
         self.piece_index
     }
 
+    #[must_use]
     pub fn block_offset(&self) -> u32 {
         self.block_offset
     }
 
+    #[must_use]
     pub fn block_length(&self) -> usize {
         self.block_length
     }
@@ -253,6 +259,7 @@ pub struct CancelMessage {
 }
 
 impl CancelMessage {
+    #[must_use]
     pub fn new(piece_index: u32, block_offset: u32, block_length: usize) -> CancelMessage {
         CancelMessage {
             piece_index,
@@ -276,14 +283,17 @@ impl CancelMessage {
         writer.write_u32::<BigEndian>(self.block_length as u32)
     }
 
+    #[must_use]
     pub fn piece_index(&self) -> u32 {
         self.piece_index
     }
 
+    #[must_use]
     pub fn block_offset(&self) -> u32 {
         self.block_offset
     }
 
+    #[must_use]
     pub fn block_length(&self) -> usize {
         self.block_length
     }

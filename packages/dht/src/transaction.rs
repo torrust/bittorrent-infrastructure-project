@@ -211,9 +211,9 @@ impl TransactionID {
         }
         let mut trans_id = 0u64;
 
-        for byte in bytes.iter() {
+        for byte in bytes {
             trans_id <<= 8;
-            trans_id |= *byte as u64;
+            trans_id |= u64::from(*byte);
         }
 
         Some(TransactionID::new(trans_id))

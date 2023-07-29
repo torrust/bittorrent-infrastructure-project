@@ -37,7 +37,8 @@ pub struct AnnounceRequest<'a> {
 }
 
 impl<'a> AnnounceRequest<'a> {
-    /// Create a new AnnounceRequest.
+    /// Create a new `AnnounceRequest`.
+    #[must_use]
     pub fn new(
         hash: InfoHash,
         peer_id: PeerId,
@@ -60,17 +61,17 @@ impl<'a> AnnounceRequest<'a> {
         }
     }
 
-    /// Construct an IPv4 AnnounceRequest from the given bytes.
+    /// Construct an IPv4 `AnnounceRequest` from the given bytes.
     pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceRequest<'a>> {
         parse_request(bytes, SourceIP::from_bytes_v4)
     }
 
-    /// Construct an IPv6 AnnounceRequest from the given bytes.
+    /// Construct an IPv6 `AnnounceRequest` from the given bytes.
     pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceRequest<'a>> {
         parse_request(bytes, SourceIP::from_bytes_v6)
     }
 
-    /// Write the AnnounceRequest to the given writer.
+    /// Write the `AnnounceRequest` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -92,47 +93,56 @@ impl<'a> AnnounceRequest<'a> {
         Ok(())
     }
 
-    /// InfoHash of the current request.
+    /// `InfoHash` of the current request.
+    #[must_use]
     pub fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
-    /// PeerId of the current request.
+    /// `PeerId` of the current request.
+    #[must_use]
     pub fn peer_id(&self) -> PeerId {
         self.peer_id
     }
 
     /// State reported by the client in the given request.
+    #[must_use]
     pub fn state(&self) -> ClientState {
         self.state
     }
 
     /// Source address to send the response to.
+    #[must_use]
     pub fn source_ip(&self) -> SourceIP {
         self.ip
     }
 
     /// Unique key randomized by the client that the server can use.
+    #[must_use]
     pub fn key(&self) -> u32 {
         self.key
     }
 
     /// Number of peers desired by the client.
+    #[must_use]
     pub fn num_want(&self) -> DesiredPeers {
         self.num_want
     }
 
     /// Port to send the response to.
+    #[must_use]
     pub fn port(&self) -> u16 {
         self.port
     }
 
-    /// Set of AnnounceOptions supplied in the request.
+    /// Set of `AnnounceOptions` supplied in the request.
+    #[must_use]
     pub fn options(&self) -> &AnnounceOptions<'a> {
         &self.options
     }
 
-    /// Create an owned version of AnnounceRequest.
+    /// Create an owned version of `AnnounceRequest`.
+    #[must_use]
     pub fn to_owned(&self) -> AnnounceRequest<'static> {
         // Do not call clone and simply switch out the AnnounceOptions as that would
         // unecessarily allocate a HashMap with shallowly cloned Cow objects which
@@ -152,7 +162,7 @@ impl<'a> AnnounceRequest<'a> {
     }
 }
 
-/// Parse an AnnounceRequest with the given SourceIP type constructor.
+/// Parse an `AnnounceRequest` with the given `SourceIP` type constructor.
 fn parse_request(bytes: &[u8], ip_type: fn(bytes: &[u8]) -> IResult<&[u8], SourceIP>) -> IResult<&[u8], AnnounceRequest<'_>> {
     do_parse!(bytes,
         info_hash:  map!(take!(bt::INFO_HASH_LEN), |bytes| InfoHash::from_hash(bytes).unwrap()) >>
@@ -179,7 +189,8 @@ pub struct AnnounceResponse<'a> {
 }
 
 impl<'a> AnnounceResponse<'a> {
-    /// Create a new AnnounceResponse
+    /// Create a new `AnnounceResponse`
+    #[must_use]
     pub fn new(interval: i32, leechers: i32, seeders: i32, peers: CompactPeers<'a>) -> AnnounceResponse<'a> {
         AnnounceResponse {
             interval,
@@ -189,17 +200,17 @@ impl<'a> AnnounceResponse<'a> {
         }
     }
 
-    /// Construct an IPv4 AnnounceResponse from the given bytes.
+    /// Construct an IPv4 `AnnounceResponse` from the given bytes.
     pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceResponse<'a>> {
         parse_respone(bytes, CompactPeers::from_bytes_v4)
     }
 
-    /// Construct an IPv6 AnnounceResponse from the given bytes.
+    /// Construct an IPv6 `AnnounceResponse` from the given bytes.
     pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceResponse<'a>> {
         parse_respone(bytes, CompactPeers::from_bytes_v6)
     }
 
-    /// Write the AnnounceResponse to the given writer.
+    /// Write the `AnnounceResponse` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -214,26 +225,31 @@ impl<'a> AnnounceResponse<'a> {
     }
 
     /// Interval in seconds that clients should wait before re-announcing.
+    #[must_use]
     pub fn interval(&self) -> i32 {
         self.interval
     }
 
     /// Number of leechers the tracker knows about for the torrent.
+    #[must_use]
     pub fn leechers(&self) -> i32 {
         self.leechers
     }
 
     /// Number of seeders the tracker knows about for the torrent.
+    #[must_use]
     pub fn seeders(&self) -> i32 {
         self.seeders
     }
 
     /// Peers the tracker knows about that are sharing the torrent.
+    #[must_use]
     pub fn peers(&self) -> &CompactPeers<'a> {
         &self.peers
     }
 
-    /// Create an owned version of AnnounceResponse.
+    /// Create an owned version of `AnnounceResponse`.
+    #[must_use]
     pub fn to_owned(&self) -> AnnounceResponse<'static> {
         let owned_peers = self.peers().to_owned();
 
@@ -246,7 +262,7 @@ impl<'a> AnnounceResponse<'a> {
     }
 }
 
-/// Parse an AnnounceResponse with the given CompactPeers type constructor.
+/// Parse an `AnnounceResponse` with the given `CompactPeers` type constructor.
 fn parse_respone<'a>(
     bytes: &'a [u8],
     peers_type: fn(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>>,
@@ -272,7 +288,8 @@ pub struct ClientState {
 }
 
 impl ClientState {
-    /// Create a new ClientState.
+    /// Create a new `ClientState`.
+    #[must_use]
     pub fn new(bytes_downloaded: i64, bytes_left: i64, bytes_uploaded: i64, event: AnnounceEvent) -> ClientState {
         ClientState {
             downloaded: bytes_downloaded,
@@ -282,12 +299,13 @@ impl ClientState {
         }
     }
 
-    /// Construct the ClientState from the given bytes.
+    /// Construct the `ClientState` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], ClientState> {
         parse_state(bytes)
     }
 
-    /// Write the ClientState to the given writer.
+    /// Write the `ClientState` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -302,21 +320,25 @@ impl ClientState {
     }
 
     /// Event reported by the client.
+    #[must_use]
     pub fn event(&self) -> AnnounceEvent {
         self.event
     }
 
     /// Bytes left to be downloaded.
+    #[must_use]
     pub fn bytes_left(&self) -> i64 {
         self.left
     }
 
     /// Bytes already uploaded.
+    #[must_use]
     pub fn bytes_uploaded(&self) -> i64 {
         self.uploaded
     }
 
     /// Bytes already downloaded.
+    #[must_use]
     pub fn bytes_downloaded(&self) -> i64 {
         self.downloaded
     }
@@ -348,12 +370,13 @@ pub enum AnnounceEvent {
 }
 
 impl AnnounceEvent {
-    /// Construct an AnnounceEvent from the given bytes.
+    /// Construct an `AnnounceEvent` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], AnnounceEvent> {
         parse_event(bytes)
     }
 
-    /// Write the AnnounceEvent to the given writer.
+    /// Write the `AnnounceEvent` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -364,6 +387,7 @@ impl AnnounceEvent {
     }
 
     /// Access the raw id of the current event.
+    #[must_use]
     pub fn as_id(&self) -> i32 {
         match self {
             &AnnounceEvent::None => ANNOUNCE_NONE_EVENT,
@@ -399,17 +423,19 @@ pub enum SourceIP {
 }
 
 impl SourceIP {
-    /// Construct the IPv4 SourceIP from the given bytes.
+    /// Construct the IPv4 `SourceIP` from the given bytes.
+    #[must_use]
     pub fn from_bytes_v4(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
         parse_preference_v4(bytes)
     }
 
-    /// Construct the IPv6 SourceIP from the given bytes.
+    /// Construct the IPv6 `SourceIP` from the given bytes.
+    #[must_use]
     pub fn from_bytes_v6(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
         parse_preference_v6(bytes)
     }
 
-    /// Write the SourceIP to the given writer.
+    /// Write the `SourceIP` to the given writer.
     pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
     where
         W: Write,
@@ -423,6 +449,7 @@ impl SourceIP {
     }
 
     /// Whether or not the source is an IPv6 address.
+    #[must_use]
     pub fn is_ipv6(&self) -> bool {
         match self {
             &SourceIP::ImpliedV6 => true,
@@ -433,6 +460,7 @@ impl SourceIP {
     }
 
     /// Whether or not the source is an IPv4 address.
+    #[must_use]
     pub fn is_ipv4(&self) -> bool {
         !self.is_ipv6()
     }
@@ -480,12 +508,13 @@ pub enum DesiredPeers {
 }
 
 impl DesiredPeers {
-    /// Construct the DesiredPeers from the given bytes.
+    /// Construct the `DesiredPeers` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], DesiredPeers> {
         parse_desired(bytes)
     }
 
-    /// Write the DesiredPeers to the given writer.
+    /// Write the `DesiredPeers` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -528,10 +557,10 @@ mod tests {
 
         let info_hash = [3, 4, 2, 3, 4, 3, 1, 6, 7, 56, 3, 234, 2, 3, 4, 3, 5, 6, 7, 8];
         let peer_id = [4, 2, 123, 23, 34, 5, 56, 2, 3, 4, 45, 6, 7, 8, 5, 6, 4, 56, 34, 42];
-        let (downloaded, left, uploaded) = (123908, 12309123, 123123);
+        let (downloaded, left, uploaded) = (123_908, 12_309_123, 123_123);
         let state = ClientState::new(downloaded, left, uploaded, AnnounceEvent::None);
         let ip = Ipv4Addr::new(127, 0, 0, 1);
-        let key = 234234;
+        let key = 234_234;
         let num_want = 34;
         let port = 6969;
         let options = AnnounceOptions::new();
@@ -568,7 +597,7 @@ mod tests {
     fn positive_write_response() {
         let mut received = Vec::new();
 
-        let (interval, leechers, seeders) = (213123, 3423423, 2342343);
+        let (interval, leechers, seeders) = (213_123, 3_423_423, 2_342_343);
         let mut peers = CompactPeersV4::new();
         peers.insert("127.0.0.1:2342".parse().unwrap());
         peers.insert("127.0.0.2:0".parse().unwrap());
@@ -590,7 +619,7 @@ mod tests {
     fn positive_write_state() {
         let mut received = Vec::new();
 
-        let (downloaded, left, uploaded) = (123908, 12309123, 123123);
+        let (downloaded, left, uploaded) = (123_908, 12_309_123, 123_123);
         let state = ClientState::new(downloaded, left, uploaded, AnnounceEvent::None);
         state.write_bytes(&mut received).unwrap();
 
@@ -738,11 +767,11 @@ mod tests {
         let info_hash = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1];
         let peer_id = [2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3];
 
-        let (downloaded, left, uploaded) = (456789, 283465, 200000);
+        let (downloaded, left, uploaded) = (456_789, 283_465, 200_000);
         let state = ClientState::new(downloaded, left, uploaded, AnnounceEvent::Completed);
 
         let ip = SourceIP::ImpliedV4;
-        let (key, num_want, port) = (255123, -102340, 1515);
+        let (key, num_want, port) = (255_123, -102_340, 1515);
 
         let mut bytes = Vec::new();
         bytes.write_all(&info_hash[..]).unwrap();
@@ -775,9 +804,9 @@ mod tests {
         let info_hash = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1];
         let peer_id = [2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3];
 
-        let (downloaded, left, uploaded) = (456789, 283465, 200000);
+        let (downloaded, left, uploaded) = (456_789, 283_465, 200_000);
 
-        let (_, num_want, port) = (255123, -102340, 1515);
+        let (_, num_want, port) = (255_123, -102_340, 1515);
 
         let mut bytes = Vec::new();
         bytes.write_all(&info_hash[..]).unwrap();
@@ -849,7 +878,7 @@ mod tests {
 
     #[test]
     fn positive_parse_state() {
-        let (downloaded, left, uploaded) = (202340, 52340, 5043);
+        let (downloaded, left, uploaded) = (202_340, 52340, 5043);
 
         let mut bytes = Vec::new();
         bytes.write_i64::<BigEndian>(downloaded).unwrap();
@@ -865,7 +894,7 @@ mod tests {
 
     #[test]
     fn negative_parse_incomplete_state() {
-        let (downloaded, left, uploaded) = (202340, 52340, 5043);
+        let (downloaded, left, uploaded) = (202_340, 52340, 5043);
 
         let mut bytes = Vec::new();
         bytes.write_i64::<BigEndian>(downloaded).unwrap();

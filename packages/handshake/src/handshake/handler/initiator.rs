@@ -8,7 +8,7 @@ use crate::handshake::handler::HandshakeType;
 use crate::message::initiate::InitiateMessage;
 use crate::transport::Transport;
 
-/// Handle the initiation of connections, which are returned as a HandshakeType.
+/// Handle the initiation of connections, which are returned as a `HandshakeType`.
 pub fn initiator_handler<T>(
     item: InitiateMessage,
     context: &(T, Filters, Handle, HandshakeTimer),
@@ -145,7 +145,7 @@ mod tests {
             .unwrap();
         match recv_enum_item {
             None => (),
-            Some(HandshakeType::Initiate(_, _)) | Some(HandshakeType::Complete(_, _)) => panic!("Expected No Handshake"),
+            Some(HandshakeType::Initiate(_, _) | HandshakeType::Complete(_, _)) => panic!("Expected No Handshake"),
         }
     }
 }

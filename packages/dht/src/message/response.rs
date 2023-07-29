@@ -20,6 +20,7 @@ pub struct ResponseValidate<'a> {
 }
 
 impl<'a> ResponseValidate<'a> {
+    #[must_use]
     pub fn new(trans_id: &'a [u8]) -> ResponseValidate<'a> {
         ResponseValidate { trans_id }
     }
@@ -55,7 +56,7 @@ impl<'a> ResponseValidate<'a> {
         B: BRefAccess<BType = B> + Clone,
         B::BType: PartialEq + Eq + core::hash::Hash + Debug,
     {
-        for bencode in values.into_iter() {
+        for bencode in values {
             match bencode.bytes() {
                 Some(_) => (),
                 None => {

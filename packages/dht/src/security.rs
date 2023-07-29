@@ -7,8 +7,8 @@ use crc::crc32;
 use util::bt::{self, NodeId};
 use util::convert;
 
-const IPV4_MASK: u32 = 0x030F3FFF;
-const IPV6_MASK: u64 = 0x0103070F1F3F7FFF;
+const IPV4_MASK: u32 = 0x030F_3FFF;
+const IPV6_MASK: u64 = 0x0103_070F_1F3F_7FFF;
 
 const CRC32C_ARG_SLICE_SIZE: usize = 8;
 
@@ -21,7 +21,7 @@ pub fn generate_compliant_id_ipv4(addr: Ipv4Addr) -> NodeId {
     let masked_ipv4_be = mask_ipv4_be(addr);
     let rand = rand::random::<u8>();
 
-    NodeId::from(generate_compliant_id(masked_ipv4_be as u64, 4, rand))
+    NodeId::from(generate_compliant_id(u64::from(masked_ipv4_be), 4, rand))
 }
 
 /// Generates an ip address compliant node id.
@@ -38,7 +38,7 @@ fn generate_compliant_id(masked_ip_be: u64, num_octets: usize, rand: u8) -> [u8;
     node_id[0] = (crc32c_result >> 24) as u8;
     node_id[1] = (crc32c_result >> 16) as u8;
     node_id[2] = (((crc32c_result >> 8) & 0xF8) as u8) | (rand::random::<u8>() & 0x07);
-    for byte in node_id[3..19].iter_mut() {
+    for byte in &mut node_id[3..19] {
         *byte = rand::random::<u8>();
     }
     node_id[19] = rand;
@@ -53,7 +53,7 @@ pub fn is_compliant_ipv4_addr(addr: Ipv4Addr, id: NodeId) -> bool {
     if is_security_compliant_ipv4_exempt(addr) {
         return true;
     }
-    let masked_ip_be = mask_ipv4_be(addr) as u64;
+    let masked_ip_be = u64::from(mask_ipv4_be(addr));
 
     is_compliant_addr(masked_ip_be, 4, id)
 }
@@ -73,19 +73,18 @@ fn is_security_compliant_ipv4_exempt(addr: Ipv4Addr) -> bool {
 /// variable which should be the last byte of the node id, and then basically do what we would do when
 /// generating an id (aside from generating filler random numbers which would be wasteful here).
 fn is_compliant_addr(masked_ip_be: u64, num_octets: usize, id: NodeId) -> bool {
-    if num_octets > CRC32C_ARG_SLICE_SIZE {
-        panic!(
-            "error in dht::security::is_compliant_addr(), num_octets is greater than buffer \
+    assert!(
+        num_octets <= CRC32C_ARG_SLICE_SIZE,
+        "error in dht::security::is_compliant_addr(), num_octets is greater than buffer \
                 size"
-        )
-    }
+    );
     let id_bytes = Into::<[u8; bt::NODE_ID_LEN]>::into(id);
 
     let rand = id_bytes[19];
     let r = rand & 0x07;
 
     let ip_bits_used = num_octets * 8;
-    let rand_masked_ip = masked_ip_be | ((r as u64) << (ip_bits_used - 3));
+    let rand_masked_ip = masked_ip_be | (u64::from(r) << (ip_bits_used - 3));
 
     // Move the rand_masked_ip bytes over to an array for running through crc32c
     let mut rand_masked_ip_bytes = convert::eight_bytes_to_array(rand_masked_ip);
@@ -106,7 +105,7 @@ fn is_compliant_addr(masked_ip_be: u64, num_octets: usize, id: NodeId) -> bool {
 /// Compares the result from the crc32c function against the first 21 bits of the node id.
 ///
 /// We dont have to check the last byte of the node id since we used that byte to generate
-/// the crc32c_result.
+/// the `crc32c_result`.
 fn is_compliant_id(crc32c_result: u32, id_bytes: [u8; bt::NODE_ID_LEN]) -> bool {
     let mut is_compliant = true;
     is_compliant = is_compliant && (id_bytes[0] == ((crc32c_result >> 24) as u8));
@@ -155,7 +154,7 @@ mod tests {
     #[test]
     fn positive_generate_compliant_ipv4_test_one() {
         let ipv4_addr = Ipv4Addr::new(IPV4_ONE.0, IPV4_ONE.1, IPV4_ONE.2, IPV4_ONE.3);
-        let masked_ip_be = super::mask_ipv4_be(ipv4_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ipv4_addr));
 
         let node_id = super::generate_compliant_id(masked_ip_be, 4, IPV4_ONE_RAND);
 
@@ -170,7 +169,7 @@ mod tests {
     #[test]
     fn positive_generate_compliant_ipv4_test_two() {
         let ipv4_addr = Ipv4Addr::new(IPV4_TWO.0, IPV4_TWO.1, IPV4_TWO.2, IPV4_TWO.3);
-        let masked_ip_be = super::mask_ipv4_be(ipv4_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ipv4_addr));
 
         let node_id = super::generate_compliant_id(masked_ip_be, 4, IPV4_TWO_RAND);
 
@@ -185,7 +184,7 @@ mod tests {
     #[test]
     fn positive_generate_compliant_ipv4_test_three() {
         let ipv4_addr = Ipv4Addr::new(IPV4_THREE.0, IPV4_THREE.1, IPV4_THREE.2, IPV4_THREE.3);
-        let masked_ip_be = super::mask_ipv4_be(ipv4_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ipv4_addr));
 
         let node_id = super::generate_compliant_id(masked_ip_be, 4, IPV4_THREE_RAND);
 
@@ -200,7 +199,7 @@ mod tests {
     #[test]
     fn positive_generate_compliant_ipv4_test_four() {
         let ipv4_addr = Ipv4Addr::new(IPV4_FOUR.0, IPV4_FOUR.1, IPV4_FOUR.2, IPV4_FOUR.3);
-        let masked_ip_be = super::mask_ipv4_be(ipv4_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ipv4_addr));
 
         let node_id = super::generate_compliant_id(masked_ip_be, 4, IPV4_FOUR_RAND);
 
@@ -215,7 +214,7 @@ mod tests {
     #[test]
     fn positive_generate_compliant_ipv4_test_five() {
         let ipv4_addr = Ipv4Addr::new(IPV4_FIVE.0, IPV4_FIVE.1, IPV4_FIVE.2, IPV4_FIVE.3);
-        let masked_ip_be = super::mask_ipv4_be(ipv4_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ipv4_addr));
 
         let node_id = super::generate_compliant_id(masked_ip_be, 4, IPV4_FIVE_RAND);
 
@@ -254,7 +253,7 @@ mod tests {
         ]
         .into();
 
-        let masked_ip_be = super::mask_ipv4_be(ip_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ip_addr));
         assert!(super::is_compliant_addr(masked_ip_be, 4, id));
     }
 
@@ -285,7 +284,7 @@ mod tests {
         ]
         .into();
 
-        let masked_ip_be = super::mask_ipv4_be(ip_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ip_addr));
         assert!(super::is_compliant_addr(masked_ip_be, 4, id));
     }
 
@@ -316,7 +315,7 @@ mod tests {
         ]
         .into();
 
-        let masked_ip_be = super::mask_ipv4_be(ip_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ip_addr));
         assert!(super::is_compliant_addr(masked_ip_be, 4, id));
     }
 
@@ -347,7 +346,7 @@ mod tests {
         ]
         .into();
 
-        let masked_ip_be = super::mask_ipv4_be(ip_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ip_addr));
         assert!(super::is_compliant_addr(masked_ip_be, 4, id));
     }
 
@@ -378,7 +377,7 @@ mod tests {
         ]
         .into();
 
-        let masked_ip_be = super::mask_ipv4_be(ip_addr) as u64;
+        let masked_ip_be = u64::from(super::mask_ipv4_be(ip_addr));
         assert!(super::is_compliant_addr(masked_ip_be, 4, id));
     }
 }

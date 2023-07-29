@@ -27,6 +27,7 @@ pub struct ExtendedMessageBuilder {
 
 impl ExtendedMessageBuilder {
     /// Create a new `ExtendedMessageBuilder`.
+    #[must_use]
     pub fn new() -> ExtendedMessageBuilder {
         ExtendedMessageBuilder {
             id_map: HashMap::new(),
@@ -42,12 +43,14 @@ impl ExtendedMessageBuilder {
     }
 
     /// Set our client identification in the message.
+    #[must_use]
     pub fn with_our_id(mut self, id: Option<String>) -> ExtendedMessageBuilder {
         self.our_id = id;
         self
     }
 
     /// Set the given `ExtendedType` to map to the given value.
+    #[must_use]
     pub fn with_extended_type(mut self, ext_type: ExtendedType, opt_value: Option<u8>) -> ExtendedMessageBuilder {
         if let Some(value) = opt_value {
             self.id_map.insert(ext_type, value);
@@ -58,42 +61,49 @@ impl ExtendedMessageBuilder {
     }
 
     /// Set our tcp port.
+    #[must_use]
     pub fn with_our_tcp_port(mut self, tcp: Option<u16>) -> ExtendedMessageBuilder {
         self.our_tcp_port = tcp;
         self
     }
 
     /// Set the ip address that we see them as.
+    #[must_use]
     pub fn with_their_ip(mut self, ip: Option<IpAddr>) -> ExtendedMessageBuilder {
         self.their_ip = ip;
         self
     }
 
     /// Set our ipv6 address.
+    #[must_use]
     pub fn with_our_ipv6_addr(mut self, ipv6: Option<Ipv6Addr>) -> ExtendedMessageBuilder {
         self.our_ipv6_addr = ipv6;
         self
     }
 
     /// Set our ipv4 address.
+    #[must_use]
     pub fn with_our_ipv4_addr(mut self, ipv4: Option<Ipv4Addr>) -> ExtendedMessageBuilder {
         self.our_ipv4_addr = ipv4;
         self
     }
 
     /// Set the maximum number of queued requests we support.
+    #[must_use]
     pub fn with_max_requests(mut self, max_requests: Option<i64>) -> ExtendedMessageBuilder {
         self.our_max_requests = max_requests;
         self
     }
 
     /// Set the info dictionary metadata size.
+    #[must_use]
     pub fn with_metadata_size(mut self, metadata_size: Option<i64>) -> ExtendedMessageBuilder {
         self.metadata_size = metadata_size;
         self
     }
 
     /// Set a custom entry in the message with the given dictionary key.
+    #[must_use]
     pub fn with_custom_entry(mut self, key: String, opt_value: Option<BencodeMut<'static>>) -> ExtendedMessageBuilder {
         if let Some(value) = opt_value {
             self.custom_entries.insert(key, value);
@@ -104,6 +114,7 @@ impl ExtendedMessageBuilder {
     }
 
     /// Build an `ExtendedMessage` with the current options.
+    #[must_use]
     pub fn build(self) -> ExtendedMessage {
         ExtendedMessage::from_builder(self)
     }
@@ -125,8 +136,8 @@ fn bencode_from_builder(builder: &ExtendedMessageBuilder, mut custom_entries: Ha
 
         {
             let ben_id_map_access = ben_id_map.dict_mut().unwrap();
-            for (ext_id, &value) in builder.id_map.iter() {
-                ben_id_map_access.insert(ext_id.id().as_bytes().into(), ben_int!(value as i64));
+            for (ext_id, &value) in &builder.id_map {
+                ben_id_map_access.insert(ext_id.id().as_bytes().into(), ben_int!(i64::from(value)));
             }
         }
 
@@ -142,7 +153,7 @@ fn bencode_from_builder(builder: &ExtendedMessageBuilder, mut custom_entries: Ha
             .map(|client_id| root_map_access.insert(bencode_util::CLIENT_ID_KEY.into(), ben_bytes!(&client_id[..])));
         builder
             .our_tcp_port
-            .map(|tcp_port| root_map_access.insert(bencode_util::CLIENT_TCP_PORT_KEY.into(), ben_int!(tcp_port as i64)));
+            .map(|tcp_port| root_map_access.insert(bencode_util::CLIENT_TCP_PORT_KEY.into(), ben_int!(i64::from(tcp_port))));
         opt_our_ip.map(|our_ip| root_map_access.insert(bencode_util::OUR_IP_KEY.into(), ben_bytes!(our_ip)));
         opt_client_ipv6_addr.as_ref().map(|client_ipv6_addr| {
             root_map_access.insert(bencode_util::CLIENT_IPV6_ADDR_KEY.into(), ben_bytes!(&client_ipv6_addr[..]))
@@ -182,6 +193,7 @@ pub enum ExtendedType {
 
 impl ExtendedType {
     /// Create an `ExtendedType` from the given identifier.
+    #[must_use]
     pub fn from_id(id: &str) -> ExtendedType {
         match id {
             UT_METADATA_ID => ExtendedType::UtMetadata,
@@ -191,6 +203,7 @@ impl ExtendedType {
     }
 
     /// Retrieve the message id corresponding to the given `ExtendedType`.
+    #[must_use]
     pub fn id(&self) -> &str {
         match self {
             &ExtendedType::UtMetadata => UT_METADATA_ID,
@@ -218,6 +231,7 @@ pub struct ExtendedMessage {
 
 impl ExtendedMessage {
     /// Create an `ExtendedMessage` from an `ExtendedMessageBuilder`.
+    #[must_use]
     pub fn from_builder(mut builder: ExtendedMessageBuilder) -> ExtendedMessage {
         let mut custom_entries = HashMap::new();
         mem::swap(&mut custom_entries, &mut builder.custom_entries);

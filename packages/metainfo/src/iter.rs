@@ -4,13 +4,14 @@ use util::sha;
 
 use crate::metainfo::File;
 
-/// Iterator over each File within the MetainfoFile.
+/// Iterator over each File within the `MetainfoFile`.
 pub struct Files<'a> {
     index: usize,
     files: &'a [File],
 }
 
 impl<'a> Files<'a> {
+    #[must_use]
     pub fn new(files: &'a [File]) -> Files<'a> {
         Files { index: 0, files }
     }
@@ -31,13 +32,14 @@ impl<'a> Iterator for Files<'a> {
 
 // ----------------------------------------------------------------------------//
 
-/// Iterator over each piece hash within the MetainfoFile.
+/// Iterator over each piece hash within the `MetainfoFile`.
 pub struct Pieces<'a> {
     index: usize,
     pieces: &'a [[u8; sha::SHA_HASH_LEN]],
 }
 
 impl<'a> Pieces<'a> {
+    #[must_use]
     pub fn new(pieces: &'a [[u8; sha::SHA_HASH_LEN]]) -> Pieces<'a> {
         Pieces { index: 0, pieces }
     }

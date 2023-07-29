@@ -215,8 +215,8 @@ fn main() {
                                 PeerWireProtocolMessage::Request(request) => {
                                     let block_metadata = BlockMetadata::new(
                                         info_hash,
-                                        request.piece_index() as u64,
-                                        request.block_offset() as u64,
+                                        u64::from(request.piece_index()),
+                                        u64::from(request.block_offset()),
                                         request.block_length(),
                                     );
                                     let mut request_map_mut = disk_request_map.borrow_mut();
@@ -235,8 +235,8 @@ fn main() {
                                 PeerWireProtocolMessage::Piece(piece) => {
                                     let block_metadata = BlockMetadata::new(
                                         info_hash,
-                                        piece.piece_index() as u64,
-                                        piece.block_offset() as u64,
+                                        u64::from(piece.piece_index()),
+                                        u64::from(piece.block_offset()),
                                         piece.block_length(),
                                     );
 
@@ -566,7 +566,7 @@ fn generate_requests(info: &Info, block_size: usize) -> Vec<RequestMessage> {
 
     // Grab our piece length, and the sum of the lengths of each file in the torrent
     let piece_len: u64 = info.piece_length();
-    let mut total_file_length: u64 = info.files().map(|file| file.length()).sum();
+    let mut total_file_length: u64 = info.files().map(metainfo::File::length).sum();
 
     // Loop over each piece (keep subtracting total file length by piece size, use cmp::min to handle last, smaller piece)
     let mut piece_index: u64 = 0;

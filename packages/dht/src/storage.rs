@@ -7,14 +7,14 @@ use util::bt::InfoHash;
 
 const MAX_ITEMS_STORED: usize = 500;
 
-/// Manages storage and expiration of contact information for a number of InfoHashs.
+/// Manages storage and expiration of contact information for a number of `InfoHashs`.
 pub struct AnnounceStorage {
     storage: HashMap<InfoHash, Vec<AnnounceItem>>,
     expires: Vec<ItemExpiration>,
 }
 
 impl AnnounceStorage {
-    /// Create a new AnnounceStorage object.
+    /// Create a new `AnnounceStorage` object.
     pub fn new() -> AnnounceStorage {
         AnnounceStorage {
             storage: HashMap::new(),
@@ -50,7 +50,7 @@ impl AnnounceStorage {
         }
     }
 
-    /// Invoke the closure once for each contact for the given InfoHash.
+    /// Invoke the closure once for each contact for the given `InfoHash`.
     pub fn find_items<F>(&mut self, info_hash: &InfoHash, item_func: F)
     where
         F: FnMut(SocketAddr),
@@ -226,7 +226,7 @@ mod tests {
         let info_hash = [0u8; bt::INFO_HASH_LEN].into();
         let sock_addrs = bip_test::dummy_block_socket_addrs(storage::MAX_ITEMS_STORED as u16);
 
-        for sock_addr in sock_addrs.iter() {
+        for sock_addr in &sock_addrs {
             assert!(announce_store.add_item(info_hash, *sock_addr));
         }
 
@@ -234,7 +234,7 @@ mod tests {
         announce_store.find_items(&info_hash, |a| items.push(a));
         assert_eq!(items.len(), storage::MAX_ITEMS_STORED);
 
-        for item in items.iter() {
+        for item in &items {
             assert!(sock_addrs.iter().any(|s| s == item));
         }
     }

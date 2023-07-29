@@ -114,7 +114,8 @@ pub enum FilterDecision {
 impl FilterDecision {
     /// Choose between the current decision, and the other decision.
     ///
-    /// Allow > NeedData > Block > Pass
+    /// Allow > `NeedData` > Block > Pass
+    #[must_use]
     pub fn choose(&self, other: FilterDecision) -> FilterDecision {
         let self_num = *self as u8;
         let other_num = other as u8;

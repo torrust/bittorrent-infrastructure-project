@@ -52,8 +52,8 @@ impl Topic {
  * as (Acceptable Source) – Web link to the file online
  * xs (eXact Source) – P2P link.
  * kt (Keyword Topic) – Key words for search
- * mt (Manifest Topic) – link to the metafile that contains a list of magneto (MAGMA – MAGnet MAnifest)
- * tr (address TRacker) – Tracker URL for BitTorrent downloads
+ * mt (Manifest Topic) – link to the metafile that contains a list of magneto (MAGMA – `MAGnet` `MAnifest`)
+ * tr (address `TRacker`) – Tracker URL for `BitTorrent` downloads
  **/
 #[derive(Clone, Debug, Default)]
 pub struct MagnetLink {
@@ -68,6 +68,7 @@ pub struct MagnetLink {
 }
 
 impl MagnetLink {
+    #[must_use]
     pub fn parse(s: &str) -> Option<Self> {
         // Parse URL
         let url = match Url::parse(s) {
@@ -108,6 +109,7 @@ impl MagnetLink {
         Some(result)
     }
 
+    #[must_use]
     pub fn get_info_hash(&self) -> Option<InfoHash> {
         match self.exact_topic {
             Some(Topic::BitTorrentInfoHash(info_hash)) => Some(info_hash),
@@ -140,7 +142,7 @@ mod tests {
             Some(ShaHash::from_hash(&expected_info_hash[..]).unwrap())
         );
 
-        assert_eq!(link.exact_length, Some(10826029));
+        assert_eq!(link.exact_length, Some(10_826_029));
         assert_eq!(link.display_name, Some("mediawiki-1.15.1.tar.gz".to_string()));
         assert_eq!(link.address_tracker, vec!["udp://tracker.openbittorrent.com:80/announce"]);
         assert_eq!(

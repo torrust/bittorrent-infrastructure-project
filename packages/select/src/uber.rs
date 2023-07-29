@@ -58,6 +58,7 @@ pub struct UberModuleBuilder {
 
 impl UberModuleBuilder {
     /// Create a new `UberModuleBuilder`.
+    #[must_use]
     pub fn new() -> UberModuleBuilder {
         UberModuleBuilder {
             discovery: Vec::new(),
@@ -69,6 +70,7 @@ impl UberModuleBuilder {
     ///
     /// This message will only be sent when the extension bit from the handshake it set. Note that if a builder
     /// is not given and a peer with the extension bit set connects, we will NOT send any extended message.
+    #[must_use]
     pub fn with_extended_builder(mut self, builder: Option<ExtendedMessageBuilder>) -> UberModuleBuilder {
         self.ext_builder = builder;
         self
@@ -95,6 +97,7 @@ impl UberModuleBuilder {
     }
 
     /// Build an `UberModule` based on the current builder.
+    #[must_use]
     pub fn build(self) -> UberModule {
         UberModule::from_builder(self)
     }
@@ -155,7 +158,7 @@ impl UberModule {
         }
     }
 
-    /// Get the next state after the given state, return Some(next_state) or None if the given state was the last state.
+    /// Get the next state after the given state, return `Some(next_state`) or None if the given state was the last state.
     ///
     /// We return the next state regardless of the message we are processing at the time. So if we dont recognize the tuple of
     /// next state and message, we ignore it. This makes the implemenation a lot easier as we dont have to do an exhaustive match
@@ -247,7 +250,7 @@ impl UberModule {
         result
     }
 
-    /// Run the start_send logic for the current module for the given message.
+    /// Run the `start_send` logic for the current module for the given message.
     fn start_sink_state(&mut self, message: &IUberMessage) -> StartSend<(), UberError> {
         self.loop_states(
             true,
@@ -260,34 +263,28 @@ impl UberModule {
                 (ModuleState::Discovery(index), IUberMessage::Control(control)) => uber.discovery[index]
                     .start_send(IDiscoveryMessage::Control(control.clone()))
                     .map(|a| a.map(|_| ()))
-                    .map_err(|err| err.into()),
+                    .map_err(std::convert::Into::into),
                 (ModuleState::Discovery(index), IUberMessage::Discovery(discovery)) => uber.discovery[index]
                     .start_send(discovery.clone())
                     .map(|a| a.map(|_| ()))
-                    .map_err(|err| err.into()),
+                    .map_err(std::convert::Into::into),
                 (ModuleState::Extended, IUberMessage::Control(control)) => {
                     let d_modules = &mut uber.discovery[..];
 
-                    uber.extended
-                        .as_mut()
-                        .map(|ext_module| {
-                            ext_module.process_message(IExtendedMessage::Control(control.clone()), d_modules);
+                    uber.extended.as_mut().map_or(Ok(AsyncSink::Ready), |ext_module| {
+                        ext_module.process_message(IExtendedMessage::Control(control.clone()), d_modules);
 
-                            Ok(AsyncSink::Ready)
-                        })
-                        .unwrap_or(Ok(AsyncSink::Ready))
+                        Ok(AsyncSink::Ready)
+                    })
                 }
                 (ModuleState::Extended, IUberMessage::Extended(extended)) => {
                     let d_modules = &mut uber.discovery[..];
 
-                    uber.extended
-                        .as_mut()
-                        .map(|ext_module| {
-                            ext_module.process_message(extended.clone(), d_modules);
+                    uber.extended.as_mut().map_or(Ok(AsyncSink::Ready), |ext_module| {
+                        ext_module.process_message(extended.clone(), d_modules);
 
-                            Ok(AsyncSink::Ready)
-                        })
-                        .unwrap_or(Ok(AsyncSink::Ready))
+                        Ok(AsyncSink::Ready)
+                    })
                 }
                 _ => Ok(AsyncSink::Ready),
             },
@@ -303,7 +300,7 @@ impl UberModule {
                 uber.last_sink_state = state;
             },
             |uber, state| match state {
-                ModuleState::Discovery(index) => uber.discovery[index].poll_complete().map_err(|err| err.into()),
+                ModuleState::Discovery(index) => uber.discovery[index].poll_complete().map_err(std::convert::Into::into),
                 ModuleState::Extended => Ok(Async::Ready(())),
             },
         )
@@ -318,19 +315,15 @@ impl UberModule {
                 uber.last_stream_state = state;
             },
             |uber, state| match state {
-                ModuleState::Extended => uber
-                    .extended
-                    .as_mut()
-                    .map(|ext_module| {
-                        ext_module
-                            .poll()
-                            .map(|async_opt_message| async_opt_message.map(|opt_message| opt_message.map(OUberMessage::Extended)))
-                    })
-                    .unwrap_or(Ok(Async::Ready(None))),
+                ModuleState::Extended => uber.extended.as_mut().map_or(Ok(Async::Ready(None)), |ext_module| {
+                    ext_module
+                        .poll()
+                        .map(|async_opt_message| async_opt_message.map(|opt_message| opt_message.map(OUberMessage::Extended)))
+                }),
                 ModuleState::Discovery(index) => uber.discovery[index]
                     .poll()
                     .map(|async_opt_message| async_opt_message.map(|opt_message| opt_message.map(OUberMessage::Discovery)))
-                    .map_err(|err| err.into()),
+                    .map_err(std::convert::Into::into),
             },
         )
     }

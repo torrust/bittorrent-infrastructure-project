@@ -90,7 +90,7 @@ impl ExtendedModule {
             IExtendedMessage::Control(ControlMessage::PeerConnected(info)) => {
                 let mut builder = self.builder.clone();
 
-                for d_module in d_modules.iter() {
+                for d_module in &*d_modules {
                     let temp_builder = builder;
                     builder = d_module.extend(&info, temp_builder);
                 }

@@ -31,6 +31,7 @@ struct PeersInfo {
 
 impl HonestRevealModule {
     /// Create a new `HonestRevelationModule`.
+    #[must_use]
     pub fn new() -> HonestRevealModule {
         HonestRevealModule {
             torrents: HashMap::new(),
@@ -141,7 +142,7 @@ impl HonestRevealModule {
                     }))
                 } else {
                     // Queue up all have messages
-                    for peer in peers_info.peers.iter() {
+                    for peer in &peers_info.peers {
                         out_queue.push_back(ORevealMessage::SendHave(*peer, HaveMessage::new(index as u32)));
                     }
 

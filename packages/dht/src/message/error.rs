@@ -33,7 +33,7 @@ impl ErrorCode {
             PROTOCOL_ERROR_CODE => Ok(ErrorCode::ProtocolError),
             METHOD_UNKNOWN_CODE => Ok(ErrorCode::MethodUnknown),
             unknown => Err(DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                details: format!("Error Message Invalid Error Code {:?}", unknown),
+                details: format!("Error Message Invalid Error Code {unknown:?}"),
             })),
         }
     }
@@ -66,8 +66,8 @@ impl ErrorValidate {
             }));
         }
 
-        let code = self.convert_int(&args[0], format!("{}[0]", ERROR_ARGS_KEY))?;
-        let message = String::from(self.convert_str(&args[1], &format!("{}[1]", ERROR_ARGS_KEY))?);
+        let code = self.convert_int(&args[0], format!("{ERROR_ARGS_KEY}[0]"))?;
+        let message = String::from(self.convert_str(&args[1], &format!("{ERROR_ARGS_KEY}[1]"))?);
 
         let code2 = code;
 
@@ -98,6 +98,7 @@ impl<'a> ErrorMessage<'a> {
     /// TODO: Figure out a way to make the error message non static while still providing a clean
     // interface in error.rs for the DhtErrorKind object. Most likely our error messages will not
     // need to be dynamically generated (up in the air at this point) so this is a performance loss.
+    #[must_use]
     pub fn new(trans_id: Vec<u8>, code: ErrorCode, message: String) -> ErrorMessage<'static> {
         let trans_id_cow = Cow::Owned(trans_id);
         let message_cow = Cow::Owned(message);
@@ -129,20 +130,24 @@ impl<'a> ErrorMessage<'a> {
         })
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &[u8] {
         &self.trans_id
     }
 
+    #[must_use]
     pub fn error_code(&self) -> ErrorCode {
         self.code
     }
 
+    #[must_use]
     pub fn error_message(&self) -> &str {
         &self.message
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
-        let error_code = Into::<u8>::into(self.code) as i64;
+        let error_code = i64::from(Into::<u8>::into(self.code));
 
         (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),

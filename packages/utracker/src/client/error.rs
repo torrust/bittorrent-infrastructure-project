@@ -1,9 +1,9 @@
 use crate::error::ErrorResponse;
 
-/// Result type for a ClientRequest.
+/// Result type for a `ClientRequest`.
 pub type ClientResult<T> = Result<T, ClientError>;
 
-/// Errors occuring as the result of a ClientRequest.
+/// Errors occuring as the result of a `ClientRequest`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientError {
     /// Request timeout reached.

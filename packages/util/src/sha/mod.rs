@@ -16,12 +16,13 @@ pub struct ShaHash {
 }
 
 impl ShaHash {
-    /// Create a ShaHash by hashing the given bytes.
+    /// Create a `ShaHash` by hashing the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> ShaHash {
         ShaHashBuilder::new().add_bytes(bytes).build()
     }
 
-    /// Create a ShaHash directly from the given hash.
+    /// Create a `ShaHash` directly from the given hash.
     pub fn from_hash(hash: &[u8]) -> LengthResult<ShaHash> {
         if hash.len() != SHA_HASH_LEN {
             Err(LengthError::new(LengthErrorKind::LengthExpected, SHA_HASH_LEN))
@@ -34,10 +35,12 @@ impl ShaHash {
         }
     }
 
+    #[must_use]
     pub fn bits(&self) -> Bits<'_> {
         Bits::new(&self.hash)
     }
 
+    #[must_use]
     pub fn len() -> usize {
         SHA_HASH_LEN
     }

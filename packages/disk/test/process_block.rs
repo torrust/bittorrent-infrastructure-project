@@ -27,7 +27,7 @@ fn positive_process_block() {
     let disk_manager = DiskManagerBuilder::new().build(filesystem.clone());
 
     let mut process_bytes = BytesMut::new();
-    process_bytes.extend_from_slice(&data_b.0[1..(50 + 1)]);
+    process_bytes.extend_from_slice(&data_b.0[1..=50]);
 
     let process_block = Block::new(
         BlockMetadata::new(metainfo_file.info().info_hash(), 1, 0, 50),
@@ -66,6 +66,6 @@ fn positive_process_block() {
     );
 
     let mut expected_file_b_data = vec![0u8; 2000];
-    expected_file_b_data[1..(1 + 50)].copy_from_slice(&data_b.0[1..(50 + 1)]);
+    expected_file_b_data[1..=50].copy_from_slice(&data_b.0[1..=50]);
     assert_eq!(expected_file_b_data, recevied_file_b_data);
 }

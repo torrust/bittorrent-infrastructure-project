@@ -3,12 +3,12 @@ use std::net::SocketAddr;
 use crate::announce::{AnnounceRequest, AnnounceResponse};
 use crate::scrape::{ScrapeRequest, ScrapeResponse};
 
-/// Result type for a ServerHandler.
+/// Result type for a `ServerHandler`.
 ///
 /// Either the response T or an error message.
 pub type ServerResult<'a, T> = Result<T, &'a str>;
 
-/// Trait for providing a TrackerServer with methods to service TrackerReqeusts.
+/// Trait for providing a `TrackerServer` with methods to service `TrackerReqeusts`.
 pub trait ServerHandler: Send {
     /// Service a connection id request from the given address.
     ///

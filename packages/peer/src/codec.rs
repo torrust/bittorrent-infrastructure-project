@@ -47,7 +47,7 @@ where
         let src_len = src.len();
 
         let bytes = match self.protocol.bytes_needed(src.as_ref())? {
-            Some(needed) if self.max_payload.map(|max_payload| needed > max_payload).unwrap_or(false) => {
+            Some(needed) if self.max_payload.is_some_and(|max_payload| needed > max_payload) => {
                 return Err(io::Error::new(
                     io::ErrorKind::Other,
                     "PeerProtocolCodec Enforced Maximum Payload Check For Peer",

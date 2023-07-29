@@ -22,6 +22,7 @@ pub struct LengthError {
 
 impl LengthError {
     /// Create a `LengthError`.
+    #[must_use]
     pub fn new(kind: LengthErrorKind, length: usize) -> LengthError {
         LengthError {
             kind,
@@ -31,6 +32,7 @@ impl LengthError {
     }
 
     /// Create a `LengthError` for a given element index.
+    #[must_use]
     pub fn with_index(kind: LengthErrorKind, length: usize, index: usize) -> LengthError {
         LengthError {
             kind,
@@ -40,11 +42,13 @@ impl LengthError {
     }
 
     /// Error is with the given length/length multiple.
+    #[must_use]
     pub fn length(&self) -> usize {
         self.length
     }
 
     /// Error is for the element at the given index.
+    #[must_use]
     pub fn index(&self) -> Option<usize> {
         self.index
     }

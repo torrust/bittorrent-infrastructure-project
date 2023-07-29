@@ -89,7 +89,7 @@ impl<F> DiskManagerContext<F> {
             .write()
             .expect("bip_disk: DiskManagerContext::remove_torrent Failed To Write Torrent");
 
-        write_torrents.remove(&hash).map(|_| true).unwrap_or(false)
+        write_torrents.remove(&hash).is_some_and(|_| true)
     }
 }
 

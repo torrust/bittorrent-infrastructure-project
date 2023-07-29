@@ -43,12 +43,12 @@ fn main() {
     for recv_msg in disk_recv.wait() {
         match recv_msg.unwrap() {
             ODiskMessage::TorrentAdded(hash) => {
-                println!("Torrent With Hash {:?} Successfully Added", hash);
-                println!("Torrent Has {} Good Pieces Out Of {} Total Pieces", good_pieces, total_pieces);
+                println!("Torrent With Hash {hash:?} Successfully Added");
+                println!("Torrent Has {good_pieces} Good Pieces Out Of {total_pieces} Total Pieces");
                 break;
             }
             ODiskMessage::FoundGoodPiece(_, _) => good_pieces += 1,
-            unexpected => panic!("Unexpected ODiskMessage {:?}", unexpected),
+            unexpected => panic!("Unexpected ODiskMessage {unexpected:?}"),
         }
     }
 }

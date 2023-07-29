@@ -33,7 +33,7 @@ fn main() {
 
             print_metainfo_overview(&bytes);
         }
-        Err(error) => println!("Error With Input: {:?}", error),
+        Err(error) => println!("Error With Input: {error:?}"),
     }
 }
 
@@ -80,11 +80,11 @@ fn print_metainfo_overview(bytes: &[u8]) {
 
     println!("\n\n-----------------------------Metainfo File Overview-----------------------------");
 
-    println!("InfoHash: {}", info_hash_hex);
+    println!("InfoHash: {info_hash_hex}");
     println!("Main Tracker: {:?}", metainfo.main_tracker());
     println!("Comment: {:?}", metainfo.comment());
     println!("Creator: {:?}", metainfo.created_by());
-    println!("Creation Date: {:?}", utc_creation_date);
+    println!("Creation Date: {utc_creation_date:?}");
 
     println!("Directory: {:?}", info.directory());
     println!("Piece Length: {:?}", info.piece_length());

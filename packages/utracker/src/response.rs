@@ -22,7 +22,8 @@ pub enum ResponseType<'a> {
 }
 
 impl<'a> ResponseType<'a> {
-    /// Create an owned version of the ResponseType.
+    /// Create an owned version of the `ResponseType`.
+    #[must_use]
     pub fn to_owned(&self) -> ResponseType<'static> {
         match self {
             &ResponseType::Connect(id) => ResponseType::Connect(id),
@@ -33,14 +34,15 @@ impl<'a> ResponseType<'a> {
     }
 }
 
-/// TrackerResponse which encapsulates any response sent from a tracker.
+/// `TrackerResponse` which encapsulates any response sent from a tracker.
 pub struct TrackerResponse<'a> {
     transaction_id: u32,
     response_type: ResponseType<'a>,
 }
 
 impl<'a> TrackerResponse<'a> {
-    /// Create a new TrackerResponse.
+    /// Create a new `TrackerResponse`.
+    #[must_use]
     pub fn new(trans_id: u32, res_type: ResponseType<'a>) -> TrackerResponse<'a> {
         TrackerResponse {
             transaction_id: trans_id,
@@ -48,12 +50,13 @@ impl<'a> TrackerResponse<'a> {
         }
     }
 
-    /// Create a new TrackerResponse from the given bytes.
+    /// Create a new `TrackerResponse` from the given bytes.
+    #[must_use]
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerResponse<'a>> {
         parse_response(bytes)
     }
 
-    /// Write the TrackerResponse to the given writer.
+    /// Write the `TrackerResponse` to the given writer.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -94,16 +97,19 @@ impl<'a> TrackerResponse<'a> {
     }
 
     /// Transaction ID supplied with a response to uniquely identify a request.
+    #[must_use]
     pub fn transaction_id(&self) -> u32 {
         self.transaction_id
     }
 
-    /// Actual type of response that this TrackerResponse represents.
+    /// Actual type of response that this `TrackerResponse` represents.
+    #[must_use]
     pub fn response_type(&self) -> &ResponseType<'a> {
         &self.response_type
     }
 
-    /// Create an owned version of the TrackerResponse.
+    /// Create an owned version of the `TrackerResponse`.
+    #[must_use]
     pub fn to_owned(&self) -> TrackerResponse<'static> {
         TrackerResponse {
             transaction_id: self.transaction_id,

@@ -24,7 +24,7 @@ mod benches {
     /// Set to true if you are playing around with anything that could affect file
     /// sizes for an existing or new benchmarks. As a precaution, if the disk manager
     /// sees an existing file with a different size but same name as one of the files
-    /// in the torrent, it wont touch it and a TorrentError will be generated.
+    /// in the torrent, it wont touch it and a `TorrentError` will be generated.
     const WIPE_DATA_DIR: bool = false;
 
     // TODO: Benchmark multi file torrents!!!
@@ -123,8 +123,8 @@ mod benches {
         let info_hash = metainfo.info().info_hash();
 
         let disk_manager = DiskManagerBuilder::new()
-            .with_sink_buffer_capacity(1000000)
-            .with_stream_buffer_capacity(1000000)
+            .with_sink_buffer_capacity(1_000_000)
+            .with_stream_buffer_capacity(1_000_000)
             .build(fs);
 
         let (d_send, d_recv) = disk_manager.split();

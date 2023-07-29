@@ -43,6 +43,7 @@ where
     P::Item: ManagedMessage,
 {
     /// Create a new `PeerManager` from the given `PeerManagerBuilder`.
+    #[must_use]
     pub fn from_builder(builder: PeerManagerBuilder, handle: Handle) -> PeerManager<P> {
         // We use one timer for manager heartbeat intervals, and one for peer heartbeat timeouts
         let maximum_timers = builder.peer_capacity() * 2;
@@ -187,7 +188,7 @@ where
             );
 
             // Closure could return not ready, need to stash in that case
-            if result.as_ref().map(|a| a.is_not_ready()).unwrap_or(false) {
+            if result.as_ref().map(futures::AsyncSink::is_not_ready).unwrap_or(false) {
                 self.task_queue.push(futures_task::current());
             }
 
@@ -206,7 +207,7 @@ where
                 );
 
                 // Closure could return not ready, need to stash in that case
-                if result.as_ref().map(|a| a.is_not_ready()).unwrap_or(false) {
+                if result.as_ref().map(futures::AsyncSink::is_not_ready).unwrap_or(false) {
                     self.task_queue.push(futures_task::current());
                 }
 

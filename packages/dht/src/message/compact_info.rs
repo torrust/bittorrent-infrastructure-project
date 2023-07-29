@@ -33,6 +33,7 @@ impl<'a> CompactNodeInfo<'a> {
         }
     }
 
+    #[must_use]
     pub fn nodes(&self) -> &'a [u8] {
         self.nodes
     }
@@ -87,7 +88,7 @@ impl<'a, B> CompactValueInfo<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
 {
-    /// Creates a new CompactValueInfo container for the given values.
+    /// Creates a new `CompactValueInfo` container for the given values.
     ///
     /// It is VERY important that the values have been checked to contain only
     /// bencoded bytes and not other types as that will result in a panic.
@@ -162,7 +163,7 @@ where
 
 // ----------------------------------------------------------------------------//
 
-/// Panics if the size of compact_info is less than BYTES_PER_COMPACT_NODE_INFO.
+/// Panics if the size of `compact_info` is less than `BYTES_PER_COMPACT_NODE_INFO`.
 fn parts_from_compact_info(compact_info: &[u8]) -> (NodeId, SocketAddrV4) {
     // Use unwarp here because we know these can never fail, but they arent statically guaranteed
     let node_id = ShaHash::from_hash(&compact_info[0..bt::NODE_ID_LEN]).unwrap();
@@ -180,9 +181,9 @@ fn socket_v4_from_bytes_be(bytes: &[u8]) -> LengthResult<SocketAddrV4> {
         let (oc_one, oc_two, oc_three, oc_four) = (bytes[0], bytes[1], bytes[2], bytes[3]);
 
         let mut port = 0u16;
-        port |= bytes[4] as u16;
+        port |= u16::from(bytes[4]);
         port <<= 8;
-        port |= bytes[5] as u16;
+        port |= u16::from(bytes[5]);
 
         let ip = Ipv4Addr::new(oc_one, oc_two, oc_three, oc_four);
 

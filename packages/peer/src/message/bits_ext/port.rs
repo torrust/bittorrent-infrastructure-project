@@ -15,6 +15,7 @@ pub struct PortMessage {
 }
 
 impl PortMessage {
+    #[must_use]
     pub fn new(port: u16) -> PortMessage {
         PortMessage { port }
     }

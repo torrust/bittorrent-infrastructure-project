@@ -2,7 +2,7 @@ use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertErro
 
 use crate::error::{ParseError, ParseResult};
 
-/// Struct implemented the BencodeConvert trait for decoding the metainfo file.
+/// Struct implemented the `BencodeConvert` trait for decoding the metainfo file.
 struct MetainfoConverter;
 
 impl BConvert for MetainfoConverter {
@@ -62,11 +62,11 @@ where
     B: BRefAccess<BType = B>,
 {
     list.into_iter()
-        .filter_map(|entry| entry.list())
+        .filter_map(bencode::BRefAccess::list)
         .map(|entry| {
             entry
                 .into_iter()
-                .filter_map(|bencode_str| bencode_str.str())
+                .filter_map(bencode::BRefAccess::str)
                 .map(String::from)
                 .collect()
         })

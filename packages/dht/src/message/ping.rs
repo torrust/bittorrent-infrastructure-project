@@ -15,6 +15,7 @@ pub struct PingRequest<'a> {
 }
 
 impl<'a> PingRequest<'a> {
+    #[must_use]
     pub fn new(trans_id: &'a [u8], node_id: NodeId) -> PingRequest<'a> {
         PingRequest { trans_id, node_id }
     }
@@ -31,14 +32,17 @@ impl<'a> PingRequest<'a> {
         Ok(PingRequest::new(trans_id, node_id))
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),
@@ -61,6 +65,7 @@ pub struct PingResponse<'a> {
 
 /// Reuse functionality of ping request since the structures are identical.
 impl<'a> PingResponse<'a> {
+    #[must_use]
     pub fn new(trans_id: &'a [u8], node_id: NodeId) -> PingResponse<'a> {
         PingResponse { trans_id, node_id }
     }
@@ -74,14 +79,17 @@ impl<'a> PingResponse<'a> {
         Ok(PingResponse::new(request.trans_id, request.node_id))
     }
 
+    #[must_use]
     pub fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
+    #[must_use]
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),
