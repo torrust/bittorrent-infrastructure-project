@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::net::SocketAddr;
 
 use bip_util::bt::InfoHash;
-use chrono::{UTC, DateTime, Duration};
+use chrono::{DateTime, Duration, UTC};
 
 const MAX_ITEMS_STORED: usize = 500;
 
@@ -52,13 +52,15 @@ impl AnnounceStorage {
 
     /// Invoke the closure once for each contact for the given InfoHash.
     pub fn find_items<F>(&mut self, info_hash: &InfoHash, item_func: F)
-        where F: FnMut(SocketAddr)
+    where
+        F: FnMut(SocketAddr),
     {
         self.find(info_hash, item_func, UTC::now())
     }
 
     fn find<F>(&mut self, info_hash: &InfoHash, mut item_func: F, curr_time: DateTime<UTC>)
-        where F: FnMut(SocketAddr)
+    where
+        F: FnMut(SocketAddr),
     {
         // Clear out any old contacts that we have stored
         self.remove_expired_items(curr_time);
@@ -137,7 +139,9 @@ struct AnnounceItem {
 
 impl AnnounceItem {
     pub fn new(info_hash: InfoHash, address: SocketAddr) -> AnnounceItem {
-        AnnounceItem { expiration: ItemExpiration::new(info_hash, address) }
+        AnnounceItem {
+            expiration: ItemExpiration::new(info_hash, address),
+        }
     }
 
     pub fn expiration(&self) -> ItemExpiration {
@@ -196,9 +200,7 @@ impl Eq for ItemExpiration {}
 
 #[cfg(test)]
 mod tests {
-    use bip_util::bt;
-    use bip_util::test as bip_test;
-
+    use bip_util::{bt, test as bip_test};
     use chrono::Duration;
     use storage::{self, AnnounceStorage};
 
@@ -284,11 +286,8 @@ mod tests {
         assert_eq!(times_invoked, 0);
 
         // Try to add a new item into the storage mocking the current time
-        let mock_current_time =
-            bip_test::travel_into_future(Duration::hours(storage::EXPIRATION_TIME_HOURS));
-        assert!(announce_store.add(other_info_hash,
-                                   sock_addrs[sock_addrs.len() - 1],
-                                   mock_current_time));
+        let mock_current_time = bip_test::travel_into_future(Duration::hours(storage::EXPIRATION_TIME_HOURS));
+        assert!(announce_store.add(other_info_hash, sock_addrs[sock_addrs.len() - 1], mock_current_time));
         // Closure invoked because it was added
         announce_store.find_items(&other_info_hash, |_| times_invoked += 1);
         assert_eq!(times_invoked, 1);
@@ -322,11 +321,8 @@ mod tests {
         assert_eq!(times_invoked, 0);
 
         // Try to add a new item into the storage mocking the current time
-        let mock_current_time =
-            bip_test::travel_into_future(Duration::hours(storage::EXPIRATION_TIME_HOURS));
-        assert!(announce_store.add(info_hash_three,
-                                   sock_addrs[sock_addrs.len() - 1],
-                                   mock_current_time));
+        let mock_current_time = bip_test::travel_into_future(Duration::hours(storage::EXPIRATION_TIME_HOURS));
+        assert!(announce_store.add(info_hash_three, sock_addrs[sock_addrs.len() - 1], mock_current_time));
         // Closure invoked because it was added
         announce_store.find_items(&info_hash_three, |_| times_invoked += 1);
         assert_eq!(times_invoked, 1);

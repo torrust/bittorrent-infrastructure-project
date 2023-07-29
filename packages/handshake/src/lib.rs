@@ -10,30 +10,27 @@ extern crate tokio_io;
 extern crate tokio_timer;
 
 mod bittorrent;
-mod handshake;
-mod message;
-mod filter;
 mod discovery;
+mod filter;
+mod handshake;
 mod local_addr;
+mod message;
 mod transport;
 
+pub use discovery::DiscoveryInfo;
+pub use filter::{FilterDecision, HandshakeFilter, HandshakeFilters};
+pub use handshake::config::HandshakerConfig;
+pub use handshake::handshaker::{Handshaker, HandshakerBuilder, HandshakerSink, HandshakerStream};
+pub use local_addr::LocalAddr;
 pub use message::complete::CompleteMessage;
+pub use message::extensions::{Extension, Extensions};
 pub use message::initiate::InitiateMessage;
 pub use message::protocol::Protocol;
-pub use message::extensions::{Extensions, Extension};
-
-pub use handshake::config::HandshakerConfig;
-pub use handshake::handshaker::{HandshakerBuilder, Handshaker, HandshakerStream, HandshakerSink};
-
-pub use filter::{FilterDecision, HandshakeFilter, HandshakeFilters};
-
-pub use discovery::DiscoveryInfo;
-pub use local_addr::LocalAddr;
 pub use transport::Transport;
 
 /// Built in objects implementing `Transport`.
 pub mod transports {
-    pub use transport::{TcpTransport, TcpListenerStream};
+    pub use transport::{TcpListenerStream, TcpTransport};
 }
 
-pub use bip_util::bt::{PeerId, InfoHash};
+pub use bip_util::bt::{InfoHash, PeerId};

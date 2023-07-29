@@ -5,8 +5,8 @@ use std::io::{self, Write};
 use bytes::Bytes;
 
 pub mod extension;
-pub mod unit;
 pub mod null;
+pub mod unit;
 pub mod wire;
 
 /// Trait for implementing a bittorrent protocol message.
@@ -28,7 +28,8 @@ pub trait PeerProtocol {
 
     /// Write a `ProtocolMessage` to the given writer.
     fn write_bytes<W>(&mut self, message: &Self::ProtocolMessage, writer: W) -> io::Result<()>
-        where W: Write;
+    where
+        W: Write;
 
     /// Retrieve how many bytes the message will occupy on the wire.
     fn message_size(&mut self, message: &Self::ProtocolMessage) -> usize;

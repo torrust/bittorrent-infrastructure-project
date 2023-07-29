@@ -1,6 +1,6 @@
 use std::ops::BitXor;
 
-use error::{LengthError, LengthResult, LengthErrorKind};
+use error::{LengthError, LengthErrorKind, LengthResult};
 
 mod builder;
 
@@ -65,7 +65,10 @@ impl PartialEq<[u8]> for ShaHash {
     fn eq(&self, other: &[u8]) -> bool {
         let is_equal = other.len() == self.hash.len();
 
-        self.hash.iter().zip(other.iter()).fold(is_equal, |prev, (h, o)| prev && h == o)
+        self.hash
+            .iter()
+            .zip(other.iter())
+            .fold(is_equal, |prev, (h, o)| prev && h == o)
     }
 }
 
@@ -102,11 +105,9 @@ impl<'a> Iterator for XorBits<'a> {
     type Item = XorRep;
 
     fn next(&mut self) -> Option<XorRep> {
-        self.bits.next().map(|n| {
-            match n {
-                BitRep::Set => XorRep::Diff,
-                BitRep::Unset => XorRep::Same,
-            }
+        self.bits.next().map(|n| match n {
+            BitRep::Set => XorRep::Diff,
+            BitRep::Unset => XorRep::Same,
         })
     }
 }
@@ -159,11 +160,7 @@ impl<'a> Iterator for Bits<'a> {
 
             self.bit_pos += 1;
 
-            Some(bit_value).map(|x| if x == 1 {
-                BitRep::Set
-            } else {
-                BitRep::Unset
-            })
+            Some(bit_value).map(|x| if x == 1 { BitRep::Set } else { BitRep::Unset })
         } else {
             None
         }

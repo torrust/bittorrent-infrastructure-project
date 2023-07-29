@@ -3,7 +3,7 @@ use std::io::{self, Cursor, Read};
 use std::path::{Path, PathBuf};
 
 use bip_util::sha::ShaHash;
-use walkdir::{self, WalkDir, DirEntry};
+use walkdir::{self, DirEntry, WalkDir};
 
 /// Trait for types convertible as a Result into some Accessor.
 pub trait IntoAccessor {
@@ -20,28 +20,34 @@ pub trait Accessor {
     fn access_directory(&self) -> Option<&Path>;
 
     /// Access the metadata for all files including their length and path.
-    fn access_metadata<C>(&self, callback: C) -> io::Result<()> where C: FnMut(u64, &Path);
+    fn access_metadata<C>(&self, callback: C) -> io::Result<()>
+    where
+        C: FnMut(u64, &Path);
 
     /// Access the sequential pieces that make up all of the files.
     fn access_pieces<C>(&self, callback: C) -> io::Result<()>
-        where C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>;
+    where
+        C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>;
 }
 
 impl<'a, T> Accessor for &'a T
-    where T: Accessor
+where
+    T: Accessor,
 {
     fn access_directory(&self) -> Option<&Path> {
         Accessor::access_directory(*self)
     }
 
     fn access_metadata<C>(&self, callback: C) -> io::Result<()>
-        where C: FnMut(u64, &Path)
+    where
+        C: FnMut(u64, &Path),
     {
         Accessor::access_metadata(*self, callback)
     }
 
     fn access_pieces<C>(&self, callback: C) -> io::Result<()>
-        where C: for<'b> FnMut(PieceAccess<'b>) -> io::Result<()>
+    where
+        C: for<'b> FnMut(PieceAccess<'b>) -> io::Result<()>,
     {
         Accessor::access_pieces(*self, callback)
     }
@@ -61,21 +67,22 @@ pub enum PieceAccess<'a> {
     /// Hash should be computed from the bytes read.
     Compute(&'a mut Read),
     /// Hash given should be used directly as the next checksum.
-    PreComputed(ShaHash)
+    PreComputed(ShaHash),
 }
 
 // ----------------------------------------------------------------------------//
 
 /// Accessor that pulls data in from the file system.
 pub struct FileAccessor {
-    absolute_path:  PathBuf,
+    absolute_path: PathBuf,
     directory_name: Option<PathBuf>,
 }
 
 impl FileAccessor {
     /// Create a new FileAccessor from the given file/directory path.
     pub fn new<T>(path: T) -> io::Result<FileAccessor>
-        where T: AsRef<Path>
+    where
+        T: AsRef<Path>,
     {
         let absolute_path = r#try!(path.as_ref().canonicalize());
         let directory_name = if absolute_path.is_dir() {
@@ -102,7 +109,8 @@ impl IntoAccessor for FileAccessor {
 }
 
 impl<T> IntoAccessor for T
-    where T: AsRef<Path>
+where
+    T: AsRef<Path>,
 {
     type Accessor = FileAccessor;
 
@@ -117,7 +125,8 @@ impl Accessor for FileAccessor {
     }
 
     fn access_metadata<C>(&self, mut callback: C) -> io::Result<()>
-        where C: FnMut(u64, &Path)
+    where
+        C: FnMut(u64, &Path),
     {
         let num_skip_paths = if self.access_directory().is_some() {
             self.absolute_path.iter().count()
@@ -131,11 +140,10 @@ impl Accessor for FileAccessor {
 
             let file_length = entry_metadata.len();
             // TODO: Switch to using strip_relative when it is stabilized
-            let relative_path =
-                entry.path().iter().skip(num_skip_paths).fold(PathBuf::new(), |mut acc, nex| {
-                    acc.push(nex);
-                    acc
-                });
+            let relative_path = entry.path().iter().skip(num_skip_paths).fold(PathBuf::new(), |mut acc, nex| {
+                acc.push(nex);
+                acc
+            });
 
             callback(file_length, relative_path.as_path());
         }
@@ -144,7 +152,8 @@ impl Accessor for FileAccessor {
     }
 
     fn access_pieces<C>(&self, mut callback: C) -> io::Result<()>
-        where C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>
+    where
+        C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
     {
         for res_entry in WalkDir::new(&self.absolute_path).into_iter().filter(entry_file_filter) {
             let entry = r#try!(res_entry);
@@ -194,7 +203,8 @@ impl<'a> Accessor for DirectAccessor<'a> {
     }
 
     fn access_metadata<C>(&self, mut callback: C) -> io::Result<()>
-        where C: FnMut(u64, &Path)
+    where
+        C: FnMut(u64, &Path),
     {
         let file_path = Path::new(self.file_name);
         let file_length = self.file_contents.len() as u64;
@@ -205,7 +215,8 @@ impl<'a> Accessor for DirectAccessor<'a> {
     }
 
     fn access_pieces<C>(&self, mut callback: C) -> io::Result<()>
-        where C: for<'b> FnMut(PieceAccess<'b>) -> io::Result<()>
+    where
+        C: for<'b> FnMut(PieceAccess<'b>) -> io::Result<()>,
     {
         let mut cursor = Cursor::new(self.file_contents);
 

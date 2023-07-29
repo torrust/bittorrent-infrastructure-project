@@ -7,9 +7,8 @@ use bip_handshake::Handshaker;
 use bip_util::bt::InfoHash;
 use bip_util::net;
 use mio::Sender;
-
 use router::Router;
-use worker::{self, OneshotTask, DhtEvent, ShutdownCause};
+use worker::{self, DhtEvent, OneshotTask, ShutdownCause};
 
 /// Maintains a Distributed Hash (Routing) Table.
 pub struct MainlineDht {
@@ -19,7 +18,8 @@ pub struct MainlineDht {
 impl MainlineDht {
     /// Start the MainlineDht with the given DhtBuilder and Handshaker.
     fn with_builder<H>(builder: DhtBuilder, handshaker: H) -> io::Result<MainlineDht>
-        where H: Handshaker + 'static
+    where
+        H: Handshaker + 'static,
     {
         let send_sock = r#try!(UdpSocket::bind(&builder.src_addr));
         let recv_sock = r#try!(send_sock.try_clone());
@@ -27,13 +27,15 @@ impl MainlineDht {
         let kill_sock = r#try!(send_sock.try_clone());
         let kill_addr = r#try!(send_sock.local_addr());
 
-        let send = r#try!(worker::start_mainline_dht(send_sock,
-                                                   recv_sock,
-                                                   builder.read_only,
-                                                   builder.ext_addr,
-                                                   handshaker,
-                                                   kill_sock,
-                                                   kill_addr));
+        let send = r#try!(worker::start_mainline_dht(
+            send_sock,
+            recv_sock,
+            builder.read_only,
+            builder.ext_addr,
+            handshaker,
+            kill_sock,
+            kill_addr
+        ));
 
         let nodes: Vec<SocketAddr> = builder.nodes.into_iter().collect();
         let routers: Vec<Router> = builder.routers.into_iter().collect();
@@ -80,8 +82,10 @@ impl MainlineDht {
 impl Drop for MainlineDht {
     fn drop(&mut self) {
         if self.send.send(OneshotTask::Shutdown(ShutdownCause::ClientInitiated)).is_err() {
-            warn!("bip_dht: MainlineDht failed to send a shutdown message (may have already been \
-                   shutdown)...");
+            warn!(
+                "bip_dht: MainlineDht failed to send a shutdown message (may have already been \
+                   shutdown)..."
+            );
         }
     }
 }
@@ -180,7 +184,8 @@ impl DhtBuilder {
 
     /// Start a mainline DHT with the current configuration.
     pub fn start_mainline<H>(self, handshaker: H) -> io::Result<MainlineDht>
-        where H: Handshaker + 'static
+    where
+        H: Handshaker + 'static,
     {
         MainlineDht::with_builder(self, handshaker)
     }

@@ -2,13 +2,13 @@ extern crate bip_handshake;
 extern crate futures;
 extern crate tokio_core;
 
-use std::time::Duration;
-use std::thread;
-use std::io::{self, Write, BufRead};
+use std::io::{self, BufRead, Write};
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::thread;
+use std::time::Duration;
 
-use bip_handshake::{HandshakerBuilder, InitiateMessage, Protocol};
 use bip_handshake::transports::TcpTransport;
+use bip_handshake::{HandshakerBuilder, InitiateMessage, Protocol};
 use futures::{Future, Sink, Stream};
 use tokio_core::reactor::Core;
 
@@ -41,10 +41,10 @@ fn main() {
         .wait()
         .unwrap();
 
-    let _peer = core.run(
-            handshaker.into_future().map(|(opt_peer, _)| opt_peer.unwrap())
-        ).unwrap_or_else(|_| panic!(""));
-    
+    let _peer = core
+        .run(handshaker.into_future().map(|(opt_peer, _)| opt_peer.unwrap()))
+        .unwrap_or_else(|_| panic!(""));
+
     println!("\nConnection With Peer Established...Closing In 10 Seconds");
 
     thread::sleep(Duration::from_millis(10000));

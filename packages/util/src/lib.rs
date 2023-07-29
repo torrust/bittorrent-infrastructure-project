@@ -1,9 +1,9 @@
 //! Utilities used by the Bittorrent Infrastructure Project.
 
+extern crate chrono;
 extern crate crypto;
 extern crate num;
 extern crate rand;
-extern crate chrono;
 
 /// Bittorrent specific types.
 pub mod bt;

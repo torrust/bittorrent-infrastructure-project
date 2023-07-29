@@ -15,9 +15,10 @@ extern crate rand;
 #[cfg(test)]
 extern crate futures_test;
 
+use std::time::Duration;
+
 use bip_metainfo::Metainfo;
 use bip_peer::PeerInfo;
-use std::time::Duration;
 
 pub mod discovery;
 pub mod error;

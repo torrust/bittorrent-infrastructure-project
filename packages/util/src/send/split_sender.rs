@@ -5,8 +5,9 @@ use send::TrySender;
 
 /// Create two SplitSenders over a single Sender with corresponding capacities.
 pub fn split_sender<S, T>(send: S, cap_one: usize, cap_two: usize) -> (SplitSender<S>, SplitSender<S>)
-    where S: TrySender<T> + Clone,
-          T: Send
+where
+    S: TrySender<T> + Clone,
+    T: Send,
 {
     (SplitSender::new(send.clone(), cap_one), SplitSender::new(send, cap_two))
 }
@@ -19,7 +20,8 @@ pub struct SplitSender<S> {
 }
 
 impl<S> Clone for SplitSender<S>
-    where S: Clone
+where
+    S: Clone,
 {
     fn clone(&self) -> SplitSender<S> {
         SplitSender {
@@ -44,7 +46,9 @@ impl<S> SplitSender<S> {
 
     /// Create a new SplitSenderAck that can be used to ack sent messages.
     pub fn sender_ack(&self) -> SplitSenderAck {
-        SplitSenderAck { count: self.count.clone() }
+        SplitSenderAck {
+            count: self.count.clone(),
+        }
     }
 
     fn try_count_increment(&self) -> bool {
@@ -62,8 +66,9 @@ impl<S> SplitSender<S> {
 }
 
 impl<S, T> TrySender<T> for SplitSender<S>
-    where S: TrySender<T>,
-          T: Send
+where
+    S: TrySender<T>,
+    T: Send,
 {
     fn try_send(&self, data: T) -> Option<T> {
         let should_send = self.try_count_increment();
@@ -95,6 +100,7 @@ mod tests {
     use std::sync::mpsc;
 
     use send::TrySender;
+
     use super::SplitSender;
 
     #[test]
