@@ -160,8 +160,8 @@ impl UberModule {
 
     /// Get the next state after the given state, return `Some(next_state`) or None if the given state was the last state.
     ///
-    /// We return the next state regardless of the message we are processing at the time. So if we dont recognize the tuple of
-    /// next state and message, we ignore it. This makes the implemenation a lot easier as we dont have to do an exhaustive match
+    /// We return the next state regardless of the message we are processing at the time. So if we don't recognize the tuple of
+    /// next state and message, we ignore it. This makes the implementation a lot easier as we don't have to do an exhaustive match
     /// on all possible states and messages, as only a subset will be valid.
     fn next_state(&self, state: Option<ModuleState>) -> Option<ModuleState> {
         match state {
@@ -193,7 +193,7 @@ impl UberModule {
 
     /// Loop over all states until we finish, or hit an error.
     ///
-    /// Takes care of saving/reseting states if we hit an error/finish.
+    /// Takes care of saving/resetting states if we hit an error/finish.
     fn loop_states<G, A, L, R, E>(
         &mut self,
         is_sink: bool,
@@ -219,14 +219,14 @@ impl UberModule {
         // - Ready
         // - Error
 
-        // TODO: Kind of need to make a full transition where the state doesnt change for this logic to work
-        // (cant start back at the middle when we get woken up, since we dont know what woke us up)
+        // TODO: Kind of need to make a full transition where the state doesn't change for this logic to work
+        // (cant start back at the middle when we get woken up, since we don't know what woke us up)
 
         let mut should_continue = result
             .as_ref()
             .map(|a| (is_sink && a.is_ready()) || (is_stream && !a.is_ready()))
             .unwrap_or(false);
-        // While we are ready, and we havent exhausted states, continue to loop
+        // While we are ready, and we haven't exhausted states, continue to loop
         while should_continue && opt_next_state.is_some() {
             let next_state = opt_next_state.unwrap();
             result = logic(self, next_state);
@@ -235,7 +235,7 @@ impl UberModule {
                 .map(|a| (is_sink && a.is_ready()) || (is_stream && !a.is_ready()))
                 .unwrap_or(false);
 
-            // If we dont need to return to the user because of this error, mark it as done
+            // If we don't need to return to the user because of this error, mark it as done
             if should_continue {
                 assign_state(self, opt_next_state);
             }
@@ -334,7 +334,7 @@ impl Sink for UberModule {
     type SinkError = UberError;
 
     fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
-        // Currently we dont return NotReady from the module directly, so no saving our task state here
+        // Currently we don't return NotReady from the module directly, so no saving our task state here
         self.start_sink_state(&item).map(|a| a.map(|_| item))
     }
 

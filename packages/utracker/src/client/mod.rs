@@ -64,9 +64,9 @@ pub enum ClientResponse {
 }
 
 impl ClientResponse {
-    /// Optionally return a reference to the underyling `AnnounceResponse`.
+    /// Optionally return a reference to the underlying `AnnounceResponse`.
     ///
-    /// If you know that the token associated with the response was retrived
+    /// If you know that the token associated with the response was retrieved
     /// from an `AnnounceRequest`, then unwrapping this value is guaranteed to
     /// succeed.
     #[must_use]
@@ -77,9 +77,9 @@ impl ClientResponse {
         }
     }
 
-    /// Optionally return a reference to the underyling `ScrapeResponse`.
+    /// Optionally return a reference to the underlying `ScrapeResponse`.
     ///
-    /// If you know that the token associated with the response was retrived
+    /// If you know that the token associated with the response was retrieved
     /// from a `ScrapeRequest`, then unwrapping this value is guaranteed to
     /// succeed.
     #[must_use]

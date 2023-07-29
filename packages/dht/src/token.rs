@@ -17,7 +17,7 @@ use util::sha::{self, ShaHash};
 
 /// With this scheme we can guarantee that the minimum amount of time a token can be valid for
 /// is the maximum amount of time a token is valid for in bittorrent in order to provide interop.
-/// Since we arent storing the tokens we generate (which is awesome) we CANT track how long each
+/// Since we aren't storing the tokens we generate (which is awesome) we CANT track how long each
 /// individual token has been checked out from the store and so each token is valid for some time
 /// between 10 and 20 minutes in contrast with 5 and 10 minutes.
 
@@ -78,7 +78,7 @@ impl TokenStore {
         // We cant just use a placeholder for the last secret as that would allow external
         // nodes to exploit recently started dhts. Instead, just generate another placeholder
         // secret for the last secret with the assumption that we wont get a valid announce
-        // under that secret. We could go the option route but that isnt as clean.
+        // under that secret. We could go the option route but that isn't as clean.
         let curr_secret = rand::random::<u32>();
         let last_secret = rand::random::<u32>();
         let last_refresh = UTC::now();

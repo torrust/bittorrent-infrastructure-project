@@ -5,7 +5,7 @@ Chat: irc.mozilla.org <a href="http://mibbit.com/?server=irc.mozilla.org&channel
 
 ## Bencode (bip_bencode) - [![Documentation](https://docs.rs/bip_bencode/badge.svg)](https://docs.rs/bip_bencode) [![Crate](http://meritbadge.herokuapp.com/bip_bencode)](https://crates.io/crates/bip_bencode)
 
-**About**: Bencode is the binary encoding used throughout bittorrent technologies from metainfo files to DHT messages. Bencode types include integers, byte arrays, lists, and dictionarys, of which the last two can hold any bencode type (they could be recursively constructed).
+**About**: Bencode is the binary encoding used throughout bittorrent technologies from metainfo files to DHT messages. Bencode types include integers, byte arrays, lists, and dictionaries, of which the last two can hold any bencode type (they could be recursively constructed).
 
 ## Disk (bip_disk) - [![Documentation](https://docs.rs/bip_disk/badge.svg)](https://docs.rs/bip_disk) [![Crate](http://meritbadge.herokuapp.com/bip_disk)](https://crates.io/crates/bip_disk)
 
@@ -35,7 +35,7 @@ Chat: irc.mozilla.org <a href="http://mibbit.com/?server=irc.mozilla.org&channel
 
 ## Tracker (bip_utracker) - [![Documentation](https://docs.rs/bip_utracker/badge.svg)](https://docs.rs/bip_utracker) [![Crate](http://meritbadge.herokuapp.com/bip_utracker)](https://crates.io/crates/bip_utracker)
 
-**About**: Trackers provide a centralized solution to peer discovery within the bittorrent eco-system. Clients send messages to a specific set of trackers, updating them with any state changes that have occured pertaining to the download of files. However, using the start and stop events we can use trackers generically to either add or remove ourselves from a tracker for the purposes of peer discovery for any application.
+**About**: Trackers provide a centralized solution to peer discovery within the bittorrent eco-system. Clients send messages to a specific set of trackers, updating them with any state changes that have occurred pertaining to the download of files. However, using the start and stop events we can use trackers generically to either add or remove ourselves from a tracker for the purposes of peer discovery for any application.
 
 ## References
 

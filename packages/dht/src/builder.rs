@@ -62,7 +62,7 @@ impl MainlineDht {
         }
     }
 
-    /// An event Receiver which will receive events occuring within the DHT.
+    /// An event Receiver which will receive events occurring within the DHT.
     ///
     /// It is important to at least monitor the DHT for shutdown events as any calls
     /// after that event occurs will not be processed but no indication will be given.
@@ -74,7 +74,7 @@ impl MainlineDht {
             warn!("bip_dht: MainlineDht failed to send a register sender message...");
             // TODO: Should we push a Shutdown event through the sender here? We would need
             // to know the cause or create a new cause for this specific scenario since the
-            // client could have been lazy and wasnt monitoring this until after it shutdown!
+            // client could have been lazy and wasn't monitoring this until after it shutdown!
         }
 
         recv

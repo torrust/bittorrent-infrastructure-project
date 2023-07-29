@@ -33,15 +33,15 @@ use tokio_core::reactor::Core;
 use tokio_io::AsyncRead;
 
 /*
-    Things this example doesnt do, because of the lack of bip_select:
+    Things this example doesn't do, because of the lack of bip_select:
       * Logic for piece selection is not abstracted (and is pretty bad)
       * We will unconditionally upload pieces to a peer (regardless whether or not they were choked)
-      * We dont add an info hash filter to bip_handshake after we have as many peers as we need/want
-      * We dont do any banning of malicious peers
+      * We don't add an info hash filter to bip_handshake after we have as many peers as we need/want
+      * We don't do any banning of malicious peers
 
-    Things the example doesnt do, unrelated to bip_select:
-      * Matching peers up to disk requests isnt as good as it could be
-      * Doesnt use a shared BytesMut for servicing piece requests
+    Things the example doesn't do, unrelated to bip_select:
+      * Matching peers up to disk requests isn't as good as it could be
+      * doesn't use a shared BytesMut for servicing piece requests
       * Good logging
 */
 
@@ -139,7 +139,7 @@ fn main() {
         // since this is a minimal example, we will rely on peer
         // manager backpressure (handshaker -> peer manager will
         // block when we reach our max peers). Setting these to low
-        // values so we dont have more than 2 unused tcp connections.
+        // values so we don't have more than 2 unused tcp connections.
         .with_config(HandshakerConfig::default().with_wait_buffer_size(0).with_done_buffer_size(0))
         .build::<TcpTransport>(TcpTransport, core.handle()) // Will handshake over TCP (could swap this for UTP in the future)
         .unwrap()
@@ -187,7 +187,7 @@ fn main() {
     let map_disk_manager_send = disk_manager_send.clone().sink_map_err(|_| ());
 
     // Hook up a future that receives messages from the peer manager, and forwards request to the disk manager or selection manager (using loop fn
-    // here because we need to be able to access state, like request_map and a different future combinator wouldnt let us keep it around to access)
+    // here because we need to be able to access state, like request_map and a different future combinator wouldn't let us keep it around to access)
     core.handle().spawn(future::loop_fn(
         (
             peer_manager_recv,
@@ -376,7 +376,7 @@ fn main() {
                             }
                             // Disk manager is finished identifying good pieces, torrent has been added
                             SelectState::TorrentAdded => Loop::Break((select_recv, piece_requests, cur_pieces)),
-                            // Shouldnt be receiving any other messages...
+                            // Shouldn't be receiving any other messages...
                             message => panic!("Unexpected Message Received In Selection Receiver: {:?}", message),
                         }
                     })
@@ -438,7 +438,7 @@ fn main() {
                 .into_future()
                 .map_err(|_| ())
                 .and_then(move |(opt_message, select_recv)| {
-                    // Handle the current selection messsage, decide any control messages we need to send
+                    // Handle the current selection message, decide any control messages we need to send
                     let send_messages = match opt_message.unwrap() {
                         SelectState::BlockProcessed => {
                             // Disk manager let us know a block was processed (one of our requests made it
@@ -459,7 +459,7 @@ fn main() {
                         SelectState::NewPeer(info) => {
                             // A new peer connected to us, store its contact info (just supported one peer atm),
                             // and go ahead and express our interest in them, and unchoke them (we can upload to them)
-                            // We dont send a bitfield message (just to keep things simple).
+                            // We don't send a bitfield message (just to keep things simple).
                             opt_peer = Some(info);
                             vec![
                                 IPeerManagerMessage::SendMessage(info, 0, PeerWireProtocolMessage::Interested),
@@ -467,9 +467,9 @@ fn main() {
                             ]
                         }
                         SelectState::GoodPiece(piece) => {
-                            // Disk manager has processed endough blocks to make up a piece, and that piece
+                            // Disk manager has processed enough blocks to make up a piece, and that piece
                             // was verified to be good (checksummed). Go ahead and increment the number of
-                            // pieces we have. We dont handle bad pieces here (since we deleted our request
+                            // pieces we have. We don't handle bad pieces here (since we deleted our request
                             // but ideally, we would recreate those requests and resend/blacklist the peer).
                             cur_pieces += 1;
 
@@ -537,7 +537,7 @@ fn main() {
                                 }),
                         )
                     } else {
-                        // Not done yet, and we dont have any peer info stored (havent received the peer yet)
+                        // Not done yet, and we don't have any peer info stored (haven't received the peer yet)
                         Box::new(future::ok(Loop::Continue((
                             select_recv,
                             map_peer_manager_send,

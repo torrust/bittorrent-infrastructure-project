@@ -89,7 +89,7 @@ impl PeerManagerBuilder {
         self.stream_buffer
     }
 
-    /// Retrieve the hearbeat interval `Duration`.
+    /// Retrieve the heartbeat interval `Duration`.
     #[must_use]
     pub fn heartbeat_interval(&self) -> Duration {
         self.heartbeat_interval

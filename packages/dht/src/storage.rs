@@ -7,7 +7,7 @@ use util::bt::InfoHash;
 
 const MAX_ITEMS_STORED: usize = 500;
 
-/// Manages storage and expiration of contact information for a number of `InfoHashs`.
+/// Manages storage and expiration of contact information for a number of `InfoHash`(s).
 pub struct AnnounceStorage {
     storage: HashMap<InfoHash, Vec<AnnounceItem>>,
     expires: Vec<ItemExpiration>,
@@ -252,9 +252,9 @@ mod tests {
         // Try to add a new item
         let other_info_hash = [1u8; bt::INFO_HASH_LEN].into();
 
-        // Returns false because it wasnt added
+        // Returns false because it wasn't added
         assert!(!announce_store.add_item(other_info_hash, sock_addrs[sock_addrs.len() - 1]));
-        // Closure not invoked because it wasnt added
+        // Closure not invoked because it wasn't added
         let mut times_invoked = 0;
         announce_store.find_items(&other_info_hash, |_| times_invoked += 1);
         assert_eq!(times_invoked, 0);
@@ -279,9 +279,9 @@ mod tests {
         // Try to add a new item into the storage (under a different info hash)
         let other_info_hash = [1u8; bt::INFO_HASH_LEN].into();
 
-        // Returned false because it wasnt added
+        // Returned false because it wasn't added
         assert!(!announce_store.add_item(other_info_hash, sock_addrs[sock_addrs.len() - 1]));
-        // Closure not invoked because it wasnt added
+        // Closure not invoked because it wasn't added
         let mut times_invoked = 0;
         announce_store.find_items(&other_info_hash, |_| times_invoked += 1);
         assert_eq!(times_invoked, 0);

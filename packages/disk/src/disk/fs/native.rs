@@ -86,7 +86,7 @@ where
 
             OpenOptions::new().read(true).write(true).create(true).open(&path)
         }
-        None => Err(io::Error::new(io::ErrorKind::InvalidInput, "File Path Has No Parent")),
+        None => Err(io::Error::new(io::ErrorKind::InvalidInput, "File Path Has No Paren't")),
     }
 }
 

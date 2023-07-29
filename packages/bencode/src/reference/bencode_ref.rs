@@ -134,7 +134,7 @@ mod tests {
 
     #[test]
     fn positive_int_buffer() {
-        let int_bytes = b"i-500e";
+        let int_bytes = b"i-500e"; // cspell:disable-line
         let bencode = BencodeRef::decode(&int_bytes[..], BDecodeOpt::default()).unwrap();
 
         assert_eq!(int_bytes, bencode.buffer());
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn positive_bytes_buffer() {
-        let bytes_bytes = b"3:asd";
+        let bytes_bytes = b"3:asd"; // cspell:disable-line
         let bencode = BencodeRef::decode(&bytes_bytes[..], BDecodeOpt::default()).unwrap();
 
         assert_eq!(bytes_bytes, bencode.buffer());
@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn positive_list_buffer() {
-        let list_bytes = b"l3:asde";
+        let list_bytes = b"l3:asde"; // cspell:disable-line
         let bencode = BencodeRef::decode(&list_bytes[..], BDecodeOpt::default()).unwrap();
 
         assert_eq!(list_bytes, bencode.buffer());
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn positive_dict_buffer() {
-        let dict_bytes = b"d3:asd3:asde";
+        let dict_bytes = b"d3:asd3:asde"; // cspell:disable-line
         let bencode = BencodeRef::decode(&dict_bytes[..], BDecodeOpt::default()).unwrap();
 
         assert_eq!(dict_bytes, bencode.buffer());
@@ -166,97 +166,101 @@ mod tests {
 
     #[test]
     fn positive_list_nested_int_buffer() {
-        let nested_int_bytes = b"li-500ee";
+        let nested_int_bytes = b"li-500ee"; // cspell:disable-line
         let bencode = BencodeRef::decode(&nested_int_bytes[..], BDecodeOpt::default()).unwrap();
 
         let bencode_list = bencode.list().unwrap();
         let bencode_int = bencode_list.get(0).unwrap();
 
-        let int_bytes = b"i-500e";
+        let int_bytes = b"i-500e"; // cspell:disable-line
         assert_eq!(int_bytes, bencode_int.buffer());
     }
 
     #[test]
     fn positive_dict_nested_int_buffer() {
-        let nested_int_bytes = b"d3:asdi-500ee";
+        let nested_int_bytes = b"d3:asdi-500ee"; // cspell:disable-line
         let bencode = BencodeRef::decode(&nested_int_bytes[..], BDecodeOpt::default()).unwrap();
 
         let bencode_dict = bencode.dict().unwrap();
+        /* cspell:disable-next-line */
         let bencode_int = bencode_dict.lookup(&b"asd"[..]).unwrap();
 
-        let int_bytes = b"i-500e";
+        let int_bytes = b"i-500e"; // cspell:disable-line
         assert_eq!(int_bytes, bencode_int.buffer());
     }
 
     #[test]
     fn positive_list_nested_bytes_buffer() {
-        let nested_bytes_bytes = b"l3:asde";
+        let nested_bytes_bytes = b"l3:asde"; // cspell:disable-line
         let bencode = BencodeRef::decode(&nested_bytes_bytes[..], BDecodeOpt::default()).unwrap();
 
         let bencode_list = bencode.list().unwrap();
         let bencode_bytes = bencode_list.get(0).unwrap();
 
-        let bytes_bytes = b"3:asd";
+        let bytes_bytes = b"3:asd"; // cspell:disable-line
         assert_eq!(bytes_bytes, bencode_bytes.buffer());
     }
 
     #[test]
     fn positive_dict_nested_bytes_buffer() {
-        let nested_bytes_bytes = b"d3:asd3:asde";
+        let nested_bytes_bytes = b"d3:asd3:asde"; // cspell:disable-line
         let bencode = BencodeRef::decode(&nested_bytes_bytes[..], BDecodeOpt::default()).unwrap();
 
         let bencode_dict = bencode.dict().unwrap();
+        /* cspell:disable-next-line */
         let bencode_bytes = bencode_dict.lookup(&b"asd"[..]).unwrap();
 
-        let bytes_bytes = b"3:asd";
+        let bytes_bytes = b"3:asd"; // cspell:disable-line
         assert_eq!(bytes_bytes, bencode_bytes.buffer());
     }
 
     #[test]
     fn positive_list_nested_list_buffer() {
-        let nested_list_bytes = b"ll3:asdee";
+        let nested_list_bytes = b"ll3:asdee"; // cspell:disable-line
         let bencode = BencodeRef::decode(&nested_list_bytes[..], BDecodeOpt::default()).unwrap();
 
         let bencode_list = bencode.list().unwrap();
         let bencode_list = bencode_list.get(0).unwrap();
 
-        let list_bytes = b"l3:asde";
+        let list_bytes = b"l3:asde"; // cspell:disable-line
         assert_eq!(list_bytes, bencode_list.buffer());
     }
 
     #[test]
     fn positive_dict_nested_list_buffer() {
-        let nested_list_bytes = b"d3:asdl3:asdee";
+        let nested_list_bytes = b"d3:asdl3:asdee"; // cspell:disable-line
         let bencode = BencodeRef::decode(&nested_list_bytes[..], BDecodeOpt::default()).unwrap();
 
         let bencode_dict = bencode.dict().unwrap();
+        /* cspell:disable-next-line */
         let bencode_list = bencode_dict.lookup(&b"asd"[..]).unwrap();
 
-        let list_bytes = b"l3:asde";
+        let list_bytes = b"l3:asde"; // cspell:disable-line
         assert_eq!(list_bytes, bencode_list.buffer());
     }
 
     #[test]
     fn positive_list_nested_dict_buffer() {
-        let nested_dict_bytes = b"ld3:asd3:asdee";
+        let nested_dict_bytes = b"ld3:asd3:asdee"; // cspell:disable-line
         let bencode = BencodeRef::decode(&nested_dict_bytes[..], BDecodeOpt::default()).unwrap();
 
         let bencode_list = bencode.list().unwrap();
         let bencode_dict = bencode_list.get(0).unwrap();
 
-        let dict_bytes = b"d3:asd3:asde";
+        let dict_bytes = b"d3:asd3:asde"; // cspell:disable-line
         assert_eq!(dict_bytes, bencode_dict.buffer());
     }
 
     #[test]
     fn positive_dict_nested_dict_buffer() {
-        let nested_dict_bytes = b"d3:asdd3:asd3:asdee";
+        let nested_dict_bytes = b"d3:asdd3:asd3:asdee"; // cspell:disable-line
         let bencode = BencodeRef::decode(&nested_dict_bytes[..], BDecodeOpt::default()).unwrap();
 
         let bencode_dict = bencode.dict().unwrap();
+        /* cspell:disable-next-line */
         let bencode_dict = bencode_dict.lookup(&b"asd"[..]).unwrap();
 
-        let dict_bytes = b"d3:asd3:asde";
+        let dict_bytes = b"d3:asd3:asde"; // cspell:disable-line
         assert_eq!(dict_bytes, bencode_dict.buffer());
     }
 }

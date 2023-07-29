@@ -147,13 +147,13 @@ where
         }
 
         // We split the sink and stream, which means these could be polled in different event loops (I think),
-        // so we need to add our task, but then try to sumbit work again, in case the receiver processed work
+        // so we need to add our task, but then try to submit work again, in case the receiver processed work
         // right after we tried to submit the first time.
         info!("DiskManagerSink Failed To Submit Work On First Attempt, Adding Task To Queue");
         self.task_queue.push(task::current());
 
         if self.try_submit_work() {
-            // Receiver will look at the queue but wake us up, even though we dont need it to now...
+            // Receiver will look at the queue but wake us up, even though we don't need it to now...
             info!("DiskManagerSink Submitted Work On Second Attempt");
             tasks::execute_on_pool(item, &self.pool, self.context.clone());
 

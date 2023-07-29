@@ -124,6 +124,7 @@ mod tests {
 
     #[test]
     fn test_wikipedia() {
+        /* cSpell:disable */
         let url = "magnet:?xt=urn:ed2k:354B15E68FB8F36D7CD88FF94116CDC1
 &xt=urn:btih:QHQXPYWMACKDWKP47RRVIV7VOURXFE5Q
 &xt=urn:tree:tiger:7N5OAMRNGMSSEUE3ORHOKWN4WWIQ5X4EBOOTLJY
@@ -132,6 +133,7 @@ mod tests {
 &as=http%3A%2F%2Fdownload.wikimedia.org%2Fmediawiki%2F1.15%2Fmediawiki-1.15.1.tar.gz
 &xs=http%3A%2F%2Fcache.example.org%2FXRX2PEFXOOEJFRVUCX6HMZMKS5TWG4K5
 &xs=dchub://example.org";
+        /* cSpell:enable */
         let link = crate::MagnetLink::parse(url).unwrap();
 
         let expected_info_hash = [
@@ -153,18 +155,20 @@ mod tests {
             link.exact_source,
             vec![
                 "http://cache.example.org/XRX2PEFXOOEJFRVUCX6HMZMKS5TWG4K5",
-                "dchub://example.org"
+                "dchub://example.org" // cspell:disable-line
             ]
         );
     }
 
     #[test]
     fn test_tpb() {
+        /* cSpell:disable */
         let url = "magnet:?xt=urn:btih:\
                    d9be6909325d28912f400fcb324005dd5861e49f&dn=Crunchbang+GNU%2FLinux+-+AMD64+ISO&tr=udp%3A%2F%2Ftracker.\
                    openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.\
                    com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.\
                    desync.com%3A6969";
+        /* cSpell:enable */
         let link = crate::MagnetLink::parse(url).unwrap();
 
         let expected_info_hash = [
@@ -176,6 +180,7 @@ mod tests {
             Some(ShaHash::from_hash(&expected_info_hash[..]).unwrap())
         );
 
+        /* cspell:disable-next-line */
         assert_eq!(link.display_name, Some("Crunchbang GNU/Linux - AMD64 ISO".to_string()));
         assert_eq!(
             link.address_tracker,

@@ -13,7 +13,7 @@ use nom::{be_u32, be_u8, IResult};
 use crate::manager::ManagedMessage;
 use crate::protocol::PeerProtocol;
 
-// TODO: Propogate failures to cast values to/from usize
+// TODO: Propagate failures to cast values to/from usize
 
 const KEEP_ALIVE_MESSAGE_LEN: u32 = 0;
 const CHOKE_MESSAGE_LEN: u32 = 1;

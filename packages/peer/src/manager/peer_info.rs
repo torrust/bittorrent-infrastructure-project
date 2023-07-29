@@ -6,7 +6,7 @@ use util::bt::{InfoHash, PeerId};
 
 /// Information that uniquely identifies a peer.
 ///
-/// Equality oprations DO NOT INCLUDE `Extensions` as we define a
+/// Equality operations DO NOT INCLUDE `Extensions` as we define a
 /// unique peer as `(address, peer_id, hash)`, so equality will be
 /// based on that tuple.
 #[derive(Eq, Debug, Copy, Clone)]

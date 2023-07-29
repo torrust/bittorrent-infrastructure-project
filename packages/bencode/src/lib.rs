@@ -11,7 +11,7 @@
 //!     use bencode::{BencodeRef, BRefAccess, BDecodeOpt};
 //!
 //!     fn main() {
-//!         let data = b"d12:lucky_numberi7ee";
+//!         let data = b"d12:lucky_numberi7ee"; // cspell:disable-line
 //!         let bencode = BencodeRef::decode(data, BDecodeOpt::default()).unwrap();
 //!
 //!         assert_eq!(7, bencode.dict().unwrap().lookup("lucky_number".as_bytes())
@@ -31,7 +31,8 @@
 //!             "lucky_string" => ben_bytes!("7")
 //!         }).encode();
 //!
-//!         assert_eq!(&b"d12:lucky_numberi7e12:lucky_string1:7e"[..], &message[..]);
+//!         let data = b"d12:lucky_numberi7e12:lucky_string1:7e"; // cspell:disable-line
+//!         assert_eq!(&data[..], &message[..]);
 //!     }
 //! ```
 

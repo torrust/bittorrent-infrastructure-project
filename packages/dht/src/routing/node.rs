@@ -60,7 +60,7 @@ impl Node {
     /// Create a questionable node that has responded to us before but never requested from us.
     pub fn as_questionable(id: NodeId, addr: SocketAddr) -> Node {
         let last_response_offset = Duration::minutes(MAX_LAST_SEEN_MINS);
-        // TODO: Dont use test helpers in actual code!!!
+        // TODO: don't use test helpers in actual code!!!
         let last_response = test::travel_into_past(last_response_offset);
 
         Node {
@@ -337,7 +337,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_node_idle_reqeusts() {
+    fn positive_node_idle_requests() {
         let node = Node::as_questionable(bip_test::dummy_node_id(), bip_test::dummy_socket_addr_v4());
 
         for _ in 0..super::MAX_REFRESH_REQUESTS {

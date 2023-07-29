@@ -36,7 +36,7 @@ impl Protocol {
         Ok(())
     }
 
-    /// Get the legth of the given protocol (does not include the length byte).
+    /// Get the length of the given protocol (does not include the length byte).
     #[must_use]
     pub fn write_len(&self) -> usize {
         match self {

@@ -10,7 +10,7 @@ mod benches {
 
     #[bench]
     fn bench_nested_lists(b: &mut Bencher) {
-        let bencode = b"lllllllllllllllllllllllllllllllllllllllllllllllllleeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+        let bencode = b"lllllllllllllllllllllllllllllllllllllllllllllllllleeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; // cspell:disable-line
 
         b.iter(|| BencodeRef::decode(&bencode[..], BDecodeOpt::new(50, true, true)).unwrap());
     }

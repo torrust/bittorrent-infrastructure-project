@@ -60,7 +60,7 @@ pub fn is_compliant_ipv4_addr(addr: Ipv4Addr, id: NodeId) -> bool {
 
 /// Checks to see if the given ipv4 address is exempt from a security check.
 fn is_security_compliant_ipv4_exempt(addr: Ipv4Addr) -> bool {
-    // TODO: Since we are not using this module yet, we dont have to use the ip feature gate which is not stable yet.
+    // TODO: Since we are not using this module yet, we don't have to use the ip feature gate which is not stable yet.
 
     false
     // addr.is_loopback() || addr.is_private() || addr.is_link_local()
@@ -95,7 +95,7 @@ fn is_compliant_addr(masked_ip_be: u64, num_octets: usize, id: NodeId) -> bool {
     // array). We are performing the latter as it seems to give us correct results for the
     // different test vectors. We will however store 8 octet addresses in an 8 byte array.
 
-    // TODO: Not sure if this checksum uses a constant internally that depends on endiannes of computer
+    // TODO: Not sure if this checksum uses a constant internally that depends on endianness of computer
     // (this sentence is most likely stupid in more than one way).
     let crc32c_result = crc32::checksum_castagnoli(&rand_masked_ip_bytes[4..]);
 
@@ -104,7 +104,7 @@ fn is_compliant_addr(masked_ip_be: u64, num_octets: usize, id: NodeId) -> bool {
 
 /// Compares the result from the crc32c function against the first 21 bits of the node id.
 ///
-/// We dont have to check the last byte of the node id since we used that byte to generate
+/// We don't have to check the last byte of the node id since we used that byte to generate
 /// the `crc32c_result`.
 fn is_compliant_id(crc32c_result: u32, id_bytes: [u8; bt::NODE_ID_LEN]) -> bool {
     let mut is_compliant = true;

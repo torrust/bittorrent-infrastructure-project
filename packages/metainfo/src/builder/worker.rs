@@ -322,7 +322,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_piece_length_undivisible_region_single_thread() {
+    fn positive_piece_length_indivisible_region_single_thread() {
         let mut accessor = MockAccessor::new();
 
         let region_length = DEFAULT_PIECE_LENGTH * DEFAULT_NUM_PIECES + 1;
@@ -332,7 +332,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_piece_length_undivisible_region_multiple_threads() {
+    fn positive_piece_length_indivisible_region_multiple_threads() {
         let mut accessor = MockAccessor::new();
 
         let region_length = DEFAULT_PIECE_LENGTH * DEFAULT_NUM_PIECES + 1;
@@ -374,7 +374,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_piece_length_undivisible_regions_single_thread() {
+    fn positive_piece_length_indivisible_regions_single_thread() {
         let mut accessor = MockAccessor::new();
 
         let region_lengths = [
@@ -391,7 +391,7 @@ mod tests {
     }
 
     #[test]
-    fn positive_piece_length_undivisible_regions_multiple_threads() {
+    fn positive_piece_length_indivisible_regions_multiple_threads() {
         let mut accessor = MockAccessor::new();
 
         let region_lengths = [

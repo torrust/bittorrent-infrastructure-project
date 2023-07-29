@@ -13,7 +13,7 @@ use crate::ControlMessage;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IExtendedMessage {
     Control(ControlMessage),
-    RecievedExtendedMessage(PeerInfo, ExtendedMessage),
+    ReceivedExtendedMessage(PeerInfo, ExtendedMessage),
 }
 
 /// Enumeration of extended messages that can be received from the extended module.
@@ -109,7 +109,7 @@ impl ExtendedModule {
             IExtendedMessage::Control(ControlMessage::PeerDisconnected(info)) => {
                 self.peers.remove(&info);
             }
-            IExtendedMessage::RecievedExtendedMessage(info, ext_message) => {
+            IExtendedMessage::ReceivedExtendedMessage(info, ext_message) => {
                 let ext_peer_info = self.peers.get_mut(&info).unwrap();
                 ext_peer_info.update_theirs(ext_message);
 

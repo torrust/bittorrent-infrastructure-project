@@ -57,15 +57,15 @@ fn positive_process_block() {
     let mut received_file_b = filesystem.open_file(data_b.1).unwrap();
     assert_eq!(2000, filesystem.file_size(&received_file_b).unwrap());
 
-    let mut recevied_file_b_data = vec![0u8; 2000];
+    let mut received_file_b_data = vec![0u8; 2000];
     assert_eq!(
         2000,
         filesystem
-            .read_file(&mut received_file_b, 0, &mut recevied_file_b_data)
+            .read_file(&mut received_file_b, 0, &mut received_file_b_data)
             .unwrap()
     );
 
     let mut expected_file_b_data = vec![0u8; 2000];
     expected_file_b_data[1..=50].copy_from_slice(&data_b.0[1..=50]);
-    assert_eq!(expected_file_b_data, recevied_file_b_data);
+    assert_eq!(expected_file_b_data, received_file_b_data);
 }

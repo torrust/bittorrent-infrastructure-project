@@ -145,8 +145,8 @@ impl<'a> AnnounceRequest<'a> {
     #[must_use]
     pub fn to_owned(&self) -> AnnounceRequest<'static> {
         // Do not call clone and simply switch out the AnnounceOptions as that would
-        // unecessarily allocate a HashMap with shallowly cloned Cow objects which
-        // is superfulous.
+        // unnecessarily allocate a HashMap with shallowly cloned Cow objects which
+        // is superfluous.
         let owned_options = self.options.to_owned();
 
         AnnounceRequest {
@@ -202,12 +202,12 @@ impl<'a> AnnounceResponse<'a> {
 
     /// Construct an IPv4 `AnnounceResponse` from the given bytes.
     pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceResponse<'a>> {
-        parse_respone(bytes, CompactPeers::from_bytes_v4)
+        parse_response(bytes, CompactPeers::from_bytes_v4)
     }
 
     /// Construct an IPv6 `AnnounceResponse` from the given bytes.
     pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceResponse<'a>> {
-        parse_respone(bytes, CompactPeers::from_bytes_v6)
+        parse_response(bytes, CompactPeers::from_bytes_v6)
     }
 
     /// Write the `AnnounceResponse` to the given writer.
@@ -263,7 +263,7 @@ impl<'a> AnnounceResponse<'a> {
 }
 
 /// Parse an `AnnounceResponse` with the given `CompactPeers` type constructor.
-fn parse_respone<'a>(
+fn parse_response<'a>(
     bytes: &'a [u8],
     peers_type: fn(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>>,
 ) -> IResult<&'a [u8], AnnounceResponse<'a>> {
@@ -727,7 +727,7 @@ mod tests {
     fn positive_write_source_ipv6_explicit() {
         let mut received = Vec::new();
 
-        let ip = "ADBB:234A:55BD:FF34:3D3A:FFFF:234A:55BD".parse().unwrap();
+        let ip = "ADBB:234A:55BD:FF34:3D3A:FFFF:234A:55BD".parse().unwrap(); // cspell:disable-line
         let explicit_ip = SourceIP::ExplicitV6(ip);
         explicit_ip.write_bytes(&mut received).unwrap();
 
@@ -852,8 +852,8 @@ mod tests {
         peers_v4.insert("10.0.0.1:2323".parse().unwrap());
 
         let mut peers_v6 = CompactPeersV6::new();
-        peers_v6.insert("[ADBB:234A:55BD:FF34:3D3A:FFFF:234A:55BD]:3432".parse().unwrap());
-        peers_v6.insert("[ADBB:234A::FF34:3D3A:FFFF:234A:55BD]:2222".parse().unwrap());
+        peers_v6.insert("[ADBB:234A:55BD:FF34:3D3A:FFFF:234A:55BD]:3432".parse().unwrap()); // cspell:disable-line
+        peers_v6.insert("[ADBB:234A::FF34:3D3A:FFFF:234A:55BD]:2222".parse().unwrap()); // cspell:disable-line
 
         let mut bytes = Vec::new();
         bytes.write_i32::<BigEndian>(interval).unwrap();
@@ -993,7 +993,7 @@ mod tests {
 
     #[test]
     fn positive_parse_explicit_v6_source() {
-        let ip = "ADBB:234A:55BD:FF34:3D3A:FFFF:234A:55BD".parse().unwrap();
+        let ip = "ADBB:234A:55BD:FF34:3D3A:FFFF:234A:55BD".parse().unwrap(); // cspell:disable-line
         let bytes = convert::ipv6_to_bytes_be(ip);
 
         let received = SourceIP::from_bytes_v6(&bytes);

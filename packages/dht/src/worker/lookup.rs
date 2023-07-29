@@ -25,7 +25,7 @@ const ENDGAME_TIMEOUT_MS: u64 = 1500;
 // Currently using the aggressive variant of the standard lookup procedure.
 // https://people.kth.se/~rauljc/p2p11/jimenez2011subsecond.pdf
 
-// TODO: Handle case where a request round fails, should we fail the whole lookup (clear acvite lookups?)
+// TODO: Handle case where a request round fails, should we fail the whole lookup (clear active lookups?)
 // TODO: Clean up the code in this module.
 
 const INITIAL_PICK_NUM: usize = 4; // Alpha
@@ -52,7 +52,7 @@ pub struct TableLookup {
     id_generator: MIDGenerator,
     will_announce: bool,
     // DistanceToBeat is the distance that the responses of the current lookup needs to beat,
-    // interestingly enough (and super important), this distance may not be eqaul to the
+    // interestingly enough (and super important), this distance may not be equal to the
     // requested node's distance
     active_lookups: HashMap<TransactionID, (DistanceToBeat, Timeout)>,
     announce_tokens: HashMap<Node, Vec<u8>>,
@@ -282,7 +282,7 @@ impl TableLookup {
 
         // Announce if we were told to
         if self.will_announce {
-            // Partial borrow so the filter function doesnt capture all of self
+            // Partial borrow so the filter function doesn't capture all of self
             let announce_tokens = &self.announce_tokens;
 
             for (_, node, _) in self
@@ -312,7 +312,7 @@ impl TableLookup {
                 }
 
                 if !fatal_error {
-                    // We requested from the node, marke it down if the node is in our routing table
+                    // We requested from the node, mark it down if the node is in our routing table
                     if let Some(n) = table.find_node(node) {
                         n.local_request()
                     }
@@ -320,7 +320,7 @@ impl TableLookup {
             }
         }
 
-        // This may not be cleared since we didnt set a timeout for each node, any nodes that didnt respond would still be in here.
+        // This may not be cleared since we didn't set a timeout for each node, any nodes that didn't respond would still be in here.
         self.active_lookups.clear();
         self.in_endgame = false;
 
@@ -418,7 +418,7 @@ impl TableLookup {
             return LookupStatus::Failed;
         };
 
-        // Request all unpinged nodes if we didnt receive any values
+        // Request all unpinged nodes if we didn't receive any values
         if !self.recv_values {
             for node_info in self.all_sorted_nodes.iter_mut().filter(|&&mut (_, _, req)| !req) {
                 let &mut (ref node_dist, ref node, ref mut req) = node_info;
@@ -427,7 +427,7 @@ impl TableLookup {
                 let trans_id = self.id_generator.generate();
 
                 // Associate the transaction id with this node's distance and its timeout token
-                // We dont actually need to keep track of this information, but we do still need to
+                // We don't actually need to keep track of this information, but we do still need to
                 // filter out unsolicited responses by using the active_lookups map!!!
                 self.active_lookups.insert(trans_id, (*node_dist, timeout));
 
@@ -526,7 +526,7 @@ fn insert_sorted_node(nodes: &mut Vec<(Distance, Node, bool)>, target: InfoHash,
     match search_result {
         Ok(dup_index) => {
             // TODO: Bug here, what happens when multiple nodes with the same distance are
-            // present, but we dont get the index of the duplicate node (its in the list) from
+            // present, but we don't get the index of the duplicate node (its in the list) from
             // the search, then we would have a duplicate node in the list!
             // Insert only if this node is different (it is ok if they have the same id)
             if nodes[dup_index].1 != node {

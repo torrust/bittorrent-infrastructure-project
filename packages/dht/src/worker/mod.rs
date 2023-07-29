@@ -43,7 +43,7 @@ pub enum ScheduledTask {
     CheckLookupEndGame(TransactionID),
 }
 
-/// Event that occured within the DHT which clients may be interested in.
+/// Event that occurred within the DHT which clients may be interested in.
 #[derive(Copy, Clone, Debug)]
 pub enum DhtEvent {
     /// DHT completed the bootstrap.
@@ -54,7 +54,7 @@ pub enum DhtEvent {
     ShuttingDown(ShutdownCause),
 }
 
-/// Event that occured within the DHT which caused it to shutdown.
+/// Event that occurred within the DHT which caused it to shutdown.
 #[derive(Copy, Clone, Debug)]
 pub enum ShutdownCause {
     /// DHT failed to bootstrap more than once.

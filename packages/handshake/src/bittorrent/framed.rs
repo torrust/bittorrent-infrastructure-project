@@ -233,7 +233,7 @@ mod tests {
         let mut buffer = Vec::new();
         exp_message.write_bytes(&mut buffer).unwrap();
         // Write some bytes right after the handshake, make sure
-        // our framed handshake doesnt read/buffer these (we need
+        // our framed handshake doesn't read/buffer these (we need
         // to be able to read them afterwards)
         buffer.write_all(&[55]).unwrap();
 
@@ -250,7 +250,7 @@ mod tests {
         let mut buffer = Vec::new();
         exp_message.write_bytes(&mut buffer).unwrap();
         // Write some bytes right after the handshake, make sure
-        // our framed handshake doesnt read/buffer these (we need
+        // our framed handshake doesn't read/buffer these (we need
         // to be able to read them afterwards)
         buffer.write_all(&[55, 54, 21]).unwrap();
 

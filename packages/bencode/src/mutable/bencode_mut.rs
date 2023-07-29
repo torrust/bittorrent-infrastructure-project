@@ -174,15 +174,16 @@ mod test {
     fn positive_int_encode() {
         let bencode_int = BencodeMut::new_int(-560);
 
-        let int_bytes = b"i-560e";
+        let int_bytes = b"i-560e"; // cspell:disable-line
         assert_eq!(&int_bytes[..], &bencode_int.encode()[..]);
     }
 
     #[test]
     fn positive_bytes_encode() {
+        /* cspell:disable-next-line */
         let bencode_bytes = BencodeMut::new_bytes((&b"asdasd"[..]).into());
 
-        let bytes_bytes = b"6:asdasd";
+        let bytes_bytes = b"6:asdasd"; // cspell:disable-line
         assert_eq!(&bytes_bytes[..], &bencode_bytes.encode()[..]);
     }
 
@@ -190,7 +191,7 @@ mod test {
     fn positive_empty_list_encode() {
         let bencode_list = BencodeMut::new_list();
 
-        let list_bytes = b"le";
+        let list_bytes = b"le"; // cspell:disable-line
         assert_eq!(&list_bytes[..], &bencode_list.encode()[..]);
     }
 
@@ -203,7 +204,7 @@ mod test {
             list_mut.push(BencodeMut::new_int(56));
         }
 
-        let list_bytes = b"li56ee";
+        let list_bytes = b"li56ee"; // cspell:disable-line
         assert_eq!(&list_bytes[..], &bencode_list.encode()[..]);
     }
 
@@ -211,7 +212,7 @@ mod test {
     fn positive_empty_dict_encode() {
         let bencode_dict = BencodeMut::new_dict();
 
-        let dict_bytes = b"de";
+        let dict_bytes = b"de"; // cspell:disable-line
         assert_eq!(&dict_bytes[..], &bencode_dict.encode()[..]);
     }
 
@@ -221,10 +222,11 @@ mod test {
 
         {
             let dict_mut = bencode_dict.dict_mut().unwrap();
+            /* cspell:disable-next-line */
             dict_mut.insert((&b"asd"[..]).into(), BencodeMut::new_bytes((&b"asdasd"[..]).into()));
         }
 
-        let dict_bytes = b"d3:asd6:asdasde";
+        let dict_bytes = b"d3:asd6:asdasde"; // cspell:disable-line
         assert_eq!(&dict_bytes[..], &bencode_dict.encode()[..]);
     }
 }

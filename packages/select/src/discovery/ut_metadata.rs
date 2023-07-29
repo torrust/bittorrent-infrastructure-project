@@ -120,13 +120,13 @@ impl UtMetadataModule {
         let opt_metadata_size = ext_info.their_message().and_then(ExtendedMessage::metadata_size);
 
         info!(
-            "Our Support For UtMetadata Is {:?} And {:?} Support For UtMetadata Is {:?} With Metdata Size {:?}",
+            "Our Support For UtMetadata Is {:?} And {:?} Support For UtMetadata Is {:?} With Metadata Size {:?}",
             our_support,
             info.addr(),
             they_support,
             opt_metadata_size
         );
-        // If peer supports it, but they dont have the metadata size, then they probably dont have the file yet...
+        // If peer supports it, but they don't have the metadata size, then they probably don't have the file yet...
         match (our_support, they_support, opt_metadata_size) {
             (true, true, Some(metadata_size)) => {
                 self.active_peers
@@ -165,12 +165,12 @@ impl UtMetadataModule {
         let active_peers = &mut self.active_peers;
         let pending_map = &mut self.pending_map;
 
-        // Retain only the requests that arent expired
+        // Retain only the requests that aren't expired
         active_requests.retain(|request| {
             let is_expired = request.left.checked_sub(duration).is_none();
 
             if is_expired {
-                // Peer didnt respond to our request, remove from active peers
+                // Peer didn't respond to our request, remove from active peers
                 if let Some(active) = active_peers.get_mut(request.sent_to.hash()) {
                     active.peers.remove(&request.sent_to);
                 }
@@ -322,7 +322,7 @@ impl UtMetadataModule {
                         UtMetadataMessage::Data(message),
                     )));
                 } else {
-                    // Peer asked for a piece outside of the range...dont respond to that
+                    // Peer asked for a piece outside of the range...don't respond to that
                 }
             }
         }
@@ -335,7 +335,7 @@ impl UtMetadataModule {
     fn initialize_pending(&mut self) -> bool {
         let mut pending_tasks_available = false;
 
-        // Initialize PeningInfo once we get peers that have told us the metadata size
+        // Initialize PendingInfo once we get peers that have told us the metadata size
         for (hash, opt_pending) in &mut self.pending_map {
             if opt_pending.is_none() {
                 let opt_pending_info = self
@@ -365,7 +365,7 @@ impl UtMetadataModule {
                     let real_hash = InfoHash::from_bytes(&pending.bytes[..]);
                     let needs_reset = real_hash != expected_hash;
 
-                    // If we dont need a reset, we finished and validation passed!
+                    // If we don't need a reset, we finished and validation passed!
                     completed_downloads_available |= !needs_reset;
 
                     // If we need a reset, we finished and validation failed!
@@ -386,7 +386,7 @@ impl UtMetadataModule {
     //-------------------------------------------------------------------------------//
 
     fn check_stream_unblock(&mut self) {
-        // Will invalidate downloads that dont pass hash check
+        // Will invalidate downloads that don't pass hash check
         let downloads_available = self.validate_downloaded();
         // Will potentially re-initialize downloads that failed hash check
         let tasks_available = self.initialize_pending();
@@ -470,7 +470,7 @@ impl Sink for UtMetadataModule {
         let start_send = match item {
             IDiscoveryMessage::Control(ControlMessage::AddTorrent(metainfo)) => self.add_torrent(metainfo),
             IDiscoveryMessage::Control(ControlMessage::RemoveTorrent(metainfo)) => self.remove_torrent(metainfo),
-            // Dont add the peer yet, use listener to get notified when they send extension messages
+            // don't add the peer yet, use listener to get notified when they send extension messages
             IDiscoveryMessage::Control(ControlMessage::PeerConnected(_)) => Ok(AsyncSink::Ready),
             IDiscoveryMessage::Control(ControlMessage::PeerDisconnected(info)) => self.remove_peer(info),
             IDiscoveryMessage::Control(ControlMessage::Tick(duration)) => self.apply_tick(duration),

@@ -115,7 +115,7 @@ pub trait BConvert {
         )
     }
 
-    /// Attempty to convert the given bencode value into a list.
+    /// Attempt to convert the given bencode value into a list.
     ///
     /// Error key is used to generate an appropriate error message should the operation return an error.
     fn convert_list<'a, B, E>(&self, bencode: &'a B, error_key: E) -> Result<&'a dyn BListAccess<B::BType>, Self::Error>

@@ -29,7 +29,7 @@ enum PeerError {
 enum MergedError<A, B, C> {
     Peer(PeerError),
     // Fake error types (used to stash future "futures" into an error type to be
-    // executed in a different future transformation, so we dont have to box them)
+    // executed in a different future transformation, so we don't have to box them)
     StageOne(A),
     StageTwo(B),
     StageThree(C),
@@ -53,7 +53,7 @@ where
     let (m_send, m_recv) = mpsc::channel(builder.sink_buffer_capacity());
     let (p_send, p_recv) = peer.split();
 
-    // Build a stream that will timeout if no message is sent for heartbeat_timeout and teardown (dont preserve) the underlying stream
+    // Build a stream that will timeout if no message is sent for heartbeat_timeout and teardown (don't preserve) the underlying stream
     let p_stream = timer
         .timeout_stream(PersistentStream::new(p_recv), builder.heartbeat_timeout())
         .map_err(|error| match error {
@@ -61,7 +61,7 @@ where
             PersistentError::Timeout => PeerError::PeerNoHeartbeat,
             PersistentError::IoError(err) => PeerError::PeerError(err),
         });
-    // Build a stream that will notify us of no message is sent for heartbeat_interval and done teartdown (preserve) the underlying stream
+    // Build a stream that will notify us of no message is sent for heartbeat_interval and done teardown (preserve) the underlying stream
     let m_stream = RecurringTimeoutStream::new(m_recv, timer, builder.heartbeat_interval()).map_err(|error| match error {
         RecurringTimeoutError::Disconnect => PeerError::ManagerDisconnect,
         RecurringTimeoutError::Timeout => PeerError::ManagerHeartbeatInterval,
@@ -78,7 +78,7 @@ where
                     (merged_stream, o_send, p_send, info),
                     |(merged_stream, o_send, p_send, info)| {
                         // Our return tuple takes the form (merged_stream, Option<Send Message>, Option<Recv Message>, Option<Send To Manager Message>, is_good) where each stage (A, B, C),
-                        // will execute one of those options (if present), since each future transform can only execute a single future and we have 2^3 possible combintations
+                        // will execute one of those options (if present), since each future transform can only execute a single future and we have 2^3 possible combinations
                         // (Some or None = 2)^(3 Options = 3)
                         merged_stream
                             .into_future()
@@ -217,7 +217,7 @@ where
                                             }
                                         }
 
-                                        // Either we had no recv message (from remote), or it was a keep alive message, which we dont propagate
+                                        // Either we had no recv message (from remote), or it was a keep alive message, which we don't propagate
                                         Err(MergedError::StageTwo((merged_stream, o_send, p_send, info, opt_ack, is_good)))
                                     }
                                     err => Err(err),
@@ -244,7 +244,7 @@ where
                                 match error {
                                     MergedError::StageThree((merged_stream, o_send, p_send, info, is_good)) => {
                                         // Connection is good if no errors occurred (we do this so we can use the same plumbing)
-                                        // for sending "acks" back to our manager when an error occurrs, we just have None, None,
+                                        // for sending "acks" back to our manager when an error occurs, we just have None, None,
                                         // Some, false when we want to send an error message to the manager, but terminate the connection.
                                         if is_good {
                                             Ok(Loop::Continue((merged_stream, o_send, p_send, info)))
