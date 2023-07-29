@@ -21,7 +21,7 @@ impl<P> PeerProtocolCodec<P> {
     /// received payload length.
     pub fn new(protocol: P) -> PeerProtocolCodec<P> {
         PeerProtocolCodec {
-            protocol: protocol,
+            protocol,
             max_payload: None,
         }
     }
@@ -30,7 +30,7 @@ impl<P> PeerProtocolCodec<P> {
     /// receiving a payload larger than the specified `max_payload`.
     pub fn with_max_payload(protocol: P, max_payload: usize) -> PeerProtocolCodec<P> {
         PeerProtocolCodec {
-            protocol: protocol,
+            protocol,
             max_payload: Some(max_payload),
         }
     }
@@ -57,7 +57,7 @@ where
             Some(_) | None => return Ok(None),
         };
 
-        self.protocol.parse_bytes(bytes).map(|message| Some(message))
+        self.protocol.parse_bytes(bytes).map(Some)
     }
 }
 

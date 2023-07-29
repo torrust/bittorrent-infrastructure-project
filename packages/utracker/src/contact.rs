@@ -44,24 +44,24 @@ impl<'a> CompactPeers<'a> {
         W: Write,
     {
         match self {
-            &CompactPeers::V4(ref peers) => peers.write_bytes(writer),
-            &CompactPeers::V6(ref peers) => peers.write_bytes(writer),
+            CompactPeers::V4(peers) => peers.write_bytes(writer),
+            CompactPeers::V6(peers) => peers.write_bytes(writer),
         }
     }
 
     /// Iterator over all of the contact information.
-    pub fn iter<'b>(&'b self) -> CompactPeersIter<'b> {
+    pub fn iter(&self) -> CompactPeersIter<'_> {
         match self {
-            &CompactPeers::V4(ref peers) => CompactPeersIter::new(CompactPeersIterType::V4(peers.iter())),
-            &CompactPeers::V6(ref peers) => CompactPeersIter::new(CompactPeersIterType::V6(peers.iter())),
+            CompactPeers::V4(peers) => CompactPeersIter::new(CompactPeersIterType::V4(peers.iter())),
+            CompactPeers::V6(peers) => CompactPeersIter::new(CompactPeersIterType::V6(peers.iter())),
         }
     }
 
     /// Create an owned version of CompactPeers.
     pub fn to_owned(&self) -> CompactPeers<'static> {
         match self {
-            &CompactPeers::V4(ref peers) => CompactPeers::V4(peers.to_owned()),
-            &CompactPeers::V6(ref peers) => CompactPeers::V6(peers.to_owned()),
+            CompactPeers::V4(peers) => CompactPeers::V4(peers.to_owned()),
+            CompactPeers::V6(peers) => CompactPeers::V6(peers.to_owned()),
         }
     }
 }
@@ -84,7 +84,7 @@ pub struct CompactPeersIter<'a> {
 impl<'a> CompactPeersIter<'a> {
     /// Create a new CompactPeersIter.
     fn new(iter: CompactPeersIterType<'a>) -> CompactPeersIter<'a> {
-        CompactPeersIter { iter: iter }
+        CompactPeersIter { iter }
     }
 }
 
@@ -93,8 +93,8 @@ impl<'a> Iterator for CompactPeersIter<'a> {
 
     fn next(&mut self) -> Option<SocketAddr> {
         match self.iter {
-            CompactPeersIterType::V4(ref mut iter) => iter.next().map(|a| SocketAddr::V4(a)),
-            CompactPeersIterType::V6(ref mut iter) => iter.next().map(|a| SocketAddr::V6(a)),
+            CompactPeersIterType::V4(ref mut iter) => iter.next().map(SocketAddr::V4),
+            CompactPeersIterType::V6(ref mut iter) => iter.next().map(SocketAddr::V6),
         }
     }
 }
@@ -125,7 +125,7 @@ impl<'a> CompactPeersV4<'a> {
     where
         W: Write,
     {
-        writer.write_all(&*self.peers)?;
+        writer.write_all(&self.peers)?;
 
         Ok(())
     }
@@ -138,8 +138,8 @@ impl<'a> CompactPeersV4<'a> {
     }
 
     /// Iterator over all of the contact information.
-    pub fn iter<'b>(&'b self) -> CompactPeersV4Iter<'b> {
-        CompactPeersV4Iter::new(&*self.peers)
+    pub fn iter(&self) -> CompactPeersV4Iter<'_> {
+        CompactPeersV4Iter::new(&self.peers)
     }
 
     /// Create an owned version of CompactPeersV4.
@@ -150,7 +150,7 @@ impl<'a> CompactPeersV4<'a> {
     }
 }
 
-fn parse_peers_v4<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV4<'a>> {
+fn parse_peers_v4(bytes: &[u8]) -> IResult<&[u8], CompactPeersV4<'_>> {
     let remainder_bytes = bytes.len() % SOCKET_ADDR_V4_BYTES;
 
     if remainder_bytes != 0 {
@@ -179,7 +179,7 @@ pub struct CompactPeersV4Iter<'a> {
 impl<'a> CompactPeersV4Iter<'a> {
     /// Create a new CompactPeersV4Iter.
     fn new(peers: &'a [u8]) -> CompactPeersV4Iter<'a> {
-        CompactPeersV4Iter { peers: peers, offset: 0 }
+        CompactPeersV4Iter { peers, offset: 0 }
     }
 }
 
@@ -234,7 +234,7 @@ impl<'a> CompactPeersV6<'a> {
     where
         W: Write,
     {
-        writer.write_all(&*self.peers)?;
+        writer.write_all(&self.peers)?;
 
         Ok(())
     }
@@ -247,8 +247,8 @@ impl<'a> CompactPeersV6<'a> {
     }
 
     /// Iterator over all of the contact information.
-    pub fn iter<'b>(&'b self) -> CompactPeersV6Iter<'b> {
-        CompactPeersV6Iter::new(&*self.peers)
+    pub fn iter(&self) -> CompactPeersV6Iter<'_> {
+        CompactPeersV6Iter::new(&self.peers)
     }
 
     /// Create an owned version of CompactPeersV6.
@@ -259,7 +259,7 @@ impl<'a> CompactPeersV6<'a> {
     }
 }
 
-fn parse_peers_v6<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV6<'a>> {
+fn parse_peers_v6(bytes: &[u8]) -> IResult<&[u8], CompactPeersV6<'_>> {
     let remainder_bytes = bytes.len() % SOCKET_ADDR_V6_BYTES;
 
     if remainder_bytes != 0 {
@@ -288,7 +288,7 @@ pub struct CompactPeersV6Iter<'a> {
 impl<'a> CompactPeersV6Iter<'a> {
     /// Create a new CompactPeersV6Iter.
     fn new(peers: &'a [u8]) -> CompactPeersV6Iter<'a> {
-        CompactPeersV6Iter { peers: peers, offset: 0 }
+        CompactPeersV6Iter { peers, offset: 0 }
     }
 }
 

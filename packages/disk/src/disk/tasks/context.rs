@@ -22,10 +22,7 @@ pub struct MetainfoState {
 
 impl MetainfoState {
     pub fn new(file: Metainfo, state: PieceCheckerState) -> MetainfoState {
-        MetainfoState {
-            file: file,
-            state: state,
-        }
+        MetainfoState { file, state }
     }
 }
 
@@ -33,7 +30,7 @@ impl<F> DiskManagerContext<F> {
     pub fn new(out: Sender<ODiskMessage>, fs: F) -> DiskManagerContext<F> {
         DiskManagerContext {
             torrents: Arc::new(RwLock::new(HashMap::new())),
-            out: out,
+            out,
             fs: Arc::new(fs),
         }
     }

@@ -55,7 +55,7 @@ impl Topic {
  * mt (Manifest Topic) – link to the metafile that contains a list of magneto (MAGMA – MAGnet MAnifest)
  * tr (address TRacker) – Tracker URL for BitTorrent downloads
  **/
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct MagnetLink {
     display_name: Option<String>,
     exact_length: Option<usize>,
@@ -65,21 +65,6 @@ pub struct MagnetLink {
     keyword_topic: Vec<String>,
     manifest_topic: Option<String>,
     address_tracker: Vec<String>,
-}
-
-impl Default for MagnetLink {
-    fn default() -> Self {
-        MagnetLink {
-            display_name: None,
-            exact_length: None,
-            exact_topic: None,
-            acceptable_source: vec![],
-            exact_source: vec![],
-            keyword_topic: vec![],
-            manifest_topic: None,
-            address_tracker: vec![],
-        }
-    }
 }
 
 impl MagnetLink {

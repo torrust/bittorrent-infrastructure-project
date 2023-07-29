@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::ops::Deref;
 
 use bencode::inner::BCowConvert;
-use bencode::{ben_bytes, ben_map, BConvert, BDictAccess, BMutAccess, BRefAccess, BencodeMut, BencodeRef};
+use bencode::{ben_bytes, ben_map, BConvert, BDictAccess, BMutAccess, BRefAccess, BencodeMut};
 use util::bt::{InfoHash, NodeId};
 
 use crate::error::{DhtError, DhtErrorKind, DhtResult};
@@ -22,9 +22,9 @@ pub struct GetPeersRequest<'a> {
 impl<'a> GetPeersRequest<'a> {
     pub fn new(trans_id: &'a [u8], node_id: NodeId, info_hash: InfoHash) -> GetPeersRequest<'a> {
         GetPeersRequest {
-            trans_id: trans_id,
-            node_id: node_id,
-            info_hash: info_hash,
+            trans_id,
+            node_id,
+            info_hash,
         }
     }
 
@@ -44,7 +44,7 @@ impl<'a> GetPeersRequest<'a> {
     }
 
     pub fn transaction_id(&self) -> &'a [u8] {
-        &self.trans_id
+        self.trans_id
     }
 
     pub fn node_id(&self) -> NodeId {
@@ -107,10 +107,10 @@ where
         info_type: CompactInfoType<'a, B::BType>,
     ) -> GetPeersResponse<'a, B::BType> {
         GetPeersResponse {
-            trans_id: trans_id,
-            node_id: node_id,
-            token: token,
-            info_type: info_type,
+            trans_id,
+            node_id,
+            token,
+            info_type,
         }
     }
 

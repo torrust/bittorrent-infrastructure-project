@@ -3,7 +3,7 @@ use std::{io, u8};
 
 use nom::{be_u8, IResult};
 
-const BT_PROTOCOL: &'static [u8] = b"BitTorrent protocol";
+const BT_PROTOCOL: &[u8] = b"BitTorrent protocol";
 const BT_PROTOCOL_LEN: u8 = 19;
 
 /// `Protocol` information transmitted as part of the handshake.
@@ -25,8 +25,8 @@ impl Protocol {
         W: Write,
     {
         let (len, bytes) = match self {
-            &Protocol::BitTorrent => (BT_PROTOCOL_LEN as usize, &BT_PROTOCOL[..]),
-            &Protocol::Custom(ref prot) => (prot.len(), &prot[..]),
+            &Protocol::BitTorrent => (BT_PROTOCOL_LEN as usize, BT_PROTOCOL),
+            Protocol::Custom(prot) => (prot.len(), &prot[..]),
         };
 
         writer.write_all(&[len as u8][..])?;
@@ -39,7 +39,7 @@ impl Protocol {
     pub fn write_len(&self) -> usize {
         match self {
             &Protocol::BitTorrent => BT_PROTOCOL_LEN as usize,
-            &Protocol::Custom(ref custom) => custom.len(),
+            Protocol::Custom(custom) => custom.len(),
         }
     }
 }

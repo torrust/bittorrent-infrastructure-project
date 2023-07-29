@@ -21,7 +21,7 @@ impl<S> ListenerHandler<S> {
             Some(HandshakeType::Complete(sock, addr))
         };
 
-        ListenerHandler { opt_item: opt_item }
+        ListenerHandler { opt_item }
     }
 }
 
@@ -47,7 +47,7 @@ mod tests {
     #[test]
     fn positive_empty_filter() {
         let exp_item = ("Testing", "0.0.0.0:0".parse().unwrap());
-        let handler = ListenerHandler::new(exp_item.clone(), &Filters::new());
+        let handler = ListenerHandler::new(exp_item, &Filters::new());
 
         let recv_enum_item = handler.wait().unwrap();
 
@@ -65,7 +65,7 @@ mod tests {
         filters.add_filter(BlockAddrFilter::new("1.2.3.4:5".parse().unwrap()));
 
         let exp_item = ("Testing", "0.0.0.0:0".parse().unwrap());
-        let handler = ListenerHandler::new(exp_item.clone(), &filters);
+        let handler = ListenerHandler::new(exp_item, &filters);
 
         let recv_enum_item = handler.wait().unwrap();
 
@@ -83,7 +83,7 @@ mod tests {
         filters.add_filter(BlockProtocolFilter::new(Protocol::BitTorrent));
 
         let exp_item = ("Testing", "0.0.0.0:0".parse().unwrap());
-        let handler = ListenerHandler::new(exp_item.clone(), &filters);
+        let handler = ListenerHandler::new(exp_item, &filters);
 
         let recv_enum_item = handler.wait().unwrap();
 
@@ -101,7 +101,7 @@ mod tests {
         filters.add_filter(BlockAddrFilter::new("0.0.0.0:0".parse().unwrap()));
 
         let exp_item = ("Testing", "0.0.0.0:0".parse().unwrap());
-        let handler = ListenerHandler::new(exp_item.clone(), &filters);
+        let handler = ListenerHandler::new(exp_item, &filters);
 
         let recv_enum_item = handler.wait().unwrap();
 

@@ -37,7 +37,7 @@ fn positive_add_torrent() {
     let good_pieces = crate::core_loop_with_timeout(&mut core, 500, (0, recv), |good_pieces, recv, msg| match msg {
         ODiskMessage::TorrentAdded(_) => Loop::Break(good_pieces),
         ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue((good_pieces + 1, recv)),
-        unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+        unexpected => panic!("Unexpected Message: {:?}", unexpected),
     });
 
     assert_eq!(0, good_pieces);

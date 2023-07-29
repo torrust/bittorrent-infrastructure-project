@@ -19,12 +19,12 @@ impl<S> CompleteMessage<S> {
     /// Create a new `CompleteMessage` over the given socket S.
     pub fn new(prot: Protocol, ext: Extensions, hash: InfoHash, pid: PeerId, addr: SocketAddr, sock: S) -> CompleteMessage<S> {
         CompleteMessage {
-            prot: prot,
-            ext: ext,
-            hash: hash,
-            pid: pid,
-            addr: addr,
-            sock: sock,
+            prot,
+            ext,
+            hash,
+            pid,
+            addr,
+            sock,
         }
     }
 

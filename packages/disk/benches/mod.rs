@@ -45,7 +45,7 @@ mod benches {
                 .build(1, accessor, |_| ())
                 .unwrap()
         };
-        let metainfo = Metainfo::from_bytes(&metainfo_bytes).unwrap();
+        let metainfo = Metainfo::from_bytes(metainfo_bytes).unwrap();
 
         (metainfo, file_bytes)
     }
@@ -148,7 +148,7 @@ mod benches {
 
     #[bench]
     fn bench_native_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
-        let piece_length = 1 * 1024 * 1024;
+        let piece_length = 1024 * 1024;
         let block_length = 128 * 1024;
         let file_length = 2 * 1024 * 1024;
         let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_128_kb_blocks";
@@ -163,7 +163,7 @@ mod benches {
 
     #[bench]
     fn bench_native_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
-        let piece_length = 1 * 1024 * 1024;
+        let piece_length = 1024 * 1024;
         let block_length = 16 * 1024;
         let file_length = 2 * 1024 * 1024;
         let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_16_kb_blocks";
@@ -178,7 +178,7 @@ mod benches {
 
     #[bench]
     fn bench_native_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
-        let piece_length = 1 * 1024 * 1024;
+        let piece_length = 1024 * 1024;
         let block_length = 2 * 1024;
         let file_length = 2 * 1024 * 1024;
         let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_2_kb_blocks";
@@ -193,7 +193,7 @@ mod benches {
 
     #[bench]
     fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
-        let piece_length = 1 * 1024 * 1024;
+        let piece_length = 1024 * 1024;
         let block_length = 128 * 1024;
         let file_length = 2 * 1024 * 1024;
         let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_128_kb_blocks";
@@ -208,7 +208,7 @@ mod benches {
 
     #[bench]
     fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
-        let piece_length = 1 * 1024 * 1024;
+        let piece_length = 1024 * 1024;
         let block_length = 16 * 1024;
         let file_length = 2 * 1024 * 1024;
         let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_16_kb_blocks";
@@ -223,7 +223,7 @@ mod benches {
 
     #[bench]
     fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
-        let piece_length = 1 * 1024 * 1024;
+        let piece_length = 1024 * 1024;
         let block_length = 2 * 1024;
         let file_length = 2 * 1024 * 1024;
         let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_2_kb_blocks";

@@ -22,7 +22,7 @@ impl TrackerServer {
     where
         H: ServerHandler + 'static,
     {
-        dispatcher::create_dispatcher(bind, handler).map(|send| TrackerServer { send: send })
+        dispatcher::create_dispatcher(bind, handler).map(|send| TrackerServer { send })
     }
 }
 

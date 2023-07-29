@@ -2,8 +2,6 @@ use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::mpsc;
 
-use handshake::Handshaker;
-use mio;
 use util::bt::InfoHash;
 
 use crate::handshaker_trait::HandshakerTrait;

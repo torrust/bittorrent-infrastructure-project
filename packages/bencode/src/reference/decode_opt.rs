@@ -16,9 +16,9 @@ impl BDecodeOpt {
     /// Create a new `BDecodeOpt` object.
     pub fn new(max_recursion: usize, check_key_sort: bool, enforce_full_decode: bool) -> BDecodeOpt {
         BDecodeOpt {
-            max_recursion: max_recursion,
-            check_key_sort: check_key_sort,
-            enforce_full_decode: enforce_full_decode,
+            max_recursion,
+            check_key_sort,
+            enforce_full_decode,
         }
     }
 

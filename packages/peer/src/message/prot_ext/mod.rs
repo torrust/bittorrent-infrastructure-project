@@ -52,7 +52,7 @@ where
         W: Write,
     {
         match self {
-            &PeerExtensionProtocolMessage::UtMetadata(ref msg) => {
+            PeerExtensionProtocolMessage::UtMetadata(msg) => {
                 let ext_id = if let Some(ext_id) = extended.query_id(&ExtendedType::UtMetadata) {
                     ext_id
                 } else {
@@ -69,14 +69,14 @@ where
 
                 msg.write_bytes(writer)
             }
-            &PeerExtensionProtocolMessage::Custom(ref msg) => custom_prot.write_bytes(msg, writer),
+            PeerExtensionProtocolMessage::Custom(msg) => custom_prot.write_bytes(msg, writer),
         }
     }
 
     pub fn message_size(&self, custom_prot: &mut P) -> usize {
         match self {
-            &PeerExtensionProtocolMessage::UtMetadata(ref msg) => msg.message_size(),
-            &PeerExtensionProtocolMessage::Custom(ref msg) => custom_prot.message_size(&msg),
+            PeerExtensionProtocolMessage::UtMetadata(msg) => msg.message_size(),
+            PeerExtensionProtocolMessage::Custom(msg) => custom_prot.message_size(msg),
         }
     }
 }

@@ -347,7 +347,7 @@ mod tests {
 
         let region_lengths = [
             DEFAULT_PIECE_LENGTH * DEFAULT_NUM_PIECES,
-            DEFAULT_PIECE_LENGTH * 1,
+            DEFAULT_PIECE_LENGTH,
             DEFAULT_PIECE_LENGTH * 50,
         ];
         for region_length in region_lengths {
@@ -363,7 +363,7 @@ mod tests {
 
         let region_lengths = [
             DEFAULT_PIECE_LENGTH * DEFAULT_NUM_PIECES,
-            DEFAULT_PIECE_LENGTH * 1,
+            DEFAULT_PIECE_LENGTH,
             DEFAULT_PIECE_LENGTH * 50,
         ];
         for region_length in region_lengths {
@@ -380,7 +380,7 @@ mod tests {
         let region_lengths = [
             DEFAULT_PIECE_LENGTH / 2 * DEFAULT_NUM_PIECES,
             DEFAULT_PIECE_LENGTH / 4 * DEFAULT_NUM_PIECES,
-            DEFAULT_PIECE_LENGTH * 1,
+            DEFAULT_PIECE_LENGTH,
             (DEFAULT_PIECE_LENGTH * 2 - 1) * 2,
         ];
         for region_length in region_lengths {
@@ -397,7 +397,7 @@ mod tests {
         let region_lengths = [
             DEFAULT_PIECE_LENGTH / 2 * DEFAULT_NUM_PIECES,
             DEFAULT_PIECE_LENGTH / 4 * DEFAULT_NUM_PIECES,
-            DEFAULT_PIECE_LENGTH * 1,
+            DEFAULT_PIECE_LENGTH,
             (DEFAULT_PIECE_LENGTH * 2 - 1) * 2,
         ];
         for region_length in region_lengths {

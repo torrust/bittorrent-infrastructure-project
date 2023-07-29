@@ -1,7 +1,6 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use chrono::{DateTime, Duration, UTC};
-use rand;
 use util::convert;
 use util::error::{LengthError, LengthErrorKind, LengthResult};
 use util::net::IpAddr;
@@ -47,15 +46,15 @@ impl Token {
     }
 }
 
-impl Into<[u8; sha::SHA_HASH_LEN]> for Token {
-    fn into(self) -> [u8; sha::SHA_HASH_LEN] {
-        self.token
+impl From<Token> for [u8; sha::SHA_HASH_LEN] {
+    fn from(val: Token) -> Self {
+        val.token
     }
 }
 
 impl From<[u8; sha::SHA_HASH_LEN]> for Token {
     fn from(token: [u8; sha::SHA_HASH_LEN]) -> Token {
-        Token { token: token }
+        Token { token }
     }
 }
 
@@ -85,9 +84,9 @@ impl TokenStore {
         let last_refresh = UTC::now();
 
         TokenStore {
-            curr_secret: curr_secret,
-            last_secret: last_secret,
-            last_refresh: last_refresh,
+            curr_secret,
+            last_secret,
+            last_refresh,
         }
     }
 

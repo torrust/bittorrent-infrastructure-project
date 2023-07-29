@@ -43,10 +43,7 @@ pub struct ExtendedPeerInfo {
 
 impl ExtendedPeerInfo {
     pub fn new(ours: Option<ExtendedMessage>, theirs: Option<ExtendedMessage>) -> ExtendedPeerInfo {
-        ExtendedPeerInfo {
-            ours: ours,
-            theirs: theirs,
-        }
+        ExtendedPeerInfo { ours, theirs }
     }
 
     pub fn update_ours(&mut self, message: ExtendedMessage) {
@@ -78,7 +75,7 @@ pub struct ExtendedModule {
 impl ExtendedModule {
     pub fn new(builder: ExtendedMessageBuilder) -> ExtendedModule {
         ExtendedModule {
-            builder: builder,
+            builder,
             peers: HashMap::new(),
             out_queue: VecDeque::new(),
             opt_task: None,
@@ -117,7 +114,7 @@ impl ExtendedModule {
                 ext_peer_info.update_theirs(ext_message);
 
                 for d_module in d_modules {
-                    d_module.on_update(&info, &ext_peer_info);
+                    d_module.on_update(&info, ext_peer_info);
                 }
             }
             _ => (),

@@ -75,15 +75,15 @@ impl<'a, V> Iterator for BListIter<'a, V> {
 
 impl<V> BListAccess<V> for Vec<V> {
     fn get(&self, index: usize) -> Option<&V> {
-        (&self[..]).get(index)
+        self[..].get(index)
     }
 
     fn get_mut(&mut self, index: usize) -> Option<&mut V> {
-        (&mut self[..]).get_mut(index)
+        self[..].get_mut(index)
     }
 
     fn remove(&mut self, index: usize) -> Option<V> {
-        if index >= (&self[..]).len() {
+        if index >= self[..].len() {
             None
         } else {
             Some(Vec::remove(self, index))

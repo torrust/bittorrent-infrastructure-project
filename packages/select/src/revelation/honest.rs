@@ -54,7 +54,7 @@ impl HonestRevealModule {
                 piece_set.reserve_len_exact(num_pieces);
 
                 let peers_info = PeersInfo {
-                    num_pieces: num_pieces,
+                    num_pieces,
                     status: piece_set,
                     peers: HashSet::new(),
                 };
@@ -136,8 +136,8 @@ impl HonestRevealModule {
             .map(|peers_info| {
                 if index as usize >= peers_info.num_pieces {
                     Err(RevealError::from_kind(RevealErrorKind::InvalidPieceOutOfRange {
-                        index: index,
-                        hash: hash,
+                        index,
+                        hash,
                     }))
                 } else {
                     // Queue up all have messages
@@ -151,11 +151,7 @@ impl HonestRevealModule {
                     Ok(AsyncSink::Ready)
                 }
             })
-            .unwrap_or_else(|| {
-                Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
-                    hash: hash,
-                }))
-            })
+            .unwrap_or_else(|| Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists { hash })))
     }
 
     //------------------------------------------------------//
@@ -169,7 +165,7 @@ impl HonestRevealModule {
 
 /// Inserts the slice into the `BytesMut` but reverses the bits in each byte.
 fn insert_reversed_bits(bytes: &mut BytesMut, slice: &[u8]) {
-    for mut byte in slice.iter().map(|byte| *byte) {
+    for mut byte in slice.iter().copied() {
         let mut reversed_byte = 0;
 
         for _ in 0..8 {

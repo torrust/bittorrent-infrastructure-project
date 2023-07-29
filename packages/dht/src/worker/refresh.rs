@@ -1,7 +1,6 @@
 use std::net::SocketAddr;
 use std::sync::mpsc::SyncSender;
 
-use handshake::Handshaker;
 use mio::EventLoop;
 use util::bt::{self, NodeId};
 
@@ -30,7 +29,7 @@ pub struct TableRefresh {
 impl TableRefresh {
     pub fn new(id_generator: MIDGenerator) -> TableRefresh {
         TableRefresh {
-            id_generator: id_generator,
+            id_generator,
             curr_refresh_bucket: 0,
         }
     }

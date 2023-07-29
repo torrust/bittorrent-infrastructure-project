@@ -1,6 +1,3 @@
-use core::hash::Hash;
-use std::fmt::Debug;
-
 use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
 
 use crate::error::{ParseError, ParseResult};
@@ -20,28 +17,28 @@ impl BConvert for MetainfoConverter {
 const CONVERT: MetainfoConverter = MetainfoConverter;
 
 /// Used as an error key to refer to the root bencode object.
-pub const ROOT_ERROR_KEY: &'static [u8] = b"root";
+pub const ROOT_ERROR_KEY: &[u8] = b"root";
 
 /// Keys found within the root dictionary of a metainfo file.
-pub const ANNOUNCE_LIST_KEY: &'static [u8] = b"announce-list";
-pub const ANNOUNCE_URL_KEY: &'static [u8] = b"announce";
-pub const CREATION_DATE_KEY: &'static [u8] = b"creation date";
-pub const COMMENT_KEY: &'static [u8] = b"comment";
-pub const CREATED_BY_KEY: &'static [u8] = b"created by";
-pub const ENCODING_KEY: &'static [u8] = b"encoding";
-pub const INFO_KEY: &'static [u8] = b"info";
+pub const ANNOUNCE_LIST_KEY: &[u8] = b"announce-list";
+pub const ANNOUNCE_URL_KEY: &[u8] = b"announce";
+pub const CREATION_DATE_KEY: &[u8] = b"creation date";
+pub const COMMENT_KEY: &[u8] = b"comment";
+pub const CREATED_BY_KEY: &[u8] = b"created by";
+pub const ENCODING_KEY: &[u8] = b"encoding";
+pub const INFO_KEY: &[u8] = b"info";
 
 /// Keys found within the info dictionary of a metainfo file.
-pub const PIECE_LENGTH_KEY: &'static [u8] = b"piece length";
-pub const PIECES_KEY: &'static [u8] = b"pieces";
-pub const PRIVATE_KEY: &'static [u8] = b"private";
-pub const NAME_KEY: &'static [u8] = b"name";
-pub const FILES_KEY: &'static [u8] = b"files";
+pub const PIECE_LENGTH_KEY: &[u8] = b"piece length";
+pub const PIECES_KEY: &[u8] = b"pieces";
+pub const PRIVATE_KEY: &[u8] = b"private";
+pub const NAME_KEY: &[u8] = b"name";
+pub const FILES_KEY: &[u8] = b"files";
 
 /// Keys found within the files dictionary of a metainfo file.
-pub const LENGTH_KEY: &'static [u8] = b"length";
-pub const MD5SUM_KEY: &'static [u8] = b"md5sum";
-pub const PATH_KEY: &'static [u8] = b"path";
+pub const LENGTH_KEY: &[u8] = b"length";
+pub const MD5SUM_KEY: &[u8] = b"md5sum";
+pub const PATH_KEY: &[u8] = b"path";
 
 /// Parses the root bencode as a dictionary.
 pub fn parse_root_dict<B>(root_bencode: &B) -> ParseResult<&dyn BDictAccess<B::BKey, B::BType>>
@@ -117,7 +114,7 @@ where
 }
 
 /// Parses the info dictionary from the root dictionary.
-pub fn parse_info_bencode<'a, B>(root_dict: &'a dyn BDictAccess<B::BKey, B>) -> ParseResult<&B>
+pub fn parse_info_bencode<B>(root_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<&B>
 where
     B: BRefAccess,
 {

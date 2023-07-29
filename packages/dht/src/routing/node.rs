@@ -49,8 +49,8 @@ impl Node {
     /// Create a new node that has recently responded to us but never requested from us.
     pub fn as_good(id: NodeId, addr: SocketAddr) -> Node {
         Node {
-            id: id,
-            addr: addr,
+            id,
+            addr,
             last_response: Cell::new(Some(UTC::now())),
             last_request: Cell::new(None),
             refresh_requests: Cell::new(0),
@@ -64,8 +64,8 @@ impl Node {
         let last_response = test::travel_into_past(last_response_offset);
 
         Node {
-            id: id,
-            addr: addr,
+            id,
+            addr,
             last_response: Cell::new(Some(last_response)),
             last_request: Cell::new(None),
             refresh_requests: Cell::new(0),
@@ -75,8 +75,8 @@ impl Node {
     /// Create a new node that has never responded to us or requested from us.
     pub fn as_bad(id: NodeId, addr: SocketAddr) -> Node {
         Node {
-            id: id,
-            addr: addr,
+            id,
+            addr,
             last_response: Cell::new(None),
             last_request: Cell::new(None),
             refresh_requests: Cell::new(0),

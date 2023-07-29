@@ -27,12 +27,7 @@ impl HandshakeMessage {
             }
         }
 
-        HandshakeMessage {
-            prot: prot,
-            ext: ext,
-            hash: hash,
-            pid: pid,
-        }
+        HandshakeMessage { prot, ext, hash, pid }
     }
 
     pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], HandshakeMessage> {

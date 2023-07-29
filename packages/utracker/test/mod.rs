@@ -164,7 +164,7 @@ impl ServerHandler for MockTrackerHandler {
 fn handshaker() -> (MockHandshakerSink, MockHandshakerStream) {
     let (send, recv) = mpsc::unbounded();
 
-    (MockHandshakerSink { send: send }, MockHandshakerStream { recv: recv })
+    (MockHandshakerSink { send }, MockHandshakerStream { recv })
 }
 
 #[derive(Clone)]

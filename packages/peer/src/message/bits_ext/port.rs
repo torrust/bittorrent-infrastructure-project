@@ -16,7 +16,7 @@ pub struct PortMessage {
 
 impl PortMessage {
     pub fn new(port: u16) -> PortMessage {
-        PortMessage { port: port }
+        PortMessage { port }
     }
 
     pub fn parse_bytes(_input: (), bytes: Bytes) -> IResult<(), io::Result<PortMessage>> {
@@ -38,5 +38,5 @@ impl PortMessage {
 }
 
 fn parse_port(bytes: &[u8]) -> IResult<&[u8], PortMessage> {
-    map!(bytes, be_u16, |port| PortMessage::new(port))
+    map!(bytes, be_u16, PortMessage::new)
 }

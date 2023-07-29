@@ -185,10 +185,7 @@ where
         let sink = HandshakerSink::new(addr_send, open_port, builder.pid, filters);
         let stream = HandshakerStream::new(sock_recv);
 
-        Ok(Handshaker {
-            sink: sink,
-            stream: stream,
-        })
+        Ok(Handshaker { sink, stream })
     }
 }
 
@@ -261,10 +258,10 @@ pub struct HandshakerSink {
 impl HandshakerSink {
     fn new(send: Sender<InitiateMessage>, port: u16, pid: PeerId, filters: Filters) -> HandshakerSink {
         HandshakerSink {
-            send: send,
-            port: port,
-            pid: pid,
-            filters: filters,
+            send,
+            port,
+            pid,
+            filters,
         }
     }
 }
@@ -321,7 +318,7 @@ pub struct HandshakerStream<S> {
 
 impl<S> HandshakerStream<S> {
     fn new(recv: Receiver<CompleteMessage<S>>) -> HandshakerStream<S> {
-        HandshakerStream { recv: recv }
+        HandshakerStream { recv }
     }
 }
 

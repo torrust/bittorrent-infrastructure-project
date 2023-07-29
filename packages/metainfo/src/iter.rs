@@ -12,7 +12,7 @@ pub struct Files<'a> {
 
 impl<'a> Files<'a> {
     pub fn new(files: &'a [File]) -> Files<'a> {
-        Files { index: 0, files: files }
+        Files { index: 0, files }
     }
 }
 
@@ -39,10 +39,7 @@ pub struct Pieces<'a> {
 
 impl<'a> Pieces<'a> {
     pub fn new(pieces: &'a [[u8; sha::SHA_HASH_LEN]]) -> Pieces<'a> {
-        Pieces {
-            index: 0,
-            pieces: pieces,
-        }
+        Pieces { index: 0, pieces }
     }
 }
 

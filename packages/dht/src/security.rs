@@ -4,7 +4,6 @@
 use std::net::Ipv4Addr;
 
 use crc::crc32;
-use rand;
 use util::bt::{self, NodeId};
 use util::convert;
 
@@ -113,7 +112,7 @@ fn is_compliant_id(crc32c_result: u32, id_bytes: [u8; bt::NODE_ID_LEN]) -> bool 
     is_compliant = is_compliant && (id_bytes[0] == ((crc32c_result >> 24) as u8));
     is_compliant = is_compliant && (id_bytes[1] == ((crc32c_result >> 16) as u8));
 
-    let mid_id_bits = (id_bytes[2] >> 0) & 0xF8;
+    let mid_id_bits = id_bytes[2] & 0xF8;
     let mid_hash_bits = ((crc32c_result >> 8) as u8) & 0xF8;
     is_compliant = is_compliant && mid_id_bits == mid_hash_bits;
 

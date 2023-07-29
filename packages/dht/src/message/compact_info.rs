@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::net::{Ipv4Addr, SocketAddrV4};
-use std::ops::Deref;
 
 use bencode::{BListAccess, BRefAccess};
 use util::bt::{self, NodeId};
@@ -30,7 +29,7 @@ impl<'a> CompactNodeInfo<'a> {
                 BYTES_PER_COMPACT_NODE_INFO,
             ))
         } else {
-            Ok(CompactNodeInfo { nodes: nodes })
+            Ok(CompactNodeInfo { nodes })
         }
     }
 

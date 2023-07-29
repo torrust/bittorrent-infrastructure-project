@@ -37,7 +37,7 @@ fn positive_complete_torrent() {
     let (good_pieces, recv) = crate::core_loop_with_timeout(&mut core, 500, (0, recv), |good_pieces, recv, msg| match msg {
         ODiskMessage::TorrentAdded(_) => Loop::Break((good_pieces, recv)),
         ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue((good_pieces + 1, recv)),
-        unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+        unexpected => panic!("Unexpected Message: {:?}", unexpected),
     });
 
     // Make sure we have no good pieces
@@ -90,7 +90,7 @@ fn positive_complete_torrent() {
                 ODiskMessage::FoundGoodPiece(_, index) => (Some(index), true),
                 ODiskMessage::FoundBadPiece(_, index) => (Some(index), false),
                 ODiskMessage::BlockProcessed(_) => (None, false),
-                unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+                unexpected => panic!("Unexpected Message: {:?}", unexpected),
             };
 
             let piece_zero_good = match opt_piece_index {
@@ -108,7 +108,7 @@ fn positive_complete_torrent() {
     );
 
     // Assert whether or not pieces were good
-    assert_eq!(true, piece_zero_good);
+    assert!(piece_zero_good);
 
     // Remove the torrent from our manager
     blocking_send.send(IDiskMessage::RemoveTorrent(info_hash)).unwrap();
@@ -116,7 +116,7 @@ fn positive_complete_torrent() {
     // Verify that our torrent was removed
     let recv = crate::core_loop_with_timeout(&mut core, 500, ((), recv), |_, recv, msg| match msg {
         ODiskMessage::TorrentRemoved(_) => Loop::Break(recv),
-        unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+        unexpected => panic!("Unexpected Message: {:?}", unexpected),
     });
 
     // Re-add our torrent and verify that we see our good first block
@@ -126,15 +126,15 @@ fn positive_complete_torrent() {
         crate::core_loop_with_timeout(&mut core, 500, (false, recv), |piece_zero_good, recv, msg| match msg {
             ODiskMessage::TorrentAdded(_) => Loop::Break((recv, piece_zero_good)),
             ODiskMessage::FoundGoodPiece(_, piece) if piece == 0 => Loop::Continue((true, recv)),
-            unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+            unexpected => panic!("Unexpected Message: {:?}", unexpected),
         });
 
-    assert_eq!(true, piece_zero_good);
+    assert!(piece_zero_good);
 
     // Send piece 1
     crate::send_block(
         &mut blocking_send,
-        &files_bytes[(1024 + 0)..(1024 + 500)],
+        &files_bytes[1024..(1024 + 500)],
         metainfo_file.info().info_hash(),
         1,
         0,
@@ -163,7 +163,7 @@ fn positive_complete_torrent() {
     // Send piece 2
     crate::send_block(
         &mut blocking_send,
-        &files_bytes[(2048 + 0)..(2048 + 500)],
+        &files_bytes[2048..(2048 + 500)],
         metainfo_file.info().info_hash(),
         2,
         0,
@@ -193,7 +193,7 @@ fn positive_complete_torrent() {
                 ODiskMessage::FoundGoodPiece(_, index) => (Some(index), true),
                 ODiskMessage::FoundBadPiece(_, index) => (Some(index), false),
                 ODiskMessage::BlockProcessed(_) => (None, false),
-                unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+                unexpected => panic!("Unexpected Message: {:?}", unexpected),
             };
 
             let (piece_one_good, piece_two_good) = match opt_piece_index {
@@ -211,6 +211,6 @@ fn positive_complete_torrent() {
         },
     );
 
-    assert_eq!(true, piece_one_good);
-    assert_eq!(true, piece_two_good);
+    assert!(piece_one_good);
+    assert!(piece_two_good);
 }

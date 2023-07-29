@@ -22,9 +22,7 @@ impl PieceBuffers {
             piece_queue.push(PieceBuffer::new(piece_length));
         }
 
-        PieceBuffers {
-            piece_queue: piece_queue,
-        }
+        PieceBuffers { piece_queue }
     }
 
     /// Checkin the given piece buffer to be re-used.

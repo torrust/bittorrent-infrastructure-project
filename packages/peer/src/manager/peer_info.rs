@@ -21,9 +21,9 @@ impl PeerInfo {
     /// Create a new `PeerInfo` object.
     pub fn new(addr: SocketAddr, pid: PeerId, hash: InfoHash, extensions: Extensions) -> PeerInfo {
         PeerInfo {
-            addr: addr,
-            pid: pid,
-            hash: hash,
+            addr,
+            pid,
+            hash,
             ext: extensions,
         }
     }

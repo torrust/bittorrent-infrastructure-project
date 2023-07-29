@@ -49,7 +49,7 @@ fn positive_process_block() {
                 Loop::Continue(((blocking_send, None), recv))
             }
             ODiskMessage::BlockProcessed(_) => Loop::Break(()),
-            unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
+            unexpected => panic!("Unexpected Message: {:?}", unexpected),
         },
     );
 
@@ -66,6 +66,6 @@ fn positive_process_block() {
     );
 
     let mut expected_file_b_data = vec![0u8; 2000];
-    (&mut expected_file_b_data[1..(1 + 50)]).copy_from_slice(&data_b.0[1..(50 + 1)]);
+    expected_file_b_data[1..(1 + 50)].copy_from_slice(&data_b.0[1..(50 + 1)]);
     assert_eq!(expected_file_b_data, recevied_file_b_data);
 }

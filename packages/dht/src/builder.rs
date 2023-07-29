@@ -3,7 +3,6 @@ use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::mpsc::{self, Receiver};
 
-use handshake::Handshaker;
 use mio::Sender;
 use util::bt::InfoHash;
 use util::net;
@@ -23,7 +22,7 @@ impl MainlineDht {
     where
         H: HandshakerTrait + 'static,
     {
-        let send_sock = UdpSocket::bind(&builder.src_addr)?;
+        let send_sock = UdpSocket::bind(builder.src_addr)?;
         let recv_sock = send_sock.try_clone()?;
 
         let kill_sock = send_sock.try_clone()?;
@@ -46,7 +45,7 @@ impl MainlineDht {
             warn!("bip_dt: MainlineDht failed to send a start bootstrap message...");
         }
 
-        Ok(MainlineDht { send: send })
+        Ok(MainlineDht { send })
     }
 
     /// Perform a search for the given InfoHash with an optional announce on the closest nodes.

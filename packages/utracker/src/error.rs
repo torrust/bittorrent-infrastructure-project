@@ -21,7 +21,7 @@ impl<'a> ErrorResponse<'a> {
 
     /// Construct an ErrorResponse from the given bytes.
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ErrorResponse<'a>> {
-        map!(bytes, take_str!(bytes.len()), |m| ErrorResponse::new(m))
+        map!(bytes, take_str!(bytes.len()), ErrorResponse::new)
     }
 
     /// Write the ErrorResponse to the given writer.
@@ -36,7 +36,7 @@ impl<'a> ErrorResponse<'a> {
 
     /// Message describing the error that occured.
     pub fn message(&self) -> &str {
-        &*self.message
+        &self.message
     }
 
     /// Create an owned version of the ErrorResponse.

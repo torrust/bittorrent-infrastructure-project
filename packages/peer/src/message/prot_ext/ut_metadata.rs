@@ -10,7 +10,7 @@ const REQUEST_MESSAGE_TYPE_ID: u8 = 0;
 const DATA_MESSAGE_TYPE_ID: u8 = 1;
 const REJECT_MESSAGE_TYPE_ID: u8 = 2;
 
-const ROOT_ERROR_KEY: &'static str = "PeerExtensionProtocolMessage";
+const ROOT_ERROR_KEY: &str = "PeerExtensionProtocolMessage";
 
 /// Enumeration of messages for `PeerExtensionProtocolMessage::UtMetadata`.
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -54,12 +54,10 @@ impl UtMetadataMessage {
                             bencode_bytes,
                         )))
                     }
-                    other => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::Other,
-                            format!("Failed To Recognize Message Type For UtMetadataMessage: {}", msg_type),
-                        ))
-                    }
+                    other => Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        format!("Failed To Recognize Message Type For UtMetadataMessage: {}", msg_type),
+                    )),
                 }
             }
             Err(err) => Err(io::Error::new(
@@ -74,17 +72,17 @@ impl UtMetadataMessage {
         W: Write,
     {
         match self {
-            &UtMetadataMessage::Request(ref request) => request.write_bytes(writer),
-            &UtMetadataMessage::Data(ref data) => data.write_bytes(writer),
-            &UtMetadataMessage::Reject(ref reject) => reject.write_bytes(writer),
+            UtMetadataMessage::Request(request) => request.write_bytes(writer),
+            UtMetadataMessage::Data(data) => data.write_bytes(writer),
+            UtMetadataMessage::Reject(reject) => reject.write_bytes(writer),
         }
     }
 
     pub fn message_size(&self) -> usize {
         match self {
-            &UtMetadataMessage::Request(ref request) => request.message_size(),
-            &UtMetadataMessage::Data(ref data) => data.message_size(),
-            &UtMetadataMessage::Reject(ref reject) => reject.message_size(),
+            UtMetadataMessage::Request(request) => request.message_size(),
+            UtMetadataMessage::Data(data) => data.message_size(),
+            UtMetadataMessage::Reject(reject) => reject.message_size(),
         }
     }
 }
@@ -108,14 +106,14 @@ impl UtMetadataRequestMessage {
         .len();
 
         UtMetadataRequestMessage {
-            piece: piece,
+            piece,
             bencode_size: encoded_bytes_size,
         }
     }
 
     pub fn with_bytes(piece: i64, bytes: Bytes) -> UtMetadataRequestMessage {
         UtMetadataRequestMessage {
-            piece: piece,
+            piece,
             bencode_size: bytes.len(),
         }
     }
@@ -162,18 +160,18 @@ impl UtMetadataDataMessage {
         .len();
 
         UtMetadataDataMessage {
-            piece: piece,
-            total_size: total_size,
-            data: data,
+            piece,
+            total_size,
+            data,
             bencode_size: encoded_bytes_len,
         }
     }
 
     pub fn with_bytes(piece: i64, total_size: i64, data: Bytes, bytes: Bytes) -> UtMetadataDataMessage {
         UtMetadataDataMessage {
-            piece: piece,
-            total_size: total_size,
-            data: data,
+            piece,
+            total_size,
+            data,
             bencode_size: bytes.len(),
         }
     }
@@ -228,14 +226,14 @@ impl UtMetadataRejectMessage {
         .len();
 
         UtMetadataRejectMessage {
-            piece: piece,
+            piece,
             bencode_size: encoded_bytes_size,
         }
     }
 
     pub fn with_bytes(piece: i64, bytes: Bytes) -> UtMetadataRejectMessage {
         UtMetadataRejectMessage {
-            piece: piece,
+            piece,
             bencode_size: bytes.len(),
         }
     }

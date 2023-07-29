@@ -38,10 +38,7 @@ pub struct ClientMetadata {
 impl ClientMetadata {
     /// Create a new ClientMetadata container.
     pub fn new(token: ClientToken, result: ClientResult<ClientResponse>) -> ClientMetadata {
-        ClientMetadata {
-            token: token,
-            result: result,
-        }
+        ClientMetadata { token, result }
     }
 
     /// Access the request token corresponding to this metadata.
@@ -72,7 +69,7 @@ impl ClientResponse {
     /// succeed.
     pub fn announce_response(&self) -> Option<&AnnounceResponse<'static>> {
         match self {
-            &ClientResponse::Announce(ref res) => Some(res),
+            ClientResponse::Announce(res) => Some(res),
             &ClientResponse::Scrape(_) => None,
         }
     }
@@ -85,7 +82,7 @@ impl ClientResponse {
     pub fn scrape_response(&self) -> Option<&ScrapeResponse<'static>> {
         match self {
             &ClientResponse::Announce(_) => None,
-            &ClientResponse::Scrape(ref res) => Some(res),
+            ClientResponse::Scrape(res) => Some(res),
         }
     }
 }
@@ -131,7 +128,7 @@ impl TrackerClient {
 
         dispatcher::create_dispatcher(bind, handshaker, chan_capacity, limiter.clone()).map(|chan| TrackerClient {
             send: chan,
-            limiter: limiter,
+            limiter,
             generator: TokenGenerator::new(),
         })
     }
@@ -200,7 +197,7 @@ impl RequestLimiter {
     pub fn new(capacity: usize) -> RequestLimiter {
         RequestLimiter {
             active: Arc::new(AtomicUsize::new(0)),
-            capacity: capacity,
+            capacity,
         }
     }
 

@@ -149,7 +149,7 @@ impl UberModule {
     pub fn from_builder(builder: UberModuleBuilder) -> UberModule {
         UberModule {
             discovery: builder.discovery,
-            extended: builder.ext_builder.map(|builder| ExtendedModule::new(builder)),
+            extended: builder.ext_builder.map(ExtendedModule::new),
             last_sink_state: None,
             last_stream_state: None,
         }
@@ -257,15 +257,15 @@ impl UberModule {
                 uber.last_sink_state = state;
             },
             |uber, state| match (state, message) {
-                (ModuleState::Discovery(index), &IUberMessage::Control(ref control)) => uber.discovery[index]
+                (ModuleState::Discovery(index), IUberMessage::Control(control)) => uber.discovery[index]
                     .start_send(IDiscoveryMessage::Control(control.clone()))
                     .map(|a| a.map(|_| ()))
                     .map_err(|err| err.into()),
-                (ModuleState::Discovery(index), &IUberMessage::Discovery(ref discovery)) => uber.discovery[index]
+                (ModuleState::Discovery(index), IUberMessage::Discovery(discovery)) => uber.discovery[index]
                     .start_send(discovery.clone())
                     .map(|a| a.map(|_| ()))
                     .map_err(|err| err.into()),
-                (ModuleState::Extended, &IUberMessage::Control(ref control)) => {
+                (ModuleState::Extended, IUberMessage::Control(control)) => {
                     let d_modules = &mut uber.discovery[..];
 
                     uber.extended
@@ -277,7 +277,7 @@ impl UberModule {
                         })
                         .unwrap_or(Ok(AsyncSink::Ready))
                 }
-                (ModuleState::Extended, &IUberMessage::Extended(ref extended)) => {
+                (ModuleState::Extended, IUberMessage::Extended(extended)) => {
                     let d_modules = &mut uber.discovery[..];
 
                     uber.extended
@@ -324,17 +324,12 @@ impl UberModule {
                     .map(|ext_module| {
                         ext_module
                             .poll()
-                            .map(|async_opt_message| {
-                                async_opt_message.map(|opt_message| opt_message.map(|message| OUberMessage::Extended(message)))
-                            })
-                            .map_err(|err| err.into())
+                            .map(|async_opt_message| async_opt_message.map(|opt_message| opt_message.map(OUberMessage::Extended)))
                     })
                     .unwrap_or(Ok(Async::Ready(None))),
                 ModuleState::Discovery(index) => uber.discovery[index]
                     .poll()
-                    .map(|async_opt_message| {
-                        async_opt_message.map(|opt_message| opt_message.map(|message| OUberMessage::Discovery(message)))
-                    })
+                    .map(|async_opt_message| async_opt_message.map(|opt_message| opt_message.map(OUberMessage::Discovery)))
                     .map_err(|err| err.into()),
             },
         )
@@ -360,8 +355,6 @@ impl Stream for UberModule {
     type Error = UberError;
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        let result = self.poll_stream_state();
-
-        result
+        self.poll_stream_state()
     }
 }

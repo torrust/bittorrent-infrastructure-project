@@ -6,7 +6,6 @@ use crate::access::bencode::{BMutAccess, BRefAccess, BencodeMutKind, BencodeRefK
 use crate::access::dict::BDictAccess;
 use crate::access::list::BListAccess;
 use crate::mutable::encode;
-use crate::BencodeRef;
 
 /// Bencode object that holds references to the underlying data.
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
@@ -29,7 +28,7 @@ pub struct BencodeMut<'a> {
 
 impl<'a> BencodeMut<'a> {
     fn new(inner: InnerBencodeMut<'a>) -> BencodeMut<'a> {
-        BencodeMut { inner: inner }
+        BencodeMut { inner }
     }
 
     /// Create a new `BencodeMut` representing an `i64`.
@@ -39,7 +38,7 @@ impl<'a> BencodeMut<'a> {
 
     /// Create a new `BencodeMut` representing a `[u8]`.
     pub fn new_bytes(value: Cow<'a, [u8]>) -> BencodeMut<'a> {
-        BencodeMut::new(InnerBencodeMut::Bytes(value.into()))
+        BencodeMut::new(InnerBencodeMut::Bytes(value))
     }
 
     /// Create a new `BencodeMut` representing a `BListAccess`.

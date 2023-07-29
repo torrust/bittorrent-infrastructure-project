@@ -39,10 +39,7 @@ impl<F> DiskManager<F> {
         );
         let stream = DiskManagerStream::new(out_recv, cur_sink_capacity, task_queue.clone());
 
-        DiskManager {
-            sink: sink,
-            stream: stream,
-        }
+        DiskManager { sink, stream }
     }
 
     /// Break the `DiskManager` into a sink and stream.
@@ -110,11 +107,11 @@ impl<F> DiskManagerSink<F> {
         task_queue: Arc<SegQueue<Task>>,
     ) -> DiskManagerSink<F> {
         DiskManagerSink {
-            pool: pool,
-            context: context,
-            max_capacity: max_capacity,
-            cur_capacity: cur_capacity,
-            task_queue: task_queue,
+            pool,
+            context,
+            max_capacity,
+            cur_capacity,
+            task_queue,
         }
     }
 
@@ -159,7 +156,7 @@ where
             info!("DiskManagerSink Submitted Work On Second Attempt");
             tasks::execute_on_pool(item, &self.pool, self.context.clone());
 
-            return Ok(AsyncSink::Ready);
+            Ok(AsyncSink::Ready)
         } else {
             // Receiver will look at the queue eventually...
             Ok(AsyncSink::NotReady(item))
@@ -183,9 +180,9 @@ pub struct DiskManagerStream {
 impl DiskManagerStream {
     fn new(recv: Receiver<ODiskMessage>, cur_capacity: Arc<AtomicUsize>, task_queue: Arc<SegQueue<Task>>) -> DiskManagerStream {
         DiskManagerStream {
-            recv: recv,
-            cur_capacity: cur_capacity,
-            task_queue: task_queue,
+            recv,
+            cur_capacity,
+            task_queue,
         }
     }
 
