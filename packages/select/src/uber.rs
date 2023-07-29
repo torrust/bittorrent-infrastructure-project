@@ -197,7 +197,7 @@ impl UberModule {
 
         let mut should_continue = result
             .as_ref()
-            .map(|async| (is_sink && async.is_ready()) || (is_stream && !async.is_ready()))
+            .map(|a| (is_sink && a.is_ready()) || (is_stream && !a.is_ready()))
             .unwrap_or(false);
         // While we are ready, and we havent exhausted states, continue to loop
         while should_continue && opt_next_state.is_some() {
@@ -205,7 +205,7 @@ impl UberModule {
             result = logic(self, next_state);
             should_continue = result
                 .as_ref()
-                .map(|async| (is_sink && async.is_ready()) || (is_stream && !async.is_ready()))
+                .map(|a| (is_sink && a.is_ready()) || (is_stream && !a.is_ready()))
                 .unwrap_or(false);
 
             // If we dont need to return to the user because of this error, mark it as done
@@ -236,13 +236,13 @@ impl UberModule {
                 (ModuleState::Discovery(index), &IUberMessage::Control(ref control)) => {
                     uber.discovery[index]
                         .start_send(IDiscoveryMessage::Control(control.clone()))
-                        .map(|async| async.map(|_| ()))
+                        .map(|a| a.map(|_| ()))
                         .map_err(|err| err.into())
                 },
                 (ModuleState::Discovery(index), &IUberMessage::Discovery(ref discovery)) => {
                     uber.discovery[index]
                         .start_send(discovery.clone())
-                        .map(|async| async.map(|_| ()))
+                        .map(|a| a.map(|_| ()))
                         .map_err(|err| err.into())
                 },
                 (ModuleState::Extended, &IUberMessage::Control(ref control)) => {
@@ -339,7 +339,7 @@ impl Sink for UberModule {
     fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
         // Currently we dont return NotReady from the module directly, so no saving our task state here
         self.start_sink_state(&item)
-            .map(|async| async.map(|_| item))
+            .map(|a| a.map(|_| item))
     }
 
     fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {

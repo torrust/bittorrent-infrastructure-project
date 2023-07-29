@@ -143,7 +143,7 @@ impl<P> PeerManagerSink<P> where P: Sink + Stream {
             let result = call(item, &mut self.handle, &mut self.timer, &mut self.build, &mut self.send, &mut *guard);
 
             // Closure could return not ready, need to stash in that case
-            if result.as_ref().map(|async| async.is_not_ready()).unwrap_or(false) {
+            if result.as_ref().map(|a| a.is_not_ready()).unwrap_or(false) {
                 self.task_queue.push(futures_task::current());
             }
 
@@ -155,7 +155,7 @@ impl<P> PeerManagerSink<P> where P: Sink + Stream {
                 let result = call(item, &mut self.handle, &mut self.timer, &mut self.build, &mut self.send, &mut *guard);
 
                 // Closure could return not ready, need to stash in that case
-                if result.as_ref().map(|async| async.is_not_ready()).unwrap_or(false) {
+                if result.as_ref().map(|a| a.is_not_ready()).unwrap_or(false) {
                     self.task_queue.push(futures_task::current());
                 }
 
