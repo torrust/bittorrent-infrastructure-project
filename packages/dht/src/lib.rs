@@ -30,6 +30,7 @@ extern crate error_chain;
 
 mod builder;
 mod error;
+pub mod handshaker_trait;
 pub mod message;
 mod router;
 mod routing;

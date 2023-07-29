@@ -2,7 +2,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 
-use crossbeam::sync::MsQueue;
+use crossbeam::queue::SegQueue;
 use util::sha::ShaHash;
 
 use crate::accessor::{Accessor, PieceAccess};
@@ -42,7 +42,7 @@ where
     let (prog_send, prog_recv) = mpsc::channel();
 
     // Create queue to push work to and pull work from
-    let work_queue = Arc::new(MsQueue::new());
+    let work_queue = Arc::new(SegQueue::new());
 
     // Create buffer allocator to reuse pre allocated buffers
     let piece_buffers = Arc::new(PieceBuffers::new(piece_length, num_workers));
@@ -75,7 +75,7 @@ fn start_hash_master<A>(
     accessor: A,
     num_workers: usize,
     recv: Receiver<MasterMessage>,
-    work: Arc<MsQueue<WorkerMessage>>,
+    work: Arc<SegQueue<WorkerMessage>>,
     buffers: Arc<PieceBuffers>,
     progress_sender: Sender<usize>,
 ) -> ParseResult<Vec<(usize, ShaHash)>>
@@ -87,7 +87,7 @@ where
 
     // Our closure may be called multiple times, save partial pieces buffers between calls
     let mut opt_piece_buffer = None;
-    r#try!(accessor.access_pieces(|piece_access| {
+    accessor.access_pieces(|piece_access| {
         match piece_access {
             PieceAccess::Compute(piece_region) => {
                 let mut curr_piece_buffer = if let Some(piece_buffer) = opt_piece_buffer.take() {
@@ -122,7 +122,7 @@ where
         }
 
         Ok(())
-    }));
+    })?;
 
     // If we still have a partial piece left over, push it to the workers
     if let Some(piece_buffer) = opt_piece_buffer {
@@ -173,7 +173,7 @@ where
 // ----------------------------------------------------------------------------//
 
 /// Starts a hasher worker which will hash all of the buffers it receives.
-fn start_hash_worker(send: Sender<MasterMessage>, work: Arc<MsQueue<WorkerMessage>>, buffers: Arc<PieceBuffers>) {
+fn start_hash_worker(send: Sender<MasterMessage>, work: Arc<SegQueue<WorkerMessage>>, buffers: Arc<PieceBuffers>) {
     let mut work_to_do = true;
 
     // Loop until we are instructed to stop working
@@ -181,15 +181,18 @@ fn start_hash_worker(send: Sender<MasterMessage>, work: Arc<MsQueue<WorkerMessag
         let work_item = work.pop();
 
         match work_item {
-            WorkerMessage::Finish => {
-                work_to_do = false;
-            }
-            WorkerMessage::HashPiece(index, buffer) => {
-                let hash = ShaHash::from_bytes(buffer.as_slice());
+            Some(work) => match work {
+                WorkerMessage::Finish => {
+                    work_to_do = false;
+                }
+                WorkerMessage::HashPiece(index, buffer) => {
+                    let hash = ShaHash::from_bytes(buffer.as_slice());
 
-                send.send(MasterMessage::AcceptPiece(index, hash)).unwrap();
-                buffers.checkin(buffer);
-            }
+                    send.send(MasterMessage::AcceptPiece(index, hash)).unwrap();
+                    buffers.checkin(buffer);
+                }
+            },
+            None => continue,
         }
     }
 

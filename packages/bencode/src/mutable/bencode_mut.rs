@@ -6,6 +6,7 @@ use crate::access::bencode::{BMutAccess, BRefAccess, BencodeMutKind, BencodeRefK
 use crate::access::dict::BDictAccess;
 use crate::access::list::BListAccess;
 use crate::mutable::encode;
+use crate::BencodeRef;
 
 /// Bencode object that holds references to the underlying data.
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
@@ -139,6 +140,26 @@ impl<'a> BMutAccess for BencodeMut<'a> {
         }
     }
 }
+
+// impl<'a> From<BencodeRef<'a>> for BencodeMut<'a> {
+//     fn from(value: BencodeRef<'a>) -> Self {
+//         let inner = match value.kind() {
+//             BencodeRefKind::Int(value) => InnerBencodeMut::Int(value),
+//             BencodeRefKind::Bytes(value) => InnerBencodeMut::Bytes(Cow::Owned(Vec::from(value))),
+//             BencodeRefKind::List(value) => {
+//                 InnerBencodeMut::List(value.clone().into_iter().map(|b| BencodeMut::from(b.clone())).collect())
+//             }
+//             BencodeRefKind::Dict(value) => InnerBencodeMut::Dict(
+//                 value
+//                     .to_list()
+//                     .into_iter()
+//                     .map(|(key, value)| (Cow::Owned(Vec::from(*key)), BencodeMut::from(value.clone())))
+//                     .collect(),
+//             ),
+//         };
+//         BencodeMut { inner }
+//     }
+// }
 
 #[cfg(test)]
 mod test {

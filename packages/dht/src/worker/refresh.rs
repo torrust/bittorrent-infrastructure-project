@@ -5,6 +5,7 @@ use handshake::Handshaker;
 use mio::EventLoop;
 use util::bt::{self, NodeId};
 
+use crate::handshaker_trait::HandshakerTrait;
 use crate::message::find_node::FindNodeRequest;
 use crate::routing::node::NodeStatus;
 use crate::routing::table::{self, RoutingTable};
@@ -41,7 +42,7 @@ impl TableRefresh {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> RefreshStatus
     where
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         if self.curr_refresh_bucket == table::MAX_BUCKETS {
             self.curr_refresh_bucket = 0;

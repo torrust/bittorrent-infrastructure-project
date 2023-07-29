@@ -3,7 +3,8 @@
 
 use std::borrow::Cow;
 
-use bencode::{ben_bytes, ben_int, ben_list, ben_map, Bencode, BencodeConvert, BencodeConvertError, Dictionary};
+use bencode::ext::BConvertExt;
+use bencode::{ben_bytes, ben_int, ben_list, ben_map, BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
 
 use crate::error::{DhtError, DhtErrorKind, DhtResult};
 use crate::message;
@@ -55,7 +56,10 @@ impl Into<u8> for ErrorCode {
 struct ErrorValidate;
 
 impl ErrorValidate {
-    fn extract_error_args<'a>(&self, args: &[Bencode<'a>]) -> DhtResult<(u8, &'a str)> {
+    fn extract_error_args<'a, B>(&self, args: &'a dyn BListAccess<B::BType>) -> DhtResult<(u8, String)>
+    where
+        B: BRefAccess<BType = B>,
+    {
         if args.len() != NUM_ERROR_ARGS {
             return Err(DhtError::from_kind(DhtErrorKind::InvalidResponse {
                 details: format!("Error Message Invalid Number Of Error Args: {}", args.len()),
@@ -63,19 +67,23 @@ impl ErrorValidate {
         }
 
         let code = r#try!(self.convert_int(&args[0], &format!("{}[0]", ERROR_ARGS_KEY)));
-        let message = r#try!(self.convert_str(&args[1], &format!("{}[1]", ERROR_ARGS_KEY)));
+        let message = String::from(self.convert_str(&args[1], &format!("{}[1]", ERROR_ARGS_KEY))?);
+
+        let code2 = code.clone();
 
         Ok((code as u8, message))
     }
 }
 
-impl BencodeConvert for ErrorValidate {
+impl BConvert for ErrorValidate {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
         error.into()
     }
 }
+
+impl BConvertExt for ErrorValidate {}
 
 // ----------------------------------------------------------------------------//
 
@@ -101,15 +109,18 @@ impl<'a> ErrorMessage<'a> {
         }
     }
 
-    pub fn from_parts(root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<ErrorMessage<'a>> {
+    pub fn from_parts<B>(root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<ErrorMessage<'a>>
+    where
+        B: BRefAccess<BType = B>,
+    {
         let validate = ErrorValidate;
         let error_args = r#try!(validate.lookup_and_convert_list(root, ERROR_ARGS_KEY));
 
-        let (code, message) = r#try!(validate.extract_error_args(error_args));
+        let (code, message) = r#try!(validate.extract_error_args::<B>(error_args));
         let error_code = r#try!(ErrorCode::new(code));
 
-        let trans_id_cow = Cow::Borrowed(trans_id);
-        let message_cow = Cow::Borrowed(message);
+        let trans_id_cow = Cow::Owned(trans_id.to_vec());
+        let message_cow = Cow::Owned(message);
 
         Ok(ErrorMessage {
             trans_id: trans_id_cow,
@@ -135,7 +146,7 @@ impl<'a> ErrorMessage<'a> {
 
         (ben_map! {
             //message::CLIENT_TYPE_KEY => ben_bytes!(dht::CLIENT_IDENTIFICATION),
-            message::TRANSACTION_ID_KEY => ben_bytes!(&self.trans_id),
+            message::TRANSACTION_ID_KEY => ben_bytes!(self.trans_id.to_vec()),
             message::MESSAGE_TYPE_KEY => ben_bytes!(message::ERROR_TYPE_KEY),
             message::ERROR_TYPE_KEY => ben_list!(
                 ben_int!(error_code),

@@ -1,3 +1,6 @@
+use core::hash::Hash;
+use std::fmt::Debug;
+
 use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
 
 use crate::error::{ParseError, ParseResult};
@@ -160,7 +163,7 @@ where
 /// Parses the files list from the info dictionary.
 pub fn parse_files_list<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<&dyn BListAccess<B>>
 where
-    B: BRefAccess<BType = B>,
+    B: BRefAccess<BType = B> + PartialEq,
 {
     CONVERT.lookup_and_convert_list(info_dict, FILES_KEY)
 }

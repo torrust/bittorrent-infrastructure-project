@@ -4,14 +4,14 @@ use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6, UdpSocket};
 use std::sync::mpsc::{self, SyncSender};
 use std::{io, mem, thread};
 
-use bencode::Bencode;
-use handshake::Handshaker;
+use bencode::{BDecodeOpt, BRefAccess, BencodeMut, BencodeRef};
 use log::LogLevel;
 use mio::{self, EventLoop, Handler};
 use util::bt::InfoHash;
 use util::convert;
 use util::net::IpAddr;
 
+use crate::handshaker_trait::HandshakerTrait;
 use crate::message::announce_peer::{AnnouncePeerResponse, ConnectPort};
 use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
 use crate::message::error::{ErrorCode, ErrorMessage};
@@ -47,7 +47,7 @@ pub fn create_dht_handler<H>(
     kill_addr: SocketAddr,
 ) -> io::Result<mio::Sender<OneshotTask>>
 where
-    H: Handshaker + 'static,
+    H: HandshakerTrait + 'static,
 {
     let mut handler = DhtHandler::new(table, out, read_only, handshaker);
     let mut event_loop = r#try!(EventLoop::new());
@@ -126,7 +126,7 @@ struct DetachedDhtHandler<H> {
 
 impl<H> DhtHandler<H>
 where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     fn new(table: RoutingTable, out: SyncSender<(Vec<u8>, SocketAddr)>, read_only: bool, handshaker: H) -> DhtHandler<H> {
         let mut aid_generator = AIDGenerator::new();
@@ -159,7 +159,7 @@ where
 
 impl<H> Handler for DhtHandler<H>
 where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     type Timeout = (u64, ScheduledTask);
     type Message = OneshotTask;
@@ -215,7 +215,7 @@ where
 /// Shut down the event loop by sending it a shutdown message with the given cause.
 fn shutdown_event_loop<H>(event_loop: &mut EventLoop<DhtHandler<H>>, cause: ShutdownCause)
 where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     if event_loop.channel().send(OneshotTask::Shutdown(cause)).is_err() {
         error!("bip_dht: Failed to sent a shutdown message to the EventLoop...");
@@ -248,7 +248,7 @@ fn broadcast_bootstrap_completed<H>(
     work_storage: &mut DetachedDhtHandler<H>,
     event_loop: &mut EventLoop<DhtHandler<H>>,
 ) where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     // Send notification that the bootstrap has completed.
     broadcast_dht_event(&mut work_storage.event_notifiers, DhtEvent::BootstrapCompleted);
@@ -284,7 +284,7 @@ fn attempt_rebootstrap<H>(
     event_loop: &mut EventLoop<DhtHandler<H>>,
 ) -> Option<bool>
 where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     // Increment the bootstrap counter
     *attempts += 1;
@@ -325,12 +325,12 @@ where
 
 fn handle_incoming<H>(handler: &mut DhtHandler<H>, event_loop: &mut EventLoop<DhtHandler<H>>, buffer: &[u8], addr: SocketAddr)
 where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     let (work_storage, table_actions) = (&mut handler.detached, &mut handler.table_actions);
 
     // Parse the buffer as a bencoded message
-    let bencode = if let Ok(b) = Bencode::decode(buffer) {
+    let bencode = if let Ok(b) = BencodeRef::decode(buffer, BDecodeOpt::default()) {
         b
     } else {
         warn!("bip_dht: Received invalid bencode data...");
@@ -339,7 +339,7 @@ where
 
     // Parse the bencode as a message
     // Check to make sure we issued the transaction id (or that it is still valid)
-    let message = MessageType::new(&bencode, |trans| {
+    let message = MessageType::<BencodeRef>::new(&bencode, |trans| {
         // Check if we can interpret the response transaction id as one of ours.
         let trans_id = if let Some(t) = TransactionID::from_bytes(trans) {
             t
@@ -455,7 +455,7 @@ where
             // Wrap up the nodes/values we are going to be giving them
             let token = work_storage.token_store.checkout(IpAddr::from_socket_addr(addr));
             let comapct_info_type = if !contact_info_bencode.is_empty() {
-                CompactInfoType::Both(
+                CompactInfoType::<BencodeMut>::Both(
                     CompactNodeInfo::new(&closest_nodes_bytes).unwrap(),
                     CompactValueInfo::new(&contact_info_bencode).unwrap(),
                 )
@@ -463,7 +463,7 @@ where
                 CompactInfoType::Nodes(CompactNodeInfo::new(&closest_nodes_bytes).unwrap())
             };
 
-            let get_peers_rsp = GetPeersResponse::new(
+            let get_peers_rsp = GetPeersResponse::<BencodeMut>::new(
                 g.transaction_id(),
                 work_storage.routing_table.node_id(),
                 Some(token.as_ref()),
@@ -701,7 +701,7 @@ fn handle_start_bootstrap<H>(
     routers: Vec<Router>,
     nodes: Vec<SocketAddr>,
 ) where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     let (work_storage, table_actions) = (&mut handler.detached, &mut handler.table_actions);
 
@@ -753,7 +753,7 @@ fn handle_start_lookup<H>(
     info_hash: InfoHash,
     should_announce: bool,
 ) where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     let mid_generator = work_storage.aid_generator.generate();
     let action_id = mid_generator.action_id();
@@ -784,7 +784,7 @@ fn handle_start_lookup<H>(
 
 fn handle_shutdown<H>(handler: &mut DhtHandler<H>, event_loop: &mut EventLoop<DhtHandler<H>>, cause: ShutdownCause)
 where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     let (work_storage, _) = (&mut handler.detached, &mut handler.table_actions);
 
@@ -799,7 +799,7 @@ fn handle_check_table_refresh<H>(
     event_loop: &mut EventLoop<DhtHandler<H>>,
     trans_id: TransactionID,
 ) where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     let opt_refresh_status = match table_actions.get_mut(&trans_id.action_id()) {
         Some(&mut TableAction::Refresh(ref mut refresh)) => {
@@ -840,7 +840,7 @@ fn handle_check_bootstrap_timeout<H>(
     event_loop: &mut EventLoop<DhtHandler<H>>,
     trans_id: TransactionID,
 ) where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     let (work_storage, table_actions) = (&mut handler.detached, &mut handler.table_actions);
 
@@ -900,7 +900,7 @@ fn handle_check_bootstrap_timeout<H>(
 
 fn handle_check_lookup_timeout<H>(handler: &mut DhtHandler<H>, event_loop: &mut EventLoop<DhtHandler<H>>, trans_id: TransactionID)
 where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     let (work_storage, table_actions) = (&mut handler.detached, &mut handler.table_actions);
 
@@ -952,7 +952,7 @@ where
 
 fn handle_check_lookup_endgame<H>(handler: &mut DhtHandler<H>, event_loop: &mut EventLoop<DhtHandler<H>>, trans_id: TransactionID)
 where
-    H: Handshaker,
+    H: HandshakerTrait,
 {
     let (work_storage, table_actions) = (&mut handler.detached, &mut handler.table_actions);
 

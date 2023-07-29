@@ -17,6 +17,7 @@ use std::io::Write;
 use std::net::SocketAddr;
 use std::time::Duration;
 
+use dht::handshaker_trait::HandshakerTrait;
 use dht::{DhtBuilder, DhtEvent, Handshaker, Router};
 use futures::future::{self, Either, Loop};
 use futures::sink::Wait;
@@ -57,7 +58,7 @@ where
     }
 }
 
-impl<S> Handshaker for LegacyHandshaker<S>
+impl<S> HandshakerTrait for LegacyHandshaker<S>
 where
     S: Sink<SinkItem = InitiateMessage> + Send,
     S::SinkError: Debug,

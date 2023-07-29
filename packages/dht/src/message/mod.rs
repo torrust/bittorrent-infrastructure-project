@@ -1,4 +1,7 @@
-use bencode::{Bencode, BencodeConvert, BencodeConvertError};
+use std::fmt::Debug;
+
+use bencode::ext::BConvertExt;
+use bencode::{BConvert, BRefAccess, BencodeConvertError};
 
 use crate::error::{DhtError, DhtErrorKind, DhtResult};
 use crate::message::error::ErrorMessage;
@@ -42,7 +45,7 @@ const TOKEN_KEY: &'static str = "token";
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 struct MessageValidate;
 
-impl BencodeConvert for MessageValidate {
+impl BConvert for MessageValidate {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
@@ -50,17 +53,26 @@ impl BencodeConvert for MessageValidate {
     }
 }
 
+impl BConvertExt for MessageValidate {}
 // ----------------------------------------------------------------------------//
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub enum MessageType<'a> {
+pub enum MessageType<'a, B>
+where
+    B: BRefAccess<BType = B> + Clone,
+    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+{
     Request(RequestType<'a>),
-    Response(ResponseType<'a>),
+    Response(ResponseType<'a, B>),
     Error(ErrorMessage<'a>),
 }
 
-impl<'a> MessageType<'a> {
-    pub fn new<T>(message: &'a Bencode<'a>, trans_mapper: T) -> DhtResult<MessageType<'a>>
+impl<'a, B> MessageType<'a, B>
+where
+    B: BRefAccess<BType = B> + Clone,
+    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+{
+    pub fn new<T>(message: &'a B::BType, trans_mapper: T) -> DhtResult<MessageType<'a, B>>
     where
         T: Fn(&[u8]) -> ExpectedResponse,
     {

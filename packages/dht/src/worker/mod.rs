@@ -6,6 +6,7 @@ use handshake::Handshaker;
 use mio;
 use util::bt::InfoHash;
 
+use crate::handshaker_trait::HandshakerTrait;
 use crate::router::Router;
 use crate::routing::table::{self, RoutingTable};
 use crate::transaction::TransactionID;
@@ -78,7 +79,7 @@ pub fn start_mainline_dht<H>(
     kill_addr: SocketAddr,
 ) -> io::Result<mio::Sender<OneshotTask>>
 where
-    H: Handshaker + 'static,
+    H: HandshakerTrait + 'static,
 {
     let outgoing = messenger::create_outgoing_messenger(send_socket);
 

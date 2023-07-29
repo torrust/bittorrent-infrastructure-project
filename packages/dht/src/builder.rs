@@ -8,6 +8,7 @@ use mio::Sender;
 use util::bt::InfoHash;
 use util::net;
 
+use crate::handshaker_trait::HandshakerTrait;
 use crate::router::Router;
 use crate::worker::{self, DhtEvent, OneshotTask, ShutdownCause};
 
@@ -20,7 +21,7 @@ impl MainlineDht {
     /// Start the MainlineDht with the given DhtBuilder and Handshaker.
     fn with_builder<H>(builder: DhtBuilder, handshaker: H) -> io::Result<MainlineDht>
     where
-        H: Handshaker + 'static,
+        H: HandshakerTrait + 'static,
     {
         let send_sock = r#try!(UdpSocket::bind(&builder.src_addr));
         let recv_sock = r#try!(send_sock.try_clone());
@@ -186,7 +187,7 @@ impl DhtBuilder {
     /// Start a mainline DHT with the current configuration.
     pub fn start_mainline<H>(self, handshaker: H) -> io::Result<MainlineDht>
     where
-        H: Handshaker + 'static,
+        H: HandshakerTrait + 'static,
     {
         MainlineDht::with_builder(self, handshaker)
     }

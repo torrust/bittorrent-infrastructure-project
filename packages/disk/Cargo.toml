@@ -20,7 +20,7 @@ metainfo = { path = "../metainfo" }
 util = { path = "../util" }
 
 bytes = "0.4"
-crossbeam = "0.3"
+crossbeam = "0.8"
 futures = "0.1"
 futures-cpupool = "0.1"
 error-chain = "0.11"

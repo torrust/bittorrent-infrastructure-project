@@ -18,7 +18,7 @@ repository.workspace = true
 [dependencies]
 bencode = { path = "../bencode" }
 util = { path = "../util" }
-crossbeam = "0.3"
+crossbeam = "0.8"
 walkdir = "2.0"
 error-chain = "0.11"
 

@@ -8,7 +8,7 @@ pub struct PutDataRequest<'a> {
 }
 
 impl<'a> PutDataRequest<'a> {
-    pub fn new(rqst_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<PutDataRequest<'a>> {
+    pub fn new(rqst_root: &BDictAccess<'a, BRefAccess<'a>>, trans_id: &'a [u8]) -> DhtResult<PutDataRequest<'a>> {
         unimplemented!();
     }
 

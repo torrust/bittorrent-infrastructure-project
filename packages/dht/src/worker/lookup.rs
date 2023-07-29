@@ -1,13 +1,16 @@
 use std::collections::{HashMap, HashSet};
+use std::fmt::Debug;
 use std::net::{SocketAddr, SocketAddrV4};
 use std::sync::mpsc::SyncSender;
 
+use bencode::BRefAccess;
 use handshake::Handshaker;
 use mio::{EventLoop, Timeout};
 use util::bt::{self, InfoHash, NodeId};
 use util::net;
 use util::sha::ShaHash;
 
+use crate::handshaker_trait::HandshakerTrait;
 use crate::message::announce_peer::{AnnouncePeerRequest, ConnectPort};
 use crate::message::get_peers::{CompactInfoType, GetPeersRequest, GetPeersResponse};
 use crate::routing::bucket;
@@ -73,7 +76,7 @@ impl TableLookup {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> Option<TableLookup>
     where
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         // Pick a buckets worth of nodes and put them into the all_sorted_nodes list
         let mut all_sorted_nodes = Vec::with_capacity(bucket::MAX_BUCKET_SIZE);
@@ -119,17 +122,19 @@ impl TableLookup {
         self.target_id
     }
 
-    pub fn recv_response<'a, H>(
+    pub fn recv_response<'a, H, B>(
         &mut self,
         node: Node,
         trans_id: &TransactionID,
-        msg: GetPeersResponse<'a>,
+        msg: GetPeersResponse<'a, B>,
         table: &RoutingTable,
         out: &SyncSender<(Vec<u8>, SocketAddr)>,
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> LookupStatus
     where
-        H: Handshaker,
+        H: HandshakerTrait,
+        B: BRefAccess<BType = B> + Clone,
+        B::BType: PartialEq + Eq + core::hash::Hash + Debug,
     {
         // Process the message transaction id
         let (dist_to_beat, timeout) = if let Some(lookup) = self.active_lookups.remove(trans_id) {
@@ -253,7 +258,7 @@ impl TableLookup {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> LookupStatus
     where
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         if self.active_lookups.remove(trans_id).is_none() {
             warn!(
@@ -349,7 +354,7 @@ impl TableLookup {
     ) -> LookupStatus
     where
         I: Iterator<Item = (&'a Node, DistanceToBeat)>,
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         // Loop through the given nodes
         let mut messages_sent = 0;
@@ -400,7 +405,7 @@ impl TableLookup {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> LookupStatus
     where
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         // Entering the endgame phase
         self.in_endgame = true;

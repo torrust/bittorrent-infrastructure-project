@@ -1,4 +1,7 @@
-use bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
+use std::fmt::Debug;
+
+use bencode::ext::BConvertExt;
+use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
 use util::bt::NodeId;
 
 use crate::error::{DhtError, DhtErrorKind, DhtResult};
@@ -47,8 +50,12 @@ impl<'a> ResponseValidate<'a> {
         })
     }
 
-    pub fn validate_values<'b>(&self, values: &'b [Bencode<'a>]) -> DhtResult<CompactValueInfo<'b>> {
-        for bencode in values.iter() {
+    pub fn validate_values<'b, B>(&self, values: &'b dyn BListAccess<B::BType>) -> DhtResult<CompactValueInfo<'b, B>>
+    where
+        B: BRefAccess<BType = B> + Clone,
+        B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+    {
+        for bencode in values.into_iter() {
             match bencode.bytes() {
                 Some(_) => (),
                 None => {
@@ -67,13 +74,15 @@ impl<'a> ResponseValidate<'a> {
     }
 }
 
-impl<'a> BencodeConvert for ResponseValidate<'a> {
+impl<'a> BConvert for ResponseValidate<'a> {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
         error.into()
     }
 }
+
+impl<'a> BConvertExt for ResponseValidate<'a> {}
 
 // ----------------------------------------------------------------------------//
 
@@ -88,21 +97,32 @@ pub enum ExpectedResponse {
     None,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum ResponseType<'a> {
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub enum ResponseType<'a, B>
+where
+    B: BRefAccess<BType = B> + Clone,
+    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+{
     Ping(PingResponse<'a>),
     FindNode(FindNodeResponse<'a>),
-    GetPeers(GetPeersResponse<'a>),
+    GetPeers(GetPeersResponse<'a, B>),
     AnnouncePeer(AnnouncePeerResponse<'a>), /* GetData(GetDataResponse<'a>),
                                              * PutData(PutDataResponse<'a>) */
 }
 
-impl<'a> ResponseType<'a> {
+impl<'a, B> ResponseType<'a, B>
+where
+    B: BRefAccess<BType = B> + Clone,
+    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+{
     pub fn from_parts(
-        root: &'a Dictionary<'a, Bencode<'a>>,
+        root: &'a dyn BDictAccess<B::BKey, B>,
         trans_id: &'a [u8],
         rsp_type: ExpectedResponse,
-    ) -> DhtResult<ResponseType<'a>> {
+    ) -> DhtResult<ResponseType<'a, B>>
+    where
+        B: BRefAccess<BType = B>,
+    {
         let validate = ResponseValidate::new(trans_id);
         let rqst_root = r#try!(validate.lookup_and_convert_dict(root, RESPONSE_ARGS_KEY));
 
@@ -116,7 +136,7 @@ impl<'a> ResponseType<'a> {
                 Ok(ResponseType::FindNode(find_node_rsp))
             }
             ExpectedResponse::GetPeers => {
-                let get_peers_rsp = r#try!(GetPeersResponse::from_parts(rqst_root, trans_id));
+                let get_peers_rsp = r#try!(GetPeersResponse::<B>::from_parts(rqst_root, trans_id));
                 Ok(ResponseType::GetPeers(get_peers_rsp))
             }
             ExpectedResponse::AnnouncePeer => {

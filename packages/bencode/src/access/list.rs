@@ -19,6 +19,8 @@ pub trait BListAccess<V> {
 
     /// Get the length of the list.
     fn len(&self) -> usize;
+
+    fn is_empty(&self) -> bool;
 }
 
 impl<'a, V: 'a> Index<usize> for &'a dyn BListAccess<V> {
@@ -98,5 +100,9 @@ impl<V> BListAccess<V> for Vec<V> {
 
     fn len(&self) -> usize {
         Vec::len(self)
+    }
+
+    fn is_empty(&self) -> bool {
+        Vec::is_empty(self)
     }
 }

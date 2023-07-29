@@ -1,4 +1,5 @@
-use bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
+use bencode::ext::BConvertExt;
+use bencode::{BConvert, BDictAccess, BRefAccess, BencodeConvertError};
 use util::bt::{InfoHash, NodeId};
 
 use crate::error::{DhtError, DhtErrorKind, DhtResult};
@@ -55,13 +56,14 @@ impl<'a> RequestValidate<'a> {
     }
 }
 
-impl<'a> BencodeConvert for RequestValidate<'a> {
+impl<'a> BConvert for RequestValidate<'a> {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
         error.into()
     }
 }
+impl<'a> BConvertExt for RequestValidate<'a> {}
 
 // ----------------------------------------------------------------------------//
 
@@ -75,7 +77,10 @@ pub enum RequestType<'a> {
 }
 
 impl<'a> RequestType<'a> {
-    pub fn from_parts(root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8], rqst_type: &str) -> DhtResult<RequestType<'a>> {
+    pub fn from_parts<B>(root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8], rqst_type: &str) -> DhtResult<RequestType<'a>>
+    where
+        B: BRefAccess<BType = B>,
+    {
         let validate = RequestValidate::new(trans_id);
         let rqst_root = r#try!(validate.lookup_and_convert_dict(root, REQUEST_ARGS_KEY));
 
@@ -125,7 +130,10 @@ impl<'a> RequestType<'a> {
 /// Mainline dht extension for forward compatibility.
 ///
 /// Treat unsupported messages with either a target id key or info hash key as find node messages.
-fn forward_compatible_find_node<'a>(rqst_root: &Dictionary<'a, Bencode<'a>>) -> Option<&'static str> {
+fn forward_compatible_find_node<'a, B>(rqst_root: &dyn BDictAccess<B::BKey, B>) -> Option<&'static str>
+where
+    B: BRefAccess,
+{
     match (
         rqst_root.lookup(message::TARGET_ID_KEY.as_bytes()),
         rqst_root.lookup(message::INFO_HASH_KEY.as_bytes()),

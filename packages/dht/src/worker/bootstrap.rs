@@ -6,6 +6,7 @@ use handshake::Handshaker;
 use mio::{EventLoop, Timeout};
 use util::bt::{self, NodeId};
 
+use crate::handshaker_trait::HandshakerTrait;
 use crate::message::find_node::FindNodeRequest;
 use crate::routing::bucket::Bucket;
 use crate::routing::node::{Node, NodeStatus};
@@ -63,7 +64,7 @@ impl TableBootstrap {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> BootstrapStatus
     where
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         // Reset the bootstrap state
         self.active_messages.clear();
@@ -111,7 +112,7 @@ impl TableBootstrap {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> BootstrapStatus
     where
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         // Process the message transaction id
         let timeout = if let Some(t) = self.active_messages.get(trans_id) {
@@ -151,7 +152,7 @@ impl TableBootstrap {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> BootstrapStatus
     where
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         if self.active_messages.remove(trans_id).is_none() {
             warn!(
@@ -177,7 +178,7 @@ impl TableBootstrap {
         event_loop: &mut EventLoop<DhtHandler<H>>,
     ) -> BootstrapStatus
     where
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         let target_id = flip_id_bit_at_index(self.table_id, self.curr_bootstrap_bucket);
 
@@ -244,7 +245,7 @@ impl TableBootstrap {
     ) -> BootstrapStatus
     where
         I: Iterator<Item = &'a Node>,
-        H: Handshaker,
+        H: HandshakerTrait,
     {
         info!("bip_dht: bootstrap::send_bootstrap_requests {}", self.curr_bootstrap_bucket);
 

@@ -1,4 +1,6 @@
 //! Accessing the fields of a Metainfo file.
+use core::hash::Hash;
+use std::fmt::Debug;
 use std::io;
 use std::path::{Path, PathBuf};
 

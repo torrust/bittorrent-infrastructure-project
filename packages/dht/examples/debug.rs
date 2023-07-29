@@ -8,8 +8,8 @@ use std::io::{self, Read};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, ToSocketAddrs};
 use std::thread::{self};
 
-use bip_dht::{DhtBuilder, Router};
-use handshake::Handshaker;
+use dht::handshaker_trait::HandshakerTrait;
+use dht::{DhtBuilder, Router};
 use log::{LogLevel, LogLevelFilter, LogMetadata, LogRecord};
 use util::bt::{InfoHash, PeerId};
 
@@ -32,7 +32,7 @@ struct SimpleHandshaker {
     count: usize,
 }
 
-impl Handshaker for SimpleHandshaker {
+impl HandshakerTrait for SimpleHandshaker {
     /// Type of stream used to receive connections from.
     type MetadataEnvelope = ();
 

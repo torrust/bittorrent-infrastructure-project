@@ -1,7 +1,7 @@
 // We don't really use PingRequests for our current algorithms, but that may change in the future!
 #![allow(unused)]
 
-use bencode::{ben_bytes, ben_map, Bencode, BencodeConvert, Dictionary};
+use bencode::{ben_bytes, ben_map, BConvert, BDictAccess, BRefAccess};
 use util::bt::NodeId;
 
 use crate::error::DhtResult;
@@ -22,7 +22,10 @@ impl<'a> PingRequest<'a> {
         }
     }
 
-    pub fn from_parts(rqst_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<PingRequest<'a>> {
+    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<PingRequest<'a>>
+    where
+        B: BRefAccess,
+    {
         let validate = RequestValidate::new(trans_id);
 
         let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
@@ -68,7 +71,10 @@ impl<'a> PingResponse<'a> {
         }
     }
 
-    pub fn from_parts(rsp_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<PingResponse<'a>> {
+    pub fn from_parts<B>(rsp_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<PingResponse<'a>>
+    where
+        B: BRefAccess,
+    {
         let request = r#try!(PingRequest::from_parts(rsp_root, trans_id));
 
         Ok(PingResponse::new(request.trans_id, request.node_id))

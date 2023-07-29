@@ -1,7 +1,7 @@
 // TODO: Remove this when announces are implemented
 #![allow(unused)]
 
-use bencode::{ben_bytes, ben_int, ben_map, Bencode, BencodeConvert, Dictionary};
+use bencode::{ben_bytes, ben_int, ben_map, BConvert, BDictAccess, BRefAccess};
 use util::bt::{InfoHash, NodeId};
 
 use crate::error::DhtResult;
@@ -45,7 +45,10 @@ impl<'a> AnnouncePeerRequest<'a> {
         }
     }
 
-    pub fn from_parts(rqst_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerRequest<'a>> {
+    pub fn from_parts<B>(rqst_root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerRequest<'a>>
+    where
+        B: BRefAccess,
+    {
         let validate = RequestValidate::new(trans_id);
 
         let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
@@ -130,7 +133,10 @@ impl<'a> AnnouncePeerResponse<'a> {
         }
     }
 
-    pub fn from_parts(rqst_root: &Dictionary<'a, Bencode<'a>>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerResponse<'a>> {
+    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerResponse<'a>>
+    where
+        B: BRefAccess,
+    {
         let validate = RequestValidate::new(&trans_id);
 
         let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));

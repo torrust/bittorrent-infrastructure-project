@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::{cmp, io};
 
-use crossbeam::sync::MsQueue;
+use crossbeam::queue::SegQueue;
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::sync::mpsc::{self, Receiver, Sender};
@@ -65,7 +65,7 @@ where
 
         let (res_send, res_recv) = mpsc::channel(builder.stream_buffer_capacity());
         let peers = Arc::new(Mutex::new(HashMap::new()));
-        let task_queue = Arc::new(MsQueue::new());
+        let task_queue = Arc::new(SegQueue::new());
 
         let sink = PeerManagerSink::new(handle, timer, builder, res_send, peers.clone(), task_queue.clone());
         let stream = PeerManagerStream::new(res_recv, peers, task_queue);
@@ -126,7 +126,7 @@ where
     build: PeerManagerBuilder,
     send: Sender<OPeerManagerMessage<P::Item>>,
     peers: Arc<Mutex<HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>>>,
-    task_queue: Arc<MsQueue<Task>>,
+    task_queue: Arc<SegQueue<Task>>,
 }
 
 impl<P> Clone for PeerManagerSink<P>
@@ -155,7 +155,7 @@ where
         build: PeerManagerBuilder,
         send: Sender<OPeerManagerMessage<P::Item>>,
         peers: Arc<Mutex<HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>>>,
-        task_queue: Arc<MsQueue<Task>>,
+        task_queue: Arc<SegQueue<Task>>,
     ) -> PeerManagerSink<P> {
         PeerManagerSink {
             handle: handle,
@@ -221,7 +221,7 @@ where
 
         if took_lock {
             // Just notify a single person waiting on the lock to reduce contention
-            self.task_queue.try_pop().map(|task| task.notify());
+            self.task_queue.pop().map(|task| task.notify());
         }
 
         result
@@ -269,7 +269,7 @@ where
 
         if took_lock {
             // Just notify a single person waiting on the lock to reduce contention
-            self.task_queue.try_pop().map(|task| task.notify());
+            self.task_queue.pop().map(|task| task.notify());
         }
 
         result
@@ -361,7 +361,7 @@ where
 {
     recv: Receiver<OPeerManagerMessage<P::Item>>,
     peers: Arc<Mutex<HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>>>,
-    task_queue: Arc<MsQueue<Task>>,
+    task_queue: Arc<SegQueue<Task>>,
     opt_pending: Option<Option<OPeerManagerMessage<P::Item>>>,
 }
 
@@ -372,7 +372,7 @@ where
     fn new(
         recv: Receiver<OPeerManagerMessage<P::Item>>,
         peers: Arc<Mutex<HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>>>,
-        task_queue: Arc<MsQueue<Task>>,
+        task_queue: Arc<SegQueue<Task>>,
     ) -> PeerManagerStream<P> {
         PeerManagerStream {
             recv: recv,
@@ -414,7 +414,7 @@ where
 
         if took_lock {
             // Just notify a single person waiting on the lock to reduce contention
-            self.task_queue.try_pop().map(|task| task.notify());
+            self.task_queue.pop().map(|task| task.notify());
         }
 
         result

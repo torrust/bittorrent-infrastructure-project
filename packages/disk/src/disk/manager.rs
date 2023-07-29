@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use crossbeam::sync::MsQueue;
+use crossbeam::queue::SegQueue;
 use futures::sync::mpsc::{self, Receiver};
 use futures::task::{self, Task};
 use futures::{Async, AsyncSink, Poll, Sink, StartSend, Stream};
@@ -28,7 +28,7 @@ impl<F> DiskManager<F> {
 
         let (out_send, out_recv) = mpsc::channel(stream_capacity);
         let context = DiskManagerContext::new(out_send, fs);
-        let task_queue = Arc::new(MsQueue::new());
+        let task_queue = Arc::new(SegQueue::new());
 
         let sink = DiskManagerSink::new(
             pool_builder.create(),
@@ -86,7 +86,7 @@ pub struct DiskManagerSink<F> {
     context: DiskManagerContext<F>,
     max_capacity: usize,
     cur_capacity: Arc<AtomicUsize>,
-    task_queue: Arc<MsQueue<Task>>,
+    task_queue: Arc<SegQueue<Task>>,
 }
 
 impl<F> Clone for DiskManagerSink<F> {
@@ -107,7 +107,7 @@ impl<F> DiskManagerSink<F> {
         context: DiskManagerContext<F>,
         max_capacity: usize,
         cur_capacity: Arc<AtomicUsize>,
-        task_queue: Arc<MsQueue<Task>>,
+        task_queue: Arc<SegQueue<Task>>,
     ) -> DiskManagerSink<F> {
         DiskManagerSink {
             pool: pool,
@@ -177,11 +177,11 @@ where
 pub struct DiskManagerStream {
     recv: Receiver<ODiskMessage>,
     cur_capacity: Arc<AtomicUsize>,
-    task_queue: Arc<MsQueue<Task>>,
+    task_queue: Arc<SegQueue<Task>>,
 }
 
 impl DiskManagerStream {
-    fn new(recv: Receiver<ODiskMessage>, cur_capacity: Arc<AtomicUsize>, task_queue: Arc<MsQueue<Task>>) -> DiskManagerStream {
+    fn new(recv: Receiver<ODiskMessage>, cur_capacity: Arc<AtomicUsize>, task_queue: Arc<SegQueue<Task>>) -> DiskManagerStream {
         DiskManagerStream {
             recv: recv,
             cur_capacity: cur_capacity,
@@ -211,7 +211,7 @@ impl Stream for DiskManagerStream {
 
                 info!("Notifying DiskManager That We Can Submit More Work");
                 loop {
-                    match self.task_queue.try_pop() {
+                    match self.task_queue.pop() {
                         Some(task) => task.notify(),
                         None => {
                             break;
