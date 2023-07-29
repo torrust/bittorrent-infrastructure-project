@@ -2,15 +2,16 @@ use std::io::{self, Cursor};
 use std::net::SocketAddr;
 use std::thread;
 
-use announce::AnnounceRequest;
-use error::ErrorResponse;
 use nom::IResult;
-use request::{self, RequestType, TrackerRequest};
-use response::{ResponseType, TrackerResponse};
-use scrape::ScrapeRequest;
-use server::handler::ServerHandler;
 use umio::external::Sender;
 use umio::{Dispatcher, ELoopBuilder, Provider};
+
+use crate::announce::AnnounceRequest;
+use crate::error::ErrorResponse;
+use crate::request::{self, RequestType, TrackerRequest};
+use crate::response::{ResponseType, TrackerResponse};
+use crate::scrape::ScrapeRequest;
+use crate::server::handler::ServerHandler;
 
 const EXPECTED_PACKET_LENGTH: usize = 1500;
 

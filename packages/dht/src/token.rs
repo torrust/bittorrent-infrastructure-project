@@ -1,11 +1,11 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-use bip_util::convert;
-use bip_util::error::{LengthError, LengthErrorKind, LengthResult};
-use bip_util::net::IpAddr;
-use bip_util::sha::{self, ShaHash};
 use chrono::{DateTime, Duration, UTC};
 use rand;
+use util::convert;
+use util::error::{LengthError, LengthErrorKind, LengthResult};
+use util::net::IpAddr;
+use util::sha::{self, ShaHash};
 
 /// We will partially follow the bittorrent implementation for issuing tokens to nodes, the
 /// secret will change every 10 minutes and tokens up to 10 minutes old will be accepted. This
@@ -196,9 +196,10 @@ fn validate_token_from_addr_v6(v6_addr: Ipv6Addr, token: Token, secret: u32) -> 
 
 #[cfg(test)]
 mod tests {
-    use bip_util::test as bip_test;
     use chrono::Duration;
-    use token::TokenStore;
+    use util::test as bip_test;
+
+    use crate::token::TokenStore;
 
     #[test]
     fn positive_accept_valid_v4_token() {

@@ -1,10 +1,11 @@
 use std::io::Write;
 use std::{io, u8};
 
-use bip_util::bt::{self, InfoHash, PeerId};
-use message::extensions::{self, Extensions};
-use message::protocol::Protocol;
 use nom::IResult;
+use util::bt::{self, InfoHash, PeerId};
+
+use crate::message::extensions::{self, Extensions};
+use crate::message::protocol::Protocol;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct HandshakeMessage {
@@ -92,11 +93,11 @@ fn parse_remote_pid(bytes: &[u8]) -> IResult<&[u8], PeerId> {
 mod tests {
     use std::io::Write;
 
-    use bip_util::bt::{self, InfoHash, PeerId};
-    use message::extensions::{self, Extensions};
-    use message::protocol::Protocol;
+    use util::bt::{self, InfoHash, PeerId};
 
     use super::HandshakeMessage;
+    use crate::message::extensions::{self, Extensions};
+    use crate::message::protocol::Protocol;
 
     fn any_peer_id() -> PeerId {
         [22u8; bt::PEER_ID_LEN].into()

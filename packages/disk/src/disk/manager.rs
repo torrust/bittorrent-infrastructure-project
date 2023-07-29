@@ -2,14 +2,15 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use crossbeam::sync::MsQueue;
-use disk::builder::DiskManagerBuilder;
-use disk::fs::FileSystem;
-use disk::tasks::context::DiskManagerContext;
-use disk::{tasks, IDiskMessage, ODiskMessage};
 use futures::sync::mpsc::{self, Receiver};
 use futures::task::{self, Task};
 use futures::{Async, AsyncSink, Poll, Sink, StartSend, Stream};
 use futures_cpupool::CpuPool;
+
+use crate::disk::builder::DiskManagerBuilder;
+use crate::disk::fs::FileSystem;
+use crate::disk::tasks::context::DiskManagerContext;
+use crate::disk::{tasks, IDiskMessage, ODiskMessage};
 
 /// `DiskManager` object which handles the storage of `Blocks` to the `FileSystem`.
 pub struct DiskManager<F> {

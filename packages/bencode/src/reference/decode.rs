@@ -2,9 +2,9 @@ use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 use std::str::{self};
 
-use error::{BencodeParseError, BencodeParseErrorKind, BencodeParseResult};
-use reference::bencode_ref::{BencodeRef, InnerBencodeRef};
-use reference::decode_opt::BDecodeOpt;
+use crate::error::{BencodeParseError, BencodeParseErrorKind, BencodeParseResult};
+use crate::reference::bencode_ref::{BencodeRef, InnerBencodeRef};
+use crate::reference::decode_opt::BDecodeOpt;
 
 pub fn decode<'a>(bytes: &'a [u8], pos: usize, opts: BDecodeOpt, depth: usize) -> BencodeParseResult<(BencodeRef<'a>, usize)> {
     if depth >= opts.max_recursion() {
@@ -15,19 +15,19 @@ pub fn decode<'a>(bytes: &'a [u8], pos: usize, opts: BDecodeOpt, depth: usize) -
     let curr_byte = r#try!(peek_byte(bytes, pos));
 
     match curr_byte {
-        ::INT_START => {
-            let (bencode, next_pos) = r#try!(decode_int(bytes, pos + 1, ::BEN_END));
+        crate::INT_START => {
+            let (bencode, next_pos) = r#try!(decode_int(bytes, pos + 1, crate::BEN_END));
             Ok((InnerBencodeRef::Int(bencode, &bytes[pos..next_pos]).into(), next_pos))
         }
-        ::LIST_START => {
+        crate::LIST_START => {
             let (bencode, next_pos) = r#try!(decode_list(bytes, pos + 1, opts, depth));
             Ok((InnerBencodeRef::List(bencode, &bytes[pos..next_pos]).into(), next_pos))
         }
-        ::DICT_START => {
+        crate::DICT_START => {
             let (bencode, next_pos) = r#try!(decode_dict(bytes, pos + 1, opts, depth));
             Ok((InnerBencodeRef::Dict(bencode, &bytes[pos..next_pos]).into(), next_pos))
         }
-        ::BYTE_LEN_LOW...::BYTE_LEN_HIGH => {
+        crate::BYTE_LEN_LOW..=crate::BYTE_LEN_HIGH => {
             let (bencode, next_pos) = r#try!(decode_bytes(bytes, pos));
             // Include the length digit, don't increment position
             Ok((InnerBencodeRef::Bytes(bencode, &bytes[pos..next_pos]).into(), next_pos))
@@ -86,7 +86,7 @@ fn decode_int<'a>(bytes: &'a [u8], pos: usize, delim: u8) -> BencodeParseResult<
 }
 
 fn decode_bytes<'a>(bytes: &'a [u8], pos: usize) -> BencodeParseResult<(&'a [u8], usize)> {
-    let (num_bytes, start_pos) = r#try!(decode_int(bytes, pos, ::BYTE_LEN_END));
+    let (num_bytes, start_pos) = r#try!(decode_int(bytes, pos, crate::BYTE_LEN_END));
 
     if num_bytes < 0 {
         return Err(BencodeParseError::from_kind(BencodeParseErrorKind::InvalidLengthNegative {
@@ -120,7 +120,7 @@ fn decode_list<'a>(
     let mut curr_pos = pos;
     let mut curr_byte = r#try!(peek_byte(bytes, curr_pos));
 
-    while curr_byte != ::BEN_END {
+    while curr_byte != crate::BEN_END {
         let (bencode, next_pos) = r#try!(decode(bytes, curr_pos, opts, depth + 1));
 
         bencode_list.push(bencode);
@@ -144,7 +144,7 @@ fn decode_dict<'a>(
     let mut curr_pos = pos;
     let mut curr_byte = r#try!(peek_byte(bytes, curr_pos));
 
-    while curr_byte != ::BEN_END {
+    while curr_byte != crate::BEN_END {
         let (key_bytes, next_pos) = r#try!(decode_bytes(bytes, curr_pos));
 
         // Spec says that the keys must be in alphabetical order
@@ -189,9 +189,9 @@ fn peek_byte(bytes: &[u8], pos: usize) -> BencodeParseResult<u8> {
 mod tests {
     use std::default::Default;
 
-    use access::bencode::BRefAccess;
-    use reference::bencode_ref::BencodeRef;
-    use reference::decode_opt::BDecodeOpt;
+    use crate::access::bencode::BRefAccess;
+    use crate::reference::bencode_ref::BencodeRef;
+    use crate::reference::decode_opt::BDecodeOpt;
 
     // Positive Cases
     const GENERAL: &'static [u8] =
@@ -309,19 +309,19 @@ mod tests {
 
     #[test]
     fn positive_decode_int() {
-        let int_value = super::decode_int(INT, 1, ::BEN_END).unwrap().0;
+        let int_value = super::decode_int(INT, 1, crate::BEN_END).unwrap().0;
         assert_eq!(int_value, 500i64);
     }
 
     #[test]
     fn positive_decode_int_negative() {
-        let int_value = super::decode_int(INT_NEGATIVE, 1, ::BEN_END).unwrap().0;
+        let int_value = super::decode_int(INT_NEGATIVE, 1, crate::BEN_END).unwrap().0;
         assert_eq!(int_value, -500i64);
     }
 
     #[test]
     fn positive_decode_int_zero() {
-        let int_value = super::decode_int(INT_ZERO, 1, ::BEN_END).unwrap().0;
+        let int_value = super::decode_int(INT_ZERO, 1, crate::BEN_END).unwrap().0;
         assert_eq!(int_value, 0i64);
     }
 
@@ -361,31 +361,31 @@ mod tests {
     #[test]
     #[should_panic]
     fn negative_decode_int_nan() {
-        super::decode_int(INT_NAN, 1, ::BEN_END).unwrap().0;
+        super::decode_int(INT_NAN, 1, crate::BEN_END).unwrap().0;
     }
 
     #[test]
     #[should_panic]
     fn negative_decode_int_leading_zero() {
-        super::decode_int(INT_LEADING_ZERO, 1, ::BEN_END).unwrap().0;
+        super::decode_int(INT_LEADING_ZERO, 1, crate::BEN_END).unwrap().0;
     }
 
     #[test]
     #[should_panic]
     fn negative_decode_int_double_zero() {
-        super::decode_int(INT_DOUBLE_ZERO, 1, ::BEN_END).unwrap().0;
+        super::decode_int(INT_DOUBLE_ZERO, 1, crate::BEN_END).unwrap().0;
     }
 
     #[test]
     #[should_panic]
     fn negative_decode_int_negative_zero() {
-        super::decode_int(INT_NEGATIVE_ZERO, 1, ::BEN_END).unwrap().0;
+        super::decode_int(INT_NEGATIVE_ZERO, 1, crate::BEN_END).unwrap().0;
     }
 
     #[test]
     #[should_panic]
     fn negative_decode_int_double_negative() {
-        super::decode_int(INT_DOUBLE_NEGATIVE, 1, ::BEN_END).unwrap().0;
+        super::decode_int(INT_DOUBLE_NEGATIVE, 1, crate::BEN_END).unwrap().0;
     }
 
     #[test]

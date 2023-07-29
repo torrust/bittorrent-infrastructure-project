@@ -3,7 +3,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
-use disk::fs::FileSystem;
+use crate::disk::fs::FileSystem;
 
 // TODO: This should be sanitizing paths passed into it so they don't escape the base directory!!!
 

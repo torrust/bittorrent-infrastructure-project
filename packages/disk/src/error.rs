@@ -1,7 +1,7 @@
 use std::io;
 use std::path::PathBuf;
 
-use bip_util::bt::InfoHash;
+use util::bt::InfoHash;
 
 error_chain! {
     types {

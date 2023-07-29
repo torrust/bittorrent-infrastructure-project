@@ -3,9 +3,10 @@ use std::io::Write;
 
 use byteorder::WriteBytesExt;
 use bytes::{BigEndian, Bytes};
-use message;
-use message::bits_ext;
 use nom::{be_u16, IResult};
+
+use crate::message;
+use crate::message::bits_ext;
 
 /// Message for notifying a peer of our DHT port.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]

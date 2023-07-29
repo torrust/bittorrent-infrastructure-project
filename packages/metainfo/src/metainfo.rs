@@ -2,14 +2,15 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-use accessor::{Accessor, IntoAccessor, PieceAccess};
-use bip_bencode::{BDecodeOpt, BDictAccess, BRefAccess, BencodeRef};
-use bip_util::bt::InfoHash;
-use bip_util::sha::{self, ShaHash};
-use builder::{InfoBuilder, MetainfoBuilder, PieceLength};
-use error::{ParseError, ParseErrorKind, ParseResult};
-use iter::{Files, Pieces};
-use parse;
+use bencode::{BDecodeOpt, BDictAccess, BRefAccess, BencodeRef};
+use util::bt::InfoHash;
+use util::sha::{self, ShaHash};
+
+use crate::accessor::{Accessor, IntoAccessor, PieceAccess};
+use crate::builder::{InfoBuilder, MetainfoBuilder, PieceLength};
+use crate::error::{ParseError, ParseErrorKind, ParseResult};
+use crate::iter::{Files, Pieces};
+use crate::parse;
 
 /// Contains optional metadata for a torrent file.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -310,7 +311,7 @@ fn parse_info_dictionary<'a>(info_bencode: &BencodeRef<'a>) -> ParseResult<Info>
 }
 
 /// Returns whether or not this is a multi file torrent.
-fn is_multi_file_torrent<B>(info_dict: &BDictAccess<B::BKey, B>) -> bool
+fn is_multi_file_torrent<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> bool
 where
     B: BRefAccess,
 {
@@ -350,7 +351,7 @@ pub struct File {
 
 impl File {
     /// Parse the info dictionary and generate a single file File.
-    fn as_single_file<B>(info_dict: &BDictAccess<B::BKey, B>) -> ParseResult<File>
+    fn as_single_file<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<File>
     where
         B: BRefAccess,
     {
@@ -366,7 +367,7 @@ impl File {
     }
 
     /// Parse the file dictionary and generate a multi file File.
-    fn as_multi_file<B>(file_dict: &BDictAccess<B::BKey, B>) -> ParseResult<File>
+    fn as_multi_file<B>(file_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<File>
     where
         B: BRefAccess<BType = B>,
     {
@@ -411,11 +412,12 @@ impl File {
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use bip_bencode::{BMutAccess, BencodeMut};
-    use bip_util::bt::InfoHash;
-    use bip_util::sha;
-    use metainfo::Metainfo;
-    use parse;
+    use bencode::{BMutAccess, BencodeMut};
+    use util::bt::InfoHash;
+    use util::sha;
+
+    use crate::metainfo::Metainfo;
+    use crate::parse;
 
     /// Helper function for manually constructing a metainfo file based on the parameters given.
     ///

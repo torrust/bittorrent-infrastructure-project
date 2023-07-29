@@ -1,11 +1,12 @@
-use bip_bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
-use bip_util::bt::NodeId;
-use error::{DhtError, DhtErrorKind, DhtResult};
-use message::announce_peer::AnnouncePeerResponse;
-use message::compact_info::{CompactNodeInfo, CompactValueInfo};
-use message::find_node::FindNodeResponse;
-use message::get_peers::GetPeersResponse;
-use message::ping::PingResponse;
+use bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
+use util::bt::NodeId;
+
+use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::message::announce_peer::AnnouncePeerResponse;
+use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
+use crate::message::find_node::FindNodeResponse;
+use crate::message::get_peers::GetPeersResponse;
+use crate::message::ping::PingResponse;
 
 pub const RESPONSE_ARGS_KEY: &'static str = "r";
 

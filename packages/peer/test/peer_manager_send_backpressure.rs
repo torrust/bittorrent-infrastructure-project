@@ -1,13 +1,14 @@
-use bip_handshake::Extensions;
-use bip_peer::messages::PeerWireProtocolMessage;
-use bip_peer::protocols::NullProtocol;
-use bip_peer::{IPeerManagerMessage, OPeerManagerMessage, PeerInfo, PeerManagerBuilder};
-use bip_util::bt;
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::{future, AsyncSink, Future};
+use handshake::Extensions;
+use peer::messages::PeerWireProtocolMessage;
+use peer::protocols::NullProtocol;
+use peer::{IPeerManagerMessage, OPeerManagerMessage, PeerInfo, PeerManagerBuilder};
 use tokio_core::reactor::Core;
-use ConnectedChannel;
+use util::bt;
+
+use crate::ConnectedChannel;
 
 #[test]
 fn positive_peer_manager_send_backpressure() {
@@ -18,7 +19,7 @@ fn positive_peer_manager_send_backpressure() {
     let (peer_one, peer_two): (
         ConnectedChannel<PeerWireProtocolMessage<NullProtocol>, PeerWireProtocolMessage<NullProtocol>>,
         ConnectedChannel<PeerWireProtocolMessage<NullProtocol>, PeerWireProtocolMessage<NullProtocol>>,
-    ) = ::connected_channel(5);
+    ) = crate::connected_channel(5);
     let peer_one_info = PeerInfo::new(
         "127.0.0.1:0".parse().unwrap(),
         [0u8; bt::PEER_ID_LEN].into(),

@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 use std::str;
 
-use access::bencode::{BRefAccess, BRefAccessExt, BencodeRefKind};
-use access::dict::BDictAccess;
-use access::list::BListAccess;
-use error::{BencodeParseError, BencodeParseErrorKind, BencodeParseResult};
-use reference::decode;
-use reference::decode_opt::BDecodeOpt;
+use crate::access::bencode::{BRefAccess, BRefAccessExt, BencodeRefKind};
+use crate::access::dict::BDictAccess;
+use crate::access::list::BListAccess;
+use crate::error::{BencodeParseError, BencodeParseErrorKind, BencodeParseResult};
+use crate::reference::decode;
+use crate::reference::decode_opt::BDecodeOpt;
 
 /// Bencode object that holds references to the underlying data.
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
@@ -87,14 +87,14 @@ impl<'a> BRefAccess for BencodeRef<'a> {
         self.bytes_ext()
     }
 
-    fn list(&self) -> Option<&BListAccess<BencodeRef<'a>>> {
+    fn list(&self) -> Option<&dyn BListAccess<BencodeRef<'a>>> {
         match self.inner {
             InnerBencodeRef::List(ref n, _) => Some(n),
             _ => None,
         }
     }
 
-    fn dict(&self) -> Option<&BDictAccess<&'a [u8], BencodeRef<'a>>> {
+    fn dict(&self) -> Option<&dyn BDictAccess<&'a [u8], BencodeRef<'a>>> {
         match self.inner {
             InnerBencodeRef::Dict(ref n, _) => Some(n),
             _ => None,
@@ -127,9 +127,9 @@ impl<'a> BRefAccessExt<'a> for BencodeRef<'a> {
 mod tests {
     use std::default::Default;
 
-    use access::bencode::BRefAccess;
-    use reference::bencode_ref::BencodeRef;
-    use reference::decode_opt::BDecodeOpt;
+    use crate::access::bencode::BRefAccess;
+    use crate::reference::bencode_ref::BencodeRef;
+    use crate::reference::decode_opt::BDecodeOpt;
 
     #[test]
     fn positive_int_buffer() {

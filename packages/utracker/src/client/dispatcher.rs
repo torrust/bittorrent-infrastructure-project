@@ -4,23 +4,24 @@ use std::io::{self, Cursor};
 use std::net::SocketAddr;
 use std::thread;
 
-use announce::{AnnounceRequest, DesiredPeers, SourceIP};
-use bip_handshake::{DiscoveryInfo, InitiateMessage, Protocol};
-use bip_util::bt::PeerId;
 use chrono::offset::Utc;
 use chrono::{DateTime, Duration};
-use client::error::{ClientError, ClientResult};
-use client::{ClientMetadata, ClientRequest, ClientResponse, ClientToken, RequestLimiter};
 use futures::future::Either;
 use futures::sink::{Sink, Wait};
+use handshake::{DiscoveryInfo, InitiateMessage, Protocol};
 use nom::IResult;
-use option::AnnounceOptions;
 use rand;
-use request::{self, RequestType, TrackerRequest};
-use response::{ResponseType, TrackerResponse};
-use scrape::ScrapeRequest;
 use umio::external::{self, Timeout};
 use umio::{Dispatcher, ELoopBuilder, Provider};
+use util::bt::PeerId;
+
+use crate::announce::{AnnounceRequest, DesiredPeers, SourceIP};
+use crate::client::error::{ClientError, ClientResult};
+use crate::client::{ClientMetadata, ClientRequest, ClientResponse, ClientToken, RequestLimiter};
+use crate::option::AnnounceOptions;
+use crate::request::{self, RequestType, TrackerRequest};
+use crate::response::{ResponseType, TrackerResponse};
+use crate::scrape::ScrapeRequest;
 
 const EXPECTED_PACKET_LENGTH: usize = 1500;
 

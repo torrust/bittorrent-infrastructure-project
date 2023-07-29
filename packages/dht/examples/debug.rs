@@ -1,7 +1,7 @@
-extern crate bip_dht;
-extern crate bip_handshake;
-extern crate bip_util;
+extern crate dht;
+extern crate handshake;
 extern crate log;
+extern crate util;
 
 use std::collections::HashSet;
 use std::io::{self, Read};
@@ -9,9 +9,9 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, ToSocketAddrs};
 use std::thread::{self};
 
 use bip_dht::{DhtBuilder, Router};
-use bip_handshake::Handshaker;
-use bip_util::bt::{InfoHash, PeerId};
+use handshake::Handshaker;
 use log::{LogLevel, LogLevelFilter, LogMetadata, LogRecord};
+use util::bt::{InfoHash, PeerId};
 
 struct SimpleLogger;
 

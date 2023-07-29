@@ -1,10 +1,11 @@
 use std::iter::ExactSizeIterator;
 
-use accessor::{Accessor, IntoAccessor};
-use bip_bencode::{BMutAccess, BRefAccess, BencodeMut};
-use bip_util::sha::{self, ShaHash};
-use error::ParseResult;
-use parse;
+use bencode::{BMutAccess, BRefAccess, BencodeMut};
+use util::sha::{self, ShaHash};
+
+use crate::accessor::{Accessor, IntoAccessor};
+use crate::error::ParseResult;
+use crate::parse;
 
 mod buffer;
 mod worker;

@@ -1,9 +1,9 @@
 //! Implementation of the Bittorrent Mainline Distributed Hash Table.
 
 #[macro_use]
-extern crate bip_bencode;
-extern crate bip_handshake;
-extern crate bip_util;
+extern crate bencode;
+extern crate handshake;
+extern crate util;
 
 extern crate crc;
 #[macro_use]
@@ -39,9 +39,10 @@ mod token;
 mod transaction;
 mod worker;
 
-pub use bip_handshake::Handshaker;
+pub use handshake::Handshaker;
 /// Test
-pub use bip_util::bt::{InfoHash, PeerId};
-pub use builder::{DhtBuilder, MainlineDht};
-pub use router::Router;
-pub use worker::{DhtEvent, ShutdownCause};
+pub use util::bt::{InfoHash, PeerId};
+
+pub use crate::builder::{DhtBuilder, MainlineDht};
+pub use crate::router::Router;
+pub use crate::worker::{DhtEvent, ShutdownCause};

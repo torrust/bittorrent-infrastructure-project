@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, Cursor, Read};
 use std::path::{Path, PathBuf};
 
-use bip_util::sha::ShaHash;
+use util::sha::ShaHash;
 use walkdir::{self, DirEntry, WalkDir};
 
 /// Trait for types convertible as a Result into some Accessor.
@@ -65,7 +65,7 @@ where
 /// (though not required).
 pub enum PieceAccess<'a> {
     /// Hash should be computed from the bytes read.
-    Compute(&'a mut Read),
+    Compute(&'a mut dyn Read),
     /// Hash given should be used directly as the next checksum.
     PreComputed(ShaHash),
 }

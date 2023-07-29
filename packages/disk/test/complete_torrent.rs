@@ -1,16 +1,17 @@
-use bip_disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
-use bip_metainfo::{Metainfo, MetainfoBuilder, PieceLength};
+use disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
 use futures::future::Loop;
 use futures::sink::Sink;
 use futures::stream::Stream;
+use metainfo::{Metainfo, MetainfoBuilder, PieceLength};
 use tokio_core::reactor::Core;
-use {InMemoryFileSystem, MultiFileDirectAccessor};
+
+use crate::{InMemoryFileSystem, MultiFileDirectAccessor};
 
 #[test]
 fn positive_complete_torrent() {
     // Create some "files" as random bytes
-    let data_a = (::random_buffer(1023), "/path/to/file/a".into());
-    let data_b = (::random_buffer(2000), "/path/to/file/b".into());
+    let data_a = (crate::random_buffer(1023), "/path/to/file/a".into());
+    let data_b = (crate::random_buffer(2000), "/path/to/file/b".into());
 
     // Create our accessor for our in memory files and create a torrent file for them
     let files_accessor = MultiFileDirectAccessor::new("/my/downloads/".into(), vec![data_a.clone(), data_b.clone()]);
@@ -32,7 +33,7 @@ fn positive_complete_torrent() {
     let mut core = Core::new().unwrap();
 
     // Run a core loop until we get the TorrentAdded message
-    let (good_pieces, recv) = ::core_loop_with_timeout(&mut core, 500, (0, recv), |good_pieces, recv, msg| match msg {
+    let (good_pieces, recv) = crate::core_loop_with_timeout(&mut core, 500, (0, recv), |good_pieces, recv, msg| match msg {
         ODiskMessage::TorrentAdded(_) => Loop::Break((good_pieces, recv)),
         ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue((good_pieces + 1, recv)),
         unexpected @ _ => panic!("Unexpected Message: {:?}", unexpected),
@@ -47,7 +48,7 @@ fn positive_complete_torrent() {
     files_bytes.extend_from_slice(&data_b.0);
 
     // Send piece 0 with a bad last block
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[0..500],
         metainfo_file.info().info_hash(),
@@ -56,7 +57,7 @@ fn positive_complete_torrent() {
         500,
         |_| (),
     );
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[500..1000],
         metainfo_file.info().info_hash(),
@@ -65,7 +66,7 @@ fn positive_complete_torrent() {
         500,
         |_| (),
     );
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[1000..1024],
         metainfo_file.info().info_hash(),
@@ -78,7 +79,7 @@ fn positive_complete_torrent() {
     );
 
     // Send piece 1 with good blocks
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[(1024 + 0)..(1024 + 500)],
         metainfo_file.info().info_hash(),
@@ -87,7 +88,7 @@ fn positive_complete_torrent() {
         500,
         |_| (),
     );
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[(1024 + 500)..(1024 + 1000)],
         metainfo_file.info().info_hash(),
@@ -96,7 +97,7 @@ fn positive_complete_torrent() {
         500,
         |_| (),
     );
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[(1024 + 1000)..(1024 + 1024)],
         metainfo_file.info().info_hash(),
@@ -107,7 +108,7 @@ fn positive_complete_torrent() {
     );
 
     // Send piece 2 with good blocks
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[(2048 + 0)..(2048 + 500)],
         metainfo_file.info().info_hash(),
@@ -116,7 +117,7 @@ fn positive_complete_torrent() {
         500,
         |_| (),
     );
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[(2048 + 500)..(2048 + 975)],
         metainfo_file.info().info_hash(),
@@ -127,7 +128,7 @@ fn positive_complete_torrent() {
     );
 
     // Verify that piece 0 is bad, but piece 1 and 2 are good
-    let (recv, piece_zero_good, piece_one_good, piece_two_good) = ::core_loop_with_timeout(
+    let (recv, piece_zero_good, piece_one_good, piece_two_good) = crate::core_loop_with_timeout(
         &mut core,
         500,
         ((false, false, false, 0), recv),
@@ -165,7 +166,7 @@ fn positive_complete_torrent() {
     assert_eq!(true, piece_two_good);
 
     // Resend piece 0 with good blocks
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[0..500],
         metainfo_file.info().info_hash(),
@@ -174,7 +175,7 @@ fn positive_complete_torrent() {
         500,
         |_| (),
     );
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[500..1000],
         metainfo_file.info().info_hash(),
@@ -183,7 +184,7 @@ fn positive_complete_torrent() {
         500,
         |_| (),
     );
-    ::send_block(
+    crate::send_block(
         &mut blocking_send,
         &files_bytes[1000..1024],
         metainfo_file.info().info_hash(),
@@ -194,7 +195,7 @@ fn positive_complete_torrent() {
     );
 
     // Verify that piece 0 is now good
-    let piece_zero_good = ::core_loop_with_timeout(
+    let piece_zero_good = crate::core_loop_with_timeout(
         &mut core,
         500,
         ((false, 0), recv),

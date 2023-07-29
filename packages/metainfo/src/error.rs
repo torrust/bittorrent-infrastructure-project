@@ -2,7 +2,7 @@
 
 use std::io;
 
-use bip_bencode::{BencodeConvertError, BencodeParseError};
+use bencode::{BencodeConvertError, BencodeParseError};
 use walkdir;
 
 error_chain! {

@@ -3,9 +3,9 @@
 use std::borrow::Cow;
 use std::io::{self, Write};
 
-use bip_util::bt::{self, InfoHash};
-use bip_util::convert;
 use nom::{be_i32, IResult, Needed};
+use util::bt::{self, InfoHash};
+use util::convert;
 
 const SCRAPE_STATS_BYTES: usize = 12;
 
@@ -282,9 +282,9 @@ impl<'a> ExactSizeIterator for ScrapeResponseIter<'a> {
 
 #[cfg(test)]
 mod tests {
-    use bip_util::bt;
     use byteorder::{BigEndian, WriteBytesExt};
     use nom::IResult;
+    use util::bt;
 
     use super::{ScrapeRequest, ScrapeResponse, ScrapeStats};
 

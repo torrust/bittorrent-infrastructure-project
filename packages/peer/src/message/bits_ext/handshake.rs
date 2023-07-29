@@ -3,12 +3,13 @@ use std::io::{self, Write};
 use std::mem;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
-use bip_bencode::{BConvert, BDecodeOpt, BMutAccess, BencodeMut, BencodeRef};
-use bip_util::convert;
+use bencode::{BConvert, BDecodeOpt, BMutAccess, BencodeMut, BencodeRef};
 use bytes::{Bytes, BytesMut};
-use message;
-use message::{bencode, bits_ext};
 use nom::{IResult, Needed};
+use util::convert;
+
+use crate::message;
+use crate::message::{bencode_util, bits_ext};
 
 /// Builder type for an `ExtendedMessage`.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -133,7 +134,7 @@ fn bencode_from_builder(builder: &ExtendedMessageBuilder, mut custom_entries: Ha
             }
         }
 
-        root_map_access.insert(bencode::ID_MAP_KEY.into(), ben_id_map);
+        root_map_access.insert(bencode_util::ID_MAP_KEY.into(), ben_id_map);
 
         for (key, value) in custom_entries.drain() {
             root_map_access.insert(key.into_bytes().into(), value);
@@ -142,23 +143,23 @@ fn bencode_from_builder(builder: &ExtendedMessageBuilder, mut custom_entries: Ha
         builder
             .our_id
             .as_ref()
-            .map(|client_id| root_map_access.insert(bencode::CLIENT_ID_KEY.into(), ben_bytes!(&client_id[..])));
+            .map(|client_id| root_map_access.insert(bencode_util::CLIENT_ID_KEY.into(), ben_bytes!(&client_id[..])));
         builder
             .our_tcp_port
-            .map(|tcp_port| root_map_access.insert(bencode::CLIENT_TCP_PORT_KEY.into(), ben_int!(tcp_port as i64)));
-        opt_our_ip.map(|our_ip| root_map_access.insert(bencode::OUR_IP_KEY.into(), ben_bytes!(our_ip)));
+            .map(|tcp_port| root_map_access.insert(bencode_util::CLIENT_TCP_PORT_KEY.into(), ben_int!(tcp_port as i64)));
+        opt_our_ip.map(|our_ip| root_map_access.insert(bencode_util::OUR_IP_KEY.into(), ben_bytes!(our_ip)));
         opt_client_ipv6_addr.as_ref().map(|client_ipv6_addr| {
-            root_map_access.insert(bencode::CLIENT_IPV6_ADDR_KEY.into(), ben_bytes!(&client_ipv6_addr[..]))
+            root_map_access.insert(bencode_util::CLIENT_IPV6_ADDR_KEY.into(), ben_bytes!(&client_ipv6_addr[..]))
         });
         opt_client_ipv4_addr.as_ref().map(|client_ipv4_addr| {
-            root_map_access.insert(bencode::CLIENT_IPV4_ADDR_KEY.into(), ben_bytes!(&client_ipv4_addr[..]))
+            root_map_access.insert(bencode_util::CLIENT_IPV4_ADDR_KEY.into(), ben_bytes!(&client_ipv4_addr[..]))
         });
         builder.our_max_requests.map(|client_max_requests| {
-            root_map_access.insert(bencode::CLIENT_MAX_REQUESTS_KEY.into(), ben_int!(client_max_requests))
+            root_map_access.insert(bencode_util::CLIENT_MAX_REQUESTS_KEY.into(), ben_int!(client_max_requests))
         });
         builder
             .metadata_size
-            .map(|metadata_size| root_map_access.insert(bencode::METADATA_SIZE_KEY.into(), ben_int!(metadata_size)));
+            .map(|metadata_size| root_map_access.insert(bencode_util::METADATA_SIZE_KEY.into(), ben_int!(metadata_size)));
     }
 
     root_map.encode()
@@ -253,16 +254,16 @@ impl ExtendedMessage {
             let res_extended_message = BencodeRef::decode(&*raw_bencode, BDecodeOpt::default())
                 .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))
                 .and_then(|bencode| {
-                    let ben_dict = r#try!(bencode::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY));
+                    let ben_dict = r#try!(bencode_util::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY));
 
-                    let id_map = bencode::parse_id_map(ben_dict);
-                    let our_id = bencode::parse_client_id(ben_dict);
-                    let our_tcp_port = bencode::parse_client_tcp_port(ben_dict);
-                    let their_ip = bencode::parse_our_ip(ben_dict);
-                    let our_ipv6_addr = bencode::parse_client_ipv6_addr(ben_dict);
-                    let our_ipv4_addr = bencode::parse_client_ipv4_addr(ben_dict);
-                    let our_max_requests = bencode::parse_client_max_requests(ben_dict);
-                    let metadata_size = bencode::parse_metadata_size(ben_dict);
+                    let id_map = bencode_util::parse_id_map(ben_dict);
+                    let our_id = bencode_util::parse_client_id(ben_dict);
+                    let our_tcp_port = bencode_util::parse_client_tcp_port(ben_dict);
+                    let their_ip = bencode_util::parse_our_ip(ben_dict);
+                    let our_ipv6_addr = bencode_util::parse_client_ipv6_addr(ben_dict);
+                    let our_ipv4_addr = bencode_util::parse_client_ipv4_addr(ben_dict);
+                    let our_max_requests = bencode_util::parse_client_max_requests(ben_dict);
+                    let metadata_size = bencode_util::parse_metadata_size(ben_dict);
 
                     Ok(ExtendedMessage {
                         id_map: id_map,

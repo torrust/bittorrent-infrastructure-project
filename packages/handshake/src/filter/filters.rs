@@ -1,10 +1,10 @@
 use std::sync::{Arc, RwLock};
 
-use filter::HandshakeFilter;
+use crate::filter::HandshakeFilter;
 
 #[derive(Clone)]
 pub struct Filters {
-    filters: Arc<RwLock<Vec<Box<HandshakeFilter + Send + Sync>>>>,
+    filters: Arc<RwLock<Vec<Box<dyn HandshakeFilter + Send + Sync>>>>,
 }
 
 impl Filters {
@@ -48,7 +48,7 @@ impl Filters {
 
     pub fn access_filters<B>(&self, block: B)
     where
-        B: FnOnce(&[Box<HandshakeFilter + Send + Sync>]),
+        B: FnOnce(&[Box<dyn HandshakeFilter + Send + Sync>]),
     {
         self.read_filters(|ref_filters| block(ref_filters))
     }
@@ -61,7 +61,7 @@ impl Filters {
 
     fn read_filters<B, R>(&self, block: B) -> R
     where
-        B: FnOnce(&[Box<HandshakeFilter + Send + Sync>]) -> R,
+        B: FnOnce(&[Box<dyn HandshakeFilter + Send + Sync>]) -> R,
     {
         let ref_filters = self
             .filters
@@ -74,7 +74,7 @@ impl Filters {
 
     fn write_filters<B, R>(&self, block: B) -> R
     where
-        B: FnOnce(&mut Vec<Box<HandshakeFilter + Send + Sync>>) -> R,
+        B: FnOnce(&mut Vec<Box<dyn HandshakeFilter + Send + Sync>>) -> R,
     {
         let mut mut_filters = self
             .filters
@@ -86,7 +86,7 @@ impl Filters {
     }
 }
 
-fn check_index<F>(ref_filters: &[Box<HandshakeFilter + Send + Sync>], filter: &F) -> Option<usize>
+fn check_index<F>(ref_filters: &[Box<dyn HandshakeFilter + Send + Sync>], filter: &F) -> Option<usize>
 where
     F: HandshakeFilter + PartialEq + Eq + 'static,
 {
@@ -110,9 +110,10 @@ pub mod test_filters {
     use std::any::Any;
     use std::net::SocketAddr;
 
-    use bip_util::bt::PeerId;
-    use filter::{FilterDecision, HandshakeFilter};
-    use message::protocol::Protocol;
+    use util::bt::PeerId;
+
+    use crate::filter::{FilterDecision, HandshakeFilter};
+    use crate::message::protocol::Protocol;
 
     #[derive(PartialEq, Eq)]
     pub struct BlockAddrFilter {
@@ -126,7 +127,7 @@ pub mod test_filters {
     }
 
     impl HandshakeFilter for BlockAddrFilter {
-        fn as_any(&self) -> &Any {
+        fn as_any(&self) -> &dyn Any {
             self
         }
 
@@ -153,7 +154,7 @@ pub mod test_filters {
     }
 
     impl HandshakeFilter for BlockProtocolFilter {
-        fn as_any(&self) -> &Any {
+        fn as_any(&self) -> &dyn Any {
             self
         }
 
@@ -180,7 +181,7 @@ pub mod test_filters {
     }
 
     impl HandshakeFilter for BlockPeerIdFilter {
-        fn as_any(&self) -> &Any {
+        fn as_any(&self) -> &dyn Any {
             self
         }
 

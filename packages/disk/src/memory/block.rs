@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
-use bip_util::bt::{self, InfoHash};
 use bytes::{Bytes, BytesMut};
+use util::bt::{self, InfoHash};
 
 //----------------------------------------------------------------------------//
 

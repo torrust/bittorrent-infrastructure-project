@@ -3,8 +3,9 @@ use std::time::Duration;
 
 use futures::sink::Sink;
 use futures::stream::Stream;
-use manager::{ManagedMessage, PeerManager};
 use tokio_core::reactor::Handle;
+
+use crate::manager::{ManagedMessage, PeerManager};
 
 const DEFAULT_PEER_CAPACITY: usize = 1000;
 const DEFAULT_SINK_BUFFER_CAPACITY: usize = 100;

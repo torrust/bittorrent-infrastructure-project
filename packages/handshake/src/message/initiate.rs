@@ -1,7 +1,8 @@
 use std::net::SocketAddr;
 
-use bip_util::bt::InfoHash;
-use message::protocol::Protocol;
+use util::bt::InfoHash;
+
+use crate::message::protocol::Protocol;
 
 /// Message used to initiate a handshake with the `Handshaker`.
 #[derive(PartialEq, Eq, Debug, Clone)]

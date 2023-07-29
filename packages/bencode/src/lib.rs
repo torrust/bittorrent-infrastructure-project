@@ -5,10 +5,10 @@
 //! Decoding bencoded data:
 //!
 //! ```rust
-//!     extern crate bip_bencode;
+//!     extern crate bencode;
 //!
 //!     use std::default::Default;
-//!     use bip_bencode::{BencodeRef, BRefAccess, BDecodeOpt};
+//!     use bencode::{BencodeRef, BRefAccess, BDecodeOpt};
 //!
 //!     fn main() {
 //!         let data = b"d12:lucky_numberi7ee";
@@ -23,7 +23,7 @@
 //!
 //! ```rust
 //!     #[macro_use]
-//!     extern crate bip_bencode;
+//!     extern crate bencode;
 //!
 //!     fn main() {
 //!         let message = (ben_map!{
@@ -46,26 +46,26 @@ mod reference;
 
 /// Traits for implementation functionality.
 pub mod inner {
-    pub use cow::BCowConvert;
+    pub use crate::cow::BCowConvert;
 }
 
 /// Traits for extended functionality.
 pub mod ext {
-    pub use access::bencode::BRefAccessExt;
-    pub use access::convert::BConvertExt;
+    pub use crate::access::bencode::BRefAccessExt;
+    pub use crate::access::convert::BConvertExt;
 }
 
-pub use access::bencode::{BMutAccess, BRefAccess, BencodeMutKind, BencodeRefKind};
-pub use access::convert::BConvert;
-pub use access::dict::BDictAccess;
-pub use access::list::BListAccess;
-pub use error::{
+pub use crate::access::bencode::{BMutAccess, BRefAccess, BencodeMutKind, BencodeRefKind};
+pub use crate::access::convert::BConvert;
+pub use crate::access::dict::BDictAccess;
+pub use crate::access::list::BListAccess;
+pub use crate::error::{
     BencodeConvertError, BencodeConvertErrorKind, BencodeConvertResult, BencodeParseError, BencodeParseErrorKind,
     BencodeParseResult,
 };
-pub use mutable::bencode_mut::BencodeMut;
-pub use reference::bencode_ref::BencodeRef;
-pub use reference::decode_opt::BDecodeOpt;
+pub use crate::mutable::bencode_mut::BencodeMut;
+pub use crate::reference::bencode_ref::BencodeRef;
+pub use crate::reference::decode_opt::BDecodeOpt;
 
 const BEN_END: u8 = b'e';
 const DICT_START: u8 = b'd';
@@ -81,8 +81,8 @@ const BYTE_LEN_END: u8 = b':';
 macro_rules! ben_map {
 ( $($key:expr => $val:expr),* ) => {
         {
-            use bip_bencode::{BMutAccess, BencodeMut};
-            use bip_bencode::inner::BCowConvert;
+            use bencode::{BMutAccess, BencodeMut};
+            use bencode::inner::BCowConvert;
 
             let mut bencode_map = BencodeMut::new_dict();
             {
@@ -102,7 +102,7 @@ macro_rules! ben_map {
 macro_rules! ben_list {
     ( $($ben:expr),* ) => {
         {
-            use bip_bencode::{BencodeMut, BMutAccess};
+            use bencode::{BencodeMut, BMutAccess};
 
             let mut bencode_list = BencodeMut::new_list();
             {
@@ -121,8 +121,8 @@ macro_rules! ben_list {
 #[macro_export]
 macro_rules! ben_bytes {
     ( $ben:expr ) => {{
-        use bip_bencode::inner::BCowConvert;
-        use bip_bencode::BencodeMut;
+        use bencode::inner::BCowConvert;
+        use bencode::BencodeMut;
 
         BencodeMut::new_bytes(BCowConvert::convert($ben))
     }};
@@ -132,7 +132,7 @@ macro_rules! ben_bytes {
 #[macro_export]
 macro_rules! ben_int {
     ( $ben:expr ) => {{
-        use bip_bencode::BencodeMut;
+        use bencode::BencodeMut;
 
         BencodeMut::new_int($ben)
     }};

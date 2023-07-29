@@ -1,6 +1,6 @@
-extern crate bip_util;
 extern crate bytes;
 extern crate futures;
+extern crate util;
 #[macro_use]
 extern crate nom;
 extern crate rand;
@@ -17,20 +17,20 @@ mod local_addr;
 mod message;
 mod transport;
 
-pub use discovery::DiscoveryInfo;
-pub use filter::{FilterDecision, HandshakeFilter, HandshakeFilters};
-pub use handshake::config::HandshakerConfig;
-pub use handshake::handshaker::{Handshaker, HandshakerBuilder, HandshakerSink, HandshakerStream};
-pub use local_addr::LocalAddr;
-pub use message::complete::CompleteMessage;
-pub use message::extensions::{Extension, Extensions};
-pub use message::initiate::InitiateMessage;
-pub use message::protocol::Protocol;
-pub use transport::Transport;
+pub use crate::discovery::DiscoveryInfo;
+pub use crate::filter::{FilterDecision, HandshakeFilter, HandshakeFilters};
+pub use crate::handshake::config::HandshakerConfig;
+pub use crate::handshake::handshaker::{Handshaker, HandshakerBuilder, HandshakerSink, HandshakerStream};
+pub use crate::local_addr::LocalAddr;
+pub use crate::message::complete::CompleteMessage;
+pub use crate::message::extensions::{Extension, Extensions};
+pub use crate::message::initiate::InitiateMessage;
+pub use crate::message::protocol::Protocol;
+pub use crate::transport::Transport;
 
 /// Built in objects implementing `Transport`.
 pub mod transports {
-    pub use transport::{TcpListenerStream, TcpTransport};
+    pub use crate::transport::{TcpListenerStream, TcpTransport};
 }
 
-pub use bip_util::bt::{InfoHash, PeerId};
+pub use util::bt::{InfoHash, PeerId};

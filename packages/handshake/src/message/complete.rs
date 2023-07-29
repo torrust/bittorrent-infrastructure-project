@@ -1,8 +1,9 @@
 use std::net::SocketAddr;
 
-use bip_util::bt::{InfoHash, PeerId};
-use message::extensions::Extensions;
-use message::protocol::Protocol;
+use util::bt::{InfoHash, PeerId};
+
+use crate::message::extensions::Extensions;
+use crate::message::protocol::Protocol;
 
 /// Message containing completed handshaking information.
 pub struct CompleteMessage<S> {

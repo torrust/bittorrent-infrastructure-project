@@ -1,6 +1,7 @@
-use disk::fs::FileSystem;
-use disk::manager::DiskManager;
 use futures_cpupool::Builder;
+
+use crate::disk::fs::FileSystem;
+use crate::disk::manager::DiskManager;
 
 const DEFAULT_PENDING_SIZE: usize = 10;
 const DEFAULT_COMPLETED_SIZE: usize = 10;

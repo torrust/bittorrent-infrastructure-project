@@ -4,10 +4,11 @@ use std::net::SocketAddr;
 use futures::future::Future;
 use futures::stream::Stream;
 use futures::Poll;
-use local_addr::LocalAddr;
 use tokio_core::net::{Incoming, TcpListener, TcpStream, TcpStreamNew};
 use tokio_core::reactor::Handle;
 use tokio_io::{AsyncRead, AsyncWrite};
+
+use crate::local_addr::LocalAddr;
 
 /// Trait for initializing connections over an abstract `Transport`.
 pub trait Transport {
@@ -92,10 +93,10 @@ pub mod test_transports {
     use futures::future::{self, FutureResult};
     use futures::stream::{self, Empty, Stream};
     use futures::Poll;
-    use local_addr::LocalAddr;
     use tokio_core::reactor::Handle;
 
     use super::Transport;
+    use crate::local_addr::LocalAddr;
 
     pub struct MockTransport;
 

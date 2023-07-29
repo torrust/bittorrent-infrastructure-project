@@ -2,12 +2,13 @@ use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::mpsc;
 
-use bip_handshake::Handshaker;
-use bip_util::bt::InfoHash;
+use handshake::Handshaker;
 use mio;
-use router::Router;
-use routing::table::{self, RoutingTable};
-use transaction::TransactionID;
+use util::bt::InfoHash;
+
+use crate::router::Router;
+use crate::routing::table::{self, RoutingTable};
+use crate::transaction::TransactionID;
 
 pub mod bootstrap;
 pub mod handler;

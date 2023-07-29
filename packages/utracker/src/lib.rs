@@ -7,11 +7,11 @@
 // For nom...
 #![allow(unused)]
 
-extern crate bip_handshake;
-extern crate bip_util;
 extern crate byteorder;
 extern crate chrono;
 extern crate futures;
+extern crate handshake;
+extern crate util;
 #[macro_use]
 extern crate nom;
 extern crate rand;
@@ -35,8 +35,9 @@ pub mod scrape;
 mod client;
 mod server;
 
-pub use bip_util::bt::{InfoHash, PeerId};
-pub use client::error::{ClientError, ClientResult};
-pub use client::{ClientMetadata, ClientRequest, ClientResponse, ClientToken, TrackerClient};
-pub use server::handler::{ServerHandler, ServerResult};
-pub use server::TrackerServer;
+pub use util::bt::{InfoHash, PeerId};
+
+pub use crate::client::error::{ClientError, ClientResult};
+pub use crate::client::{ClientMetadata, ClientRequest, ClientResponse, ClientToken, TrackerClient};
+pub use crate::server::handler::{ServerHandler, ServerResult};
+pub use crate::server::TrackerServer;

@@ -1,10 +1,11 @@
-use bip_peer::messages::builders::ExtendedMessageBuilder;
-use discovery::error::DiscoveryError;
-use discovery::{IDiscoveryMessage, ODiscoveryMessage};
-use error::UberError;
-use extended::{ExtendedListener, ExtendedModule, IExtendedMessage, OExtendedMessage};
 use futures::{Async, AsyncSink, Poll, Sink, StartSend, Stream};
-use ControlMessage;
+use peer::messages::builders::ExtendedMessageBuilder;
+
+use crate::discovery::error::DiscoveryError;
+use crate::discovery::{IDiscoveryMessage, ODiscoveryMessage};
+use crate::error::UberError;
+use crate::extended::{ExtendedListener, ExtendedModule, IExtendedMessage, OExtendedMessage};
+use crate::ControlMessage;
 
 trait DiscoveryTrait:
     ExtendedListener
@@ -44,7 +45,7 @@ pub struct UberModuleBuilder {
     // TODO: Remove these bounds when something like https://github.com/rust-lang/rust/pull/45047 lands
     discovery: Vec<
         Box<
-            DiscoveryTrait<
+            dyn DiscoveryTrait<
                 SinkItem = IDiscoveryMessage,
                 SinkError = DiscoveryError,
                 Item = ODiscoveryMessage,
@@ -83,7 +84,7 @@ impl UberModuleBuilder {
     {
         self.discovery.push(Box::new(module)
             as Box<
-                DiscoveryTrait<
+                dyn DiscoveryTrait<
                     SinkItem = IDiscoveryMessage,
                     SinkError = DiscoveryError,
                     Item = ODiscoveryMessage,
@@ -124,7 +125,7 @@ impl<T> IsReady for Async<T> {
 pub struct UberModule {
     discovery: Vec<
         Box<
-            DiscoveryTrait<
+            dyn DiscoveryTrait<
                 SinkItem = IDiscoveryMessage,
                 SinkError = DiscoveryError,
                 Item = ODiscoveryMessage,

@@ -3,21 +3,22 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::Write;
 use std::time::Duration;
 
-use bip_handshake::InfoHash;
-use bip_metainfo::{Info, Metainfo};
-use bip_peer::messages::builders::ExtendedMessageBuilder;
-use bip_peer::messages::{
-    ExtendedMessage, ExtendedType, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
-};
-use bip_peer::PeerInfo;
 use bytes::BytesMut;
-use discovery::error::{DiscoveryError, DiscoveryErrorKind};
-use discovery::{IDiscoveryMessage, ODiscoveryMessage};
-use extended::{ExtendedListener, ExtendedPeerInfo};
 use futures::task::Task;
 use futures::{task, Async, AsyncSink, Poll, Sink, StartSend, Stream};
+use handshake::InfoHash;
+use metainfo::{Info, Metainfo};
+use peer::messages::builders::ExtendedMessageBuilder;
+use peer::messages::{
+    ExtendedMessage, ExtendedType, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
+};
+use peer::PeerInfo;
 use rand::{self, Rng};
-use ControlMessage;
+
+use crate::discovery::error::{DiscoveryError, DiscoveryErrorKind};
+use crate::discovery::{IDiscoveryMessage, ODiscoveryMessage};
+use crate::extended::{ExtendedListener, ExtendedPeerInfo};
+use crate::ControlMessage;
 
 const REQUEST_TIMEOUT_MILLIS: u64 = 2000;
 const MAX_REQUEST_SIZE: usize = 16 * 1024;
@@ -236,7 +237,7 @@ impl UtMetadataModule {
 
                 pending.left -= 1;
                 (&mut pending.bytes.as_mut_slice()[data_offset..])
-                    .write(data.data().as_ref())
+                    .write_all(data.data().as_ref())
                     .unwrap();
             }
         }

@@ -3,16 +3,17 @@ use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use announce::{AnnounceResponse, ClientState};
-use bip_handshake::{DiscoveryInfo, InitiateMessage};
-use bip_util::bt::InfoHash;
-use bip_util::trans::{LocallyShuffledIds, TransactionIds};
-use client::dispatcher::DispatchMessage;
-use client::error::ClientResult;
 use futures::future::Either;
 use futures::sink::Sink;
-use scrape::ScrapeResponse;
+use handshake::{DiscoveryInfo, InitiateMessage};
 use umio::external::Sender;
+use util::bt::InfoHash;
+use util::trans::{LocallyShuffledIds, TransactionIds};
+
+use crate::announce::{AnnounceResponse, ClientState};
+use crate::client::dispatcher::DispatchMessage;
+use crate::client::error::ClientResult;
+use crate::scrape::ScrapeResponse;
 
 mod dispatcher;
 pub mod error;

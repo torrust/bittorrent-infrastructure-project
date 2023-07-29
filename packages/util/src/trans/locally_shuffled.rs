@@ -2,7 +2,8 @@ use std::num::Wrapping;
 use std::ops::Add;
 
 use num::{Bounded, One, Zero};
-use trans::{SequentialIds, TransactionIds};
+
+use crate::trans::{SequentialIds, TransactionIds};
 
 const TRANSACTION_ID_PREALLOC_LEN: usize = 2048;
 
@@ -66,7 +67,7 @@ where
             num_ids_generated += 1;
         }
 
-        ::fisher_shuffle(&mut self.stored_ids[..]);
+        crate::fisher_shuffle(&mut self.stored_ids[..]);
     }
 }
 
@@ -86,9 +87,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use trans::TransactionIds;
-
     use super::LocallyShuffledIds;
+    use crate::trans::TransactionIds;
 
     #[test]
     fn positive_single_prealloc_u8_overflow() {

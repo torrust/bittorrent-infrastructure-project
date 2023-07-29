@@ -3,8 +3,9 @@
 use std::io;
 
 use bytes::{BufMut, BytesMut};
-use protocol::PeerProtocol;
 use tokio_io::codec::{Decoder, Encoder};
+
+use crate::protocol::PeerProtocol;
 
 /// Codec operating over some `PeerProtocol`.
 pub struct PeerProtocolCodec<P> {
@@ -79,10 +80,10 @@ mod tests {
     use std::io::{self, Write};
 
     use bytes::{Bytes, BytesMut};
-    use protocol::PeerProtocol;
     use tokio_io::codec::Decoder;
 
     use super::PeerProtocolCodec;
+    use crate::protocol::PeerProtocol;
 
     struct ConsumeProtocol;
 

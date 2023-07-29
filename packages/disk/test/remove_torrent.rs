@@ -1,18 +1,19 @@
-use bip_disk::{Block, BlockMetadata, DiskManagerBuilder, IDiskMessage, ODiskMessage};
-use bip_metainfo::{Metainfo, MetainfoBuilder, PieceLength};
 use bytes::BytesMut;
+use disk::{Block, BlockMetadata, DiskManagerBuilder, IDiskMessage, ODiskMessage};
 use futures::future::Loop;
 use futures::sink::Sink;
 use futures::stream::Stream;
+use metainfo::{Metainfo, MetainfoBuilder, PieceLength};
 use tokio_core::reactor::Core;
-use {InMemoryFileSystem, MultiFileDirectAccessor};
+
+use crate::{InMemoryFileSystem, MultiFileDirectAccessor};
 
 #[test]
 fn positive_remove_torrent() {
     // Create some "files" as random bytes
-    let data_a = (::random_buffer(50), "/path/to/file/a".into());
-    let data_b = (::random_buffer(2000), "/path/to/file/b".into());
-    let data_c = (::random_buffer(0), "/path/to/file/c".into());
+    let data_a = (crate::random_buffer(50), "/path/to/file/a".into());
+    let data_b = (crate::random_buffer(2000), "/path/to/file/b".into());
+    let data_c = (crate::random_buffer(0), "/path/to/file/c".into());
 
     // Create our accessor for our in memory files and create a torrent file for them
     let files_accessor =
@@ -35,7 +36,7 @@ fn positive_remove_torrent() {
     // Verify that zero pieces are marked as good
     let mut core = Core::new().unwrap();
 
-    let (mut blocking_send, good_pieces, recv) = ::core_loop_with_timeout(
+    let (mut blocking_send, good_pieces, recv) = crate::core_loop_with_timeout(
         &mut core,
         500,
         ((blocking_send, 0), recv),
@@ -59,7 +60,7 @@ fn positive_remove_torrent() {
 
     blocking_send.send(IDiskMessage::ProcessBlock(process_block)).unwrap();
 
-    ::core_loop_with_timeout(&mut core, 500, ((), recv), |_, _, msg| match msg {
+    crate::core_loop_with_timeout(&mut core, 500, ((), recv), |_, _, msg| match msg {
         ODiskMessage::ProcessBlockError(_, _) => Loop::Break(()),
         unexpected => panic!("Unexpected Message: {:?}", unexpected),
     });

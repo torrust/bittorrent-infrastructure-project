@@ -1,9 +1,10 @@
 //! Module for piece revelation.
 
-use bip_handshake::InfoHash;
-use bip_peer::messages::{BitFieldMessage, HaveMessage};
-use bip_peer::PeerInfo;
-use ControlMessage;
+use handshake::InfoHash;
+use peer::messages::{BitFieldMessage, HaveMessage};
+use peer::PeerInfo;
+
+use crate::ControlMessage;
 
 pub mod error;
 

@@ -1,11 +1,12 @@
 use std::io::{self, Write};
 
-use bip_bencode::{BConvert, BDecodeOpt, BencodeRef};
+use bencode::{BConvert, BDecodeOpt, BencodeRef};
 use byteorder::{BigEndian, WriteBytesExt};
 use bytes::Bytes;
-use message::{self, bencode, bits_ext, ExtendedMessage, ExtendedType, PeerWireProtocolMessage};
 use nom::{be_u32, be_u8, ErrorKind, IResult};
-use protocol::PeerProtocol;
+
+use crate::message::{self, bencode_util, bits_ext, ExtendedMessage, ExtendedType, PeerWireProtocolMessage};
+use crate::protocol::PeerProtocol;
 
 const EXTENSION_HEADER_LEN: usize = message::HEADER_LEN + 1;
 

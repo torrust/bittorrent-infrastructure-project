@@ -1,11 +1,12 @@
 // TODO: Remove this when announces are implemented
 #![allow(unused)]
 
-use bip_bencode::{Bencode, BencodeConvert, Dictionary};
-use bip_util::bt::{InfoHash, NodeId};
-use error::DhtResult;
-use message;
-use message::request::{self, RequestValidate};
+use bencode::{ben_bytes, ben_int, ben_map, Bencode, BencodeConvert, Dictionary};
+use util::bt::{InfoHash, NodeId};
+
+use crate::error::DhtResult;
+use crate::message;
+use crate::message::request::{self, RequestValidate};
 
 const PORT_KEY: &'static str = "port";
 const IMPLIED_PORT_KEY: &'static str = "implied_port";

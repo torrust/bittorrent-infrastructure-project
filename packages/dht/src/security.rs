@@ -3,10 +3,10 @@
 
 use std::net::Ipv4Addr;
 
-use bip_util::bt::{self, NodeId};
-use bip_util::convert;
 use crc::crc32;
 use rand;
+use util::bt::{self, NodeId};
+use util::convert;
 
 const IPV4_MASK: u32 = 0x030F3FFF;
 const IPV6_MASK: u64 = 0x0103070F1F3F7FFF;

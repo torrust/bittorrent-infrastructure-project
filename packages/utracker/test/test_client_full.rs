@@ -1,11 +1,12 @@
 use std::mem;
 
-use bip_util::bt::{self};
-use bip_utracker::announce::{AnnounceEvent, ClientState};
-use bip_utracker::{ClientRequest, TrackerClient};
 use futures::stream::Stream;
 use futures::Future;
-use handshaker;
+use util::bt::{self};
+use utracker::announce::{AnnounceEvent, ClientState};
+use utracker::{ClientRequest, TrackerClient};
+
+use crate::handshaker;
 
 #[test]
 #[allow(unused)]

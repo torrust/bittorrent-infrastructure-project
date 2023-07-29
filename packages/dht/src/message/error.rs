@@ -3,9 +3,10 @@
 
 use std::borrow::Cow;
 
-use bip_bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
-use error::{DhtError, DhtErrorKind, DhtResult};
-use message;
+use bencode::{ben_bytes, ben_int, ben_list, ben_map, Bencode, BencodeConvert, BencodeConvertError, Dictionary};
+
+use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::message;
 
 const ERROR_ARGS_KEY: &'static str = "e";
 const NUM_ERROR_ARGS: usize = 2;

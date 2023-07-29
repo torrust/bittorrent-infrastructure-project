@@ -2,9 +2,10 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::{io, str};
 
-use bip_bencode::{BConvert, BDictAccess, BRefAccess, BencodeConvertError};
-use bip_util::convert;
-use message::bits_ext::ExtendedType;
+use bencode::{BConvert, BDictAccess, BRefAccess, BencodeConvertError};
+use util::convert;
+
+use crate::message::bits_ext::ExtendedType;
 
 pub const CONVERT: IoErrorBencodeConvert = IoErrorBencodeConvert;
 
@@ -29,7 +30,7 @@ pub const CLIENT_IPV4_ADDR_KEY: &'static [u8] = b"ipv4";
 pub const CLIENT_MAX_REQUESTS_KEY: &'static [u8] = b"reqq";
 pub const METADATA_SIZE_KEY: &'static [u8] = b"metadata_size";
 
-pub fn parse_id_map<K, V>(root: &BDictAccess<K, V>) -> HashMap<ExtendedType, u8>
+pub fn parse_id_map<K, V>(root: &dyn BDictAccess<K, V>) -> HashMap<ExtendedType, u8>
 where
     V: BRefAccess,
     V::BKey: AsRef<[u8]>,
@@ -50,7 +51,7 @@ where
     id_map
 }
 
-pub fn parse_client_id<K, V>(root: &BDictAccess<K, V>) -> Option<String>
+pub fn parse_client_id<K, V>(root: &dyn BDictAccess<K, V>) -> Option<String>
 where
     V: BRefAccess,
 {
@@ -60,7 +61,7 @@ where
         .ok()
 }
 
-pub fn parse_client_tcp_port<K, V>(root: &BDictAccess<K, V>) -> Option<u16>
+pub fn parse_client_tcp_port<K, V>(root: &dyn BDictAccess<K, V>) -> Option<u16>
 where
     V: BRefAccess,
 {
@@ -70,7 +71,7 @@ where
         .and_then(|port| if port as u16 as i64 == port { Some(port as u16) } else { None })
 }
 
-pub fn parse_our_ip<K, V>(root: &BDictAccess<K, V>) -> Option<IpAddr>
+pub fn parse_our_ip<K, V>(root: &dyn BDictAccess<K, V>) -> Option<IpAddr>
 where
     V: BRefAccess,
 {
@@ -85,7 +86,7 @@ where
     })
 }
 
-pub fn parse_client_ipv6_addr<K, V>(root: &BDictAccess<K, V>) -> Option<Ipv6Addr>
+pub fn parse_client_ipv6_addr<K, V>(root: &dyn BDictAccess<K, V>) -> Option<Ipv6Addr>
 where
     V: BRefAccess,
 {
@@ -101,7 +102,7 @@ where
         })
 }
 
-pub fn parse_client_ipv4_addr<K, V>(root: &BDictAccess<K, V>) -> Option<Ipv4Addr>
+pub fn parse_client_ipv4_addr<K, V>(root: &dyn BDictAccess<K, V>) -> Option<Ipv4Addr>
 where
     V: BRefAccess,
 {
@@ -117,14 +118,14 @@ where
         })
 }
 
-pub fn parse_client_max_requests<K, V>(root: &BDictAccess<K, V>) -> Option<i64>
+pub fn parse_client_max_requests<K, V>(root: &dyn BDictAccess<K, V>) -> Option<i64>
 where
     V: BRefAccess,
 {
     CONVERT.lookup_and_convert_int(root, CLIENT_MAX_REQUESTS_KEY).ok()
 }
 
-pub fn parse_metadata_size<K, V>(root: &BDictAccess<K, V>) -> Option<i64>
+pub fn parse_metadata_size<K, V>(root: &dyn BDictAccess<K, V>) -> Option<i64>
 where
     V: BRefAccess,
 {
@@ -162,7 +163,7 @@ pub const MESSAGE_TYPE_KEY: &'static [u8] = b"msg_type";
 pub const PIECE_INDEX_KEY: &'static [u8] = b"piece";
 pub const TOTAL_SIZE_KEY: &'static [u8] = b"total_size";
 
-pub fn parse_message_type<K, V>(root: &BDictAccess<K, V>) -> io::Result<u8>
+pub fn parse_message_type<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<u8>
 where
     V: BRefAccess,
 {
@@ -172,14 +173,14 @@ where
         .into()
 }
 
-pub fn parse_piece_index<K, V>(root: &BDictAccess<K, V>) -> io::Result<i64>
+pub fn parse_piece_index<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<i64>
 where
     V: BRefAccess,
 {
     CONVERT.lookup_and_convert_int(root, PIECE_INDEX_KEY).into()
 }
 
-pub fn parse_total_size<K, V>(root: &BDictAccess<K, V>) -> io::Result<i64>
+pub fn parse_total_size<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<i64>
 where
     V: BRefAccess,
 {

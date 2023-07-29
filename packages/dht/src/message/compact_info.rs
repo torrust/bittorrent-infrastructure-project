@@ -1,9 +1,9 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
 
-use bip_bencode::Bencode;
-use bip_util::bt::{self, NodeId};
-use bip_util::error::{LengthError, LengthErrorKind, LengthResult};
-use bip_util::sha::ShaHash;
+use bencode::Bencode;
+use util::bt::{self, NodeId};
+use util::error::{LengthError, LengthErrorKind, LengthResult};
+use util::sha::ShaHash;
 
 // TODO: Update this module to accept data sources as both a slice of bytes and probably
 // a wrapper around a closest nodes iterator. Eventually when the interfaces are updated
@@ -172,9 +172,11 @@ fn socket_v4_from_bytes_be(bytes: &[u8]) -> LengthResult<SocketAddrV4> {
 mod tests {
     use std::net::{Ipv4Addr, SocketAddrV4};
 
-    use bip_util::bt::NodeId;
-    use bip_util::sha::ShaHash;
-    use message::compact_info::{CompactNodeInfo, CompactValueInfo};
+    use bencode::{ben_bytes, ben_list};
+    use util::bt::NodeId;
+    use util::sha::ShaHash;
+
+    use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
 
     #[test]
     fn positive_compact_nodes_empty() {

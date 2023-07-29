@@ -2,12 +2,13 @@
 
 use std::net::SocketAddr;
 
-use bip_handshake::InfoHash;
-use bip_metainfo::Metainfo;
-use bip_peer::messages::UtMetadataMessage;
-use bip_peer::PeerInfo;
-use bip_utracker::announce::ClientState;
-use ControlMessage;
+use handshake::InfoHash;
+use metainfo::Metainfo;
+use peer::messages::UtMetadataMessage;
+use peer::PeerInfo;
+use utracker::announce::ClientState;
+
+use crate::ControlMessage;
 
 pub mod error;
 

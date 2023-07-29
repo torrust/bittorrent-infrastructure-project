@@ -2,10 +2,11 @@
 
 use std::io::{self, Write};
 
-use announce::AnnounceRequest;
 use byteorder::{BigEndian, WriteBytesExt};
 use nom::{be_u32, be_u64, IResult};
-use scrape::ScrapeRequest;
+
+use crate::announce::AnnounceRequest;
+use crate::scrape::ScrapeRequest;
 
 // For all practical applications, this value should be hardcoded as a valid
 // connection id for connection requests when operating in server mode and processing
@@ -65,14 +66,14 @@ impl<'a> TrackerRequest<'a> {
 
         match self.request_type() {
             &RequestType::Connect => {
-                r#try!(writer.write_u32::<BigEndian>(::CONNECT_ACTION_ID));
+                r#try!(writer.write_u32::<BigEndian>(crate::CONNECT_ACTION_ID));
                 r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
             }
             &RequestType::Announce(ref req) => {
                 let action_id = if req.source_ip().is_ipv4() {
-                    ::ANNOUNCE_IPV4_ACTION_ID
+                    crate::ANNOUNCE_IPV4_ACTION_ID
                 } else {
-                    ::ANNOUNCE_IPV6_ACTION_ID
+                    crate::ANNOUNCE_IPV6_ACTION_ID
                 };
                 r#try!(writer.write_u32::<BigEndian>(action_id));
                 r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
@@ -80,7 +81,7 @@ impl<'a> TrackerRequest<'a> {
                 r#try!(req.write_bytes(writer));
             }
             &RequestType::Scrape(ref req) => {
-                r#try!(writer.write_u32::<BigEndian>(::SCRAPE_ACTION_ID));
+                r#try!(writer.write_u32::<BigEndian>(crate::SCRAPE_ACTION_ID));
                 r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
 
                 r#try!(req.write_bytes(writer));
@@ -120,16 +121,16 @@ impl<'a> TrackerRequest<'a> {
 
 fn parse_request<'a>(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerRequest<'a>> {
     switch!(bytes, tuple!(be_u64, be_u32, be_u32),
-        (CONNECT_ID_PROTOCOL_ID, ::CONNECT_ACTION_ID, tid) => value!(
+        (CONNECT_ID_PROTOCOL_ID, crate::CONNECT_ACTION_ID, tid) => value!(
             TrackerRequest::new(CONNECT_ID_PROTOCOL_ID, tid, RequestType::Connect)
         ) |
-        (cid, ::ANNOUNCE_IPV4_ACTION_ID, tid) => map!(call!(AnnounceRequest::from_bytes_v4), |ann_req| {
+        (cid, crate::ANNOUNCE_IPV4_ACTION_ID, tid) => map!(call!(AnnounceRequest::from_bytes_v4), |ann_req| {
             TrackerRequest::new(cid, tid, RequestType::Announce(ann_req))
         }) |
-        (cid, ::SCRAPE_ACTION_ID, tid) => map!(call!(ScrapeRequest::from_bytes), |scr_req| {
+        (cid, crate::SCRAPE_ACTION_ID, tid) => map!(call!(ScrapeRequest::from_bytes), |scr_req| {
             TrackerRequest::new(cid, tid, RequestType::Scrape(scr_req))
         }) |
-        (cid, ::ANNOUNCE_IPV6_ACTION_ID, tid) => map!(call!(AnnounceRequest::from_bytes_v6), |ann_req| {
+        (cid, crate::ANNOUNCE_IPV6_ACTION_ID, tid) => map!(call!(AnnounceRequest::from_bytes_v6), |ann_req| {
             TrackerRequest::new(cid, tid, RequestType::Announce(ann_req))
         })
     )

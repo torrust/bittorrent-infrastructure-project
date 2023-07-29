@@ -4,11 +4,12 @@
 use std::iter::Filter;
 use std::slice::Iter;
 
-use bip_util::bt::NodeId;
-use bip_util::sha::{self, ShaHash, XorRep};
 use rand;
-use routing::bucket::{self, Bucket};
-use routing::node::{Node, NodeStatus};
+use util::bt::NodeId;
+use util::sha::{self, ShaHash, XorRep};
+
+use crate::routing::bucket::{self, Bucket};
+use crate::routing::node::{Node, NodeStatus};
 
 pub const MAX_BUCKETS: usize = sha::SHA_HASH_LEN * 8;
 
@@ -448,11 +449,12 @@ fn index_is_in_bounds(length: usize, checked_index: Option<usize>) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use bip_util::bt::{self, NodeId};
-    use bip_util::test as bip_test;
-    use routing::bucket;
-    use routing::node::Node;
-    use routing::table::{self, BucketContents, RoutingTable};
+    use util::bt::{self, NodeId};
+    use util::test as bip_test;
+
+    use crate::routing::bucket;
+    use crate::routing::node::Node;
+    use crate::routing::table::{self, BucketContents, RoutingTable};
 
     // TODO: Move into bip_util crate
     fn flip_id_bit_at_index(node_id: NodeId, index: usize) -> NodeId {

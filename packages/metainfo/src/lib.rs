@@ -5,9 +5,9 @@
 //! Building and parsing a metainfo file from a directory:
 //!
 //! ```rust
-//!     extern crate bip_metainfo;
+//!     extern crate metainfo;
 //!
-//!     use bip_metainfo::{MetainfoBuilder, Metainfo};
+//!     use metainfo::{MetainfoBuilder, Metainfo};
 //!
 //!     fn main() {
 //!         let builder = MetainfoBuilder::new()
@@ -28,9 +28,9 @@
 //! Building and parsing a metainfo file from direct data:
 //!
 //! ```rust
-//!     extern crate bip_metainfo;
+//!     extern crate metainfo;
 //!
-//!     use bip_metainfo::{MetainfoBuilder, Metainfo, DirectAccessor};
+//!     use metainfo::{MetainfoBuilder, Metainfo, DirectAccessor};
 //!
 //!     fn main() {
 //!         let builder = MetainfoBuilder::new()
@@ -59,9 +59,9 @@
 //! ```
 
 #[macro_use]
-extern crate bip_bencode;
-extern crate bip_util;
+extern crate bencode;
 extern crate crossbeam;
+extern crate util;
 extern crate walkdir;
 #[macro_use]
 extern crate error_chain;
@@ -77,7 +77,8 @@ mod parse;
 
 pub mod iter;
 
-pub use accessor::{Accessor, DirectAccessor, FileAccessor, IntoAccessor, PieceAccess};
-pub use bip_util::bt::InfoHash;
-pub use builder::{InfoBuilder, MetainfoBuilder, PieceLength};
 pub use metainfo::{File, Info, Metainfo};
+pub use util::bt::InfoHash;
+
+pub use crate::accessor::{Accessor, DirectAccessor, FileAccessor, IntoAccessor, PieceAccess};
+pub use crate::builder::{InfoBuilder, MetainfoBuilder, PieceLength};

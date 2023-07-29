@@ -1,24 +1,24 @@
-extern crate bip_handshake;
-extern crate bip_util;
-extern crate bip_utracker;
 extern crate futures;
+extern crate handshake;
+extern crate util;
+extern crate utracker;
 
 use std::collections::{HashMap, HashSet};
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::sync::{Arc, Mutex};
 
-use bip_handshake::{DiscoveryInfo, InitiateMessage};
-use bip_util::bt::{InfoHash, PeerId};
-use bip_util::trans::{LocallyShuffledIds, TransactionIds};
-use bip_utracker::announce::{AnnounceEvent, AnnounceRequest, AnnounceResponse};
-use bip_utracker::contact::{CompactPeers, CompactPeersV4, CompactPeersV6};
-use bip_utracker::scrape::{ScrapeRequest, ScrapeResponse, ScrapeStats};
-use bip_utracker::{ClientMetadata, ServerHandler, ServerResult};
 use futures::future::Either;
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::sync::mpsc::{self, SendError, UnboundedReceiver, UnboundedSender};
 use futures::{Poll, StartSend};
+use handshake::{DiscoveryInfo, InitiateMessage};
+use util::bt::{InfoHash, PeerId};
+use util::trans::{LocallyShuffledIds, TransactionIds};
+use utracker::announce::{AnnounceEvent, AnnounceRequest, AnnounceResponse};
+use utracker::contact::{CompactPeers, CompactPeersV4, CompactPeersV6};
+use utracker::scrape::{ScrapeRequest, ScrapeResponse, ScrapeStats};
+use utracker::{ClientMetadata, ServerHandler, ServerResult};
 
 mod test_announce_start;
 mod test_announce_stop;

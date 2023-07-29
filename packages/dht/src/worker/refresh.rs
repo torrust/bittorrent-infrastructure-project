@@ -1,15 +1,16 @@
 use std::net::SocketAddr;
 use std::sync::mpsc::SyncSender;
 
-use bip_handshake::Handshaker;
-use bip_util::bt::{self, NodeId};
-use message::find_node::FindNodeRequest;
+use handshake::Handshaker;
 use mio::EventLoop;
-use routing::node::NodeStatus;
-use routing::table::{self, RoutingTable};
-use transaction::MIDGenerator;
-use worker::handler::DhtHandler;
-use worker::ScheduledTask;
+use util::bt::{self, NodeId};
+
+use crate::message::find_node::FindNodeRequest;
+use crate::routing::node::NodeStatus;
+use crate::routing::table::{self, RoutingTable};
+use crate::transaction::MIDGenerator;
+use crate::worker::handler::DhtHandler;
+use crate::worker::ScheduledTask;
 
 const REFRESH_INTERVAL_TIMEOUT: u64 = 6000;
 

@@ -1,8 +1,8 @@
-extern crate bip_dht;
-extern crate bip_handshake;
-extern crate bip_metainfo;
-extern crate bip_peer;
-extern crate bip_select;
+extern crate dht;
+extern crate handshake;
+extern crate metainfo;
+extern crate peer;
+extern crate select;
 #[macro_use]
 extern crate clap;
 extern crate futures;
@@ -17,23 +17,23 @@ use std::io::Write;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use bip_dht::{DhtBuilder, DhtEvent, Handshaker, Router};
-use bip_handshake::transports::TcpTransport;
-use bip_handshake::{
-    DiscoveryInfo, Extension, Extensions, HandshakerBuilder, HandshakerConfig, InfoHash, InitiateMessage, PeerId, Protocol,
-};
-use bip_peer::messages::builders::ExtendedMessageBuilder;
-use bip_peer::messages::{BitsExtensionMessage, PeerExtensionProtocolMessage, PeerWireProtocolMessage};
-use bip_peer::protocols::{NullProtocol, PeerExtensionProtocol, PeerWireProtocol};
-use bip_peer::{IPeerManagerMessage, OPeerManagerMessage, PeerInfo, PeerManagerBuilder, PeerProtocolCodec};
-use bip_select::discovery::{IDiscoveryMessage, ODiscoveryMessage, UtMetadataModule};
-use bip_select::{ControlMessage, IExtendedMessage, IUberMessage, OExtendedMessage, OUberMessage, UberModuleBuilder};
+use dht::{DhtBuilder, DhtEvent, Handshaker, Router};
 use futures::future::{self, Either, Loop};
 use futures::sink::Wait;
 use futures::{Future, Sink, Stream};
+use handshake::transports::TcpTransport;
+use handshake::{
+    DiscoveryInfo, Extension, Extensions, HandshakerBuilder, HandshakerConfig, InfoHash, InitiateMessage, PeerId, Protocol,
+};
 use hex::FromHex;
+use peer::messages::builders::ExtendedMessageBuilder;
+use peer::messages::{BitsExtensionMessage, PeerExtensionProtocolMessage, PeerWireProtocolMessage};
+use peer::protocols::{NullProtocol, PeerExtensionProtocol, PeerWireProtocol};
+use peer::{IPeerManagerMessage, OPeerManagerMessage, PeerInfo, PeerManagerBuilder, PeerProtocolCodec};
 use pendulum::future::TimerBuilder;
 use pendulum::HashedWheelBuilder;
+use select::discovery::{IDiscoveryMessage, ODiscoveryMessage, UtMetadataModule};
+use select::{ControlMessage, IExtendedMessage, IUberMessage, OExtendedMessage, OUberMessage, UberModuleBuilder};
 use tokio_core::reactor::Core;
 use tokio_io::AsyncRead;
 

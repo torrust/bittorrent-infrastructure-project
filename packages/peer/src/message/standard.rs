@@ -2,8 +2,9 @@ use std::io::{self, Write};
 
 use byteorder::{BigEndian, WriteBytesExt};
 use bytes::Bytes;
-use message;
 use nom::{be_u32, IResult, Needed};
+
+use crate::message;
 
 /// Message for notifying a peer of a piece that you have.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]

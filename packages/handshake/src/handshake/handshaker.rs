@@ -2,29 +2,30 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::time::Duration;
 use std::{cmp, io};
 
-use bip_util::bt::PeerId;
-use bip_util::convert;
-use discovery::DiscoveryInfo;
-use filter::filters::Filters;
-use filter::{HandshakeFilter, HandshakeFilters};
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::sync::mpsc::{self, Receiver, SendError, Sender};
 use futures::{Poll, StartSend};
-use handshake::config::HandshakerConfig;
-use handshake::handler;
-use handshake::handler::listener::ListenerHandler;
-use handshake::handler::timer::HandshakeTimer;
-use handshake::handler::{handshaker, initiator};
-use local_addr::LocalAddr;
-use message::complete::CompleteMessage;
-use message::extensions::Extensions;
-use message::initiate::InitiateMessage;
 use rand::{self, Rng};
 use tokio_core::reactor::Handle;
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_timer::{self};
-use transport::Transport;
+use util::bt::PeerId;
+use util::convert;
+
+use crate::discovery::DiscoveryInfo;
+use crate::filter::filters::Filters;
+use crate::filter::{HandshakeFilter, HandshakeFilters};
+use crate::handshake::config::HandshakerConfig;
+use crate::handshake::handler;
+use crate::handshake::handler::listener::ListenerHandler;
+use crate::handshake::handler::timer::HandshakeTimer;
+use crate::handshake::handler::{handshaker, initiator};
+use crate::local_addr::LocalAddr;
+use crate::message::complete::CompleteMessage;
+use crate::message::extensions::Extensions;
+use crate::message::initiate::InitiateMessage;
+use crate::transport::Transport;
 
 /// Build configuration for `Handshaker` object creation.
 #[derive(Copy, Clone)]

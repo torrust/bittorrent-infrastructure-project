@@ -1,12 +1,13 @@
 use std::collections::BTreeMap;
 
-use bip_bencode::{Bencode, BencodeConvert, Dictionary};
-use bip_util::bt::{InfoHash, NodeId};
-use error::{DhtError, DhtErrorKind, DhtResult};
-use message;
-use message::compact_info::{CompactNodeInfo, CompactValueInfo};
-use message::request::{self, RequestValidate};
-use message::response::{self, ResponseValidate};
+use bencode::{ben_bytes, ben_map, Bencode, BencodeConvert, Dictionary};
+use util::bt::{InfoHash, NodeId};
+
+use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::message;
+use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
+use crate::message::request::{self, RequestValidate};
+use crate::message::response::{self, ResponseValidate};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct GetPeersRequest<'a> {

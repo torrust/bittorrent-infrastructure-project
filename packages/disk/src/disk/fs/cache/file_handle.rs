@@ -2,8 +2,9 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use disk::fs::FileSystem;
 use lru_cache::LruCache;
+
+use crate::disk::fs::FileSystem;
 
 /// Caches file handles to prevent going to the OS for every call to open a file.
 ///

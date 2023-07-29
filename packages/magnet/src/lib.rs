@@ -1,12 +1,12 @@
 extern crate base32;
-extern crate bip_util;
 extern crate url;
+extern crate util;
 
 use std::default::Default;
 
-use bip_util::bt::InfoHash;
-use bip_util::sha::ShaHash;
 use url::Url;
+use util::bt::InfoHash;
+use util::sha::ShaHash;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Topic {
@@ -133,7 +133,7 @@ impl MagnetLink {
 
 #[cfg(test)]
 mod tests {
-    use bip_util::sha::ShaHash;
+    use util::sha::ShaHash;
 
     #[test]
     fn test_wikipedia() {
@@ -145,7 +145,7 @@ mod tests {
 &as=http%3A%2F%2Fdownload.wikimedia.org%2Fmediawiki%2F1.15%2Fmediawiki-1.15.1.tar.gz
 &xs=http%3A%2F%2Fcache.example.org%2FXRX2PEFXOOEJFRVUCX6HMZMKS5TWG4K5
 &xs=dchub://example.org";
-        let link = ::MagnetLink::parse(url).unwrap();
+        let link = crate::MagnetLink::parse(url).unwrap();
 
         let expected_info_hash = [
             129, 225, 119, 226, 204, 0, 148, 59, 41, 252, 252, 99, 84, 87, 245, 117, 35, 114, 147, 176,
@@ -178,7 +178,7 @@ mod tests {
                    openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.\
                    com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.\
                    desync.com%3A6969";
-        let link = ::MagnetLink::parse(url).unwrap();
+        let link = crate::MagnetLink::parse(url).unwrap();
 
         let expected_info_hash = [
             0xd9, 0xbe, 0x69, 0x09, 0x32, 0x5d, 0x28, 0x91, 0x2f, 0x40, 0x0f, 0xcb, 0x32, 0x40, 0x05, 0xdd, 0x58, 0x61, 0xe4,

@@ -1,15 +1,16 @@
-use bip_metainfo::Metainfo;
-use bip_util::bt::InfoHash;
-use disk::fs::FileSystem;
-use disk::tasks::context::DiskManagerContext;
-use disk::tasks::helpers::piece_accessor::PieceAccessor;
-use disk::tasks::helpers::piece_checker::{PieceChecker, PieceCheckerState, PieceState};
-use disk::{IDiskMessage, ODiskMessage};
-use error::{BlockError, BlockErrorKind, BlockResult, TorrentError, TorrentErrorKind, TorrentResult};
 use futures::sink::Wait;
 use futures::sync::mpsc::Sender;
 use futures_cpupool::CpuPool;
-use memory::block::{Block, BlockMut};
+use metainfo::Metainfo;
+use util::bt::InfoHash;
+
+use crate::disk::fs::FileSystem;
+use crate::disk::tasks::context::DiskManagerContext;
+use crate::disk::tasks::helpers::piece_accessor::PieceAccessor;
+use crate::disk::tasks::helpers::piece_checker::{PieceChecker, PieceCheckerState, PieceState};
+use crate::disk::{IDiskMessage, ODiskMessage};
+use crate::error::{BlockError, BlockErrorKind, BlockResult, TorrentError, TorrentErrorKind, TorrentResult};
+use crate::memory::block::{Block, BlockMut};
 
 pub mod context;
 mod helpers;

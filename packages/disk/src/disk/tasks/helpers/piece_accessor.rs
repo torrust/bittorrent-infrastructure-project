@@ -1,9 +1,10 @@
 use std::{cmp, io};
 
-use bip_metainfo::Info;
-use disk::fs::FileSystem;
-use disk::tasks::helpers;
-use memory::block::BlockMetadata;
+use metainfo::Info;
+
+use crate::disk::fs::FileSystem;
+use crate::disk::tasks::helpers;
+use crate::memory::block::BlockMetadata;
 
 pub struct PieceAccessor<'a, F> {
     fs: F,

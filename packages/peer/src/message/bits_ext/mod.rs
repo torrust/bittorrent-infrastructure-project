@@ -2,13 +2,14 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
-use bip_bencode::{BConvert, BDecodeOpt, BMutAccess, BencodeMut, BencodeRef};
-use bip_util::convert;
+use bencode::{BConvert, BDecodeOpt, BMutAccess, BencodeMut, BencodeRef};
 use byteorder::{BigEndian, WriteBytesExt};
 use bytes::Bytes;
-use message;
-use message::bencode;
 use nom::{be_u16, be_u32, be_u8, IResult, Needed};
+use util::convert;
+
+use crate::message;
+use crate::message::bencode_util;
 
 const PORT_MESSAGE_LEN: u32 = 3;
 const BASE_EXTENDED_MESSAGE_LEN: u32 = 6;

@@ -1,7 +1,7 @@
-extern crate bip_disk;
-extern crate bip_handshake;
-extern crate bip_metainfo;
-extern crate bip_peer;
+extern crate disk;
+extern crate handshake;
+extern crate metainfo;
+extern crate peer;
 #[macro_use]
 extern crate clap;
 extern crate futures;
@@ -16,19 +16,19 @@ use std::fs::File;
 use std::io::Read;
 use std::rc::Rc;
 
-use bip_disk::fs::NativeFileSystem;
-use bip_disk::fs_cache::FileHandleCache;
-use bip_disk::{Block, BlockMetadata, BlockMut, DiskManagerBuilder, IDiskMessage, ODiskMessage};
-use bip_handshake::transports::TcpTransport;
-//use bip_dht::{DhtBuilder, Handshaker, Router};
-use bip_handshake::{HandshakerBuilder, HandshakerConfig, InitiateMessage, PeerId, Protocol};
-use bip_metainfo::{InfoDictionary, MetainfoFile};
-use bip_peer::message::{BitFieldMessage, HaveMessage, PeerWireProtocolMessage, PieceMessage, RequestMessage};
-use bip_peer::protocols::{NullProtocol, PeerWireProtocol};
-use bip_peer::{IPeerManagerMessage, OPeerManagerMessage, PeerInfo, PeerManagerBuilder, PeerProtocolCodec};
+use disk::fs::NativeFileSystem;
+use disk::fs_cache::FileHandleCache;
+use disk::{Block, BlockMetadata, BlockMut, DiskManagerBuilder, IDiskMessage, ODiskMessage};
 use futures::future::{Either, Loop};
 use futures::sync::mpsc;
 use futures::{future, stream, Future, Sink, Stream};
+use handshake::transports::TcpTransport;
+//use bip_dht::{DhtBuilder, Handshaker, Router};
+use handshake::{Extensions, HandshakerBuilder, HandshakerConfig, InitiateMessage, PeerId, Protocol};
+use metainfo::{Info, Metainfo};
+use peer::messages::{BitFieldMessage, HaveMessage, PeerWireProtocolMessage, PieceMessage, RequestMessage};
+use peer::protocols::{NullProtocol, PeerWireProtocol};
+use peer::{IPeerManagerMessage, OPeerManagerMessage, PeerInfo, PeerManagerBuilder, PeerProtocolCodec};
 use tokio_core::reactor::Core;
 use tokio_io::AsyncRead;
 
@@ -115,8 +115,8 @@ fn main() {
     File::open(file).unwrap().read_to_end(&mut metainfo_bytes).unwrap();
 
     // Parse out our torrent file
-    let metainfo = MetainfoFile::from_bytes(metainfo_bytes).unwrap();
-    let info_hash = metainfo.info_hash();
+    let metainfo = Metainfo::from_bytes(metainfo_bytes).unwrap();
+    let info_hash = metainfo.info().info_hash();
 
     // Create our main "core" event loop
     let mut core = Core::new().unwrap();
@@ -141,7 +141,7 @@ fn main() {
         // block when we reach our max peers). Setting these to low
         // values so we dont have more than 2 unused tcp connections.
         .with_config(HandshakerConfig::default().with_wait_buffer_size(0).with_done_buffer_size(0))
-        .build::<TcpTransport>(core.handle()) // Will handshake over TCP (could swap this for UTP in the future)
+        .build::<TcpTransport>(TcpTransport, core.handle()) // Will handshake over TCP (could swap this for UTP in the future)
         .unwrap()
         .into_parts();
     // Create a peer manager that will hold our peers and heartbeat/send messages to them
@@ -169,7 +169,7 @@ fn main() {
                 ));
 
                 // Create our peer identifier used by our peer manager
-                let peer_info = PeerInfo::new(addr, pid, hash);
+                let peer_info = PeerInfo::new(addr, pid, hash, Extensions::new());
 
                 // Map to a message that can be fed to our peer manager
                 IPeerManagerMessage::AddPeer(peer_info, peer)
@@ -266,7 +266,7 @@ fn main() {
                     };
 
                     // Could optimize out the box, but for the example, this is cleaner and shorter
-                    let result_future: Box<Future<Item = Loop<(), _>, Error = ()>> = match opt_message {
+                    let result_future: Box<dyn Future<Item = Loop<(), _>, Error = ()>> = match opt_message {
                         Some(Either::A(select_message)) => Box::new(select_send.send(select_message).map(move |select_send| {
                             Loop::Continue((peer_manager_recv, info_hash, disk_request_map, select_send, disk_manager_send))
                         })),
@@ -331,7 +331,7 @@ fn main() {
                     };
 
                     // Could optimize out the box, but for the example, this is cleaner and shorter
-                    let result_future: Box<Future<Item = Loop<(), _>, Error = ()>> = match opt_message {
+                    let result_future: Box<dyn Future<Item = Loop<(), _>, Error = ()>> = match opt_message {
                         Some(Either::A(select_message)) => Box::new(select_send.send(select_message).map(|select_send| {
                             Loop::Continue((disk_manager_recv, disk_request_map, select_send, peer_manager_send))
                         })),
@@ -494,7 +494,7 @@ fn main() {
                     };
 
                     // Need a type annotation of this return type, provide that
-                    let result: Box<Future<Item = Loop<_, _>, Error = ()>> = if cur_pieces == total_pieces {
+                    let result: Box<dyn Future<Item = Loop<_, _>, Error = ()>> = if cur_pieces == total_pieces {
                         // We have all of the (unique) pieces required for our torrent
                         Box::new(future::ok(Loop::Break(())))
                     } else if let Some(peer) = opt_peer {
@@ -564,7 +564,7 @@ fn main() {
 /// Generate a mapping of piece index to list of block requests for that piece, given a block size.
 ///
 /// Note, most clients will drop connections for peers requesting block sizes above 16KB.
-fn generate_requests(info: &InfoDictionary, block_size: usize) -> Vec<RequestMessage> {
+fn generate_requests(info: &Info, block_size: usize) -> Vec<RequestMessage> {
     let mut requests = Vec::new();
 
     // Grab our piece length, and the sum of the lengths of each file in the torrent

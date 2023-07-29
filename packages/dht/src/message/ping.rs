@@ -1,11 +1,12 @@
 // We don't really use PingRequests for our current algorithms, but that may change in the future!
 #![allow(unused)]
 
-use bip_bencode::{Bencode, BencodeConvert, Dictionary};
-use bip_util::bt::NodeId;
-use error::DhtResult;
-use message;
-use message::request::{self, RequestValidate};
+use bencode::{ben_bytes, ben_map, Bencode, BencodeConvert, Dictionary};
+use util::bt::NodeId;
+
+use crate::error::DhtResult;
+use crate::message;
+use crate::message::request::{self, RequestValidate};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct PingRequest<'a> {

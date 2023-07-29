@@ -1,5 +1,4 @@
-use bip_util;
-use bip_util::convert;
+use util::convert;
 
 // Transaction IDs are going to be vital for both scalability and performance concerns.
 // They allow us to both protect against unsolicited responses as well as dropping those
@@ -70,7 +69,7 @@ impl AIDGenerator {
         let (next_alloc, mut action_ids) = generate_aids(0);
 
         // Randomize the order of ids
-        bip_util::fisher_shuffle(&mut action_ids);
+        util::fisher_shuffle(&mut action_ids);
 
         AIDGenerator {
             next_alloc: next_alloc,
@@ -92,7 +91,7 @@ impl AIDGenerator {
             let (next_alloc, mut action_ids) = generate_aids(self.next_alloc);
 
             // Randomize the order of ids
-            bip_util::fisher_shuffle(&mut action_ids);
+            util::fisher_shuffle(&mut action_ids);
 
             self.next_alloc = next_alloc;
             self.action_ids = action_ids;
@@ -159,7 +158,7 @@ impl MIDGenerator {
             let (next_alloc, mut message_ids) = generate_mids(self.next_alloc);
 
             // Randomize the order of ids
-            bip_util::fisher_shuffle(&mut message_ids);
+            util::fisher_shuffle(&mut message_ids);
 
             self.next_alloc = next_alloc;
             self.message_ids = message_ids;

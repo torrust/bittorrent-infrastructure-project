@@ -1,5 +1,5 @@
 #[macro_use]
-extern crate bip_bencode;
+extern crate bencode;
 
 #[test]
 fn positive_ben_map_macro() {

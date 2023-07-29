@@ -3,12 +3,13 @@ use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::mpsc::{self, Receiver};
 
-use bip_handshake::Handshaker;
-use bip_util::bt::InfoHash;
-use bip_util::net;
+use handshake::Handshaker;
 use mio::Sender;
-use router::Router;
-use worker::{self, DhtEvent, OneshotTask, ShutdownCause};
+use util::bt::InfoHash;
+use util::net;
+
+use crate::router::Router;
+use crate::worker::{self, DhtEvent, OneshotTask, ShutdownCause};
 
 /// Maintains a Distributed Hash (Routing) Table.
 pub struct MainlineDht {

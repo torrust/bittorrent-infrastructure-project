@@ -1,11 +1,12 @@
 use std::thread::{self};
 use std::time::Duration;
 
-use bip_util::bt::{self};
-use bip_utracker::{ClientRequest, TrackerClient, TrackerServer};
 use futures::future::Either;
 use futures::stream::Stream;
-use {handshaker, MockTrackerHandler};
+use util::bt::{self};
+use utracker::{ClientRequest, TrackerClient, TrackerServer};
+
+use crate::{handshaker, MockTrackerHandler};
 
 #[test]
 #[allow(unused)]

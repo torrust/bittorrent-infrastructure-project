@@ -1,13 +1,14 @@
 use std::collections::{HashMap, HashSet};
 use std::{cmp, io};
 
-use bip_metainfo::Info;
-use bip_util::bt::InfoHash;
-use disk::fs::FileSystem;
-use disk::tasks::helpers;
-use disk::tasks::helpers::piece_accessor::PieceAccessor;
-use error::{TorrentError, TorrentErrorKind, TorrentResult};
-use memory::block::BlockMetadata;
+use metainfo::Info;
+use util::bt::InfoHash;
+
+use crate::disk::fs::FileSystem;
+use crate::disk::tasks::helpers;
+use crate::disk::tasks::helpers::piece_accessor::PieceAccessor;
+use crate::error::{TorrentError, TorrentErrorKind, TorrentResult};
+use crate::memory::block::BlockMetadata;
 
 /// Calculates hashes on existing files within the file system given and reports good/bad pieces.
 pub struct PieceChecker<'a, F> {
@@ -317,8 +318,9 @@ fn merge_piece_messages(message_a: &BlockMetadata, message_b: &BlockMetadata) ->
 
 #[cfg(test)]
 mod tests {
-    use bip_util::bt;
-    use memory::block::BlockMetadata;
+    use util::bt;
+
+    use crate::memory::block::BlockMetadata;
 
     #[test]
     fn positive_merge_duplicate_messages() {

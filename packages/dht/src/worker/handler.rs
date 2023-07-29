@@ -4,32 +4,33 @@ use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6, UdpSocket};
 use std::sync::mpsc::{self, SyncSender};
 use std::{io, mem, thread};
 
-use bip_bencode::Bencode;
-use bip_handshake::Handshaker;
-use bip_util::bt::InfoHash;
-use bip_util::convert;
-use bip_util::net::IpAddr;
+use bencode::Bencode;
+use handshake::Handshaker;
 use log::LogLevel;
-use message::announce_peer::{AnnouncePeerResponse, ConnectPort};
-use message::compact_info::{CompactNodeInfo, CompactValueInfo};
-use message::error::{ErrorCode, ErrorMessage};
-use message::find_node::FindNodeResponse;
-use message::get_peers::{CompactInfoType, GetPeersResponse};
-use message::ping::PingResponse;
-use message::request::RequestType;
-use message::response::{ExpectedResponse, ResponseType};
-use message::MessageType;
 use mio::{self, EventLoop, Handler};
-use router::Router;
-use routing::node::{Node, NodeStatus};
-use routing::table::{BucketContents, RoutingTable};
-use storage::AnnounceStorage;
-use token::{Token, TokenStore};
-use transaction::{AIDGenerator, ActionID, TransactionID};
-use worker::bootstrap::{BootstrapStatus, TableBootstrap};
-use worker::lookup::{LookupStatus, TableLookup};
-use worker::refresh::{RefreshStatus, TableRefresh};
-use worker::{DhtEvent, OneshotTask, ScheduledTask, ShutdownCause};
+use util::bt::InfoHash;
+use util::convert;
+use util::net::IpAddr;
+
+use crate::message::announce_peer::{AnnouncePeerResponse, ConnectPort};
+use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
+use crate::message::error::{ErrorCode, ErrorMessage};
+use crate::message::find_node::FindNodeResponse;
+use crate::message::get_peers::{CompactInfoType, GetPeersResponse};
+use crate::message::ping::PingResponse;
+use crate::message::request::RequestType;
+use crate::message::response::{ExpectedResponse, ResponseType};
+use crate::message::MessageType;
+use crate::router::Router;
+use crate::routing::node::{Node, NodeStatus};
+use crate::routing::table::{BucketContents, RoutingTable};
+use crate::storage::AnnounceStorage;
+use crate::token::{Token, TokenStore};
+use crate::transaction::{AIDGenerator, ActionID, TransactionID};
+use crate::worker::bootstrap::{BootstrapStatus, TableBootstrap};
+use crate::worker::lookup::{LookupStatus, TableLookup};
+use crate::worker::refresh::{RefreshStatus, TableRefresh};
+use crate::worker::{DhtEvent, OneshotTask, ScheduledTask, ShutdownCause};
 
 // TODO: Update modules to use find_node on the routing table to update the status of a given node.
 

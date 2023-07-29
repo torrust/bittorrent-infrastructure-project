@@ -2,11 +2,12 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 
-use accessor::{Accessor, PieceAccess};
-use bip_util::sha::ShaHash;
-use builder::buffer::{PieceBuffer, PieceBuffers};
 use crossbeam::sync::MsQueue;
-use error::ParseResult;
+use util::sha::ShaHash;
+
+use crate::accessor::{Accessor, PieceAccess};
+use crate::builder::buffer::{PieceBuffer, PieceBuffers};
+use crate::error::ParseResult;
 
 /// Messages sent to the master hasher.
 pub enum MasterMessage {
@@ -203,10 +204,11 @@ mod tests {
     use std::path::Path;
     use std::sync::mpsc;
 
-    use accessor::{Accessor, PieceAccess};
-    use bip_util::sha::ShaHash;
-    use builder::worker;
     use rand::{self, Rng};
+    use util::sha::ShaHash;
+
+    use crate::accessor::{Accessor, PieceAccess};
+    use crate::builder::worker;
 
     // Keep these numbers fairly small to avoid lengthy tests
     const DEFAULT_PIECE_LENGTH: usize = 1024;
@@ -345,7 +347,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH * 1,
             DEFAULT_PIECE_LENGTH * 50,
         ];
-        for &region_length in region_lengths.into_iter() {
+        for region_length in region_lengths {
             accessor.create_region(region_length);
         }
 
@@ -361,7 +363,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH * 1,
             DEFAULT_PIECE_LENGTH * 50,
         ];
-        for &region_length in region_lengths.into_iter() {
+        for region_length in region_lengths {
             accessor.create_region(region_length);
         }
 
@@ -378,7 +380,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH * 1,
             (DEFAULT_PIECE_LENGTH * 2 - 1) * 2,
         ];
-        for &region_length in region_lengths.into_iter() {
+        for region_length in region_lengths {
             accessor.create_region(region_length);
         }
 
@@ -395,7 +397,7 @@ mod tests {
             DEFAULT_PIECE_LENGTH * 1,
             (DEFAULT_PIECE_LENGTH * 2 - 1) * 2,
         ];
-        for &region_length in region_lengths.into_iter() {
+        for region_length in region_lengths {
             accessor.create_region(region_length);
         }
 

@@ -8,9 +8,10 @@ use std::io::{self, Write};
 
 use byteorder::{BigEndian, WriteBytesExt};
 use bytes::Bytes;
-use manager::ManagedMessage;
 use nom::{be_u32, be_u8, IResult};
-use protocol::PeerProtocol;
+
+use crate::manager::ManagedMessage;
+use crate::protocol::PeerProtocol;
 
 // TODO: Propogate failures to cast values to/from usize
 
@@ -39,18 +40,18 @@ const MESSAGE_LENGTH_LEN_BYTES: usize = 4;
 const MESSAGE_ID_LEN_BYTES: usize = 1;
 const HEADER_LEN: usize = MESSAGE_LENGTH_LEN_BYTES + MESSAGE_ID_LEN_BYTES;
 
-mod bencode;
+mod bencode_util;
 mod bits_ext;
 mod null;
 mod prot_ext;
 mod standard;
 
-pub use message::bits_ext::{BitsExtensionMessage, ExtendedMessage, ExtendedMessageBuilder, ExtendedType, PortMessage};
-pub use message::null::NullProtocolMessage;
-pub use message::prot_ext::{
+pub use crate::message::bits_ext::{BitsExtensionMessage, ExtendedMessage, ExtendedMessageBuilder, ExtendedType, PortMessage};
+pub use crate::message::null::NullProtocolMessage;
+pub use crate::message::prot_ext::{
     PeerExtensionProtocolMessage, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
 };
-pub use message::standard::{BitFieldIter, BitFieldMessage, CancelMessage, HaveMessage, PieceMessage, RequestMessage};
+pub use crate::message::standard::{BitFieldIter, BitFieldMessage, CancelMessage, HaveMessage, PieceMessage, RequestMessage};
 
 /// Enumeration of messages for `PeerWireProtocol`.
 pub enum PeerWireProtocolMessage<P>

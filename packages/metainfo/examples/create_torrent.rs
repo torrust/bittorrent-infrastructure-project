@@ -1,14 +1,14 @@
-extern crate bip_metainfo;
 extern crate chrono;
+extern crate metainfo;
 extern crate pbr;
 
 use std::fs::File;
 use std::io::{self, BufRead, Write};
 use std::path::Path;
 
-use bip_metainfo::error::ParseResult;
-use bip_metainfo::{Metainfo, MetainfoBuilder};
 use chrono::offset::{TimeZone, Utc};
+use metainfo::error::ParseResult;
+use metainfo::{Metainfo, MetainfoBuilder};
 use pbr::ProgressBar;
 
 fn main() {

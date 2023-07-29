@@ -1,10 +1,11 @@
-use bip_bencode::{Bencode, BencodeConvert, Dictionary};
-use bip_util::bt::NodeId;
-use error::DhtResult;
-use message;
-use message::compact_info::CompactNodeInfo;
-use message::request::{self, RequestValidate};
-use message::response::ResponseValidate;
+use bencode::{ben_bytes, ben_map, Bencode, BencodeConvert, Dictionary};
+use util::bt::NodeId;
+
+use crate::error::DhtResult;
+use crate::message;
+use crate::message::compact_info::CompactNodeInfo;
+use crate::message::request::{self, RequestValidate};
+use crate::message::response::ResponseValidate;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct FindNodeRequest<'a> {

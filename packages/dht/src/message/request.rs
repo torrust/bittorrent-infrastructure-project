@@ -1,12 +1,13 @@
-use bip_bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
-use bip_util::bt::{InfoHash, NodeId};
-use error::{DhtError, DhtErrorKind, DhtResult};
-use message;
-use message::announce_peer::AnnouncePeerRequest;
-use message::error::{ErrorCode, ErrorMessage};
-use message::find_node::FindNodeRequest;
-use message::get_peers::GetPeersRequest;
-use message::ping::PingRequest;
+use bencode::{Bencode, BencodeConvert, BencodeConvertError, Dictionary};
+use util::bt::{InfoHash, NodeId};
+
+use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::message;
+use crate::message::announce_peer::AnnouncePeerRequest;
+use crate::message::error::{ErrorCode, ErrorMessage};
+use crate::message::find_node::FindNodeRequest;
+use crate::message::get_peers::GetPeersRequest;
+use crate::message::ping::PingRequest;
 
 pub const REQUEST_ARGS_KEY: &'static str = "a";
 

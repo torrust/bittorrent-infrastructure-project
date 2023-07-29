@@ -2,13 +2,13 @@ use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::thread;
 
-use bip_handshake::transports::TcpTransport;
-use bip_handshake::{DiscoveryInfo, HandshakerBuilder};
-use bip_util::bt::{self};
 use futures::stream::Stream;
 use futures::Future;
+use handshake::transports::TcpTransport;
+use handshake::{DiscoveryInfo, HandshakerBuilder};
 use tokio_core::reactor::Core;
 use tokio_io::io;
+use util::bt::{self};
 
 #[test]
 fn positive_recover_bytes() {

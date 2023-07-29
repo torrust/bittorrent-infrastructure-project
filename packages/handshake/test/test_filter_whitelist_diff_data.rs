@@ -1,22 +1,21 @@
 use std::any::Any;
 use std::time::Duration;
 
-use bip_handshake::transports::TcpTransport;
-use bip_handshake::{
-    DiscoveryInfo, FilterDecision, HandshakeFilter, HandshakeFilters, HandshakerBuilder, InitiateMessage, Protocol,
-};
-use bip_util::bt::{self, InfoHash};
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::Future;
+use handshake::transports::TcpTransport;
+use handshake::{DiscoveryInfo, FilterDecision, HandshakeFilter, HandshakeFilters, HandshakerBuilder, InitiateMessage, Protocol};
 use tokio_core::reactor::{Core, Timeout};
-use TimeoutResult;
+use util::bt::{self, InfoHash};
+
+use crate::TimeoutResult;
 
 #[derive(PartialEq, Eq)]
 pub struct FilterBlockAllHash;
 
 impl HandshakeFilter for FilterBlockAllHash {
-    fn as_any(&self) -> &Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 
@@ -31,7 +30,7 @@ pub struct FilterAllowHash {
 }
 
 impl HandshakeFilter for FilterAllowHash {
-    fn as_any(&self) -> &Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 

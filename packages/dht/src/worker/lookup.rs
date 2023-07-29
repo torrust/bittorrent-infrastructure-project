@@ -2,19 +2,20 @@ use std::collections::{HashMap, HashSet};
 use std::net::{SocketAddr, SocketAddrV4};
 use std::sync::mpsc::SyncSender;
 
-use bip_handshake::Handshaker;
-use bip_util::bt::{self, InfoHash, NodeId};
-use bip_util::net;
-use bip_util::sha::ShaHash;
-use message::announce_peer::{AnnouncePeerRequest, ConnectPort};
-use message::get_peers::{CompactInfoType, GetPeersRequest, GetPeersResponse};
+use handshake::Handshaker;
 use mio::{EventLoop, Timeout};
-use routing::bucket;
-use routing::node::{Node, NodeStatus};
-use routing::table::RoutingTable;
-use transaction::{MIDGenerator, TransactionID};
-use worker::handler::DhtHandler;
-use worker::ScheduledTask;
+use util::bt::{self, InfoHash, NodeId};
+use util::net;
+use util::sha::ShaHash;
+
+use crate::message::announce_peer::{AnnouncePeerRequest, ConnectPort};
+use crate::message::get_peers::{CompactInfoType, GetPeersRequest, GetPeersResponse};
+use crate::routing::bucket;
+use crate::routing::node::{Node, NodeStatus};
+use crate::routing::table::RoutingTable;
+use crate::transaction::{MIDGenerator, TransactionID};
+use crate::worker::handler::DhtHandler;
+use crate::worker::ScheduledTask;
 
 const LOOKUP_TIMEOUT_MS: u64 = 1500;
 const ENDGAME_TIMEOUT_MS: u64 = 1500;

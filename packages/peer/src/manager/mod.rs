@@ -10,11 +10,12 @@ use futures::stream::Stream;
 use futures::sync::mpsc::{self, Receiver, Sender};
 use futures::task::{self as futures_task, Task};
 use futures::{Async, AsyncSink, Poll, StartSend};
-use manager::builder::PeerManagerBuilder;
-use manager::error::{PeerManagerError, PeerManagerErrorKind};
-use manager::peer_info::PeerInfo;
 use tokio_core::reactor::Handle;
 use tokio_timer::{self, Timer};
+
+use crate::manager::builder::PeerManagerBuilder;
+use crate::manager::error::{PeerManagerError, PeerManagerErrorKind};
+use crate::manager::peer_info::PeerInfo;
 
 pub mod builder;
 pub mod error;
