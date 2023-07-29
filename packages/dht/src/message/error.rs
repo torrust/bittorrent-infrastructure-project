@@ -64,8 +64,8 @@ impl ErrorValidate {
             }));
         }
 
-        let code = try!(self.convert_int(&args[0], &format!("{}[0]", ERROR_ARGS_KEY)));
-        let message = try!(self.convert_str(&args[1], &format!("{}[1]", ERROR_ARGS_KEY)));
+        let code = r#try!(self.convert_int(&args[0], &format!("{}[0]", ERROR_ARGS_KEY)));
+        let message = r#try!(self.convert_str(&args[1], &format!("{}[1]", ERROR_ARGS_KEY)));
 
         Ok((code as u8, message))
     }
@@ -107,10 +107,10 @@ impl<'a> ErrorMessage<'a> {
                       trans_id: &'a [u8])
                       -> DhtResult<ErrorMessage<'a>> {
         let validate = ErrorValidate;
-        let error_args = try!(validate.lookup_and_convert_list(root, ERROR_ARGS_KEY));
+        let error_args = r#try!(validate.lookup_and_convert_list(root, ERROR_ARGS_KEY));
 
-        let (code, message) = try!(validate.extract_error_args(error_args));
-        let error_code = try!(ErrorCode::new(code));
+        let (code, message) = r#try!(validate.extract_error_args(error_args));
+        let error_code = r#try!(ErrorCode::new(code));
 
         let trans_id_cow = Cow::Borrowed(trans_id);
         let message_cow = Cow::Borrowed(message);

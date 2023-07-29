@@ -67,7 +67,7 @@ pub fn execute_on_pool<F>(msg: IDiskMessage, pool: &CpuPool, context: DiskManage
 fn execute_add_torrent<F>(file: Metainfo, context: &DiskManagerContext<F>, blocking_sender: &mut Wait<Sender<ODiskMessage>>) -> TorrentResult<()>
     where F: FileSystem {
     let info_hash = file.info().info_hash();
-    let mut init_state = try!(PieceChecker::init_state(context.filesystem(), file.info()));
+    let mut init_state = r#try!(PieceChecker::init_state(context.filesystem(), file.info()));
 
     // In case we are resuming a download, we need to send the diff for the newly added torrent
     send_piece_diff(&mut init_state, info_hash, blocking_sender, true);
@@ -104,7 +104,7 @@ fn execute_sync_torrent<F>(hash: InfoHash, context: &DiskManagerContext<F>) -> T
     });
 
     if found_hash {
-        Ok(try!(sync_result))
+        Ok(r#try!(sync_result))
     } else {
         Err(TorrentError::from_kind(TorrentErrorKind::InfoHashNotFound{ hash: hash }))
     }
@@ -124,7 +124,7 @@ fn execute_load_block<F>(block: &mut BlockMut, context: &DiskManagerContext<F>) 
     });
 
     if found_hash {
-        Ok(try!(access_result))
+        Ok(r#try!(access_result))
     } else {
         Err(BlockError::from_kind(BlockErrorKind::InfoHashNotFound{ hash: info_hash }))
     }
@@ -156,7 +156,7 @@ fn execute_process_block<F>(block: &mut Block, context: &DiskManagerContext<F>, 
     });
 
     if found_hash {
-        Ok(try!(block_result))
+        Ok(r#try!(block_result))
     } else {
         Err(BlockError::from_kind(BlockErrorKind::InfoHashNotFound{ hash: info_hash }))
     }

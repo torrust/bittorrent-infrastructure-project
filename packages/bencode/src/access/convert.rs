@@ -28,14 +28,14 @@ pub trait BConvertExt: BConvert {
     fn lookup_and_convert_bytes_ext<'a, B, K1, K2>(&self, dictionary: &BDictAccess<K1, B>, key: K2) -> Result<&'a [u8], Self::Error>
         where B: BRefAccessExt<'a>, K2: AsRef<[u8]>
     {
-        self.convert_bytes_ext(try!(self.lookup(dictionary, &key)), &key)
+        self.convert_bytes_ext(r#try!(self.lookup(dictionary, &key)), &key)
     }
 
     /// See BConvert::lookup_and_convert_str.
     fn lookup_and_convert_str_ext<'a, B, K1, K2>(&self, dictionary: &BDictAccess<K1, B>, key: K2) -> Result<&'a str, Self::Error>
         where B: BRefAccessExt<'a>, K2: AsRef<[u8]>
     {
-        self.convert_str_ext(try!(self.lookup(dictionary, &key)), &key)
+        self.convert_str_ext(r#try!(self.lookup(dictionary, &key)), &key)
     }
 }
 
@@ -117,34 +117,34 @@ pub trait BConvert {
     fn lookup_and_convert_int<B, K1, K2>(&self, dictionary: &BDictAccess<K1, B>, key: K2) -> Result<i64, Self::Error>
         where B: BRefAccess, K2: AsRef<[u8]>
     {
-        self.convert_int(try!(self.lookup(dictionary, &key)), &key)
+        self.convert_int(r#try!(self.lookup(dictionary, &key)), &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a series of bytes.
     fn lookup_and_convert_bytes<'a, B, K1, K2>(&self, dictionary: &'a BDictAccess<K1, B>, key: K2) -> Result<&'a [u8], Self::Error>
         where B: BRefAccess, K2: AsRef<[u8]>
     {
-        self.convert_bytes(try!(self.lookup(dictionary, &key)), &key)
+        self.convert_bytes(r#try!(self.lookup(dictionary, &key)), &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a UTF-8 string.
     fn lookup_and_convert_str<'a, B, K1, K2>(&self, dictionary: &'a BDictAccess<K1, B>, key: K2) -> Result<&'a str, Self::Error>
         where B: BRefAccess, K2: AsRef<[u8]>
     {
-        self.convert_str(try!(self.lookup(dictionary, &key)), &key)
+        self.convert_str(r#try!(self.lookup(dictionary, &key)), &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a list.
     fn lookup_and_convert_list<'a, B, K1, K2>(&self, dictionary: &'a BDictAccess<K1, B>, key: K2) -> Result<&'a BListAccess<B::BType>, Self::Error>
         where B: BRefAccess, K2: AsRef<[u8]>
     {
-        self.convert_list(try!(self.lookup(dictionary, &key)), &key)
+        self.convert_list(r#try!(self.lookup(dictionary, &key)), &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a dictionary.
     fn lookup_and_convert_dict<'a, B, K1, K2>(&self, dictionary: &'a BDictAccess<K1, B>, key: K2) -> Result<&'a BDictAccess<B::BKey, B::BType>, Self::Error>
         where B: BRefAccess, K2: AsRef<[u8]>
     {
-        self.convert_dict(try!(self.lookup(dictionary, &key)), &key)
+        self.convert_dict(r#try!(self.lookup(dictionary, &key)), &key)
     }
 }

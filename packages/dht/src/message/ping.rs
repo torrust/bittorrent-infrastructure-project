@@ -28,8 +28,8 @@ impl<'a> PingRequest<'a> {
         let validate = RequestValidate::new(trans_id);
 
         let node_id_bytes =
-            try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
-        let node_id = try!(validate.validate_node_id(node_id_bytes));
+            r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
+        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
 
         Ok(PingRequest::new(trans_id, node_id))
     }
@@ -74,7 +74,7 @@ impl<'a> PingResponse<'a> {
     pub fn from_parts(rsp_root: &Dictionary<'a, Bencode<'a>>,
                       trans_id: &'a [u8])
                       -> DhtResult<PingResponse<'a>> {
-        let request = try!(PingRequest::from_parts(rsp_root, trans_id));
+        let request = r#try!(PingRequest::from_parts(rsp_root, trans_id));
 
         Ok(PingResponse::new(request.trans_id, request.node_id))
     }

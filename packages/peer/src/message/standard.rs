@@ -24,7 +24,7 @@ impl HaveMessage {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(message::write_length_id_pair(&mut writer, message::HAVE_MESSAGE_LEN, Some(message::HAVE_MESSAGE_ID)));
+        r#try!(message::write_length_id_pair(&mut writer, message::HAVE_MESSAGE_LEN, Some(message::HAVE_MESSAGE_ID)));
 
         writer.write_u32::<BigEndian>(self.piece_index)
     }
@@ -67,7 +67,7 @@ impl BitFieldMessage {
         where W: Write
     {
         let actual_length = (1 + self.bytes.len()) as u32;
-        try!(message::write_length_id_pair(&mut writer, actual_length, Some(message::BITFIELD_MESSAGE_ID)));
+        r#try!(message::write_length_id_pair(&mut writer, actual_length, Some(message::BITFIELD_MESSAGE_ID)));
 
         writer.write_all(&self.bytes)
     }
@@ -141,10 +141,10 @@ impl RequestMessage {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(message::write_length_id_pair(&mut writer, message::REQUEST_MESSAGE_LEN, Some(message::REQUEST_MESSAGE_ID)));
+        r#try!(message::write_length_id_pair(&mut writer, message::REQUEST_MESSAGE_LEN, Some(message::REQUEST_MESSAGE_ID)));
 
-        try!(writer.write_u32::<BigEndian>(self.piece_index));
-        try!(writer.write_u32::<BigEndian>(self.block_offset));
+        r#try!(writer.write_u32::<BigEndian>(self.piece_index));
+        r#try!(writer.write_u32::<BigEndian>(self.block_offset));
         writer.write_u32::<BigEndian>(self.block_length as u32)
     }
 
@@ -199,10 +199,10 @@ impl PieceMessage {
         where W: Write
     {
         let actual_length = (9 + self.block_length()) as u32;
-        try!(message::write_length_id_pair(&mut writer, actual_length, Some(message::PIECE_MESSAGE_ID)));
+        r#try!(message::write_length_id_pair(&mut writer, actual_length, Some(message::PIECE_MESSAGE_ID)));
 
-        try!(writer.write_u32::<BigEndian>(self.piece_index));
-        try!(writer.write_u32::<BigEndian>(self.block_offset));
+        r#try!(writer.write_u32::<BigEndian>(self.piece_index));
+        r#try!(writer.write_u32::<BigEndian>(self.block_offset));
 
         writer.write_all(&self.block[..])
     }
@@ -260,10 +260,10 @@ impl CancelMessage {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(message::write_length_id_pair(&mut writer, message::CANCEL_MESSAGE_LEN, Some(message::CANCEL_MESSAGE_ID)));
+        r#try!(message::write_length_id_pair(&mut writer, message::CANCEL_MESSAGE_LEN, Some(message::CANCEL_MESSAGE_ID)));
 
-        try!(writer.write_u32::<BigEndian>(self.piece_index));
-        try!(writer.write_u32::<BigEndian>(self.block_offset));
+        r#try!(writer.write_u32::<BigEndian>(self.piece_index));
+        r#try!(writer.write_u32::<BigEndian>(self.block_offset));
         writer.write_u32::<BigEndian>(self.block_length as u32)
     }
 

@@ -53,7 +53,7 @@ pub fn create_dht_handler<H>(table: RoutingTable,
     where H: Handshaker + 'static
 {
     let mut handler = DhtHandler::new(table, out, read_only, handshaker);
-    let mut event_loop = try!(EventLoop::new());
+    let mut event_loop = r#try!(EventLoop::new());
 
     let loop_channel = event_loop.channel();
 

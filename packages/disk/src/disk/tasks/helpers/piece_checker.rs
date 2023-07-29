@@ -28,9 +28,9 @@ impl<'a, F> PieceChecker<'a, F> where F: FileSystem + 'a {
         {
             let mut piece_checker = PieceChecker::with_state(fs, info_dict, &mut checker_state);
             
-            try!(piece_checker.validate_files_sizes());
-            try!(piece_checker.fill_checker_state());
-            try!(piece_checker.calculate_diff());
+            r#try!(piece_checker.validate_files_sizes());
+            r#try!(piece_checker.fill_checker_state());
+            r#try!(piece_checker.calculate_diff());
         }
 
         Ok(checker_state)
@@ -55,8 +55,8 @@ impl<'a, F> PieceChecker<'a, F> where F: FileSystem + 'a {
         let info_dict = self.info_dict;
         let piece_accessor = PieceAccessor::new(&self.fs, self.info_dict);
         
-        try!(self.checker_state.run_with_whole_pieces(piece_length as usize, |message| {
-            try!(piece_accessor.read_piece(&mut piece_buffer[..message.block_length()], message));
+        r#try!(self.checker_state.run_with_whole_pieces(piece_length as usize, |message| {
+            r#try!(piece_accessor.read_piece(&mut piece_buffer[..message.block_length()], message));
             
             let calculated_hash = InfoHash::from_bytes(&piece_buffer[..message.block_length()]);
             let expected_hash = InfoHash::from_hash(info_dict
@@ -105,12 +105,12 @@ impl<'a, F> PieceChecker<'a, F> where F: FileSystem + 'a {
             let file_path = helpers::build_path(self.info_dict.directory(), file);
             let expected_size = file.length() as u64;
 
-            try!(self.fs.open_file(file_path.clone())
+            r#try!(self.fs.open_file(file_path.clone())
                 .map_err(|err| err.into())
                 .and_then(|mut file| {
                 // File May Or May Not Have Existed Before, If The File Is Zero
                 // Length, Assume It Wasn't There (User Doesn't Lose Any Data)
-                let actual_size = try!(self.fs.file_size(&file));
+                let actual_size = r#try!(self.fs.file_size(&file));
 
                 let size_matches = actual_size == expected_size;
                 let size_is_zero = actual_size == 0;
@@ -203,7 +203,7 @@ impl PieceCheckerState {
         for messages in self.pending_blocks.values_mut()
             .filter(|ref messages| piece_is_complete(total_blocks, last_block_size, piece_length, messages))
             .filter(|ref messages| !old_states.contains(&PieceState::Good(messages[0].piece_index()))) {
-            let is_good = try!(callback(&messages[0]));
+            let is_good = r#try!(callback(&messages[0]));
 
             if is_good {
                 new_states.push(PieceState::Good(messages[0].piece_index()));

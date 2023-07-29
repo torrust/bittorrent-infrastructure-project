@@ -263,7 +263,7 @@ impl<P> Sink for PeerManagerSink<P>
                     .poll_complete()
                     .map_err(|_| panic!("bip_peer: PeerManaged Failed To Poll Peer"));
 
-                try!(result);
+                r#try!(result);
             }
 
             Ok(Async::Ready(()))

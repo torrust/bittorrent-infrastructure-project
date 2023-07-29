@@ -44,7 +44,7 @@ impl<F> FileSystem for FileHandleCache<F> where F: FileSystem {
                 }
             }
             let path_buf = path.as_ref().to_path_buf();
-            let file = Arc::new(Mutex::new(try!(fs.open_file(path))));
+            let file = Arc::new(Mutex::new(r#try!(fs.open_file(path))));
 
             cache.insert(path_buf, file.clone());
 

@@ -34,11 +34,11 @@ impl HandshakeMessage {
 
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write {
-        try!(self.prot.write_bytes(&mut writer));
-        try!(self.ext.write_bytes(&mut writer));
-        try!(writer.write_all(self.hash.as_ref()));
+        r#try!(self.prot.write_bytes(&mut writer));
+        r#try!(self.ext.write_bytes(&mut writer));
+        r#try!(writer.write_all(self.hash.as_ref()));
         
-        try!(writer.write_all(self.pid.as_ref()));
+        r#try!(writer.write_all(self.pid.as_ref()));
 
         Ok(())
     }

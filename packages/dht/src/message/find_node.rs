@@ -34,11 +34,11 @@ impl<'a> FindNodeRequest<'a> {
         let validate = RequestValidate::new(trans_id);
 
         let node_id_bytes =
-            try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
-        let node_id = try!(validate.validate_node_id(node_id_bytes));
+            r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
+        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
 
-        let target_id_bytes = try!(validate.lookup_and_convert_bytes(rqst_root, target_key));
-        let target_id = try!(validate.validate_node_id(target_id_bytes));
+        let target_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, target_key));
+        let target_id = r#try!(validate.validate_node_id(target_id_bytes));
 
         Ok(FindNodeRequest::new(trans_id, node_id, target_id))
     }
@@ -83,7 +83,7 @@ impl<'a> FindNodeResponse<'a> {
                nodes: &'a [u8])
                -> DhtResult<FindNodeResponse<'a>> {
         let validate = ResponseValidate::new(trans_id);
-        let compact_nodes = try!(validate.validate_nodes(nodes));
+        let compact_nodes = r#try!(validate.validate_nodes(nodes));
 
         Ok(FindNodeResponse {
             trans_id: trans_id,
@@ -97,10 +97,10 @@ impl<'a> FindNodeResponse<'a> {
                       -> DhtResult<FindNodeResponse<'a>> {
         let validate = ResponseValidate::new(trans_id);
 
-        let node_id_bytes = try!(validate.lookup_and_convert_bytes(rsp_root, message::NODE_ID_KEY));
-        let node_id = try!(validate.validate_node_id(node_id_bytes));
+        let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rsp_root, message::NODE_ID_KEY));
+        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
 
-        let nodes = try!(validate.lookup_and_convert_bytes(rsp_root, message::NODES_KEY));
+        let nodes = r#try!(validate.lookup_and_convert_bytes(rsp_root, message::NODES_KEY));
 
         FindNodeResponse::new(trans_id, node_id, nodes)
     }

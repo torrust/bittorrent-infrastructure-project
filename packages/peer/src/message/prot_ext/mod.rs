@@ -47,8 +47,8 @@ impl<P> PeerExtensionProtocolMessage<P> where P: PeerProtocol {
 
                 let total_len = (2 + msg.message_size()) as u32;
 
-                try!(message::write_length_id_pair(&mut writer, total_len, Some(bits_ext::EXTENDED_MESSAGE_ID)));
-                try!(writer.write_u8(ext_id));
+                r#try!(message::write_length_id_pair(&mut writer, total_len, Some(bits_ext::EXTENDED_MESSAGE_ID)));
+                r#try!(writer.write_u8(ext_id));
 
                 msg.write_bytes(writer)
             },

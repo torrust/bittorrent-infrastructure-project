@@ -73,19 +73,19 @@ impl<'a> AnnounceRequest<'a> {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(writer.write_all(self.info_hash.as_ref()));
-        try!(writer.write_all(self.peer_id.as_ref()));
+        r#try!(writer.write_all(self.info_hash.as_ref()));
+        r#try!(writer.write_all(self.peer_id.as_ref()));
 
-        try!(self.state.write_bytes(&mut writer));
-        try!(self.ip.write_bytes(&mut writer));
+        r#try!(self.state.write_bytes(&mut writer));
+        r#try!(self.ip.write_bytes(&mut writer));
 
-        try!(writer.write_u32::<BigEndian>(self.key));
+        r#try!(writer.write_u32::<BigEndian>(self.key));
 
-        try!(self.num_want.write_bytes(&mut writer));
+        r#try!(self.num_want.write_bytes(&mut writer));
 
-        try!(writer.write_u16::<BigEndian>(self.port));
+        r#try!(writer.write_u16::<BigEndian>(self.port));
 
-        try!(self.options.write_bytes(&mut writer));
+        r#try!(self.options.write_bytes(&mut writer));
 
         Ok(())
     }
@@ -207,11 +207,11 @@ impl<'a> AnnounceResponse<'a> {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(writer.write_i32::<BigEndian>(self.interval));
-        try!(writer.write_i32::<BigEndian>(self.leechers));
-        try!(writer.write_i32::<BigEndian>(self.seeders));
+        r#try!(writer.write_i32::<BigEndian>(self.interval));
+        r#try!(writer.write_i32::<BigEndian>(self.leechers));
+        r#try!(writer.write_i32::<BigEndian>(self.seeders));
 
-        try!(self.peers.write_bytes(&mut writer));
+        r#try!(self.peers.write_bytes(&mut writer));
 
         Ok(())
     }
@@ -297,11 +297,11 @@ impl ClientState {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(writer.write_i64::<BigEndian>(self.downloaded));
-        try!(writer.write_i64::<BigEndian>(self.left));
-        try!(writer.write_i64::<BigEndian>(self.uploaded));
+        r#try!(writer.write_i64::<BigEndian>(self.downloaded));
+        r#try!(writer.write_i64::<BigEndian>(self.left));
+        r#try!(writer.write_i64::<BigEndian>(self.uploaded));
 
-        try!(self.event.write_bytes(&mut writer));
+        r#try!(self.event.write_bytes(&mut writer));
 
         Ok(())
     }
@@ -362,7 +362,7 @@ impl AnnounceEvent {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(writer.write_i32::<BigEndian>(self.as_id()));
+        r#try!(writer.write_i32::<BigEndian>(self.as_id()));
 
         Ok(())
     }
@@ -499,7 +499,7 @@ impl DesiredPeers {
             &DesiredPeers::Default => DEFAULT_NUM_WANT,
             &DesiredPeers::Specified(count) => count,
         };
-        try!(writer.write_i32::<BigEndian>(write_value));
+        r#try!(writer.write_i32::<BigEndian>(write_value));
 
         Ok(())
     }

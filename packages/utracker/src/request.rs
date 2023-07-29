@@ -61,12 +61,12 @@ impl<'a> TrackerRequest<'a> {
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
         where W: Write
     {
-        try!(writer.write_u64::<BigEndian>(self.connection_id()));
+        r#try!(writer.write_u64::<BigEndian>(self.connection_id()));
 
         match self.request_type() {
             &RequestType::Connect => {
-                try!(writer.write_u32::<BigEndian>(::CONNECT_ACTION_ID));
-                try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                r#try!(writer.write_u32::<BigEndian>(::CONNECT_ACTION_ID));
+                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
             }
             &RequestType::Announce(ref req) => {
                 let action_id = if req.source_ip().is_ipv4() {
@@ -74,16 +74,16 @@ impl<'a> TrackerRequest<'a> {
                 } else {
                     ::ANNOUNCE_IPV6_ACTION_ID
                 };
-                try!(writer.write_u32::<BigEndian>(action_id));
-                try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                r#try!(writer.write_u32::<BigEndian>(action_id));
+                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
 
-                try!(req.write_bytes(writer));
+                r#try!(req.write_bytes(writer));
             }
             &RequestType::Scrape(ref req) => {
-                try!(writer.write_u32::<BigEndian>(::SCRAPE_ACTION_ID));
-                try!(writer.write_u32::<BigEndian>(self.transaction_id()));
+                r#try!(writer.write_u32::<BigEndian>(::SCRAPE_ACTION_ID));
+                r#try!(writer.write_u32::<BigEndian>(self.transaction_id()));
 
-                try!(req.write_bytes(writer));
+                r#try!(req.write_bytes(writer));
             }
         };
 
