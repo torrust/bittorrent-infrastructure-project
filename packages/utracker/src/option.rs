@@ -64,9 +64,9 @@ impl<'a> AnnounceOptions<'a> {
             for content_chunk in content.chunks(u8::max_value() as usize) {
                 let content_chunk_len = content_chunk.len() as u8;
 
-                r#try!(writer.write_u8(*byte));
-                r#try!(writer.write_u8(content_chunk_len));
-                r#try!(writer.write_all(content_chunk));
+                writer.write_u8(*byte)?;
+                writer.write_u8(content_chunk_len)?;
+                writer.write_all(content_chunk)?;
             }
         }
 

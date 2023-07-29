@@ -40,7 +40,7 @@ impl Router {
     // }
 
     pub fn ipv4_addr(&self) -> io::Result<SocketAddrV4> {
-        let addrs = r#try!(self.socket_addrs());
+        let addrs = self.socket_addrs()?;
 
         addrs
             .filter_map(map_ipv4)
@@ -49,7 +49,7 @@ impl Router {
     }
 
     pub fn ipv6_addr(&self) -> io::Result<SocketAddrV6> {
-        let addrs = r#try!(self.socket_addrs());
+        let addrs = self.socket_addrs()?;
 
         addrs
             .filter_map(map_ipv6)
@@ -58,7 +58,7 @@ impl Router {
     }
 
     pub fn socket_addr(&self) -> io::Result<SocketAddr> {
-        let mut addrs = r#try!(self.socket_addrs());
+        let mut addrs = self.socket_addrs()?;
 
         addrs
             .next()

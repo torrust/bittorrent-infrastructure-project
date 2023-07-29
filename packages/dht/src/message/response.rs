@@ -124,23 +124,23 @@ where
         B: BRefAccess<BType = B>,
     {
         let validate = ResponseValidate::new(trans_id);
-        let rqst_root = r#try!(validate.lookup_and_convert_dict(root, RESPONSE_ARGS_KEY));
+        let rqst_root = validate.lookup_and_convert_dict(root, RESPONSE_ARGS_KEY)?;
 
         match rsp_type {
             ExpectedResponse::Ping => {
-                let ping_rsp = r#try!(PingResponse::from_parts(rqst_root, trans_id));
+                let ping_rsp = PingResponse::from_parts(rqst_root, trans_id)?;
                 Ok(ResponseType::Ping(ping_rsp))
             }
             ExpectedResponse::FindNode => {
-                let find_node_rsp = r#try!(FindNodeResponse::from_parts(rqst_root, trans_id));
+                let find_node_rsp = FindNodeResponse::from_parts(rqst_root, trans_id)?;
                 Ok(ResponseType::FindNode(find_node_rsp))
             }
             ExpectedResponse::GetPeers => {
-                let get_peers_rsp = r#try!(GetPeersResponse::<B>::from_parts(rqst_root, trans_id));
+                let get_peers_rsp = GetPeersResponse::<B>::from_parts(rqst_root, trans_id)?;
                 Ok(ResponseType::GetPeers(get_peers_rsp))
             }
             ExpectedResponse::AnnouncePeer => {
-                let announce_peer_rsp = r#try!(AnnouncePeerResponse::from_parts(rqst_root, trans_id));
+                let announce_peer_rsp = AnnouncePeerResponse::from_parts(rqst_root, trans_id)?;
                 Ok(ResponseType::AnnouncePeer(announce_peer_rsp))
             }
             ExpectedResponse::GetData => {

@@ -148,11 +148,11 @@ where
     where
         T: Transport<Socket = S> + 'static,
     {
-        let listener = r#try!(transport.listen(&builder.bind, &handle));
+        let listener = transport.listen(&builder.bind, &handle)?;
 
         // Resolve our "real" public port
         let open_port = if builder.port == 0 {
-            r#try!(listener.local_addr()).port()
+            listener.local_addr()?.port()
         } else {
             builder.port
         };

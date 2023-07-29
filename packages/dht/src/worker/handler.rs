@@ -50,7 +50,7 @@ where
     H: HandshakerTrait + 'static,
 {
     let mut handler = DhtHandler::new(table, out, read_only, handshaker);
-    let mut event_loop = r#try!(EventLoop::new());
+    let mut event_loop = EventLoop::new()?;
 
     let loop_channel = event_loop.channel();
 

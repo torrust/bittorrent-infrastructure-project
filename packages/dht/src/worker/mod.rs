@@ -85,14 +85,7 @@ where
 
     // TODO: Utilize the security extension.
     let routing_table = RoutingTable::new(table::random_node_id());
-    let message_sender = r#try!(handler::create_dht_handler(
-        routing_table,
-        outgoing,
-        read_only,
-        handshaker,
-        kill_sock,
-        kill_addr
-    ));
+    let message_sender = handler::create_dht_handler(routing_table, outgoing, read_only, handshaker, kill_sock, kill_addr)?;
 
     messenger::create_incoming_messenger(recv_socket, message_sender.clone());
 

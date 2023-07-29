@@ -28,9 +28,9 @@ impl UtMetadataMessage {
 
         match BencodeRef::decode(bytes.clone().as_ref(), decode_opts) {
             Ok(bencode) => {
-                let bencode_dict = r#try!(bencode_util::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY));
-                let msg_type = r#try!(bencode_util::parse_message_type(bencode_dict));
-                let piece = r#try!(bencode_util::parse_piece_index(bencode_dict));
+                let bencode_dict = bencode_util::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY)?;
+                let msg_type = bencode_util::parse_message_type(bencode_dict)?;
+                let piece = bencode_util::parse_piece_index(bencode_dict)?;
 
                 let bencode_bytes = bytes.split_to(bencode.buffer().len());
                 let extra_bytes = bytes;
@@ -45,7 +45,7 @@ impl UtMetadataMessage {
                         bencode_bytes,
                     ))),
                     DATA_MESSAGE_TYPE_ID => {
-                        let total_size = r#try!(bencode_util::parse_total_size(bencode_dict));
+                        let total_size = bencode_util::parse_total_size(bencode_dict)?;
 
                         Ok(UtMetadataMessage::Data(UtMetadataDataMessage::with_bytes(
                             piece,
@@ -189,7 +189,7 @@ impl UtMetadataDataMessage {
         })
         .encode();
 
-        r#try!(writer.write_all(encoded_bytes.as_ref()));
+        writer.write_all(encoded_bytes.as_ref())?;
 
         writer.write_all(self.data.as_ref())
     }

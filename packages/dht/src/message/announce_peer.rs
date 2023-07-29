@@ -51,13 +51,13 @@ impl<'a> AnnouncePeerRequest<'a> {
     {
         let validate = RequestValidate::new(trans_id);
 
-        let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
-        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
+        let node_id_bytes = validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY)?;
+        let node_id = validate.validate_node_id(node_id_bytes)?;
 
-        let info_hash_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::INFO_HASH_KEY));
-        let info_hash = r#try!(validate.validate_info_hash(info_hash_bytes));
+        let info_hash_bytes = validate.lookup_and_convert_bytes(rqst_root, message::INFO_HASH_KEY)?;
+        let info_hash = validate.validate_info_hash(info_hash_bytes)?;
 
-        let token = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::TOKEN_KEY));
+        let token = validate.lookup_and_convert_bytes(rqst_root, message::TOKEN_KEY)?;
         let port = validate.lookup_and_convert_int(rqst_root, PORT_KEY);
 
         // Technically, the specification says that the value is either 0 or 1 but goes on to say that
@@ -66,7 +66,7 @@ impl<'a> AnnouncePeerRequest<'a> {
             Some(Some(n)) if n != 0 => ConnectPort::Implied,
             _ => {
                 // If we hit this, the port either was not provided or it was of the wrong bencode type
-                let port_number = r#try!(port) as u16;
+                let port_number = port? as u16;
                 ConnectPort::Explicit(port_number)
             }
         };
@@ -139,8 +139,8 @@ impl<'a> AnnouncePeerResponse<'a> {
     {
         let validate = RequestValidate::new(&trans_id);
 
-        let node_id_bytes = r#try!(validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY));
-        let node_id = r#try!(validate.validate_node_id(node_id_bytes));
+        let node_id_bytes = validate.lookup_and_convert_bytes(rqst_root, message::NODE_ID_KEY)?;
+        let node_id = validate.validate_node_id(node_id_bytes)?;
 
         Ok(AnnouncePeerResponse::new(trans_id, node_id))
     }

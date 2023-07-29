@@ -64,12 +64,8 @@ where
 
                 let total_len = (2 + msg.message_size()) as u32;
 
-                r#try!(message::write_length_id_pair(
-                    &mut writer,
-                    total_len,
-                    Some(bits_ext::EXTENDED_MESSAGE_ID)
-                ));
-                r#try!(writer.write_u8(ext_id));
+                message::write_length_id_pair(&mut writer, total_len, Some(bits_ext::EXTENDED_MESSAGE_ID))?;
+                writer.write_u8(ext_id)?;
 
                 msg.write_bytes(writer)
             }

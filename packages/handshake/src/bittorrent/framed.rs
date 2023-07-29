@@ -53,7 +53,7 @@ where
 
     fn start_send(&mut self, item: HandshakeMessage) -> StartSend<Self::SinkItem, Self::SinkError> {
         self.write_buffer.reserve(item.write_len());
-        r#try!(item.write_bytes(self.write_buffer.by_ref().writer()));
+        item.write_bytes(self.write_buffer.by_ref().writer())?;
 
         Ok(AsyncSink::Ready)
     }

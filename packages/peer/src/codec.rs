@@ -46,7 +46,7 @@ where
     fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<Self::Item>> {
         let src_len = src.len();
 
-        let bytes = match r#try!(self.protocol.bytes_needed(src.as_ref())) {
+        let bytes = match self.protocol.bytes_needed(src.as_ref())? {
             Some(needed) if self.max_payload.map(|max_payload| needed > max_payload).unwrap_or(false) => {
                 return Err(io::Error::new(
                     io::ErrorKind::Other,

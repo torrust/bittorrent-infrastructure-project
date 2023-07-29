@@ -84,7 +84,7 @@ impl FileAccessor {
     where
         T: AsRef<Path>,
     {
-        let absolute_path = r#try!(path.as_ref().canonicalize());
+        let absolute_path = path.as_ref().canonicalize()?;
         let directory_name = if absolute_path.is_dir() {
             let dir_name: &Path = absolute_path.iter().last().unwrap().as_ref();
 
@@ -135,8 +135,8 @@ impl Accessor for FileAccessor {
         };
 
         for res_entry in WalkDir::new(&self.absolute_path).into_iter().filter(entry_file_filter) {
-            let entry = r#try!(res_entry);
-            let entry_metadata = r#try!(entry.metadata());
+            let entry = res_entry?;
+            let entry_metadata = entry.metadata()?;
 
             let file_length = entry_metadata.len();
             // TODO: Switch to using strip_relative when it is stabilized
@@ -156,10 +156,10 @@ impl Accessor for FileAccessor {
         C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
     {
         for res_entry in WalkDir::new(&self.absolute_path).into_iter().filter(entry_file_filter) {
-            let entry = r#try!(res_entry);
-            let mut file = r#try!(File::open(entry.path()));
+            let entry = res_entry?;
+            let mut file = File::open(entry.path())?;
 
-            r#try!(callback(PieceAccess::Compute(&mut file)));
+            callback(PieceAccess::Compute(&mut file))?;
         }
 
         Ok(())

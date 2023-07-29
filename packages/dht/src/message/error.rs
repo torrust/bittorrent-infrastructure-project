@@ -66,7 +66,7 @@ impl ErrorValidate {
             }));
         }
 
-        let code = r#try!(self.convert_int(&args[0], &format!("{}[0]", ERROR_ARGS_KEY)));
+        let code = self.convert_int(&args[0], &format!("{}[0]", ERROR_ARGS_KEY))?;
         let message = String::from(self.convert_str(&args[1], &format!("{}[1]", ERROR_ARGS_KEY))?);
 
         let code2 = code.clone();
@@ -114,10 +114,10 @@ impl<'a> ErrorMessage<'a> {
         B: BRefAccess<BType = B>,
     {
         let validate = ErrorValidate;
-        let error_args = r#try!(validate.lookup_and_convert_list(root, ERROR_ARGS_KEY));
+        let error_args = validate.lookup_and_convert_list(root, ERROR_ARGS_KEY)?;
 
-        let (code, message) = r#try!(validate.extract_error_args::<B>(error_args));
-        let error_code = r#try!(ErrorCode::new(code));
+        let (code, message) = validate.extract_error_args::<B>(error_args)?;
+        let error_code = ErrorCode::new(code)?;
 
         let trans_id_cow = Cow::Owned(trans_id.to_vec());
         let message_cow = Cow::Owned(message);

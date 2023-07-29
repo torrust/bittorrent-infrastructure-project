@@ -344,7 +344,7 @@ where
                     .poll_complete()
                     .map_err(|_| panic!("bip_peer: PeerManaged Failed To Poll Peer"));
 
-                r#try!(result);
+                result?;
             }
 
             Ok(Async::Ready(()))

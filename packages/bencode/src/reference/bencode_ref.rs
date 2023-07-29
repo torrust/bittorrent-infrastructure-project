@@ -37,7 +37,7 @@ impl<'a> BencodeRef<'a> {
     /// Decode the given bytes into a `BencodeRef` using the given decode options.
     pub fn decode(bytes: &'a [u8], opts: BDecodeOpt) -> BencodeParseResult<BencodeRef<'a>> {
         // Apply try so any errors return before the eof check
-        let (bencode, end_pos) = r#try!(decode::decode(bytes, 0, opts, 0));
+        let (bencode, end_pos) = decode::decode(bytes, 0, opts, 0)?;
 
         if end_pos != bytes.len() && opts.enforce_full_decode() {
             return Err(BencodeParseError::from_kind(BencodeParseErrorKind::BytesEmpty {

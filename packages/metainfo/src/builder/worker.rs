@@ -98,7 +98,7 @@ where
 
                 let mut end_of_region = false;
                 while !end_of_region {
-                    end_of_region = r#try!(curr_piece_buffer.write_bytes(|buffer| piece_region.read(buffer))) == 0;
+                    end_of_region = curr_piece_buffer.write_bytes(|buffer| piece_region.read(buffer))? == 0;
 
                     if curr_piece_buffer.is_whole() {
                         work.push(WorkerMessage::HashPiece(piece_index, curr_piece_buffer));
@@ -271,7 +271,7 @@ mod tests {
             for range in self.buffer_ranges.iter() {
                 let mut next_region = Cursor::new(self.contiguous_buffer.index(range.clone()));
 
-                r#try!(callback(PieceAccess::Compute(&mut next_region)));
+                callback(PieceAccess::Compute(&mut next_region))?;
             }
 
             Ok(())

@@ -43,7 +43,7 @@ pub trait BConvertExt: BConvert {
         B: BRefAccessExt<'a>,
         K2: AsRef<[u8]>,
     {
-        self.convert_bytes_ext(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_bytes_ext(self.lookup(dictionary, &key)?, &key)
     }
 
     /// See BConvert::lookup_and_convert_str.
@@ -56,7 +56,7 @@ pub trait BConvertExt: BConvert {
         B: BRefAccessExt<'a>,
         K2: AsRef<[u8]>,
     {
-        self.convert_str_ext(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_str_ext(self.lookup(dictionary, &key)?, &key)
     }
 }
 
@@ -171,7 +171,7 @@ pub trait BConvert {
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_int(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_int(self.lookup(dictionary, &key)?, &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a series of bytes.
@@ -184,7 +184,7 @@ pub trait BConvert {
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_bytes(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_bytes(self.lookup(dictionary, &key)?, &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a UTF-8 string.
@@ -197,7 +197,7 @@ pub trait BConvert {
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_str(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_str(self.lookup(dictionary, &key)?, &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a list.
@@ -210,7 +210,7 @@ pub trait BConvert {
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_list(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_list(self.lookup(dictionary, &key)?, &key)
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to a dictionary.
@@ -223,6 +223,6 @@ pub trait BConvert {
         B: BRefAccess,
         K2: AsRef<[u8]>,
     {
-        self.convert_dict(r#try!(self.lookup(dictionary, &key)), &key)
+        self.convert_dict(self.lookup(dictionary, &key)?, &key)
     }
 }

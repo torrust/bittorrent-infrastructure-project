@@ -61,7 +61,7 @@ where
         .bind_address(bind)
         .buffer_length(EXPECTED_PACKET_LENGTH);
 
-    let mut eloop = r#try!(builder.build());
+    let mut eloop = builder.build()?;
     let channel = eloop.channel();
 
     let dispatch = ClientDispatcher::new(handshaker, bind, limiter);

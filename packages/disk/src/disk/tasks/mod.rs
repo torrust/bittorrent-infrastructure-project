@@ -70,7 +70,7 @@ where
     F: FileSystem,
 {
     let info_hash = file.info().info_hash();
-    let mut init_state = r#try!(PieceChecker::init_state(context.filesystem(), file.info()));
+    let mut init_state = PieceChecker::init_state(context.filesystem(), file.info())?;
 
     // In case we are resuming a download, we need to send the diff for the newly added torrent
     send_piece_diff(&mut init_state, info_hash, blocking_sender, true);
@@ -113,7 +113,7 @@ where
     });
 
     if found_hash {
-        Ok(r#try!(sync_result))
+        Ok(sync_result?)
     } else {
         Err(TorrentError::from_kind(TorrentErrorKind::InfoHashNotFound { hash: hash }))
     }
@@ -135,7 +135,7 @@ where
     });
 
     if found_hash {
-        Ok(r#try!(access_result))
+        Ok(access_result?)
     } else {
         Err(BlockError::from_kind(BlockErrorKind::InfoHashNotFound { hash: info_hash }))
     }
@@ -177,7 +177,7 @@ where
     });
 
     if found_hash {
-        Ok(r#try!(block_result))
+        Ok(block_result?)
     } else {
         Err(BlockError::from_kind(BlockErrorKind::InfoHashNotFound { hash: info_hash }))
     }

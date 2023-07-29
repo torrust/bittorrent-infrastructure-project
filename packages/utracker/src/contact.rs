@@ -125,7 +125,7 @@ impl<'a> CompactPeersV4<'a> {
     where
         W: Write,
     {
-        r#try!(writer.write_all(&*self.peers));
+        writer.write_all(&*self.peers)?;
 
         Ok(())
     }
@@ -234,7 +234,7 @@ impl<'a> CompactPeersV6<'a> {
     where
         W: Write,
     {
-        r#try!(writer.write_all(&*self.peers));
+        writer.write_all(&*self.peers)?;
 
         Ok(())
     }

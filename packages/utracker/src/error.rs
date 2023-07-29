@@ -29,7 +29,7 @@ impl<'a> ErrorResponse<'a> {
     where
         W: Write,
     {
-        r#try!(writer.write_all(self.message.as_bytes()));
+        writer.write_all(self.message.as_bytes())?;
 
         Ok(())
     }

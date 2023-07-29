@@ -82,36 +82,36 @@ impl<'a> RequestType<'a> {
         B: BRefAccess<BType = B>,
     {
         let validate = RequestValidate::new(trans_id);
-        let rqst_root = r#try!(validate.lookup_and_convert_dict(root, REQUEST_ARGS_KEY));
+        let rqst_root = validate.lookup_and_convert_dict(root, REQUEST_ARGS_KEY)?;
 
         match rqst_type {
             PING_TYPE_KEY => {
-                let ping_rqst = r#try!(PingRequest::from_parts(rqst_root, trans_id));
+                let ping_rqst = PingRequest::from_parts(rqst_root, trans_id)?;
                 Ok(RequestType::Ping(ping_rqst))
             }
             FIND_NODE_TYPE_KEY => {
-                let find_node_rqst = r#try!(FindNodeRequest::from_parts(rqst_root, trans_id, message::TARGET_ID_KEY));
+                let find_node_rqst = FindNodeRequest::from_parts(rqst_root, trans_id, message::TARGET_ID_KEY)?;
                 Ok(RequestType::FindNode(find_node_rqst))
             }
             GET_PEERS_TYPE_KEY => {
-                let get_peers_rqst = r#try!(GetPeersRequest::from_parts(rqst_root, trans_id));
+                let get_peers_rqst = GetPeersRequest::from_parts(rqst_root, trans_id)?;
                 Ok(RequestType::GetPeers(get_peers_rqst))
             }
             ANNOUNCE_PEER_TYPE_KEY => {
-                let announce_peer_rqst = r#try!(AnnouncePeerRequest::from_parts(rqst_root, trans_id));
+                let announce_peer_rqst = AnnouncePeerRequest::from_parts(rqst_root, trans_id)?;
                 Ok(RequestType::AnnouncePeer(announce_peer_rqst))
             }
             // GET_DATA_TYPE_KEY => {
-            // let get_data_rqst = r#try!(GetDataRequest::new(rqst_root, trans_id));
+            // let get_data_rqst = GetDataRequest::new(rqst_root, trans_id)?;
             // Ok(RequestType::GetData(get_data_rqst))
             // },
             // PUT_DATA_TYPE_KEY => {
-            // let put_data_rqst = r#try!(PutDataRequest::new(rqst_root, trans_id));
+            // let put_data_rqst = PutDataRequest::new(rqst_root, trans_id)?;
             // Ok(RequestType::PutData(put_data_rqst))
             // },
             unknown => {
                 if let Some(target_key) = forward_compatible_find_node(rqst_root) {
-                    let find_node_rqst = r#try!(FindNodeRequest::from_parts(rqst_root, trans_id, target_key));
+                    let find_node_rqst = FindNodeRequest::from_parts(rqst_root, trans_id, target_key)?;
                     Ok(RequestType::FindNode(find_node_rqst))
                 } else {
                     let error_message = ErrorMessage::new(

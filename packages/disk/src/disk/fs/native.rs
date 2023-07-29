@@ -44,7 +44,7 @@ impl FileSystem for NativeFileSystem {
         P: AsRef<Path> + Send + 'static,
     {
         let combine_path = combine_user_path(&path, &self.current_dir);
-        let file = r#try!(create_new_file(&combine_path));
+        let file = create_new_file(&combine_path)?;
 
         Ok(NativeFile::new(file))
     }
@@ -61,13 +61,13 @@ impl FileSystem for NativeFileSystem {
     }
 
     fn read_file(&self, file: &mut NativeFile, offset: u64, buffer: &mut [u8]) -> io::Result<usize> {
-        r#try!(file.file.seek(SeekFrom::Start(offset)));
+        file.file.seek(SeekFrom::Start(offset))?;
 
         file.file.read(buffer)
     }
 
     fn write_file(&self, file: &mut NativeFile, offset: u64, buffer: &[u8]) -> io::Result<usize> {
-        r#try!(file.file.seek(SeekFrom::Start(offset)));
+        file.file.seek(SeekFrom::Start(offset))?;
 
         file.file.write(buffer)
     }
@@ -82,7 +82,7 @@ where
 {
     match path.as_ref().parent() {
         Some(parent_dir) => {
-            r#try!(fs::create_dir_all(parent_dir));
+            fs::create_dir_all(parent_dir)?;
 
             OpenOptions::new().read(true).write(true).create(true).open(&path)
         }

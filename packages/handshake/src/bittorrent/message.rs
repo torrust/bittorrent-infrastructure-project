@@ -43,11 +43,11 @@ impl HandshakeMessage {
     where
         W: Write,
     {
-        r#try!(self.prot.write_bytes(&mut writer));
-        r#try!(self.ext.write_bytes(&mut writer));
-        r#try!(writer.write_all(self.hash.as_ref()));
+        self.prot.write_bytes(&mut writer)?;
+        self.ext.write_bytes(&mut writer)?;
+        writer.write_all(self.hash.as_ref())?;
 
-        r#try!(writer.write_all(self.pid.as_ref()));
+        writer.write_all(self.pid.as_ref())?;
 
         Ok(())
     }

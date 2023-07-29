@@ -23,21 +23,21 @@ impl MainlineDht {
     where
         H: HandshakerTrait + 'static,
     {
-        let send_sock = r#try!(UdpSocket::bind(&builder.src_addr));
-        let recv_sock = r#try!(send_sock.try_clone());
+        let send_sock = UdpSocket::bind(&builder.src_addr)?;
+        let recv_sock = send_sock.try_clone()?;
 
-        let kill_sock = r#try!(send_sock.try_clone());
-        let kill_addr = r#try!(send_sock.local_addr());
+        let kill_sock = send_sock.try_clone()?;
+        let kill_addr = send_sock.local_addr()?;
 
-        let send = r#try!(worker::start_mainline_dht(
+        let send = worker::start_mainline_dht(
             send_sock,
             recv_sock,
             builder.read_only,
             builder.ext_addr,
             handshaker,
             kill_sock,
-            kill_addr
-        ));
+            kill_addr,
+        )?;
 
         let nodes: Vec<SocketAddr> = builder.nodes.into_iter().collect();
         let routers: Vec<Router> = builder.routers.into_iter().collect();
