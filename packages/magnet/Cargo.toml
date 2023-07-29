@@ -1,21 +1,21 @@
 [package]
-name        = "bip_magnet"
-version     = "0.0.3"
+name = "magnet"
+version = "0.0.3"
 description = "Magnet link parsing and construction"
+keywords = ["magnet", "bittorrent"]
 
-authors     = ["Astro <astro@spaceboyz.net>"]
-
-homepage    = "https://github.com/GGist/bip-rs/bip_magnet"
-repository  = "https://github.com/GGist/bip-rs/bip_magnet"
-
-keywords    = ["magnet", "bittorrent"]
-
-license     = "MIT/Apache-2.0"
-
-[features]
-unstable = []
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
 
 [dependencies]
-bip_util      = { version = "0.4.0" }
-url           = "^0.5.7"
-base32        = "^0.3.1"
+util = { path = "../util" }
+url = "^0.5.7"
+base32 = "^0.3.1"

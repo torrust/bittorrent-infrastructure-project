@@ -1,0 +1,38 @@
+[workspace]
+members = [
+    "packages/bencode",
+    "packages/dht",
+    "packages/disk",
+    "packages/handshake",
+    "packages/htracker",
+    "packages/lpd",
+    "packages/magnet",
+    "packages/metainfo",
+    "packages/peer",
+    "packages/select",
+    "packages/util",
+    "packages/utp",
+    "packages/utracker",
+    "examples/get_metadata",
+    "examples/simple_torrent",
+]
+
+resolver = "2"
+
+[workspace.package]
+authors = [
+    "Nautilus Cyberneering <info@nautilus-cyberneering.de>, Andrew <amiller4421@gmail.com>",
+]
+categories = ["network-programming", "web-programming"]
+description = "A collection of crates for building applications using bittorrent technologies."
+documentation = "https://github.com/torrust/bittorrent-infrastructure-project"
+edition = "2021"
+homepage = "https://github.com/torrust/bittorrent-infrastructure-project"
+keywords = ["bittorrent"]
+license = "Apache-2.0"
+license-file = "COPYRIGHT"
+publish = false # untill we decide where to publish.
+readme = "README.md"
+repository = "https://github.com/torrust/bittorrent-infrastructure-project"
+rust-version = "1.71"
+version = "0.0.0-alpha.1"

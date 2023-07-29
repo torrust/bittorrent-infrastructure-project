@@ -1,33 +1,32 @@
 [package]
-name             = "bip_bencode"
-version          = "0.4.4"
-description      = "Efficient decoding and encoding for bencode"
+name = "bencode"
+description = "Efficient decoding and encoding for bencode."
+keywords = ["bencode"]
+version = "0.4.4"
 
-authors          = ["Andrew <amiller4421@gmail.com>"]
-
-homepage         = "https://github.com/GGist/bip-rs"
-repository       = "https://github.com/GGist/bip-rs/tree/master/bip_bencode"
-documentation    = "https://docs.rs/bip_bencode/"
-
-keywords         = ["bencode", "bittorrent"]
-
-license          = "MIT/Apache-2.0"
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
 
 [dependencies]
-error-chain      = "0.11"
-
-[features]
-unstable         = []
+error-chain = "0.11"
 
 [profile.bench]
-opt-level        = 3
-debug            = false
-rpath            = false
-lto              = false
+opt-level = 3
+debug = false
+rpath = false
+lto = false
 debug-assertions = false
-codegen-units    = 1
-panic            = 'unwind'
+codegen-units = 1
+panic = 'unwind'
 
 [[test]]
-name             = "test"
-path             = "test/mod.rs"
+name = "test"
+path = "test/mod.rs"
