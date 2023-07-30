@@ -1,0 +1,16 @@
+[package]
+name = "lpd"
+version = "0.0.1"
+description = "Implementation of the bittorrent Local Peer/Service Discovery mechanism"
+keywords = ["peer", "discovery", "local", "service"]
+
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true

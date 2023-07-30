@@ -1,0 +1,38 @@
+[package]
+name = "metainfo"
+version = "0.12.0"
+description = "Parsing and building of bittorrent metainfo files"
+keywords = ["metainfo", "torrent", "file", "bittorrent"]
+
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+[dependencies]
+bencode = { path = "../bencode" }
+util = { path = "../util" }
+crossbeam = "0.8"
+walkdir = "2.0"
+error-chain = "0.11"
+
+[dev-dependencies]
+chrono = "0.4"
+rand = "0.3"
+pbr = "1.0"
+
+
+[profile.bench]
+opt-level = 3
+debug = false
+rpath = false
+lto = false
+debug-assertions = false
+codegen-units = 1
+panic = 'unwind'

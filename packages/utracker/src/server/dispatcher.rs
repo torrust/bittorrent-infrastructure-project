@@ -1,0 +1,184 @@
+use std::io::{self, Cursor};
+use std::net::SocketAddr;
+use std::thread;
+
+use nom::IResult;
+use umio::external::Sender;
+use umio::{Dispatcher, ELoopBuilder, Provider};
+
+use crate::announce::AnnounceRequest;
+use crate::error::ErrorResponse;
+use crate::request::{self, RequestType, TrackerRequest};
+use crate::response::{ResponseType, TrackerResponse};
+use crate::scrape::ScrapeRequest;
+use crate::server::handler::ServerHandler;
+
+const EXPECTED_PACKET_LENGTH: usize = 1500;
+
+/// Internal dispatch message for servers.
+pub enum DispatchMessage {
+    Shutdown,
+}
+
+/// Create a new background dispatcher to service requests.
+pub fn create_dispatcher<H>(bind: SocketAddr, handler: H) -> io::Result<Sender<DispatchMessage>>
+where
+    H: ServerHandler + 'static,
+{
+    let builder = ELoopBuilder::new()
+        .channel_capacity(1)
+        .timer_capacity(0)
+        .bind_address(bind)
+        .buffer_length(EXPECTED_PACKET_LENGTH);
+
+    let mut eloop = builder.build()?;
+    let channel = eloop.channel();
+
+    let dispatch = ServerDispatcher::new(handler);
+
+    thread::spawn(move || {
+        eloop.run(dispatch).expect("bip_utracker: ELoop Shutdown Unexpectedly...");
+    });
+
+    Ok(channel)
+}
+
+// ----------------------------------------------------------------------------//
+
+/// Dispatcher that executes requests asynchronously.
+struct ServerDispatcher<H>
+where
+    H: ServerHandler,
+{
+    handler: H,
+}
+
+impl<H> ServerDispatcher<H>
+where
+    H: ServerHandler,
+{
+    /// Create a new `ServerDispatcher`.
+    fn new(handler: H) -> ServerDispatcher<H> {
+        ServerDispatcher { handler }
+    }
+
+    /// Forward the request on to the appropriate handler method.
+    fn process_request(
+        &mut self,
+        provider: &mut Provider<'_, ServerDispatcher<H>>,
+        request: TrackerRequest<'_>,
+        addr: SocketAddr,
+    ) {
+        let conn_id = request.connection_id();
+        let trans_id = request.transaction_id();
+
+        match request.request_type() {
+            &RequestType::Connect => {
+                if conn_id == request::CONNECT_ID_PROTOCOL_ID {
+                    self.forward_connect(provider, trans_id, addr);
+                } // TODO: Add Logging
+            }
+            RequestType::Announce(req) => {
+                self.forward_announce(provider, trans_id, conn_id, req, addr);
+            }
+            RequestType::Scrape(req) => {
+                self.forward_scrape(provider, trans_id, conn_id, req, addr);
+            }
+        };
+    }
+
+    /// Forward a connect request on to the appropriate handler method.
+    fn forward_connect(&mut self, provider: &mut Provider<'_, ServerDispatcher<H>>, trans_id: u32, addr: SocketAddr) {
+        self.handler.connect(addr, |result| {
+            let response_type = match result {
+                Ok(conn_id) => ResponseType::Connect(conn_id),
+                Err(err_msg) => ResponseType::Error(ErrorResponse::new(err_msg)),
+            };
+            let response = TrackerResponse::new(trans_id, response_type);
+
+            write_response(provider, response, addr);
+        });
+    }
+
+    /// Forward an announce request on to the appropriate handler method.
+    fn forward_announce(
+        &mut self,
+        provider: &mut Provider<'_, ServerDispatcher<H>>,
+        trans_id: u32,
+        conn_id: u64,
+        request: &AnnounceRequest<'_>,
+        addr: SocketAddr,
+    ) {
+        self.handler.announce(addr, conn_id, request, |result| {
+            let response_type = match result {
+                Ok(response) => ResponseType::Announce(response),
+                Err(err_msg) => ResponseType::Error(ErrorResponse::new(err_msg)),
+            };
+            let response = TrackerResponse::new(trans_id, response_type);
+
+            write_response(provider, response, addr);
+        });
+    }
+
+    /// Forward a scrape request on to the appropriate handler method.
+    fn forward_scrape(
+        &mut self,
+        provider: &mut Provider<'_, ServerDispatcher<H>>,
+        trans_id: u32,
+        conn_id: u64,
+        request: &ScrapeRequest<'_>,
+        addr: SocketAddr,
+    ) {
+        self.handler.scrape(addr, conn_id, request, |result| {
+            let response_type = match result {
+                Ok(response) => ResponseType::Scrape(response),
+                Err(err_msg) => ResponseType::Error(ErrorResponse::new(err_msg)),
+            };
+            let response = TrackerResponse::new(trans_id, response_type);
+
+            write_response(provider, response, addr);
+        });
+    }
+}
+
+/// Write the given tracker response through to the given provider.
+fn write_response<H>(provider: &mut Provider<'_, ServerDispatcher<H>>, response: TrackerResponse<'_>, addr: SocketAddr)
+where
+    H: ServerHandler,
+{
+    provider.outgoing(|buffer| {
+        let mut cursor = Cursor::new(buffer);
+        let success = response.write_bytes(&mut cursor).is_ok();
+
+        if success {
+            Some((cursor.position() as usize, addr))
+        } else {
+            None
+        } // TODO: Add Logging
+    });
+}
+
+impl<H> Dispatcher for ServerDispatcher<H>
+where
+    H: ServerHandler,
+{
+    type Timeout = ();
+    type Message = DispatchMessage;
+
+    fn incoming(&mut self, mut provider: Provider<'_, Self>, message: &[u8], addr: SocketAddr) {
+        let request = match TrackerRequest::from_bytes(message) {
+            IResult::Done(_, req) => req,
+            _ => return, // TODO: Add Logging
+        };
+
+        self.process_request(&mut provider, request, addr);
+    }
+
+    fn notify(&mut self, mut provider: Provider<'_, Self>, message: DispatchMessage) {
+        match message {
+            DispatchMessage::Shutdown => provider.shutdown(),
+        }
+    }
+
+    fn timeout(&mut self, _: Provider<'_, Self>, _: ()) {}
+}

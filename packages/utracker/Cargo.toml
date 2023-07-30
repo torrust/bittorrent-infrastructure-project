@@ -1,0 +1,32 @@
+[package]
+name = "utracker"
+version = "0.4.0"
+description = "Communication with bittorrent UDP trackers"
+keywords = ["tracker", "bittorrent", "udp"]
+
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+
+[dependencies]
+handshake = { path = "../handshake" }
+util = { path = "../util" }
+
+byteorder = "1.1"
+chrono = "0.4"
+futures = "0.1"
+nom = "3.2"
+rand = "0.3"
+umio = "0.3"
+
+[[test]]
+name = "test"
+path = "test/mod.rs"
