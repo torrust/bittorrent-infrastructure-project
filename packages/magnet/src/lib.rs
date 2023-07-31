@@ -72,39 +72,42 @@ impl MagnetLink {
             Err(_) => return None,
         };
         // Is Magnet Link?
-        if url.scheme != "magnet" {
+        if url.scheme() != "magnet" {
             return None;
         };
 
         // Gather Magnet Link data from query string
-        let mut result: Self = Default::default();
-        let pairs = match url.query_pairs() {
-            Some(pairs) => pairs,
-            None => return None,
-        };
-        for (k, v) in pairs {
-            match &k[..] {
-                "dn" => result.display_name = Some(v),
-                "xl" => {
-                    if let Ok(exact_length) = v[..].parse::<usize>() {
-                        result.exact_length = Some(exact_length)
+        let mut result: Option<MagnetLink> = None;
+
+        for (k, v) in url.query_pairs() {
+            if result.is_none() {
+                result = Some(Self::default())
+            };
+
+            if let Some(ref mut r) = result {
+                match &k[..] {
+                    "dn" => r.display_name = Some(v.to_string()),
+                    "xl" => {
+                        if let Ok(exact_length) = v[..].parse::<usize>() {
+                            r.exact_length = Some(exact_length)
+                        }
                     }
-                }
-                "xt" => {
-                    if let Some(topic) = Topic::parse(&v[..]) {
-                        result.exact_topic = Some(topic)
+                    "xt" => {
+                        if let Some(topic) = Topic::parse(&v[..]) {
+                            r.exact_topic = Some(topic)
+                        }
                     }
+                    "as" => r.acceptable_source.push(v.to_string()),
+                    "xs" => r.exact_source.push(v.to_string()),
+                    "kt" => r.keyword_topic.push(v.to_string()),
+                    "mt" => r.manifest_topic = Some(v.to_string()),
+                    "tr" => r.address_tracker.push(v.to_string()),
+                    _ => (),
                 }
-                "as" => result.acceptable_source.push(v),
-                "xs" => result.exact_source.push(v),
-                "kt" => result.keyword_topic.push(v),
-                "mt" => result.manifest_topic = Some(v),
-                "tr" => result.address_tracker.push(v),
-                _ => (),
             }
         }
 
-        Some(result)
+        result
     }
 
     #[must_use]
@@ -168,6 +171,8 @@ mod tests {
                    desync.com%3A6969";
         /* cSpell:enable */
         let link = crate::MagnetLink::parse(url).unwrap();
+
+        println!("link {:?}", link);
 
         let expected_info_hash = [
             0xd9, 0xbe, 0x69, 0x09, 0x32, 0x5d, 0x28, 0x91, 0x2f, 0x40, 0x0f, 0xcb, 0x32, 0x40, 0x05, 0xdd, 0x58, 0x61, 0xe4,
