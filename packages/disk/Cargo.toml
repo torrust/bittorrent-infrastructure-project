@@ -30,6 +30,7 @@ lru-cache = "0.1"
 [dev-dependencies]
 rand = "0.3"
 tokio-core = "0.1"
+criterion_bencher_compat = "0.4.0"
 
 [[test]]
 name = "test"
@@ -43,3 +44,7 @@ lto = false
 debug-assertions = false
 codegen-units = 1
 panic = 'unwind'
+
+[[bench]]
+name = "disk_benchmark"
+harness = false
