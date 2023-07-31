@@ -439,10 +439,13 @@ mod tests {
     use crate::metainfo::Metainfo;
     use crate::parse;
 
+    type FilesOpt<'a> = Option<Vec<(Option<i64>, Option<&'a [u8]>, Option<Vec<String>>)>>;
+
     /// Helper function for manually constructing a metainfo file based on the parameters given.
     ///
     /// If the metainfo file builds successfully, assertions will be made about the contents of it based
     /// on the parameters given.
+    #[allow(clippy::too_many_arguments)]
     fn validate_parse_from_params(
         tracker: Option<&str>,
         create_date: Option<i64>,
@@ -453,7 +456,7 @@ mod tests {
         pieces: Option<&[u8]>,
         private: Option<i64>,
         directory: Option<&str>,
-        files: Option<Vec<(Option<i64>, Option<&[u8]>, Option<Vec<String>>)>>,
+        files: FilesOpt,
     ) {
         let mut root_dict = BencodeMut::new_dict();
         let info_hash = {
@@ -484,7 +487,7 @@ mod tests {
                         // We intended to build a multi file torrent since we provided a directory
                         info_dict_access.insert(parse::NAME_KEY.into(), ben_bytes!(d));
 
-                        files.as_ref().map(|files| {
+                        if let Some(files) = files.as_ref() {
                             let mut bencode_files = BencodeMut::new_list();
 
                             {
@@ -518,13 +521,13 @@ mod tests {
                             }
 
                             info_dict_access.insert(parse::FILES_KEY.into(), bencode_files);
-                        });
+                        };
 
                         d
                     })
                     .or_else(|| {
                         // We intended to build a single file torrent if a directory was not specified
-                        files.as_ref().map(|files| {
+                        if let Some(files) = files.as_ref() {
                             let (ref opt_len, ref opt_md5, ref opt_path) = files[0];
 
                             opt_path
@@ -532,7 +535,7 @@ mod tests {
                                 .map(|p| info_dict_access.insert(parse::NAME_KEY.into(), ben_bytes!(&p[0][..])));
                             opt_len.map(|l| info_dict_access.insert(parse::LENGTH_KEY.into(), ben_int!(l)));
                             opt_md5.map(|m| info_dict_access.insert(parse::MD5SUM_KEY.into(), ben_bytes!(m)));
-                        });
+                        };
 
                         None
                     });

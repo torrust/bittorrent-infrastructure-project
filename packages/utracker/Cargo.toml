@@ -21,7 +21,7 @@ util = { path = "../util" }
 byteorder = "1.1"
 chrono = "0.4"
 futures = "0.1"
-nom = "3.2"
+nom = "3"
 rand = "0.3"
 umio = "0.3"
 

@@ -1,4 +1,3 @@
-#[macro_use]
 macro_rules! throwaway_input (
     ($res:expr) => (
         {
@@ -21,7 +20,6 @@ macro_rules! throwaway_input (
     );
 );
 
-#[macro_use]
 macro_rules! ignore_input (
     ($i:expr, $submac:ident!( $($args:tt)* )) => (
         {

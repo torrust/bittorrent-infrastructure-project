@@ -17,7 +17,7 @@ use crate::routing::node::{Node, NodeStatus};
 use crate::routing::table::RoutingTable;
 use crate::transaction::{MIDGenerator, TransactionID};
 use crate::worker::handler::DhtHandler;
-use crate::worker::ScheduledTask;
+use crate::worker::ScheduledTaskCheck;
 
 const LOOKUP_TIMEOUT_MS: u64 = 1500;
 const ENDGAME_TIMEOUT_MS: u64 = 1500;
@@ -357,7 +357,7 @@ impl TableLookup {
             let trans_id = self.id_generator.generate();
 
             // Try to start a timeout for the node
-            let res_timeout = event_loop.timeout_ms((0, ScheduledTask::CheckLookupTimeout(trans_id)), LOOKUP_TIMEOUT_MS);
+            let res_timeout = event_loop.timeout_ms((0, ScheduledTaskCheck::LookupTimeout(trans_id)), LOOKUP_TIMEOUT_MS);
             let timeout = if let Ok(t) = res_timeout {
                 t
             } else {
@@ -408,7 +408,7 @@ impl TableLookup {
 
         // Try to start a global message timeout for the endgame
         let res_timeout = event_loop.timeout_ms(
-            (0, ScheduledTask::CheckLookupEndGame(self.id_generator.generate())),
+            (0, ScheduledTaskCheck::LookupEndGame(self.id_generator.generate())),
             ENDGAME_TIMEOUT_MS,
         );
         let timeout = if let Ok(t) = res_timeout {

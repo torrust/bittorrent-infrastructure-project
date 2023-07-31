@@ -12,7 +12,7 @@ use crate::message;
 use crate::message::{bencode_util, bits_ext};
 
 /// Builder type for an `ExtendedMessage`.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ExtendedMessageBuilder {
     id_map: HashMap<ExtendedType, u8>,
     our_id: Option<String>,

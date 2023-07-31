@@ -19,7 +19,7 @@ version.workspace = true
 util = { path = "../util" }
 bytes = "0.4"
 futures = "0.1"
-nom = "3.1"
+nom = "3"
 rand = "0.3"
 tokio-core = "0.1"
 tokio-io = "0.1"

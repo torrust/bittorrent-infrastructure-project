@@ -36,9 +36,8 @@ fn random_buffer(size: usize) -> Vec<u8> {
     let mut buffer = vec![0u8; size];
 
     let mut rng = rand::weak_rng();
-    for i in 0..size {
-        buffer[i] = rng.gen();
-    }
+
+    rng.fill_bytes(buffer.as_mut_slice());
 
     buffer
 }

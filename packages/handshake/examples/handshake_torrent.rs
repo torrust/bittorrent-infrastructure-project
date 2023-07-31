@@ -53,14 +53,14 @@ fn main() {
 fn hex_to_bytes(hex: &str) -> [u8; 20] {
     let mut exact_bytes = [0u8; 20];
 
-    for byte_index in 0..20 {
+    for (byte_index, byte) in exact_bytes.iter_mut().enumerate() {
         let high_index = byte_index * 2;
         let low_index = (byte_index * 2) + 1;
 
         let hex_chunk = &hex[high_index..=low_index];
         let byte_value = u8::from_str_radix(hex_chunk, 16).unwrap();
 
-        exact_bytes[byte_index] = byte_value;
+        *byte = byte_value;
     }
 
     exact_bytes

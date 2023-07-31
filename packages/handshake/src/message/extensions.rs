@@ -18,11 +18,17 @@ pub struct Extensions {
     bytes: [u8; NUM_EXTENSION_BYTES],
 }
 
+impl Default for Extensions {
+    fn default() -> Self {
+        Self::with_bytes([0u8; NUM_EXTENSION_BYTES])
+    }
+}
+
 impl Extensions {
     /// Create a new `Extensions` with zero extensions.
     #[must_use]
     pub fn new() -> Extensions {
-        Extensions::with_bytes([0u8; NUM_EXTENSION_BYTES])
+        Self::default()
     }
 
     /// Create a new `Extensions` by parsing the given bytes.

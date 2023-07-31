@@ -23,12 +23,12 @@ util = { path = "../util" }
 bytes = "0.4"
 byteorder = "1.0"
 crossbeam = "0.8"
-error-chain = "0.11"
+error-chain = "0.12"
 futures = "0.1"
 tokio-core = "0.1"
 tokio-io = "0.1"
 tokio-timer = "0.1"
-nom = "3.1"
+nom = "3"
 
 [[test]]
 name = "test"

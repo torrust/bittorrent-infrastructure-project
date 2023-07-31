@@ -55,14 +55,20 @@ pub struct MetainfoBuilder<'a> {
     info: InfoBuilder<'a>,
 }
 
+impl<'a> Default for MetainfoBuilder<'a> {
+    fn default() -> Self {
+        Self {
+            root: BencodeMut::new_dict(),
+            info: InfoBuilder::new(),
+        }
+    }
+}
+
 impl<'a> MetainfoBuilder<'a> {
     /// Create a new `MetainfoBuilder` with some default values set.
     #[must_use]
     pub fn new() -> MetainfoBuilder<'a> {
-        MetainfoBuilder {
-            root: BencodeMut::new_dict(),
-            info: InfoBuilder::new(),
-        }
+        MetainfoBuilder::default()
     }
 
     /// Set announce-list content
@@ -241,6 +247,7 @@ impl<'a> MetainfoBuilder<'a> {
 // ----------------------------------------------------------------------------//
 
 /// Builder for generating an info dictionary file from some accessor.
+
 pub struct InfoBuilder<'a> {
     info: BencodeMut<'a>,
     // Stored outside of root as some of the variants need the total
@@ -248,13 +255,19 @@ pub struct InfoBuilder<'a> {
     piece_length: PieceLength,
 }
 
-impl<'a> InfoBuilder<'a> {
-    #[must_use]
-    pub fn new() -> InfoBuilder<'a> {
-        InfoBuilder {
+impl<'a> Default for InfoBuilder<'a> {
+    fn default() -> Self {
+        Self {
             info: BencodeMut::new_dict(),
             piece_length: PieceLength::OptBalanced,
         }
+    }
+}
+
+impl<'a> InfoBuilder<'a> {
+    #[must_use]
+    pub fn new() -> InfoBuilder<'a> {
+        InfoBuilder::default()
     }
 
     /// Set or unset the private flag for the torrent file.

@@ -15,6 +15,8 @@ use crate::revelation::{IRevealMessage, ORevealMessage};
 use crate::ControlMessage;
 
 /// Revelation module that will honestly report any pieces we have to peers.
+
+#[derive(Default)]
 pub struct HonestRevealModule {
     torrents: HashMap<InfoHash, PeersInfo>,
     out_queue: VecDeque<ORevealMessage>,
@@ -41,13 +43,13 @@ impl HonestRevealModule {
         }
     }
 
-    fn add_torrent(&mut self, metainfo: &Metainfo) -> StartSend<IRevealMessage, RevealError> {
+    fn add_torrent(&mut self, metainfo: &Metainfo) -> StartSend<IRevealMessage, Box<RevealError>> {
         let info_hash = metainfo.info().info_hash();
 
         match self.torrents.entry(info_hash) {
-            Entry::Occupied(_) => Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoExists {
+            Entry::Occupied(_) => Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoExists {
                 hash: info_hash,
-            })),
+            }))),
             Entry::Vacant(vac) => {
                 let num_pieces = metainfo.info().pieces().count();
 
@@ -66,19 +68,19 @@ impl HonestRevealModule {
         }
     }
 
-    fn remove_torrent(&mut self, metainfo: &Metainfo) -> StartSend<IRevealMessage, RevealError> {
+    fn remove_torrent(&mut self, metainfo: &Metainfo) -> StartSend<IRevealMessage, Box<RevealError>> {
         let info_hash = metainfo.info().info_hash();
 
         if self.torrents.remove(&info_hash).is_none() {
-            Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+            Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
                 hash: info_hash,
-            }))
+            })))
         } else {
             Ok(AsyncSink::Ready)
         }
     }
 
-    fn add_peer(&mut self, peer: PeerInfo) -> StartSend<IRevealMessage, RevealError> {
+    fn add_peer(&mut self, peer: PeerInfo) -> StartSend<IRevealMessage, Box<RevealError>> {
         let info_hash = *peer.hash();
 
         let out_bytes = &mut self.out_bytes;
@@ -107,13 +109,13 @@ impl HonestRevealModule {
                 Ok(AsyncSink::Ready)
             })
             .unwrap_or_else(|| {
-                Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
                     hash: info_hash,
-                }))
+                })))
             })
     }
 
-    fn remove_peer(&mut self, peer: PeerInfo) -> StartSend<IRevealMessage, RevealError> {
+    fn remove_peer(&mut self, peer: PeerInfo) -> StartSend<IRevealMessage, Box<RevealError>> {
         let info_hash = *peer.hash();
 
         self.torrents
@@ -124,22 +126,22 @@ impl HonestRevealModule {
                 Ok(AsyncSink::Ready)
             })
             .unwrap_or_else(|| {
-                Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
                     hash: info_hash,
-                }))
+                })))
             })
     }
 
-    fn insert_piece(&mut self, hash: InfoHash, index: u64) -> StartSend<IRevealMessage, RevealError> {
+    fn insert_piece(&mut self, hash: InfoHash, index: u64) -> StartSend<IRevealMessage, Box<RevealError>> {
         let out_queue = &mut self.out_queue;
         self.torrents
             .get_mut(&hash)
             .map(|peers_info| {
                 if index as usize >= peers_info.num_pieces {
-                    Err(RevealError::from_kind(RevealErrorKind::InvalidPieceOutOfRange {
+                    Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidPieceOutOfRange {
                         index,
                         hash,
-                    }))
+                    })))
                 } else {
                     // Queue up all have messages
                     for peer in &peers_info.peers {
@@ -152,7 +154,11 @@ impl HonestRevealModule {
                     Ok(AsyncSink::Ready)
                 }
             })
-            .unwrap_or_else(|| Err(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists { hash })))
+            .unwrap_or_else(|| {
+                Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                    hash,
+                })))
+            })
     }
 
     //------------------------------------------------------//
@@ -184,7 +190,7 @@ fn insert_reversed_bits(bytes: &mut BytesMut, slice: &[u8]) {
 
 impl Sink for HonestRevealModule {
     type SinkItem = IRevealMessage;
-    type SinkError = RevealError;
+    type SinkError = Box<RevealError>;
 
     fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
         let result = match item {
@@ -210,7 +216,7 @@ impl Sink for HonestRevealModule {
 
 impl Stream for HonestRevealModule {
     type Item = ORevealMessage;
-    type Error = RevealError;
+    type Error = Box<RevealError>;
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         let next_item = self.out_queue.pop_front().map(|item| Ok(Async::Ready(Some(item))));

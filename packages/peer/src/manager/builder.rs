@@ -14,7 +14,7 @@ const DEFAULT_HEARTBEAT_INTERVAL_MILLIS: u64 = 60 * 1000;
 const DEFAULT_HEARTBEAT_TIMEOUT_MILLIS: u64 = 2 * 60 * 1000;
 
 /// Builder for configuring a `PeerManager`.
-#[derive(Copy, Clone)]
+#[derive(Default, Copy, Clone)]
 pub struct PeerManagerBuilder {
     peer: usize,
     sink_buffer: usize,

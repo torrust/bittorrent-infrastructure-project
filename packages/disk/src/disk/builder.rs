@@ -12,16 +12,21 @@ pub struct DiskManagerBuilder {
     pending_size: usize,
     completed_size: usize,
 }
+impl Default for DiskManagerBuilder {
+    fn default() -> Self {
+        Self {
+            builder: Builder::new(),
+            pending_size: DEFAULT_PENDING_SIZE,
+            completed_size: DEFAULT_COMPLETED_SIZE,
+        }
+    }
+}
 
 impl DiskManagerBuilder {
     /// Create a new `DiskManagerBuilder`.
     #[must_use]
     pub fn new() -> DiskManagerBuilder {
-        DiskManagerBuilder {
-            builder: Builder::new(),
-            pending_size: DEFAULT_PENDING_SIZE,
-            completed_size: DEFAULT_COMPLETED_SIZE,
-        }
+        DiskManagerBuilder::default()
     }
 
     /// Use a custom `Builder` for the `CpuPool`.

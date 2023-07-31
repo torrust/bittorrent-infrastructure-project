@@ -128,11 +128,7 @@ pub enum BitRep {
 
 impl PartialEq<XorRep> for BitRep {
     fn eq(&self, other: &XorRep) -> bool {
-        match (self, other) {
-            (&BitRep::Set, &XorRep::Diff) => true,
-            (&BitRep::Unset, &XorRep::Same) => true,
-            _ => false,
-        }
+        matches!((self, other), (&BitRep::Set, &XorRep::Diff) | (&BitRep::Unset, &XorRep::Same))
     }
 }
 

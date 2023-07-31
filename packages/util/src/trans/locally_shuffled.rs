@@ -18,6 +18,8 @@ const TRANSACTION_ID_PREALLOC_LEN: usize = 2048;
 /// and hand out ids in order. When the buffer is exhausted we repeat.
 /// This allows us to uphold the uniqueness property for any large
 /// transaction type (such as u64) but also works with smaller types.
+
+#[derive(Default)]
 pub struct LocallyShuffledIds<T> {
     sequential: SequentialIds<T>,
     stored_ids: Vec<T>,

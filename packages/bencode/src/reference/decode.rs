@@ -77,7 +77,7 @@ fn decode_int(bytes: &[u8], pos: usize, delim: u8) -> BencodeParseResult<(i64, u
     // Position of end of integer type, next byte is the start of the next value
     let absolute_end_pos = pos + relative_end_pos;
     let next_pos = absolute_end_pos + 1;
-    match i64::from_str_radix(int_str, 10) {
+    match int_str.parse::<i64>() {
         Ok(n) => Ok((n, next_pos)),
         Err(_) => Err(BencodeParseError::from_kind(BencodeParseErrorKind::InvalidIntParseError {
             pos,

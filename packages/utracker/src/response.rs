@@ -70,8 +70,8 @@ impl<'a> TrackerResponse<'a> {
             }
             ResponseType::Announce(req) => {
                 let action_id = match req.peers() {
-                    &CompactPeers::V4(_) => crate::ANNOUNCE_IPV4_ACTION_ID,
-                    &CompactPeers::V6(_) => crate::ANNOUNCE_IPV6_ACTION_ID,
+                    CompactPeers::V4(_) => crate::ANNOUNCE_IPV4_ACTION_ID,
+                    CompactPeers::V6(_) => crate::ANNOUNCE_IPV6_ACTION_ID,
                 };
 
                 writer.write_u32::<BigEndian>(action_id)?;

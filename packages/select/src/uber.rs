@@ -9,14 +9,14 @@ use crate::ControlMessage;
 
 trait DiscoveryTrait:
     ExtendedListener
-    + Sink<SinkItem = IDiscoveryMessage, SinkError = DiscoveryError>
-    + Stream<Item = ODiscoveryMessage, Error = DiscoveryError>
+    + Sink<SinkItem = IDiscoveryMessage, SinkError = Box<DiscoveryError>>
+    + Stream<Item = ODiscoveryMessage, Error = Box<DiscoveryError>>
 {
 }
 impl<T> DiscoveryTrait for T where
     T: ExtendedListener
-        + Sink<SinkItem = IDiscoveryMessage, SinkError = DiscoveryError>
-        + Stream<Item = ODiscoveryMessage, Error = DiscoveryError>
+        + Sink<SinkItem = IDiscoveryMessage, SinkError = Box<DiscoveryError>>
+        + Stream<Item = ODiscoveryMessage, Error = Box<DiscoveryError>>
 {
 }
 
@@ -40,19 +40,23 @@ pub enum OUberMessage {
     Discovery(ODiscoveryMessage),
 }
 
-/// Builder for constructing an `UberModule`.
-pub struct UberModuleBuilder {
-    // TODO: Remove these bounds when something like https://github.com/rust-lang/rust/pull/45047 lands
-    discovery: Vec<
-        Box<
-            dyn DiscoveryTrait<
-                SinkItem = IDiscoveryMessage,
-                SinkError = DiscoveryError,
-                Item = ODiscoveryMessage,
-                Error = DiscoveryError,
-            >,
+type UberDiscovery = Vec<
+    Box<
+        dyn DiscoveryTrait<
+            SinkItem = IDiscoveryMessage,
+            SinkError = Box<DiscoveryError>,
+            Item = ODiscoveryMessage,
+            Error = Box<DiscoveryError>,
         >,
     >,
+>;
+
+/// Builder for constructing an `UberModule`.
+
+#[derive(Default)]
+pub struct UberModuleBuilder {
+    // TODO: Remove these bounds when something like https://github.com/rust-lang/rust/pull/45047 lands
+    discovery: UberDiscovery,
     ext_builder: Option<ExtendedMessageBuilder>,
 }
 
@@ -80,17 +84,17 @@ impl UberModuleBuilder {
     pub fn with_discovery_module<T>(mut self, module: T) -> UberModuleBuilder
     where
         T: ExtendedListener
-            + Sink<SinkItem = IDiscoveryMessage, SinkError = DiscoveryError>
-            + Stream<Item = ODiscoveryMessage, Error = DiscoveryError>
+            + Sink<SinkItem = IDiscoveryMessage, SinkError = Box<DiscoveryError>>
+            + Stream<Item = ODiscoveryMessage, Error = Box<DiscoveryError>>
             + 'static,
     {
         self.discovery.push(Box::new(module)
             as Box<
                 dyn DiscoveryTrait<
                     SinkItem = IDiscoveryMessage,
-                    SinkError = DiscoveryError,
+                    SinkError = Box<DiscoveryError>,
                     Item = ODiscoveryMessage,
-                    Error = DiscoveryError,
+                    Error = Box<DiscoveryError>,
                 >,
             >);
         self
@@ -123,19 +127,9 @@ impl<T> IsReady for Async<T> {
 }
 
 //----------------------------------------------------------------------//
-
 /// Module for multiplexing messages across zero or more other modules.
 pub struct UberModule {
-    discovery: Vec<
-        Box<
-            dyn DiscoveryTrait<
-                SinkItem = IDiscoveryMessage,
-                SinkError = DiscoveryError,
-                Item = ODiscoveryMessage,
-                Error = DiscoveryError,
-            >,
-        >,
-    >,
+    discovery: UberDiscovery,
     extended: Option<ExtendedModule>,
     last_sink_state: Option<ModuleState>,
     last_stream_state: Option<ModuleState>,
@@ -251,7 +245,7 @@ impl UberModule {
     }
 
     /// Run the `start_send` logic for the current module for the given message.
-    fn start_sink_state(&mut self, message: &IUberMessage) -> StartSend<(), UberError> {
+    fn start_sink_state(&mut self, message: &IUberMessage) -> StartSend<(), Box<UberError>> {
         self.loop_states(
             true,
             Ok(AsyncSink::Ready),
@@ -263,11 +257,11 @@ impl UberModule {
                 (ModuleState::Discovery(index), IUberMessage::Control(control)) => uber.discovery[index]
                     .start_send(IDiscoveryMessage::Control(control.clone()))
                     .map(|a| a.map(|_| ()))
-                    .map_err(std::convert::Into::into),
+                    .map_err(|e| Box::new(Into::<UberError>::into(*e))),
                 (ModuleState::Discovery(index), IUberMessage::Discovery(discovery)) => uber.discovery[index]
                     .start_send(discovery.clone())
                     .map(|a| a.map(|_| ()))
-                    .map_err(std::convert::Into::into),
+                    .map_err(|e| Box::new(Into::<UberError>::into(*e))),
                 (ModuleState::Extended, IUberMessage::Control(control)) => {
                     let d_modules = &mut uber.discovery[..];
 
@@ -291,7 +285,7 @@ impl UberModule {
         )
     }
 
-    fn poll_sink_state(&mut self) -> Poll<(), UberError> {
+    fn poll_sink_state(&mut self) -> Poll<(), Box<UberError>> {
         self.loop_states(
             true,
             Ok(Async::Ready(())),
@@ -300,13 +294,13 @@ impl UberModule {
                 uber.last_sink_state = state;
             },
             |uber, state| match state {
-                ModuleState::Discovery(index) => uber.discovery[index].poll_complete().map_err(std::convert::Into::into),
+                ModuleState::Discovery(index) => uber.discovery[index].poll_complete().map_err(|e| Box::new(Into::into(*e))),
                 ModuleState::Extended => Ok(Async::Ready(())),
             },
         )
     }
 
-    fn poll_stream_state(&mut self) -> Poll<Option<OUberMessage>, UberError> {
+    fn poll_stream_state(&mut self) -> Poll<Option<OUberMessage>, Box<UberError>> {
         self.loop_states(
             false,
             Ok(Async::NotReady),
@@ -323,7 +317,7 @@ impl UberModule {
                 ModuleState::Discovery(index) => uber.discovery[index]
                     .poll()
                     .map(|async_opt_message| async_opt_message.map(|opt_message| opt_message.map(OUberMessage::Discovery)))
-                    .map_err(std::convert::Into::into),
+                    .map_err(|e| Box::new(Into::into(*e))),
             },
         )
     }
@@ -331,7 +325,7 @@ impl UberModule {
 
 impl Sink for UberModule {
     type SinkItem = IUberMessage;
-    type SinkError = UberError;
+    type SinkError = Box<UberError>;
 
     fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
         // Currently we don't return NotReady from the module directly, so no saving our task state here
@@ -345,7 +339,7 @@ impl Sink for UberModule {
 
 impl Stream for UberModule {
     type Item = OUberMessage;
-    type Error = UberError;
+    type Error = Box<UberError>;
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         self.poll_stream_state()

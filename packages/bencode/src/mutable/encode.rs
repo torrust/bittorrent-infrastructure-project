@@ -47,7 +47,7 @@ where
     bytes.push(crate::BEN_END);
 }
 
-fn encode_dict<'a, K, V>(dict: &dyn BDictAccess<K, V>, bytes: &mut Vec<u8>)
+fn encode_dict<K, V>(dict: &dyn BDictAccess<K, V>, bytes: &mut Vec<u8>)
 where
     K: AsRef<[u8]>,
     V: BRefAccess,

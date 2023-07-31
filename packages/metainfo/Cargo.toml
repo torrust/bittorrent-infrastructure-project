@@ -19,7 +19,7 @@ bencode = { path = "../bencode" }
 util = { path = "../util" }
 crossbeam = "0.8"
 walkdir = "2.0"
-error-chain = "0.11"
+error-chain = "0.12"
 
 [dev-dependencies]
 chrono = "0.4"

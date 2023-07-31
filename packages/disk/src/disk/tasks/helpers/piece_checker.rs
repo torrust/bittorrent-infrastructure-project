@@ -234,7 +234,7 @@ impl PieceCheckerState {
 
     /// Merges all pending piece messages into a single messages if possible.
     fn merge_pieces(&mut self) {
-        for (_, ref mut messages) in &mut self.pending_blocks {
+        for ref mut messages in self.pending_blocks.values_mut() {
             // Sort the messages by their block offset
             messages.sort_by_key(BlockMetadata::block_offset);
 

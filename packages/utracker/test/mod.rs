@@ -100,12 +100,12 @@ impl ServerHandler for MockTrackerHandler {
                 for v4_addr in peers
                     .iter()
                     .filter_map(|addr| match addr {
-                        &SocketAddr::V4(v4_addr) => Some(v4_addr),
-                        &SocketAddr::V6(_) => None,
+                        SocketAddr::V4(v4_addr) => Some(v4_addr),
+                        SocketAddr::V6(_) => None,
                     })
                     .take(NUM_PEERS_RETURNED)
                 {
-                    v4_peers.insert(v4_addr);
+                    v4_peers.insert(*v4_addr);
                 }
 
                 CompactPeers::V4(v4_peers)
@@ -115,12 +115,12 @@ impl ServerHandler for MockTrackerHandler {
                 for v6_addr in peers
                     .iter()
                     .filter_map(|addr| match addr {
-                        &SocketAddr::V4(_) => None,
-                        &SocketAddr::V6(v6_addr) => Some(v6_addr),
+                        SocketAddr::V4(_) => None,
+                        SocketAddr::V6(v6_addr) => Some(v6_addr),
                     })
                     .take(NUM_PEERS_RETURNED)
                 {
-                    v6_peers.insert(v6_addr);
+                    v6_peers.insert(*v6_addr);
                 }
 
                 CompactPeers::V6(v6_peers)

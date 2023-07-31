@@ -89,14 +89,16 @@ impl MagnetLink {
         for (k, v) in pairs {
             match &k[..] {
                 "dn" => result.display_name = Some(v),
-                "xl" => match usize::from_str_radix(&v[..], 10) {
-                    Ok(exact_length) => result.exact_length = Some(exact_length),
-                    Err(_) => (),
-                },
-                "xt" => match Topic::parse(&v[..]) {
-                    Some(topic) => result.exact_topic = Some(topic),
-                    None => (),
-                },
+                "xl" => {
+                    if let Ok(exact_length) = v[..].parse::<usize>() {
+                        result.exact_length = Some(exact_length)
+                    }
+                }
+                "xt" => {
+                    if let Some(topic) = Topic::parse(&v[..]) {
+                        result.exact_topic = Some(topic)
+                    }
+                }
                 "as" => result.acceptable_source.push(v),
                 "xs" => result.exact_source.push(v),
                 "kt" => result.keyword_topic.push(v),

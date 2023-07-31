@@ -37,25 +37,31 @@ pub struct HandshakerBuilder {
     config: HandshakerConfig,
 }
 
+impl Default for HandshakerBuilder {
+    fn default() -> Self {
+        let default_v4_addr = Ipv4Addr::new(0, 0, 0, 0);
+        let default_v4_port = 0;
+
+        let bind = SocketAddr::V4(SocketAddrV4::new(default_v4_addr, default_v4_port));
+
+        let seed = rand::thread_rng().next_u32();
+        let pid = PeerId::from_bytes(&convert::four_bytes_to_array(seed));
+
+        Self {
+            bind,
+            port: Default::default(),
+            pid,
+            ext: Default::default(),
+            config: Default::default(),
+        }
+    }
+}
+
 impl HandshakerBuilder {
     /// Create a new `HandshakerBuilder`.
     #[must_use]
     pub fn new() -> HandshakerBuilder {
-        let default_v4_addr = Ipv4Addr::new(0, 0, 0, 0);
-        let default_v4_port = 0;
-
-        let default_sock_addr = SocketAddr::V4(SocketAddrV4::new(default_v4_addr, default_v4_port));
-
-        let seed = rand::thread_rng().next_u32();
-        let default_peer_id = PeerId::from_bytes(&convert::four_bytes_to_array(seed));
-
-        HandshakerBuilder {
-            bind: default_sock_addr,
-            port: default_v4_port,
-            pid: default_peer_id,
-            ext: Extensions::new(),
-            config: HandshakerConfig::default(),
-        }
+        Self::default()
     }
 
     /// Address that the host will listen on.

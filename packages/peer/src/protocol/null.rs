@@ -13,6 +13,8 @@ use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 ///
 /// Of course, you should make sure that you don't tell peers
 /// that you support any extended messages.
+
+#[derive(Default)]
 pub struct NullProtocol;
 
 impl NullProtocol {

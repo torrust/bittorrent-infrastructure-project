@@ -517,10 +517,10 @@ fn main() {
                         // First, send any control messages, then, send any more piece requests
                         Box::new(
                             map_peer_manager_send
-                                .send_all(stream::iter(send_messages.into_iter().map(Ok::<_, ()>)))
+                                .send_all(stream::iter_result(send_messages.into_iter().map(Ok::<_, ()>)))
                                 .map_err(|_| ())
                                 .and_then(|(map_peer_manager_send, _)| {
-                                    map_peer_manager_send.send_all(stream::iter(next_piece_requests))
+                                    map_peer_manager_send.send_all(stream::iter_result(next_piece_requests))
                                 })
                                 .map_err(|_| ())
                                 .map(move |(map_peer_manager_send, _)| {
