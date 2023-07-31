@@ -22,7 +22,7 @@ byteorder = "1.1"
 chrono = "0.4"
 futures = "0.1"
 nom = "3"
-rand = "0.3"
+rand = "0.8"
 umio = "0.3"
 
 [[test]]

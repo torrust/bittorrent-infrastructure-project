@@ -23,7 +23,7 @@ error-chain = "0.12"
 
 [dev-dependencies]
 chrono = "0.4"
-rand = "0.3"
+rand = "0.8"
 pbr = "1.0"
 criterion = "0.5"
 

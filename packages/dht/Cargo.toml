@@ -22,6 +22,6 @@ util = { path = "../util" }
 crc = "1.2.0"
 log = "0.3.0"
 mio = "0.5.0"
-rand = "0.3.0"
+rand = "0.8.5"
 chrono = "0.2.0"
 error-chain = "0.12"

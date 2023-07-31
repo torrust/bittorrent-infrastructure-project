@@ -27,7 +27,7 @@ log = "0.3"
 lru-cache = "0.1"
 
 [dev-dependencies]
-rand = "0.3"
+rand = "0.8"
 tokio-core = "0.1"
 criterion_bencher_compat = "0.4.0"
 
