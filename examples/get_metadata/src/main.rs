@@ -36,7 +36,6 @@ use pendulum::HashedWheelBuilder;
 use select::discovery::{IDiscoveryMessage, ODiscoveryMessage, UtMetadataModule};
 use select::{ControlMessage, IExtendedMessage, IUberMessage, OExtendedMessage, OUberMessage, UberModuleBuilder};
 use tokio_core::reactor::Core;
-use tokio_io::AsyncRead;
 
 // Legacy Handshaker, when bip_dht is migrated, it will accept S directly
 struct LegacyHandshaker<S> {
@@ -132,10 +131,13 @@ fn main() {
                 if extensions.contains(Extension::ExtensionProtocol) {
                     // Frame our socket with the peer wire protocol with no
                     // extensions (nested null protocol), and a max payload of 24KB
-                    let peer = sock.framed(PeerProtocolCodec::with_max_payload(
-                        PeerWireProtocol::new(PeerExtensionProtocol::new(NullProtocol::new())),
-                        24 * 1024,
-                    ));
+                    let peer = tokio_codec::Decoder::framed(
+                        PeerProtocolCodec::with_max_payload(
+                            PeerWireProtocol::new(PeerExtensionProtocol::new(NullProtocol::new())),
+                            24 * 1024,
+                        ),
+                        sock,
+                    );
 
                     // Create our peer identifier used by our peer manager
                     let peer_info = PeerInfo::new(addr, pid, hash, extensions);

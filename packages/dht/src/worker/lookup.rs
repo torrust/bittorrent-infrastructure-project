@@ -168,6 +168,7 @@ impl TableLookup {
 
         // Check if we beat the distance, get the next distance to beat
         let (iterate_nodes, next_dist_to_beat) = if let Some(nodes) = opt_nodes {
+            #[allow(clippy::mutable_key_type)]
             let requested_nodes = &self.requested_nodes;
 
             // Filter for nodes that we have already requested from
@@ -283,6 +284,7 @@ impl TableLookup {
         // Announce if we were told to
         if self.will_announce {
             // Partial borrow so the filter function doesn't capture all of self
+            #[allow(clippy::mutable_key_type)]
             let announce_tokens = &self.announce_tokens;
 
             for (_, node, _) in self

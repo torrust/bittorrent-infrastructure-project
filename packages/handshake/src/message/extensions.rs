@@ -102,6 +102,7 @@ impl From<[u8; NUM_EXTENSION_BYTES]> for Extensions {
 }
 
 /// Parse the given bytes for extension bits.
+#[allow(deprecated)]
 fn parse_extension_bits(bytes: &[u8]) -> IResult<&[u8], Extensions> {
     do_parse!(bytes,
         bytes: count_fixed!(u8, be_u8, NUM_EXTENSION_BYTES) >>

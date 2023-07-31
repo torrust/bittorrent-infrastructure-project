@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 //! Messaging primitives for announcing.
 
 use std::io::{self, Write};
@@ -36,6 +37,7 @@ pub struct AnnounceRequest<'a> {
     options: AnnounceOptions<'a>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl<'a> AnnounceRequest<'a> {
     /// Create a new `AnnounceRequest`.
     #[must_use]
@@ -481,6 +483,7 @@ fn parse_preference_v4(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
     )
 }
 
+#[allow(deprecated)]
 named!(parse_ipv4<&[u8], Ipv4Addr>,
     map!(count_fixed!(u8, be_u8, 4), convert::bytes_be_to_ipv4)
 );
