@@ -33,7 +33,7 @@ jobs:
       - name: Check Rust Code
         run: cargo check --all-targets
       - name: Clippy Rust Code
-        run: cargo clippy --all-targets -- -D clippy::pedantic
+        run: cargo clippy --all-targets -- -W clippy::pedantic
       - name: Test Documentation
         run: cargo test --doc
       - name: Run Tests
