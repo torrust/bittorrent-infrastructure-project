@@ -77,8 +77,8 @@ mod parse;
 
 pub mod iter;
 
-pub use metainfo::{File, Info, Metainfo};
 pub use util::bt::InfoHash;
 
+pub use self::metainfo::{File, Info, Metainfo};
 pub use crate::accessor::{Accessor, DirectAccessor, FileAccessor, IntoAccessor, PieceAccess};
 pub use crate::builder::{InfoBuilder, MetainfoBuilder, PieceLength};
