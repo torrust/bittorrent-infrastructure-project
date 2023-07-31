@@ -2,7 +2,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 
-use chrono::{DateTime, Duration, UTC};
+use chrono::{DateTime, Duration, Utc};
 use util::bt::InfoHash;
 
 const MAX_ITEMS_STORED: usize = 500;
@@ -24,10 +24,10 @@ impl AnnounceStorage {
 
     /// Returns true if the item was added/it's existing expiration updated, false otherwise.
     pub fn add_item(&mut self, info_hash: InfoHash, address: SocketAddr) -> bool {
-        self.add(info_hash, address, UTC::now())
+        self.add(info_hash, address, Utc::now())
     }
 
-    fn add(&mut self, info_hash: InfoHash, address: SocketAddr, curr_time: DateTime<UTC>) -> bool {
+    fn add(&mut self, info_hash: InfoHash, address: SocketAddr, curr_time: DateTime<Utc>) -> bool {
         // Clear out any old contacts that we have stored
         self.remove_expired_items(curr_time);
         let item = AnnounceItem::new(info_hash, address);
@@ -55,10 +55,10 @@ impl AnnounceStorage {
     where
         F: FnMut(SocketAddr),
     {
-        self.find(info_hash, item_func, UTC::now())
+        self.find(info_hash, item_func, Utc::now())
     }
 
-    fn find<F>(&mut self, info_hash: &InfoHash, mut item_func: F, curr_time: DateTime<UTC>)
+    fn find<F>(&mut self, info_hash: &InfoHash, mut item_func: F, curr_time: DateTime<Utc>)
     where
         F: FnMut(SocketAddr),
     {
@@ -105,7 +105,7 @@ impl AnnounceStorage {
     }
 
     /// Prunes all expired items from the internal list.
-    fn remove_expired_items(&mut self, curr_time: DateTime<UTC>) {
+    fn remove_expired_items(&mut self, curr_time: DateTime<Utc>) {
         let num_expired_items = self.expires.iter().take_while(|i| i.is_expired(curr_time)).count();
 
         // Remove the numbers of expired elements from the head of the list
@@ -164,7 +164,7 @@ const EXPIRATION_TIME_HOURS: i64 = 24;
 #[derive(Debug, Clone)]
 struct ItemExpiration {
     address: SocketAddr,
-    inserted: DateTime<UTC>,
+    inserted: DateTime<Utc>,
     info_hash: InfoHash,
 }
 
@@ -172,12 +172,12 @@ impl ItemExpiration {
     pub fn new(info_hash: InfoHash, address: SocketAddr) -> ItemExpiration {
         ItemExpiration {
             address,
-            inserted: UTC::now(),
+            inserted: Utc::now(),
             info_hash,
         }
     }
 
-    pub fn is_expired(&self, now: DateTime<UTC>) -> bool {
+    pub fn is_expired(&self, now: DateTime<Utc>) -> bool {
         now - self.inserted >= Duration::hours(EXPIRATION_TIME_HOURS)
     }
 

@@ -19,7 +19,6 @@ use futures::future::{self, Future, Loop};
 use futures::sink::{Sink, Wait};
 use futures::stream::Stream;
 use metainfo::{Accessor, IntoAccessor, PieceAccess};
-use rand::Rng;
 use tokio_core::reactor::{Core, Timeout};
 use util::bt::InfoHash;
 
@@ -35,9 +34,7 @@ mod resume_torrent;
 fn random_buffer(size: usize) -> Vec<u8> {
     let mut buffer = vec![0u8; size];
 
-    let mut rng = rand::weak_rng();
-
-    rng.fill_bytes(buffer.as_mut_slice());
+    rand::Rng::fill(&mut rand::thread_rng(), buffer.as_mut_slice());
 
     buffer
 }

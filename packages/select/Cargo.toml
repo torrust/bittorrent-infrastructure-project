@@ -21,12 +21,12 @@ peer = { path = "../peer" }
 metainfo = { path = "../metainfo" }
 utracker = { path = "../utracker" }
 
-bit-set = "0.4"
+bit-set = "0.5"
 bytes = "0.4"
 error-chain = "0.12"
 futures = "0.1"
-rand = "0.3"
-log = "0.3"
+rand = "0.8"
+log = "0.4"
 
 [dev-dependencies]
 futures-test = { git = "https://github.com/carllerche/better-future.git" }

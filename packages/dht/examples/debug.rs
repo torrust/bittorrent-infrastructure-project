@@ -10,21 +10,22 @@ use std::thread::{self};
 
 use dht::handshaker_trait::HandshakerTrait;
 use dht::{DhtBuilder, Router};
-use log::{LogLevel, LogLevelFilter, LogMetadata, LogRecord};
 use util::bt::{InfoHash, PeerId};
 
 struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
-    fn enabled(&self, metadata: &LogMetadata) -> bool {
-        metadata.level() <= LogLevel::Info
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::Level::Info
     }
 
-    fn log(&self, record: &LogRecord) {
+    fn log(&self, record: &log::Record) {
         if self.enabled(record.metadata()) {
             println!("{} - {}", record.level(), record.args());
         }
     }
+
+    fn flush(&self) {}
 }
 
 struct SimpleHandshaker {
@@ -65,11 +66,9 @@ impl HandshakerTrait for SimpleHandshaker {
 }
 
 fn main() {
-    log::set_logger(|m| {
-        m.set(LogLevelFilter::max());
-        Box::new(SimpleLogger)
-    })
-    .unwrap();
+    log::set_logger(&SimpleLogger).unwrap();
+    log::set_max_level(log::LevelFilter::max());
+
     let hash = InfoHash::from_bytes(b"My Unique Info Hash");
 
     let handshaker = SimpleHandshaker {

@@ -19,9 +19,9 @@ bencode = { path = "../bencode" }
 handshake = { path = "../handshake" }
 util = { path = "../util" }
 
-crc = "1.2.0"
-log = "0.3.0"
-mio = "0.5.0"
-rand = "0.3.0"
-chrono = "0.2.0"
+crc = "3"
+log = "0.4"
+mio = "0.5"
+rand = "0.8"
+chrono = "0.4"
 error-chain = "0.12"

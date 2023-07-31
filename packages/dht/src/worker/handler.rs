@@ -5,7 +5,6 @@ use std::sync::mpsc::{self, SyncSender};
 use std::{io, mem, thread};
 
 use bencode::{BDecodeOpt, BencodeMut, BencodeRef};
-use log::LogLevel;
 use mio::{self, EventLoop, Handler};
 use util::bt::InfoHash;
 use util::convert;
@@ -602,7 +601,7 @@ where
                 broadcast_bootstrap_completed(trans_id.action_id(), table_actions, work_storage, event_loop);
             }
 
-            if log_enabled!(LogLevel::Info) {
+            if log_enabled!(log::Level::Info) {
                 let mut total = 0;
 
                 for (index, bucket) in work_storage.routing_table.buckets().enumerate() {

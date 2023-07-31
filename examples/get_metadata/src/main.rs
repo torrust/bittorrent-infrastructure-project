@@ -1,13 +1,11 @@
 extern crate dht;
+extern crate futures;
 extern crate handshake;
+extern crate hex;
 extern crate metainfo;
 extern crate peer;
-extern crate select;
-#[macro_use]
-extern crate clap;
-extern crate futures;
-extern crate hex;
 extern crate pendulum;
+extern crate select;
 extern crate tokio_core;
 extern crate tokio_io;
 
@@ -17,6 +15,7 @@ use std::io::Write;
 use std::net::SocketAddr;
 use std::time::Duration;
 
+use clap::clap_app;
 use dht::handshaker_trait::HandshakerTrait;
 use dht::{DhtBuilder, DhtEvent, Router};
 use futures::future::{self, Either, Loop};

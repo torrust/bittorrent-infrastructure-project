@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-use chrono::{DateTime, Duration, UTC};
+use chrono::{DateTime, Duration, Utc};
 use util::convert;
 use util::error::{LengthError, LengthErrorKind, LengthResult};
 use util::net::IpAddr;
@@ -70,7 +70,7 @@ impl AsRef<[u8]> for Token {
 pub struct TokenStore {
     curr_secret: u32,
     last_secret: u32,
-    last_refresh: DateTime<UTC>,
+    last_refresh: DateTime<Utc>,
 }
 
 impl TokenStore {
@@ -81,7 +81,7 @@ impl TokenStore {
         // under that secret. We could go the option route but that isn't as clean.
         let curr_secret = rand::random::<u32>();
         let last_secret = rand::random::<u32>();
-        let last_refresh = UTC::now();
+        let last_refresh = Utc::now();
 
         TokenStore {
             curr_secret,
@@ -108,12 +108,12 @@ impl TokenStore {
             1 => {
                 self.last_secret = self.curr_secret;
                 self.curr_secret = rand::random::<u32>();
-                self.last_refresh = UTC::now();
+                self.last_refresh = Utc::now();
             }
             _ => {
                 self.last_secret = rand::random::<u32>();
                 self.curr_secret = rand::random::<u32>();
-                self.last_refresh = UTC::now();
+                self.last_refresh = Utc::now();
             }
         };
     }
@@ -124,9 +124,9 @@ impl TokenStore {
 /// invalid.
 ///
 /// Returns the number of intervals that have passed since the last refresh time.
-fn intervals_passed(last_refresh: DateTime<UTC>) -> i64 {
+fn intervals_passed(last_refresh: DateTime<Utc>) -> i64 {
     let refresh_duration = Duration::minutes(REFRESH_INTERVAL_MINS);
-    let curr_time = UTC::now();
+    let curr_time = Utc::now();
 
     let diff_time = curr_time - last_refresh;
 
