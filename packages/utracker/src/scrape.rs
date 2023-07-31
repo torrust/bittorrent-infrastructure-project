@@ -64,7 +64,7 @@ fn parse_stats(bytes: &[u8]) -> IResult<&[u8], ScrapeStats> {
 // ----------------------------------------------------------------------------//
 
 /// Scrape request sent from the client to the server.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeRequest<'a> {
     hashes: Cow<'a, [u8]>,
 }
@@ -136,7 +136,7 @@ fn parse_request(bytes: &[u8]) -> IResult<&[u8], ScrapeRequest<'_>> {
 // ----------------------------------------------------------------------------//
 
 /// Scrape response sent from the server to the client.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeResponse<'a> {
     stats: Cow<'a, [u8]>,
 }

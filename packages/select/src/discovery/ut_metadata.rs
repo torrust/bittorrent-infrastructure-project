@@ -57,6 +57,8 @@ struct ActivePeers {
 /// Metadata will be retrieved when `IDiscoveryMessage::DownloadMetadata`
 /// is received, and will be served when
 /// `IDiscoveryMessage::Control(ControlMessage::AddTorrent)` is received.
+
+#[derive(Default)]
 pub struct UtMetadataModule {
     completed_map: HashMap<InfoHash, Vec<u8>>,
     pending_map: HashMap<InfoHash, Option<PendingInfo>>,
@@ -82,13 +84,13 @@ impl UtMetadataModule {
         }
     }
 
-    fn add_torrent(&mut self, metainfo: Metainfo) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    fn add_torrent(&mut self, metainfo: Metainfo) -> StartSend<IDiscoveryMessage, Box<DiscoveryError>> {
         let info_hash = metainfo.info().info_hash();
 
         match self.completed_map.entry(info_hash) {
-            Entry::Occupied(_) => Err(DiscoveryError::from_kind(DiscoveryErrorKind::InvalidMetainfoExists {
-                hash: info_hash,
-            })),
+            Entry::Occupied(_) => Err(Box::new(DiscoveryError::from_kind(
+                DiscoveryErrorKind::InvalidMetainfoExists { hash: info_hash },
+            ))),
             Entry::Vacant(vac) => {
                 let info_bytes = metainfo.info().to_bytes();
                 vac.insert(info_bytes);
@@ -98,17 +100,19 @@ impl UtMetadataModule {
         }
     }
 
-    fn remove_torrent(&mut self, metainfo: Metainfo) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    fn remove_torrent(&mut self, metainfo: Metainfo) -> StartSend<IDiscoveryMessage, Box<DiscoveryError>> {
         if self.completed_map.remove(&metainfo.info().info_hash()).is_none() {
-            Err(DiscoveryError::from_kind(DiscoveryErrorKind::InvalidMetainfoNotExists {
-                hash: metainfo.info().info_hash(),
-            }))
+            Err(Box::new(DiscoveryError::from_kind(
+                DiscoveryErrorKind::InvalidMetainfoNotExists {
+                    hash: metainfo.info().info_hash(),
+                },
+            )))
         } else {
             Ok(AsyncSink::Ready)
         }
     }
 
-    fn add_peer(&mut self, info: PeerInfo, ext_info: &ExtendedPeerInfo) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    fn add_peer(&mut self, info: PeerInfo, ext_info: &ExtendedPeerInfo) -> StartSend<IDiscoveryMessage, Box<DiscoveryError>> {
         let our_support = ext_info
             .our_message()
             .and_then(|msg| msg.query_id(&ExtendedType::UtMetadata))
@@ -127,24 +131,21 @@ impl UtMetadataModule {
             opt_metadata_size
         );
         // If peer supports it, but they don't have the metadata size, then they probably don't have the file yet...
-        match (our_support, they_support, opt_metadata_size) {
-            (true, true, Some(metadata_size)) => {
-                self.active_peers
-                    .entry(*info.hash())
-                    .or_insert_with(|| ActivePeers {
-                        peers: HashSet::new(),
-                        metadata_size,
-                    })
-                    .peers
-                    .insert(info);
-            }
-            _ => (),
+        if let (true, true, Some(metadata_size)) = (our_support, they_support, opt_metadata_size) {
+            self.active_peers
+                .entry(*info.hash())
+                .or_insert_with(|| ActivePeers {
+                    peers: HashSet::new(),
+                    metadata_size,
+                })
+                .peers
+                .insert(info);
         }
 
         Ok(AsyncSink::Ready)
     }
 
-    fn remove_peer(&mut self, info: PeerInfo) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    fn remove_peer(&mut self, info: PeerInfo) -> StartSend<IDiscoveryMessage, Box<DiscoveryError>> {
         let empty_peers = if let Some(active_peers) = self.active_peers.get_mut(info.hash()) {
             active_peers.peers.remove(&info);
 
@@ -160,7 +161,7 @@ impl UtMetadataModule {
         Ok(AsyncSink::Ready)
     }
 
-    fn apply_tick(&mut self, duration: Duration) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    fn apply_tick(&mut self, duration: Duration) -> StartSend<IDiscoveryMessage, Box<DiscoveryError>> {
         let active_requests = &mut self.active_requests;
         let active_peers = &mut self.active_peers;
         let pending_map = &mut self.pending_map;
@@ -194,7 +195,7 @@ impl UtMetadataModule {
         Ok(AsyncSink::Ready)
     }
 
-    fn download_metainfo(&mut self, hash: InfoHash) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    fn download_metainfo(&mut self, hash: InfoHash) -> StartSend<IDiscoveryMessage, Box<DiscoveryError>> {
         self.pending_map.entry(hash).or_insert(None);
 
         Ok(AsyncSink::Ready)
@@ -204,7 +205,7 @@ impl UtMetadataModule {
         &mut self,
         info: PeerInfo,
         request: UtMetadataRequestMessage,
-    ) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    ) -> StartSend<IDiscoveryMessage, Box<DiscoveryError>> {
         if self.peer_requests.len() == MAX_PEER_REQUESTS {
             Ok(AsyncSink::NotReady(IDiscoveryMessage::ReceivedUtMetadataMessage(
                 info,
@@ -217,7 +218,7 @@ impl UtMetadataModule {
         }
     }
 
-    fn recv_data(&mut self, info: PeerInfo, data: UtMetadataDataMessage) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    fn recv_data(&mut self, info: PeerInfo, data: UtMetadataDataMessage) -> StartSend<IDiscoveryMessage, Box<DiscoveryError>> {
         // See if we can find the request that we made to the peer for that piece
         let opt_index = self
             .active_requests
@@ -241,14 +242,18 @@ impl UtMetadataModule {
         Ok(AsyncSink::Ready)
     }
 
-    fn recv_reject(&mut self, _info: PeerInfo, _reject: UtMetadataRejectMessage) -> StartSend<IDiscoveryMessage, DiscoveryError> {
+    fn recv_reject(
+        &mut self,
+        _info: PeerInfo,
+        _reject: UtMetadataRejectMessage,
+    ) -> StartSend<IDiscoveryMessage, Box<DiscoveryError>> {
         // TODO: Remove any requests after receiving a reject, for now, we will just timeout
         Ok(AsyncSink::Ready)
     }
 
     //-------------------------------------------------------------------------------//
 
-    fn retrieve_completed_download(&mut self) -> Option<Result<ODiscoveryMessage, DiscoveryError>> {
+    fn retrieve_completed_download(&mut self) -> Option<Result<ODiscoveryMessage, Box<DiscoveryError>>> {
         let opt_completed_hash = self
             .pending_map
             .iter()
@@ -268,7 +273,7 @@ impl UtMetadataModule {
         })
     }
 
-    fn retrieve_piece_request(&mut self) -> Option<Result<ODiscoveryMessage, DiscoveryError>> {
+    fn retrieve_piece_request(&mut self) -> Option<Result<ODiscoveryMessage, Box<DiscoveryError>>> {
         for (hash, opt_pending) in &mut self.pending_map {
             let has_ready_requests = opt_pending.as_ref().is_some_and(|pending| !pending.messages.is_empty());
             let has_active_peers = self.active_peers.get(hash).is_some_and(|peers| !peers.peers.is_empty());
@@ -301,7 +306,7 @@ impl UtMetadataModule {
         None
     }
 
-    fn retrieve_piece_response(&mut self) -> Option<Result<ODiscoveryMessage, DiscoveryError>> {
+    fn retrieve_piece_response(&mut self) -> Option<Result<ODiscoveryMessage, Box<DiscoveryError>>> {
         while let Some(request) = self.peer_requests.pop_front() {
             let hash = request.send_to.hash();
             let piece = request.request.piece();
@@ -464,7 +469,7 @@ impl ExtendedListener for UtMetadataModule {
 
 impl Sink for UtMetadataModule {
     type SinkItem = IDiscoveryMessage;
-    type SinkError = DiscoveryError;
+    type SinkError = Box<DiscoveryError>;
 
     fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
         let start_send = match item {
@@ -497,7 +502,7 @@ impl Sink for UtMetadataModule {
 
 impl Stream for UtMetadataModule {
     type Item = ODiscoveryMessage;
-    type Error = DiscoveryError;
+    type Error = Box<DiscoveryError>;
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         // Check if we completed any downloads

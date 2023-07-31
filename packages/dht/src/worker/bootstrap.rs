@@ -12,7 +12,7 @@ use crate::routing::node::{Node, NodeStatus};
 use crate::routing::table::{self, BucketContents, RoutingTable};
 use crate::transaction::{MIDGenerator, TransactionID};
 use crate::worker::handler::DhtHandler;
-use crate::worker::ScheduledTask;
+use crate::worker::ScheduledTaskCheck;
 
 const BOOTSTRAP_INITIAL_TIMEOUT: u64 = 2500;
 const BOOTSTRAP_NODE_TIMEOUT: u64 = 500;
@@ -74,7 +74,7 @@ impl TableBootstrap {
 
         // Set a timer to begin the actual bootstrap
         let res_timeout = event_loop.timeout_ms(
-            (BOOTSTRAP_INITIAL_TIMEOUT, ScheduledTask::CheckBootstrapTimeout(trans_id)),
+            (BOOTSTRAP_INITIAL_TIMEOUT, ScheduledTaskCheck::BootstrapTimeout(trans_id)),
             BOOTSTRAP_INITIAL_TIMEOUT,
         );
         let timeout = if let Ok(t) = res_timeout {
@@ -103,7 +103,7 @@ impl TableBootstrap {
         self.starting_routers.contains(addr)
     }
 
-    pub fn recv_response<'a, H>(
+    pub fn recv_response<H>(
         &mut self,
         trans_id: &TransactionID,
         table: &RoutingTable,
@@ -257,7 +257,7 @@ impl TableBootstrap {
 
             // Add a timeout for the node
             let res_timeout = event_loop.timeout_ms(
-                (BOOTSTRAP_NODE_TIMEOUT, ScheduledTask::CheckBootstrapTimeout(trans_id)),
+                (BOOTSTRAP_NODE_TIMEOUT, ScheduledTaskCheck::BootstrapTimeout(trans_id)),
                 BOOTSTRAP_NODE_TIMEOUT,
             );
             let timeout = if let Ok(t) = res_timeout {

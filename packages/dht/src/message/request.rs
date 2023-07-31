@@ -131,7 +131,7 @@ impl<'a> RequestType<'a> {
 /// Mainline dht extension for forward compatibility.
 ///
 /// Treat unsupported messages with either a target id key or info hash key as find node messages.
-fn forward_compatible_find_node<'a, B>(rqst_root: &dyn BDictAccess<B::BKey, B>) -> Option<&'static str>
+fn forward_compatible_find_node<B>(rqst_root: &dyn BDictAccess<B::BKey, B>) -> Option<&'static str>
 where
     B: BRefAccess,
 {

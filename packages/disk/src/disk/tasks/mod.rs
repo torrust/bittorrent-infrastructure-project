@@ -43,7 +43,7 @@ where
                 Ok(_) => ODiskMessage::BlockLoaded(block),
                 Err(err) => ODiskMessage::LoadBlockError(block, err),
             },
-            IDiskMessage::ProcessBlock(mut block) => match execute_process_block(&mut block, &context, &mut blocking_sender) {
+            IDiskMessage::ProcessBlock(block) => match execute_process_block(&block, &context, &mut blocking_sender) {
                 Ok(_) => ODiskMessage::BlockProcessed(block),
                 Err(err) => ODiskMessage::ProcessBlockError(block, err),
             },
@@ -142,7 +142,7 @@ where
 }
 
 fn execute_process_block<F>(
-    block: &mut Block,
+    block: &Block,
     context: &DiskManagerContext<F>,
     blocking_sender: &mut Wait<Sender<ODiskMessage>>,
 ) -> BlockResult<()>

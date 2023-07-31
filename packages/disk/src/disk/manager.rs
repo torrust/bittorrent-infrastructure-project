@@ -210,13 +210,9 @@ impl Stream for DiskManagerStream {
                 self.complete_work();
 
                 info!("Notifying DiskManager That We Can Submit More Work");
-                loop {
-                    match self.task_queue.pop() {
-                        Some(task) => task.notify(),
-                        None => {
-                            break;
-                        }
-                    }
+
+                while let Some(task) = self.task_queue.pop() {
+                    task.notify();
                 }
 
                 res

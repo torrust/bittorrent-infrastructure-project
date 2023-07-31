@@ -37,11 +37,8 @@ impl Filters {
         self.write_filters(|mut_filters| {
             let opt_found = check_index(&mut_filters[..], &filter);
 
-            match opt_found {
-                Some(index) => {
-                    mut_filters.swap_remove(index);
-                }
-                None => (),
+            if let Some(index) = opt_found {
+                mut_filters.swap_remove(index);
             }
         });
     }

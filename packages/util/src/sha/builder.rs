@@ -9,11 +9,17 @@ pub struct ShaHashBuilder {
     sha: Sha1,
 }
 
+impl Default for ShaHashBuilder {
+    fn default() -> Self {
+        Self { sha: Sha1::new() }
+    }
+}
+
 impl ShaHashBuilder {
     /// Create a new `ShaHashBuilder`.
     #[must_use]
     pub fn new() -> ShaHashBuilder {
-        ShaHashBuilder { sha: Sha1::new() }
+        ShaHashBuilder::default()
     }
 
     /// Add bytes to the `ShaHashBuilder`.

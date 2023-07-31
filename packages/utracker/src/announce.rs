@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 //! Messaging primitives for announcing.
 
 use std::io::{self, Write};
@@ -36,6 +37,7 @@ pub struct AnnounceRequest<'a> {
     options: AnnounceOptions<'a>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl<'a> AnnounceRequest<'a> {
     /// Create a new `AnnounceRequest`.
     #[must_use]
@@ -389,11 +391,11 @@ impl AnnounceEvent {
     /// Access the raw id of the current event.
     #[must_use]
     pub fn as_id(&self) -> i32 {
-        match self {
-            &AnnounceEvent::None => ANNOUNCE_NONE_EVENT,
-            &AnnounceEvent::Completed => ANNOUNCE_COMPLETED_EVENT,
-            &AnnounceEvent::Started => ANNOUNCE_STARTED_EVENT,
-            &AnnounceEvent::Stopped => ANNOUNCE_STOPPED_EVENT,
+        match *self {
+            AnnounceEvent::None => ANNOUNCE_NONE_EVENT,
+            AnnounceEvent::Completed => ANNOUNCE_COMPLETED_EVENT,
+            AnnounceEvent::Started => ANNOUNCE_STARTED_EVENT,
+            AnnounceEvent::Stopped => ANNOUNCE_STOPPED_EVENT,
         }
     }
 }
@@ -440,22 +442,22 @@ impl SourceIP {
     where
         W: Write,
     {
-        match self {
-            &SourceIP::ImpliedV4 => self.write_bytes_slice(writer, &IMPLIED_IPV4_ID[..]),
-            &SourceIP::ImpliedV6 => self.write_bytes_slice(writer, &IMPLIED_IPV6_ID[..]),
-            &SourceIP::ExplicitV4(addr) => self.write_bytes_slice(writer, &convert::ipv4_to_bytes_be(addr)[..]),
-            &SourceIP::ExplicitV6(addr) => self.write_bytes_slice(writer, &convert::ipv6_to_bytes_be(addr)[..]),
+        match *self {
+            SourceIP::ImpliedV4 => self.write_bytes_slice(writer, &IMPLIED_IPV4_ID[..]),
+            SourceIP::ImpliedV6 => self.write_bytes_slice(writer, &IMPLIED_IPV6_ID[..]),
+            SourceIP::ExplicitV4(addr) => self.write_bytes_slice(writer, &convert::ipv4_to_bytes_be(addr)[..]),
+            SourceIP::ExplicitV6(addr) => self.write_bytes_slice(writer, &convert::ipv6_to_bytes_be(addr)[..]),
         }
     }
 
     /// Whether or not the source is an IPv6 address.
     #[must_use]
     pub fn is_ipv6(&self) -> bool {
-        match self {
-            &SourceIP::ImpliedV6 => true,
-            &SourceIP::ExplicitV6(_) => true,
-            &SourceIP::ImpliedV4 => false,
-            &SourceIP::ExplicitV4(_) => false,
+        match *self {
+            SourceIP::ImpliedV6 => true,
+            SourceIP::ExplicitV6(_) => true,
+            SourceIP::ImpliedV4 => false,
+            SourceIP::ExplicitV4(_) => false,
         }
     }
 
@@ -481,6 +483,7 @@ fn parse_preference_v4(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
     )
 }
 
+#[allow(deprecated)]
 named!(parse_ipv4<&[u8], Ipv4Addr>,
     map!(count_fixed!(u8, be_u8, 4), convert::bytes_be_to_ipv4)
 );
@@ -520,8 +523,8 @@ impl DesiredPeers {
         W: Write,
     {
         let write_value = match self {
-            &DesiredPeers::Default => DEFAULT_NUM_WANT,
-            &DesiredPeers::Specified(count) => count,
+            DesiredPeers::Default => DEFAULT_NUM_WANT,
+            DesiredPeers::Specified(count) => *count,
         };
         writer.write_i32::<BigEndian>(write_value)?;
 

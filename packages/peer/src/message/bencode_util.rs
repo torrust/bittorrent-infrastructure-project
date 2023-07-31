@@ -39,11 +39,8 @@ where
 
     if let Ok(ben_id_map) = CONVERT.lookup_and_convert_dict(root, ID_MAP_KEY) {
         for (id, ben_value) in ben_id_map.to_list() {
-            match (str::from_utf8(id.as_ref()), CONVERT.convert_int(ben_value, id)) {
-                (Ok(str_id), Ok(value)) => {
-                    id_map.insert(ExtendedType::from_id(str_id), value as u8);
-                }
-                _ => (),
+            if let (Ok(str_id), Ok(value)) = (str::from_utf8(id.as_ref()), CONVERT.convert_int(ben_value, id)) {
+                id_map.insert(ExtendedType::from_id(str_id), value as u8);
             }
         }
     }

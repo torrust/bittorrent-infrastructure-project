@@ -35,7 +35,7 @@ pub fn ipv6_to_bytes_be(v6_addr: Ipv6Addr) -> [u8; 16] {
     let segments = v6_addr.segments();
     let mut bytes = [0u8; 16];
 
-    for index in 0..bytes.len() {
+    for (index, item) in bytes.iter_mut().enumerate() {
         let segment_index = index / 2;
 
         let segment_byte_index = index % 2;
@@ -43,7 +43,7 @@ pub fn ipv6_to_bytes_be(v6_addr: Ipv6Addr) -> [u8; 16] {
 
         let byte = (segments[segment_index] >> byte_shift_bits) as u8;
 
-        bytes[index] = byte;
+        *item = byte;
     }
 
     bytes

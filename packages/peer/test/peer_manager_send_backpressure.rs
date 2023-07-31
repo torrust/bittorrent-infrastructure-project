@@ -15,11 +15,10 @@ fn positive_peer_manager_send_backpressure() {
     let mut core = Core::new().unwrap();
     let manager = PeerManagerBuilder::new().with_peer_capacity(1).build(core.handle());
 
+    type Peer = ConnectedChannel<PeerWireProtocolMessage<NullProtocol>, PeerWireProtocolMessage<NullProtocol>>;
+
     // Create two peers
-    let (peer_one, peer_two): (
-        ConnectedChannel<PeerWireProtocolMessage<NullProtocol>, PeerWireProtocolMessage<NullProtocol>>,
-        ConnectedChannel<PeerWireProtocolMessage<NullProtocol>, PeerWireProtocolMessage<NullProtocol>>,
-    ) = crate::connected_channel(5);
+    let (peer_one, peer_two): (Peer, Peer) = crate::connected_channel(5);
     let peer_one_info = PeerInfo::new(
         "127.0.0.1:0".parse().unwrap(),
         [0u8; bt::PEER_ID_LEN].into(),

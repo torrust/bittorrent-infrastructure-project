@@ -64,12 +64,12 @@ impl Router {
     }
 
     fn socket_addrs(&self) -> io::Result<IntoIter<SocketAddr>> {
-        match self {
-            &Router::uTorrent => UTORRENT_DHT.to_socket_addrs(),
-            &Router::BitTorrent => BITTORRENT_DHT.to_socket_addrs(),
-            &Router::BitComet => BITCOMET_DHT.to_socket_addrs(),
-            &Router::Transmission => TRANSMISSION_DHT.to_socket_addrs(),
-            &Router::Custom(addr) => {
+        match *self {
+            Router::uTorrent => UTORRENT_DHT.to_socket_addrs(),
+            Router::BitTorrent => BITTORRENT_DHT.to_socket_addrs(),
+            Router::BitComet => BITCOMET_DHT.to_socket_addrs(),
+            Router::Transmission => TRANSMISSION_DHT.to_socket_addrs(),
+            Router::Custom(addr) => {
                 // TODO: Wasteful, should check for Custom before calling function
                 Ok(vec![addr].into_iter())
             }

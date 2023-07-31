@@ -187,11 +187,8 @@ impl<'a> GetPeersResponse<'a, BencodeMut<'a>> {
         let mut response_args = BTreeMap::new();
 
         response_args.insert(message::NODE_ID_KEY.as_bytes(), ben_bytes!(self.node_id.as_ref()));
-        match self.token {
-            Some(token) => {
-                response_args.insert(message::TOKEN_KEY.as_bytes(), ben_bytes!(token));
-            }
-            None => (),
+        if let Some(token) = self.token {
+            response_args.insert(message::TOKEN_KEY.as_bytes(), ben_bytes!(token));
         };
 
         match &self.info_type {

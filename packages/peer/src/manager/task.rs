@@ -22,7 +22,7 @@ enum PeerError {
     ManagerDisconnect,
     // Peer errors
     PeerDisconnect,
-    PeerError(io::Error),
+    Peer(io::Error),
     PeerNoHeartbeat,
 }
 
@@ -59,7 +59,7 @@ where
         .map_err(|error| match error {
             PersistentError::Disconnect => PeerError::PeerDisconnect,
             PersistentError::Timeout => PeerError::PeerNoHeartbeat,
-            PersistentError::IoError(err) => PeerError::PeerError(err),
+            PersistentError::IoError(err) => PeerError::Peer(err),
         });
     // Build a stream that will notify us of no message is sent for heartbeat_interval and done teardown (preserve) the underlying stream
     let m_stream = RecurringTimeoutStream::new(m_recv, timer, builder.heartbeat_interval()).map_err(|error| match error {
@@ -147,7 +147,7 @@ where
                                         Some(OPeerManagerMessage::PeerDisconnect(info)),
                                         false,
                                     )),
-                                    Err((PeerError::PeerError(err), merged_stream)) => Ok((
+                                    Err((PeerError::Peer(err), merged_stream)) => Ok((
                                         merged_stream,
                                         None,
                                         None,

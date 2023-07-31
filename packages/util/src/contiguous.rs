@@ -63,6 +63,7 @@ where
 //----------------------------------------------------------------------------//
 
 /// Struct for providing a `ContiguousBuffer` abstraction over many contiguous buffers.
+#[derive(Default)]
 pub struct ContiguousBuffers<T> {
     buffers: Vec<T>,
 }

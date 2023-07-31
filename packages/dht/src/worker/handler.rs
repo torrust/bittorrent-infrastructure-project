@@ -30,7 +30,7 @@ use crate::transaction::{AIDGenerator, ActionID, TransactionID};
 use crate::worker::bootstrap::{BootstrapStatus, TableBootstrap};
 use crate::worker::lookup::{LookupStatus, TableLookup};
 use crate::worker::refresh::{RefreshStatus, TableRefresh};
-use crate::worker::{DhtEvent, OneshotTask, ScheduledTask, ShutdownCause};
+use crate::worker::{DhtEvent, OneshotTask, ScheduledTaskCheck, ShutdownCause};
 
 // TODO: Update modules to use find_node on the routing table to update the status of a given node.
 
@@ -86,7 +86,7 @@ enum TableAction {
     /// Lookup action.
     Lookup(TableLookup),
     /// Refresh action.
-    Refresh(TableRefresh),
+    Refresh(Box<TableRefresh>),
     /// Bootstrap action.
     ///
     /// Includes number of bootstrap attempts.
@@ -98,7 +98,7 @@ enum PostBootstrapAction {
     /// Future lookup action.
     Lookup(InfoHash, bool),
     /// Future refresh action.
-    Refresh(TableRefresh, TransactionID),
+    Refresh(Box<TableRefresh>, TransactionID),
 }
 
 /// Storage for our `EventLoop` to invoke actions upon.
@@ -134,7 +134,7 @@ where
         // Insert the refresh task to execute after the bootstrap
         let mut mid_generator = aid_generator.generate();
         let refresh_trans_id = mid_generator.generate();
-        let table_refresh = TableRefresh::new(mid_generator);
+        let table_refresh = Box::new(TableRefresh::new(mid_generator));
         let future_actions = vec![PostBootstrapAction::Refresh(table_refresh, refresh_trans_id)];
 
         let detached = DetachedDhtHandler {
@@ -161,7 +161,7 @@ impl<H> Handler for DhtHandler<H>
 where
     H: HandshakerTrait,
 {
-    type Timeout = (u64, ScheduledTask);
+    type Timeout = (u64, ScheduledTaskCheck);
     type Message = OneshotTask;
 
     fn notify(&mut self, event_loop: &mut EventLoop<DhtHandler<H>>, task: OneshotTask) {
@@ -190,20 +190,20 @@ where
         }
     }
 
-    fn timeout(&mut self, event_loop: &mut EventLoop<DhtHandler<H>>, data: (u64, ScheduledTask)) {
+    fn timeout(&mut self, event_loop: &mut EventLoop<DhtHandler<H>>, data: (u64, ScheduledTaskCheck)) {
         let (_, task) = data;
 
         match task {
-            ScheduledTask::CheckTableRefresh(trans_id) => {
-                handle_check_table_refresh(&mut self.table_actions, &mut self.detached, event_loop, trans_id);
+            ScheduledTaskCheck::TableRefresh(trans_id) => {
+                handle_check_table_refresh(&mut self.table_actions, &self.detached, event_loop, trans_id);
             }
-            ScheduledTask::CheckBootstrapTimeout(trans_id) => {
+            ScheduledTaskCheck::BootstrapTimeout(trans_id) => {
                 handle_check_bootstrap_timeout(self, event_loop, trans_id);
             }
-            ScheduledTask::CheckLookupTimeout(trans_id) => {
+            ScheduledTaskCheck::LookupTimeout(trans_id) => {
                 handle_check_lookup_timeout(self, event_loop, trans_id);
             }
-            ScheduledTask::CheckLookupEndGame(trans_id) => {
+            ScheduledTaskCheck::LookupEndGame(trans_id) => {
                 handle_check_lookup_endgame(self, event_loop, trans_id);
             }
         }
@@ -213,7 +213,7 @@ where
 // ----------------------------------------------------------------------------//
 
 /// Shut down the event loop by sending it a shutdown message with the given cause.
-fn shutdown_event_loop<H>(event_loop: &mut EventLoop<DhtHandler<H>>, cause: ShutdownCause)
+fn shutdown_event_loop<H>(event_loop: &EventLoop<DhtHandler<H>>, cause: ShutdownCause)
 where
     H: HandshakerTrait,
 {
@@ -361,9 +361,8 @@ where
     // Also, check for read only flags on responses we get before adding nodes
     // to our RoutingTable.
     if work_storage.read_only {
-        match message {
-            Ok(MessageType::Request(_)) => return,
-            _ => (),
+        if let Ok(MessageType::Request(_)) = message {
+            return;
         }
     }
 
@@ -801,7 +800,7 @@ where
 
 fn handle_check_table_refresh<H>(
     table_actions: &mut HashMap<ActionID, TableAction>,
-    work_storage: &mut DetachedDhtHandler<H>,
+    work_storage: &DetachedDhtHandler<H>,
     event_loop: &mut EventLoop<DhtHandler<H>>,
     trans_id: TransactionID,
 ) where
@@ -956,7 +955,7 @@ where
     }
 }
 
-fn handle_check_lookup_endgame<H>(handler: &mut DhtHandler<H>, event_loop: &mut EventLoop<DhtHandler<H>>, trans_id: TransactionID)
+fn handle_check_lookup_endgame<H>(handler: &mut DhtHandler<H>, event_loop: &EventLoop<DhtHandler<H>>, trans_id: TransactionID)
 where
     H: HandshakerTrait,
 {

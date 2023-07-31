@@ -134,9 +134,9 @@ impl ExtendedModule {
 
 impl Stream for ExtendedModule {
     type Item = OExtendedMessage;
-    type Error = UberError;
+    type Error = Box<UberError>;
 
-    fn poll(&mut self) -> Poll<Option<OExtendedMessage>, UberError> {
+    fn poll(&mut self) -> Poll<Option<OExtendedMessage>, Self::Error> {
         let opt_message = self.out_queue.pop_front();
 
         if let Some(message) = opt_message {

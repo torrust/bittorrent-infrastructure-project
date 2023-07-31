@@ -100,10 +100,7 @@ where
     }
 
     fn is_keep_alive(&self) -> bool {
-        match self {
-            &PeerWireProtocolMessage::KeepAlive => true,
-            _ => false,
-        }
+        matches!(self, &PeerWireProtocolMessage::KeepAlive)
     }
 }
 

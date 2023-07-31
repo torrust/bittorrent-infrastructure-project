@@ -90,7 +90,7 @@ where
         loop {
             match self.state {
                 HandshakeState::Waiting => {
-                    let read_result = self.sock.read_buf(&mut Cursor::new(&mut self.read_buffer[..]));
+                    let read_result = AsyncRead::read_buf(&mut self.sock, &mut Cursor::new(&mut self.read_buffer[..]));
 
                     match try_nb!(read_result) {
                         Async::Ready(0) => return Ok(Async::Ready(None)),
@@ -126,7 +126,7 @@ where
                         let read_result = {
                             let mut cursor = Cursor::new(&mut self.read_buffer[self.read_pos..]);
 
-                            try_nb!(self.sock.read_buf(&mut cursor))
+                            try_nb!(AsyncRead::read_buf(&mut self.sock, &mut cursor))
                         };
 
                         match read_result {

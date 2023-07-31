@@ -30,7 +30,6 @@ use peer::messages::{BitFieldMessage, HaveMessage, PeerWireProtocolMessage, Piec
 use peer::protocols::{NullProtocol, PeerWireProtocol};
 use peer::{IPeerManagerMessage, OPeerManagerMessage, PeerInfo, PeerManagerBuilder, PeerProtocolCodec};
 use tokio_core::reactor::Core;
-use tokio_io::AsyncRead;
 
 /*
     Things this example doesn't do, because of the lack of bip_select:
@@ -163,10 +162,10 @@ fn main() {
                 // the peer info as well as the peer itself (socket)
                 let (_, _, hash, pid, addr, sock) = complete_msg.into_parts();
                 // Frame our socket with the peer wire protocol with no extensions (nested null protocol), and a max payload of 24KB
-                let peer = sock.framed(PeerProtocolCodec::with_max_payload(
-                    PeerWireProtocol::new(NullProtocol::new()),
-                    24 * 1024,
-                ));
+                let peer = tokio_codec::Decoder::framed(
+                    PeerProtocolCodec::with_max_payload(PeerWireProtocol::new(NullProtocol::new()), 24 * 1024),
+                    sock,
+                );
 
                 // Create our peer identifier used by our peer manager
                 let peer_info = PeerInfo::new(addr, pid, hash, Extensions::new());
@@ -517,10 +516,10 @@ fn main() {
                         // First, send any control messages, then, send any more piece requests
                         Box::new(
                             map_peer_manager_send
-                                .send_all(stream::iter(send_messages.into_iter().map(Ok::<_, ()>)))
+                                .send_all(stream::iter_result(send_messages.into_iter().map(Ok::<_, ()>)))
                                 .map_err(|_| ())
                                 .and_then(|(map_peer_manager_send, _)| {
-                                    map_peer_manager_send.send_all(stream::iter(next_piece_requests))
+                                    map_peer_manager_send.send_all(stream::iter_result(next_piece_requests))
                                 })
                                 .map_err(|_| ())
                                 .map(move |(map_peer_manager_send, _)| {

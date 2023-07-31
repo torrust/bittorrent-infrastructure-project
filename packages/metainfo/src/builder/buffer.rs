@@ -36,17 +36,20 @@ impl PieceBuffers {
     pub fn checkout(&self) -> PieceBuffer {
         let mut pb = None;
         let ten_millis = time::Duration::from_millis(10);
-        loop {
+
+        while pb.is_none() {
             pb = self.piece_queue.pop();
 
             match pb {
-                Some(pb) => return pb,
+                Some(_) => break,
                 None => {
                     thread::sleep(ten_millis);
                     continue;
                 }
             }
         }
+
+        pb.expect("Checked is_some in loop above.")
     }
 }
 

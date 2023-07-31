@@ -30,7 +30,7 @@ pub trait AnnounceOption<'a>: Sized {
 // ----------------------------------------------------------------------------//
 
 /// Set of announce options used to provide trackers with extra information.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct AnnounceOptions<'a> {
     raw_options: HashMap<u8, Cow<'a, [u8]>>,
 }

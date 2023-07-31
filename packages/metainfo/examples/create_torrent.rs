@@ -76,7 +76,7 @@ fn print_metainfo_overview(bytes: &[u8]) {
             acc.push_str(&nex);
             acc
         });
-    let utc_creation_date = metainfo.creation_date().map(|c| Utc.timestamp(c, 0));
+    let utc_creation_date = metainfo.creation_date().map(|c| Utc.timestamp_opt(c, 0));
 
     println!("\n\n-----------------------------Metainfo File Overview-----------------------------");
 

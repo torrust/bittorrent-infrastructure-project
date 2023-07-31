@@ -6,6 +6,7 @@ use num::{One, Zero};
 use crate::trans::TransactionIds;
 
 /// Generates sequentially unique ids and wraps when overflow occurs.
+#[derive(Default)]
 pub struct SequentialIds<T> {
     next_id: T,
 }

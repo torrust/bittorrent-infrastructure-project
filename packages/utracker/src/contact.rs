@@ -106,7 +106,7 @@ impl<'a> Iterator for CompactPeersIter<'a> {
 // ----------------------------------------------------------------------------//
 
 /// Container for IPv4 peers to be sent/received from a tracker.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct CompactPeersV4<'a> {
     peers: Cow<'a, [u8]>,
 }
@@ -219,7 +219,7 @@ impl<'a> Iterator for CompactPeersV4Iter<'a> {
 // ----------------------------------------------------------------------------//
 
 /// Container for IPv6 peers to be sent/received from a tracker.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct CompactPeersV6<'a> {
     peers: Cow<'a, [u8]>,
 }
