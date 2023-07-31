@@ -1,9 +1,3 @@
-extern crate futures;
-extern crate handshake;
-extern crate tokio_core;
-extern crate tokio_io;
-extern crate util;
-
 mod test_byte_after_handshake;
 mod test_bytes_after_handshake;
 mod test_connect;

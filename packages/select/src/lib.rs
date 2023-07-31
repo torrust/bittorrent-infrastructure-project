@@ -1,20 +1,3 @@
-extern crate bit_set;
-extern crate bytes;
-extern crate handshake;
-extern crate metainfo;
-extern crate peer;
-extern crate util;
-extern crate utracker;
-#[macro_use]
-extern crate error_chain;
-extern crate futures;
-#[macro_use]
-extern crate log;
-extern crate rand;
-
-#[cfg(test)]
-extern crate futures_test;
-
 use std::time::Duration;
 
 use metainfo::Metainfo;

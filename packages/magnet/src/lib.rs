@@ -1,7 +1,3 @@
-extern crate base32;
-extern crate url;
-extern crate util;
-
 use std::default::Default;
 
 use url::Url;

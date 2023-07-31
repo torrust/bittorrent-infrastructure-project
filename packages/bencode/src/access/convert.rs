@@ -1,7 +1,7 @@
 use crate::access::bencode::{BRefAccess, BRefAccessExt};
 use crate::access::dict::BDictAccess;
 use crate::access::list::BListAccess;
-use crate::error::{BencodeConvertError, BencodeConvertErrorKind};
+use crate::{BencodeConvertError, BencodeConvertErrorKind};
 
 /// Trait for extended casting of bencode objects and converting conversion errors into application specific errors.
 pub trait BConvertExt: BConvert {

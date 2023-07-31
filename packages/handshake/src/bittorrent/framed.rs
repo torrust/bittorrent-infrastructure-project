@@ -6,7 +6,7 @@ use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::{Async, AsyncSink, Poll, StartSend};
 use nom::IResult;
-use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_io::{try_nb, AsyncRead, AsyncWrite};
 
 use crate::bittorrent::message::{self, HandshakeMessage};
 

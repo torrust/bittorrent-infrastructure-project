@@ -58,17 +58,6 @@
 //!     }
 //! ```
 
-#[macro_use]
-extern crate bencode;
-extern crate crossbeam;
-extern crate util;
-extern crate walkdir;
-#[macro_use]
-extern crate error_chain;
-
-#[cfg(test)]
-extern crate rand;
-
 mod accessor;
 mod builder;
 pub mod error;

@@ -1,11 +1,3 @@
-extern crate bytes;
-extern crate disk;
-extern crate futures;
-extern crate metainfo;
-extern crate rand;
-extern crate tokio_core;
-extern crate util;
-
 use std::cmp;
 use std::collections::HashMap;
 use std::io::{self};

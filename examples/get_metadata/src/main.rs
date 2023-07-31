@@ -1,14 +1,3 @@
-extern crate dht;
-extern crate futures;
-extern crate handshake;
-extern crate hex;
-extern crate metainfo;
-extern crate peer;
-extern crate pendulum;
-extern crate select;
-extern crate tokio_core;
-extern crate tokio_io;
-
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Write;

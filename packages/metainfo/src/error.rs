@@ -3,6 +3,7 @@
 use std::io;
 
 use bencode::{BencodeConvertError, BencodeParseError};
+use error_chain::error_chain;
 use walkdir;
 
 error_chain! {

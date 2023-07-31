@@ -1,9 +1,3 @@
-extern crate bytes;
-extern crate disk;
-extern crate futures;
-extern crate metainfo;
-extern crate rand;
-
 use std::fs;
 
 use bencher::{benchmark_group, benchmark_main, Bencher};

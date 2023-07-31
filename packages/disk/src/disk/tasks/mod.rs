@@ -1,6 +1,7 @@
 use futures::sink::Wait;
 use futures::sync::mpsc::Sender;
 use futures_cpupool::CpuPool;
+use log::info;
 use metainfo::Metainfo;
 use util::bt::InfoHash;
 

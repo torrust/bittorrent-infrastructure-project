@@ -1,5 +1,6 @@
 //! Module for discovery error types.
 
+use error_chain::error_chain;
 use handshake::InfoHash;
 use peer::PeerInfo;
 

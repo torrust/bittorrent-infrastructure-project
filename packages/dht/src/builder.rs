@@ -3,6 +3,7 @@ use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::mpsc::{self, Receiver};
 
+use log::warn;
 use mio::Sender;
 use util::bt::InfoHash;
 use util::net;

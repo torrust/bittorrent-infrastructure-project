@@ -7,6 +7,7 @@ use bytes::BytesMut;
 use futures::task::Task;
 use futures::{task, Async, AsyncSink, Poll, Sink, StartSend, Stream};
 use handshake::InfoHash;
+use log::info;
 use metainfo::{Info, Metainfo};
 use peer::messages::builders::ExtendedMessageBuilder;
 use peer::messages::{

@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::mpsc::SyncSender;
 
+use log::{error, info};
 use mio::EventLoop;
 use util::bt::{self, NodeId};
 

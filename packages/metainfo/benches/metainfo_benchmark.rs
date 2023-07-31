@@ -1,5 +1,5 @@
 #[cfg(feature = "bench")]
-extern crate metainfo;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder};
 

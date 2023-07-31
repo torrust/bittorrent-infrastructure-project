@@ -1,14 +1,3 @@
-extern crate bytes;
-extern crate futures;
-extern crate util;
-#[macro_use]
-extern crate nom;
-extern crate rand;
-extern crate tokio_core;
-#[macro_use]
-extern crate tokio_io;
-extern crate tokio_timer;
-
 mod bittorrent;
 mod discovery;
 mod filter;

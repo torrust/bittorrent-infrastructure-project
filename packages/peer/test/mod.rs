@@ -1,10 +1,3 @@
-extern crate futures;
-extern crate handshake;
-extern crate peer;
-extern crate tokio_core;
-extern crate tokio_io;
-extern crate util;
-
 use std::io;
 
 use futures::sink::Sink;

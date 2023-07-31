@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::{io, u8};
 
-use nom::IResult;
+use nom::{call, do_parse, take, IResult};
 use util::bt::{self, InfoHash, PeerId};
 
 use crate::message::extensions::{self, Extensions};

@@ -432,7 +432,7 @@ impl File {
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use bencode::{BMutAccess, BencodeMut};
+    use bencode::{ben_bytes, ben_int, BMutAccess, BencodeMut};
     use util::bt::InfoHash;
     use util::sha;
 

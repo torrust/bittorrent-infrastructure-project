@@ -1,8 +1,3 @@
-extern crate futures;
-extern crate handshake;
-extern crate util;
-extern crate utracker;
-
 use std::collections::{HashMap, HashSet};
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::sync::{Arc, Mutex};

@@ -1,19 +1,5 @@
 //! Implementation of the Bittorrent Mainline Distributed Hash Table.
 
-#[macro_use]
-extern crate bencode;
-extern crate handshake;
-extern crate util;
-
-extern crate crc;
-#[macro_use]
-extern crate log;
-extern crate chrono;
-extern crate mio;
-extern crate rand;
-#[macro_use]
-extern crate error_chain;
-
 // Mainline DHT extensions supported on behalf of libtorrent:
 // - Always send 'nodes' on a get_peers response even if 'values' is present
 // - Unrecognized requests which contain either an 'info_hash' or 'target' arguments are interpreted as 'find_node'

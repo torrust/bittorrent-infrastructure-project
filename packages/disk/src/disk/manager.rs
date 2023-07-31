@@ -6,6 +6,7 @@ use futures::sync::mpsc::{self, Receiver};
 use futures::task::{self, Task};
 use futures::{Async, AsyncSink, Poll, Sink, StartSend, Stream};
 use futures_cpupool::CpuPool;
+use log::info;
 
 use crate::disk::builder::DiskManagerBuilder;
 use crate::disk::fs::FileSystem;

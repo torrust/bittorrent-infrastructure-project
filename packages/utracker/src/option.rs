@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 
 use byteorder::WriteBytesExt;
-use nom::{be_u8, IResult};
+use nom::{alt, be_u8, call, do_parse, eof, error_position, length_bytes, length_data, map, named, tag, take, IResult};
 
 const END_OF_OPTIONS_BYTE: u8 = 0x00;
 const NO_OPERATION_BYTE: u8 = 0x01;

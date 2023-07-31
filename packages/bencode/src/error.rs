@@ -1,3 +1,5 @@
+use error_chain::error_chain;
+
 error_chain! {
     types {
         BencodeParseError, BencodeParseErrorKind, BencodeParseResultExt, BencodeParseResult;
