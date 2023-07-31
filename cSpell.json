@@ -17,6 +17,7 @@
         "chrono",
         "cids",
         "codegen",
+        "compat",
         "concated",
         "coppersurfer",
         "cpupool",

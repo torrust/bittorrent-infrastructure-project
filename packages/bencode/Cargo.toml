@@ -18,6 +18,9 @@ repository.workspace = true
 [dependencies]
 error-chain = "0.11"
 
+[dev-dependencies]
+criterion = "0.5"
+
 [profile.bench]
 opt-level = 3
 debug = false
@@ -30,3 +33,7 @@ panic = 'unwind'
 [[test]]
 name = "test"
 path = "test/mod.rs"
+
+[[bench]]
+name = "bencode_benchmark"
+harness = false
