@@ -1,6 +1,5 @@
 [package]
 name = "magnet"
-version = "0.0.3"
 description = "Magnet link parsing and construction"
 keywords = ["magnet", "bittorrent"]
 
@@ -10,10 +9,10 @@ documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
-license-file.workspace = true
 publish.workspace = true
 readme.workspace = true
 repository.workspace = true
+version.workspace = true
 
 [dependencies]
 util = { path = "../util" }

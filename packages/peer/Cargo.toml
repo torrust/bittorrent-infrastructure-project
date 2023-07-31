@@ -1,6 +1,5 @@
 [package]
 name = "peer"
-version = "0.5.0"
 description = "Communication with bittorrent peers via peer wire protocol"
 keywords = ["peer", "wire", "protocol", "pwp", "bittorrent"]
 
@@ -10,10 +9,10 @@ documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
-license-file.workspace = true
 publish.workspace = true
 readme.workspace = true
 repository.workspace = true
+version.workspace = true
 
 
 [dependencies]

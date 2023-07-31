@@ -2,7 +2,6 @@
 name = "dht"
 description = "Implementation of the bittorrent mainline DHT"
 keywords = ["dht", "distributed", "hash", "mainline", "bittorrent"]
-version = "0.6.0"
 
 authors.workspace = true
 categories.workspace = true
@@ -10,10 +9,10 @@ documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
-license-file.workspace = true
 publish.workspace = true
 readme.workspace = true
 repository.workspace = true
+version.workspace = true
 
 [dependencies]
 bencode = { path = "../bencode" }

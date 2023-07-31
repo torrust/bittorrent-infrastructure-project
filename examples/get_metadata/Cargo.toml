@@ -1,6 +1,5 @@
 [package]
 name = "get_metadata"
-version = "0.1.0"
 description = "Examples For bip-rs"
 
 authors.workspace = true
@@ -9,10 +8,10 @@ documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
-license-file.workspace = true
 publish.workspace = true
 readme.workspace = true
 repository.workspace = true
+version.workspace = true
 
 [dependencies]
 dht = { path = "../../packages/dht" }
