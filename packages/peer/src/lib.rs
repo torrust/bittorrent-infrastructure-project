@@ -1,20 +1,4 @@
 #[macro_use]
-extern crate bencode;
-extern crate byteorder;
-extern crate bytes;
-extern crate crossbeam;
-extern crate handshake;
-extern crate util;
-#[macro_use]
-extern crate error_chain;
-extern crate futures;
-extern crate tokio_core;
-extern crate tokio_io;
-extern crate tokio_timer;
-#[macro_use]
-extern crate nom;
-
-#[macro_use]
 mod macros;
 
 mod codec;

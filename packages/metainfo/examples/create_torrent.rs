@@ -1,7 +1,3 @@
-extern crate chrono;
-extern crate metainfo;
-extern crate pbr;
-
 use std::fs::File;
 use std::io::{self, BufRead, Write};
 use std::path::Path;

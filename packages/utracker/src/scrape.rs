@@ -3,7 +3,7 @@
 use std::borrow::Cow;
 use std::io::{self, Write};
 
-use nom::{be_i32, IResult, Needed};
+use nom::{be_i32, call, do_parse, IResult, Needed};
 use util::bt::{self, InfoHash};
 use util::convert;
 

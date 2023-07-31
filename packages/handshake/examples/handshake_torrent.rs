@@ -1,7 +1,3 @@
-extern crate futures;
-extern crate handshake;
-extern crate tokio_core;
-
 use std::io::{self, BufRead, Write};
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::thread;

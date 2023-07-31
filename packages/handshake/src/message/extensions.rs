@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 
-use nom::{be_u8, IResult};
+use nom::{be_u8, call, count_fixed, do_parse, error_position, IResult};
 
 /// Number of bytes that the extension protocol takes.
 pub const NUM_EXTENSION_BYTES: usize = 8;

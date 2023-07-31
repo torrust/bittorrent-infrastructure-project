@@ -4,6 +4,7 @@ use std::net::{SocketAddr, SocketAddrV4};
 use std::sync::mpsc::SyncSender;
 
 use bencode::BRefAccess;
+use log::{error, warn};
 use mio::{EventLoop, Timeout};
 use util::bt::{self, InfoHash, NodeId};
 use util::net;

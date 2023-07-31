@@ -1,7 +1,3 @@
-extern crate disk;
-extern crate futures;
-extern crate metainfo;
-
 use std::fs::File;
 use std::io::{self, BufRead, Read, Write};
 

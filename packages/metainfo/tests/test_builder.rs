@@ -1,5 +1,3 @@
-extern crate metainfo;
-
 use metainfo::MetainfoBuilder;
 
 const TRACKER: &str = "udp://foo.bar.baz:6969";

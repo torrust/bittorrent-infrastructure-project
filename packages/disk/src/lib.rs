@@ -1,15 +1,3 @@
-extern crate bytes;
-extern crate crossbeam;
-extern crate metainfo;
-extern crate util;
-#[macro_use]
-extern crate error_chain;
-extern crate futures;
-extern crate futures_cpupool;
-#[macro_use]
-extern crate log;
-extern crate lru_cache;
-
 mod disk;
 mod memory;
 

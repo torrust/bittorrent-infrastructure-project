@@ -1,6 +1,7 @@
 use std::io;
 use std::path::PathBuf;
 
+use error_chain::error_chain;
 use util::bt::InfoHash;
 
 error_chain! {

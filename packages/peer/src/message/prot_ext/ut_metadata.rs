@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 
-use bencode::{BConvert, BDecodeOpt, BencodeRef};
+use bencode::{ben_int, ben_map, BConvert, BDecodeOpt, BencodeRef};
 use bytes::Bytes;
 
 use crate::message::bencode_util;

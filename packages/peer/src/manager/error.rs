@@ -1,3 +1,5 @@
+use error_chain::error_chain;
+
 use crate::manager::peer_info::PeerInfo;
 
 error_chain! {

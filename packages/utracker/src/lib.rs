@@ -7,16 +7,6 @@
 // For nom...
 #![allow(unused)]
 
-extern crate byteorder;
-extern crate chrono;
-extern crate futures;
-extern crate handshake;
-extern crate util;
-#[macro_use]
-extern crate nom;
-extern crate rand;
-extern crate umio;
-
 // Action ids used in both requests and responses.
 const CONNECT_ACTION_ID: u32 = 0;
 const ANNOUNCE_IPV4_ACTION_ID: u32 = 1;

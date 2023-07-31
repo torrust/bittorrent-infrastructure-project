@@ -1,8 +1,3 @@
-extern crate dht;
-extern crate handshake;
-extern crate log;
-extern crate util;
-
 use std::collections::HashSet;
 use std::io::{self, Read};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};

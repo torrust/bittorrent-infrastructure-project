@@ -4,7 +4,8 @@ use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6, UdpSocket};
 use std::sync::mpsc::{self, SyncSender};
 use std::{io, mem, thread};
 
-use bencode::{BDecodeOpt, BencodeMut, BencodeRef};
+use bencode::{ben_bytes, BDecodeOpt, BencodeMut, BencodeRef};
+use log::{error, info, log_enabled, warn};
 use mio::{self, EventLoop, Handler};
 use util::bt::InfoHash;
 use util::convert;

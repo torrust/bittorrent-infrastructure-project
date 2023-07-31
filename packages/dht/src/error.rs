@@ -1,6 +1,7 @@
 use std::io;
 
 use bencode::BencodeConvertError;
+use error_chain::error_chain;
 
 use crate::message::error::ErrorMessage;
 

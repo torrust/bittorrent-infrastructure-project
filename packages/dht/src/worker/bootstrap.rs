@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::mpsc::SyncSender;
 
+use log::{error, info, warn};
 use mio::{EventLoop, Timeout};
 use util::bt::{self, NodeId};
 

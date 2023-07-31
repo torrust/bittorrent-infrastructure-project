@@ -5,7 +5,10 @@ use std::io::{self, Write};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use byteorder::{BigEndian, WriteBytesExt};
-use nom::{be_i32, be_i64, be_u16, be_u32, be_u8, IResult};
+use nom::{
+    alt, be_i32, be_i64, be_u16, be_u32, be_u8, call, count_fixed, do_parse, error_node_position, error_position, map, named,
+    switch, tag, take, tuple, tuple_parser, value, IResult,
+};
 use util::bt::{self, InfoHash, PeerId};
 use util::convert;
 

@@ -1,6 +1,6 @@
 use std::iter::ExactSizeIterator;
 
-use bencode::{BMutAccess, BRefAccess, BencodeMut};
+use bencode::{ben_bytes, ben_int, ben_map, BMutAccess, BRefAccess, BencodeMut};
 use util::sha::{self, ShaHash};
 
 use crate::accessor::{Accessor, IntoAccessor};

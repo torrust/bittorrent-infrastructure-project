@@ -1,4 +1,5 @@
 macro_rules! throwaway_input (
+
     ($res:expr) => (
         {
             match $res {

@@ -1,12 +1,3 @@
-extern crate disk;
-extern crate futures;
-extern crate handshake;
-extern crate metainfo;
-extern crate peer;
-extern crate tokio_core;
-extern crate tokio_io;
-extern crate tokio_timer;
-
 use std::cell::RefCell;
 use std::cmp;
 use std::collections::HashMap;
