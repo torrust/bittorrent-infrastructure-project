@@ -3,13 +3,14 @@
 
 use std::net::Ipv4Addr;
 
-use crc::crc32;
+use crc::{Crc, CRC_32_ISCSI};
 use util::bt::{self, NodeId};
 use util::convert;
 
 const IPV4_MASK: u32 = 0x030F_3FFF;
 const IPV6_MASK: u64 = 0x0103_070F_1F3F_7FFF;
 
+const CASTAGNOLI: Crc<u32> = Crc::<u32>::new(&CRC_32_ISCSI);
 const CRC32C_ARG_SLICE_SIZE: usize = 8;
 
 // TODO: Add IPv6 support, only when proper unit tests have been constructed
@@ -32,7 +33,7 @@ fn generate_compliant_id(masked_ip_be: u64, num_octets: usize, rand: u8) -> [u8;
     let starting_byte = masked_ip_bytes.len() - num_octets;
     masked_ip_bytes[starting_byte] |= r << 5;
 
-    let crc32c_result = crc32::checksum_castagnoli(&masked_ip_bytes[starting_byte..]);
+    let crc32c_result = CASTAGNOLI.checksum(&masked_ip_bytes[starting_byte..]);
 
     let mut node_id = [0u8; bt::NODE_ID_LEN];
     node_id[0] = (crc32c_result >> 24) as u8;
@@ -97,7 +98,7 @@ fn is_compliant_addr(masked_ip_be: u64, num_octets: usize, id: NodeId) -> bool {
 
     // TODO: Not sure if this checksum uses a constant internally that depends on endianness of computer
     // (this sentence is most likely stupid in more than one way).
-    let crc32c_result = crc32::checksum_castagnoli(&rand_masked_ip_bytes[4..]);
+    let crc32c_result = CASTAGNOLI.checksum(&rand_masked_ip_bytes[4..]);
 
     is_compliant_id(crc32c_result, id_bytes)
 }

@@ -6,7 +6,7 @@ use std::fmt::{self, Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
 
-use chrono::{DateTime, Duration, UTC};
+use chrono::{DateTime, Duration, Utc};
 use util::bt::NodeId;
 use util::test;
 
@@ -40,8 +40,8 @@ pub enum NodeStatus {
 pub struct Node {
     id: NodeId,
     addr: SocketAddr,
-    last_request: Cell<Option<DateTime<UTC>>>,
-    last_response: Cell<Option<DateTime<UTC>>>,
+    last_request: Cell<Option<DateTime<Utc>>>,
+    last_response: Cell<Option<DateTime<Utc>>>,
     refresh_requests: Cell<usize>,
 }
 
@@ -51,7 +51,7 @@ impl Node {
         Node {
             id,
             addr,
-            last_response: Cell::new(Some(UTC::now())),
+            last_response: Cell::new(Some(Utc::now())),
             last_request: Cell::new(None),
             refresh_requests: Cell::new(0),
         }
@@ -94,12 +94,12 @@ impl Node {
 
     /// Record that the node sent us a request.
     pub fn remote_request(&self) {
-        self.last_request.set(Some(UTC::now()));
+        self.last_request.set(Some(Utc::now()));
     }
 
     /// Record that the node sent us a response.
     pub fn remote_response(&self) {
-        self.last_response.set(Some(UTC::now()));
+        self.last_response.set(Some(Utc::now()));
 
         self.refresh_requests.set(0);
     }
@@ -144,7 +144,7 @@ impl Node {
 
     /// Current status of the node.
     pub fn status(&self) -> NodeStatus {
-        let curr_time = UTC::now();
+        let curr_time = Utc::now();
 
         match recently_responded(self, curr_time) {
             NodeStatus::Good => return NodeStatus::Good,
@@ -209,7 +209,7 @@ impl Debug for Node {
 ///
 /// Returns the status of the node where a Questionable status means the node has responded
 /// to us before, but not recently.
-fn recently_responded(node: &Node, curr_time: DateTime<UTC>) -> NodeStatus {
+fn recently_responded(node: &Node, curr_time: DateTime<Utc>) -> NodeStatus {
     // Check if node has ever responded to us
     let since_response = match node.last_response.get() {
         Some(response_time) => curr_time - response_time,
@@ -230,7 +230,7 @@ fn recently_responded(node: &Node, curr_time: DateTime<UTC>) -> NodeStatus {
 ///
 /// Returns the final status of the node given that the first scenario found the node to be
 /// Questionable.
-fn recently_requested(node: &Node, curr_time: DateTime<UTC>) -> NodeStatus {
+fn recently_requested(node: &Node, curr_time: DateTime<Utc>) -> NodeStatus {
     let max_last_request = Duration::minutes(MAX_LAST_SEEN_MINS);
 
     // Check if the node has recently request from us

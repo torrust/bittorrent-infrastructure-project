@@ -1,10 +1,8 @@
 extern crate disk;
+extern crate futures;
 extern crate handshake;
 extern crate metainfo;
 extern crate peer;
-#[macro_use]
-extern crate clap;
-extern crate futures;
 extern crate tokio_core;
 extern crate tokio_io;
 extern crate tokio_timer;
@@ -16,6 +14,7 @@ use std::fs::File;
 use std::io::Read;
 use std::rc::Rc;
 
+use clap::clap_app;
 use disk::fs::NativeFileSystem;
 use disk::fs_cache::FileHandleCache;
 use disk::{Block, BlockMetadata, BlockMut, DiskManagerBuilder, IDiskMessage, ODiskMessage};

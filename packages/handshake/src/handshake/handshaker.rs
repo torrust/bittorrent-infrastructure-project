@@ -44,7 +44,7 @@ impl Default for HandshakerBuilder {
 
         let bind = SocketAddr::V4(SocketAddrV4::new(default_v4_addr, default_v4_port));
 
-        let seed = rand::thread_rng().next_u32();
+        let seed = rand::thread_rng().gen();
         let pid = PeerId::from_bytes(&convert::four_bytes_to_array(seed));
 
         Self {

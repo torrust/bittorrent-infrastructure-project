@@ -15,7 +15,6 @@ use disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, I
 use futures::sink::{self, Sink};
 use futures::stream::{self, Stream};
 use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
-use rand::Rng;
 
 /// Set to true if you are playing around with anything that could affect file
 /// sizes for an existing or new benchmarks. As a precaution, if the disk manager
@@ -29,12 +28,12 @@ const WIPE_DATA_DIR: bool = false;
 ///
 /// Returns both the torrent file, as well as the (random) data of the file.
 fn generate_single_file_torrent(piece_len: usize, file_len: usize) -> (Metainfo, Vec<u8>) {
-    let mut rng = rand::weak_rng();
+    let mut buffer = vec![0u8; file_len];
 
-    let file_bytes: Vec<u8> = rng.gen_iter().take(file_len).collect();
+    rand::Rng::fill(&mut rand::thread_rng(), buffer.as_mut_slice());
 
     let metainfo_bytes = {
-        let accessor = DirectAccessor::new("benchmark_file", &file_bytes[..]);
+        let accessor = DirectAccessor::new("benchmark_file", &buffer[..]);
 
         MetainfoBuilder::new()
             .set_piece_length(PieceLength::Custom(piece_len))
@@ -43,7 +42,7 @@ fn generate_single_file_torrent(piece_len: usize, file_len: usize) -> (Metainfo,
     };
     let metainfo = Metainfo::from_bytes(metainfo_bytes).unwrap();
 
-    (metainfo, file_bytes)
+    (metainfo, buffer)
 }
 
 /// Adds the given metainfo file to the given sender, and waits for the added notification.

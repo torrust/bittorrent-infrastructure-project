@@ -18,13 +18,13 @@ version.workspace = true
 bencode = { path = "../bencode" }
 util = { path = "../util" }
 crossbeam = "0.8"
-walkdir = "2.0"
+walkdir = "2"
 error-chain = "0.12"
 
 [dev-dependencies]
 chrono = "0.4"
-rand = "0.3"
-pbr = "1.0"
+rand = "0.8"
+pbr = "1"
 criterion = "0.5"
 
 [[bench]]

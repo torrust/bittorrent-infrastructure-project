@@ -283,7 +283,7 @@ impl UtMetadataModule {
 
                 let mut active_peers = self.active_peers.get(hash).unwrap().peers.iter();
                 let num_active_peers = active_peers.len();
-                let selected_peer_num = rand::thread_rng().next_u32() as usize % num_active_peers;
+                let selected_peer_num = rand::thread_rng().gen::<usize>() % num_active_peers;
 
                 let selected_peer = active_peers.nth(selected_peer_num).unwrap();
                 let selected_message = pending.messages.pop().unwrap();
