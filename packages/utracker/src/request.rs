@@ -111,7 +111,7 @@ impl<'a> TrackerRequest<'a> {
 
     /// Actual type of request that this `TrackerRequest` represents.
     #[must_use]
-    pub fn request_type(&self) -> &RequestType {
+    pub fn request_type(&self) -> &RequestType<'_> {
         &self.request_type
     }
 

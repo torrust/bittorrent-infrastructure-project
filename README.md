@@ -1,4 +1,5 @@
-# Bittorrent Infrastructure Project
+# Bittorrent Infrastructure Project [![Continuous Integration Building and Testing Results](../../actions/workflows/test.yaml/badge.svg)](../../actions/workflows/test.yaml)
+
 A collection of crates for building applications using bittorrent technologies.
 
 Chat: irc.mozilla.org <a href="http://mibbit.com/?server=irc.mozilla.org&channel=%23bip.rs" target="_new_win">#bip.rs</a>
