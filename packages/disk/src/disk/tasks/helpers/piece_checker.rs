@@ -151,6 +151,7 @@ fn last_piece_size(info_dict: &Info) -> usize {
 // ----------------------------------------------------------------------------//
 
 /// Stores state for the `PieceChecker` between invocations.
+#[derive(Debug)]
 pub struct PieceCheckerState {
     new_states: Vec<PieceState>,
     old_states: HashSet<PieceState>,
@@ -159,7 +160,7 @@ pub struct PieceCheckerState {
     last_block_size: usize,
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum PieceState {
     /// Piece was discovered as good.
     Good(u64),

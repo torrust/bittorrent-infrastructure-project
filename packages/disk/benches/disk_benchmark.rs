@@ -1,8 +1,9 @@
 use std::fs;
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
 
-use bencher::{benchmark_group, benchmark_main, Bencher};
 use bytes::BytesMut;
-use criterion_bencher_compat as bencher;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use disk::fs::NativeFileSystem;
 use disk::fs_cache::FileHandleCache;
 use disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, InfoHash, ODiskMessage};
@@ -58,19 +59,33 @@ where
     }
 }
 
-/// Pushes the given bytes as piece blocks to the given sender, and blocks until all notifications
-/// of the blocks being processed have been received (does not check piece messages).
-fn process_blocks<S, R>(
-    piece_length: usize,
-    block_length: usize,
-    hash: InfoHash,
-    bytes: &[u8],
-    block_send: &mut sink::Wait<S>,
-    block_recv: &mut stream::Wait<R>,
-) where
+struct ProcessBlockData<S, R>
+where
     S: Sink<SinkItem = IDiskMessage, SinkError = ()>,
     R: Stream<Item = ODiskMessage, Error = ()>,
 {
+    piece_length: usize,
+    block_length: usize,
+    info_hash: InfoHash,
+    bytes: Vec<u8>,
+    block_send: Arc<Mutex<sink::Wait<S>>>,
+    block_recv: Arc<Mutex<stream::Wait<R>>>,
+}
+
+/// Pushes the given bytes as piece blocks to the given sender, and blocks until all notifications
+/// of the blocks being processed have been received (does not check piece messages).
+fn process_blocks<S, R>(data: &ProcessBlockData<S, R>)
+where
+    S: Sink<SinkItem = IDiskMessage, SinkError = ()>,
+    R: Stream<Item = ODiskMessage, Error = ()>,
+{
+    let piece_length = data.piece_length;
+    let block_length = data.block_length;
+    let info_hash = data.info_hash;
+    let bytes = &data.bytes;
+    let block_send = &data.block_send;
+    let block_recv = &data.block_recv;
+
     let mut blocks_sent = 0;
 
     for (piece_index, piece) in bytes.chunks(piece_length).enumerate() {
@@ -80,16 +95,16 @@ fn process_blocks<S, R>(
             bytes.extend_from_slice(block);
 
             let block = Block::new(
-                BlockMetadata::new(hash, piece_index as u64, block_offset as u64, block.len()),
+                BlockMetadata::new(info_hash, piece_index as u64, block_offset as u64, block.len()),
                 bytes.freeze(),
             );
 
-            block_send.send(IDiskMessage::ProcessBlock(block)).unwrap();
+            block_send.lock().unwrap().send(IDiskMessage::ProcessBlock(block)).unwrap();
             blocks_sent += 1;
         }
     }
 
-    for res_message in block_recv {
+    for res_message in block_recv.lock().unwrap().deref_mut() {
         match res_message.unwrap() {
             ODiskMessage::BlockProcessed(_) => blocks_sent -= 1,
             ODiskMessage::FoundGoodPiece(_, _) => (),
@@ -104,8 +119,14 @@ fn process_blocks<S, R>(
 }
 
 /// Benchmarking method to setup a torrent file with the given attributes, and benchmark the block processing code.
-fn bench_process_file_with_fs<F>(b: &mut Bencher, piece_length: usize, block_length: usize, file_length: usize, fs: F)
-where
+fn bench_process_file_with_fs<F>(
+    c: &mut Criterion,
+    id: BenchmarkId,
+    piece_length: usize,
+    block_length: usize,
+    file_length: usize,
+    fs: F,
+) where
     F: FileSystem + Send + Sync + 'static,
 {
     let (metainfo, bytes) = generate_single_file_torrent(piece_length, file_length);
@@ -118,24 +139,24 @@ where
 
     let (d_send, d_recv) = disk_manager.split();
 
-    let mut block_d_send = d_send.wait();
-    let mut block_d_recv = d_recv.wait();
+    let block_send = Arc::new(Mutex::new(d_send.wait()));
+    let block_recv = Arc::new(Mutex::new(d_recv.wait()));
 
-    add_metainfo_file(metainfo, &mut block_d_send, &mut block_d_recv);
+    add_metainfo_file(metainfo, &mut block_send.lock().unwrap(), &mut block_recv.lock().unwrap());
 
-    b.iter(|| {
-        process_blocks(
-            piece_length,
-            block_length,
-            info_hash,
-            &bytes[..],
-            &mut block_d_send,
-            &mut block_d_recv,
-        )
-    })
+    let data = ProcessBlockData {
+        piece_length,
+        block_length,
+        info_hash,
+        bytes,
+        block_send,
+        block_recv,
+    };
+
+    c.bench_with_input(id, &data, |b, i| b.iter(|| process_blocks(i)));
 }
 
-fn bench_native_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
+fn bench_native_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 128 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -146,10 +167,12 @@ fn bench_native_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_native_fs", "1_mb_pieces_128_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_native_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
+fn bench_native_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 16 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -160,10 +183,12 @@ fn bench_native_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_native_fs", "1_mb_pieces_16_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_native_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
+fn bench_native_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 2 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -174,10 +199,12 @@ fn bench_native_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_native_fs", "1_mb_pieces_2_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
+fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 128 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -188,10 +215,12 @@ fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_file_handle_cache_fs", "1_mb_pieces_128_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
+fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 16 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -202,10 +231,12 @@ fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_file_handle_cache_fs", "1_mb_pieces_16_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
+fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 2 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -216,10 +247,12 @@ fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_file_handle_cache_fs", "1_mb_pieces_2_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-benchmark_group!(
+criterion_group!(
     benches,
     bench_native_fs_1_mb_pieces_128_kb_blocks,
     bench_native_fs_1_mb_pieces_16_kb_blocks,
@@ -228,4 +261,4 @@ benchmark_group!(
     bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks,
     bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks
 );
-benchmark_main!(benches);
+criterion_main!(benches);

@@ -14,6 +14,7 @@ use crate::disk::tasks::context::DiskManagerContext;
 use crate::disk::{tasks, IDiskMessage, ODiskMessage};
 
 /// `DiskManager` object which handles the storage of `Blocks` to the `FileSystem`.
+#[derive(Debug)]
 pub struct DiskManager<F> {
     sink: DiskManagerSink<F>,
     stream: DiskManagerStream,
@@ -80,6 +81,7 @@ impl<F> Stream for DiskManager<F> {
 //----------------------------------------------------------------------------//
 
 /// `DiskManagerSink` which is the sink portion of a `DiskManager`.
+#[derive(Debug)]
 pub struct DiskManagerSink<F> {
     pool: CpuPool,
     context: DiskManagerContext<F>,
@@ -173,6 +175,7 @@ where
 //----------------------------------------------------------------------------//
 
 /// `DiskManagerStream` which is the stream portion of a `DiskManager`.
+#[derive(Debug)]
 pub struct DiskManagerStream {
     recv: Receiver<ODiskMessage>,
     cur_capacity: Arc<AtomicUsize>,

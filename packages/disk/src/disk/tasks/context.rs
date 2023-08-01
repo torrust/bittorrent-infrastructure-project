@@ -9,12 +9,14 @@ use util::bt::InfoHash;
 use crate::disk::tasks::helpers::piece_checker::PieceCheckerState;
 use crate::disk::ODiskMessage;
 
+#[derive(Debug)]
 pub struct DiskManagerContext<F> {
     torrents: Arc<RwLock<HashMap<InfoHash, Mutex<MetainfoState>>>>,
     out: Sender<ODiskMessage>,
     fs: Arc<F>,
 }
 
+#[derive(Debug)]
 pub struct MetainfoState {
     file: Metainfo,
     state: PieceCheckerState,
