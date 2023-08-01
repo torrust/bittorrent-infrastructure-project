@@ -1,66 +1,115 @@
-# Bittorrent Infrastructure Project [![Continuous Integration Building and Testing Results](../../actions/workflows/test.yaml/badge.svg)](../../actions/workflows/test.yaml)
+# BitTorrent Infrastructure Project　[![rel_b_wf_test]][rel_wf_test]
+<div align="center"><img src="./docs/media/bittorrent-infrastructure-project-logo.svg" alt="Bittorrent Infrastructure Project Logo" width="200" align="center"/></div>
 
-A collection of crates for building applications using bittorrent technologies.
+___A collection of [packages][rel_packages] that can support the building of applications using [BitTorrent] technologies.___
 
-Chat: irc.mozilla.org <a href="http://mibbit.com/?server=irc.mozilla.org&channel=%23bip.rs" target="_new_win">#bip.rs</a>
+This repository is a fork of [GGist]'s project: [bip-rs].
 
-## Bencode (bip_bencode) - [![Documentation](https://docs.rs/bip_bencode/badge.svg)](https://docs.rs/bip_bencode) [![Crate](http://meritbadge.herokuapp.com/bip_bencode)](https://crates.io/crates/bip_bencode)
+In this fork we have:
 
-**About**: Bencode is the binary encoding used throughout bittorrent technologies from metainfo files to DHT messages. Bencode types include integers, byte arrays, lists, and dictionaries, of which the last two can hold any bencode type (they could be recursively constructed).
+- [x] Reorganized the crate collection into a cargo workspace packages. ([#6])
+- [x] Switched to relative dependencies between packages. ([#6])
+- [x] Modernized the code to compile with the current version of rust. ([#6], [#7])
+- [x] Implemented continuous integration using github workflows. ([#8])
+- [x] Update some of the project dependencies. ([#9], [#17], [#26], [#27])
+- [x] Preformed a general cleanup of the codebase. ([#10], [#16], [#18], [#29], [#31])
 
-## Disk (bip_disk) - [![Documentation](https://docs.rs/bip_disk/badge.svg)](https://docs.rs/bip_disk) [![Crate](http://meritbadge.herokuapp.com/bip_disk)](https://crates.io/crates/bip_disk)
+The future goals are:
 
-**About**: Disk management is all about storing/loading pieces to/from any object implementing the ```FileSystem``` interface, which means torrent storage could be transparently sent to disk, stored in memory, pushed to a distributed file system, or even uploaded to the cloud as pieces come in. In addition, notifications are sent when good or bad pieces are detected as soon as enough blocks are sent to the disk manager that make up a full piece.
+- [ ] Update the other dependencies (__Significant Work Required__). ( [#19], [#20], [#21], [#22], [#23], [#25])
+- [ ] Publish updated versions of the crates. ([#37])
+- [ ] Increase coverage of unit tests. ([#38])
 
-## Handshake (bip_handshake) - [![Documentation](https://docs.rs/bip_handshake/badge.svg)](https://docs.rs/bip_handshake) [![Crate](http://meritbadge.herokuapp.com/bip_handshake)](https://crates.io/crates/bip_handshake)
+__We would like to make a special thanks to all the developers who had contributed to and created this great project.__
 
-**About**: Handshaking is the process of connecting to a peer and exchanging information related to how a peer will be communicating with you and vice versa. In our case, there are many bittorrent technologies that could generally be considered peer discovery mechanisms (local peer discovery, dht, trackers, peer exchange) where once a peer is discovered, a client may want to immediately attempt to establish a connection via a handshake. This module provides a trait for custom handshake implementations, as well as the standard bittorrent handshake, so that clients can specify a handshaking mechanism for peer discovery services to forward contact information along to.
+---
 
-## Peer (bip_peer) - [![Documentation](https://docs.rs/bip_peer/badge.svg)](https://docs.rs/bip_peer) [![Crate](http://meritbadge.herokuapp.com/bip_peer)](https://crates.io/crates/bip_peer)
+### Crates
+[![t_i37]![s_i37]][#37]
 
-**About**: Communicating with bittorrent peers involves choking (telling someone we won't respond to them now), expressing interest (telling someone, if we were unchoked, we would be interested in some data they hold), as well as downloading and uploading blocks to peers. This package defines some common bittorrent messages, including those as part of the `ExtensionBits` in `bip_handshake`, as well as those included in the [extension protocol](http://www.bittorrent.org/beps/bep_0010.html). We also provide a `PeerManager` for heartbeating peers and multiplexing messages sent to/from peers so that clients have an easier time communicating asynchronously with many peers.
+> We have not published any crates from this repository yet.</br>
+Please see Issue: [#37], to track the progress towards publishing updated crates.
 
-## Select (bip_select) - [![Documentation](https://docs.rs/bip_select/badge.svg)](https://docs.rs/bip_select) [![Crate](http://meritbadge.herokuapp.com/bip_select)](https://crates.io/crates/bip_select)
+#### Here are the links to the original crates published by [GGist]:
 
-**About**: Selection is broken up in to three classes of algorithms. First, we have *Piece Revelation* which is focused on determining which pieces we should reveal (even if we don't have the piece...) and to whom. Second, we have *Piece Selection* which is focused on which pieces we should download/upload next. Third, we have *Piece Queueing* which is, given a piece we want to download, which peers should we send such a request to. We can mix and match different algorithms to create a swarm that may have different characteristics than other swarms.
+> __Note:__ These crates have not been updated since mid-2018.
 
-## Mainline DHT (bip_dht) - [![Documentation](https://docs.rs/bip_dht/badge.svg)](https://docs.rs/bip_dht) [![Crate](http://meritbadge.herokuapp.com/bip_dht)](https://crates.io/crates/bip_dht)
+[![b_bip_bencode]][c_bip_bencode]　
+[![b_bip_disk]][c_bip_disk]　
+[![b_bip_handshake]][c_bip_handshake]　
+[![b_bip_peer]][c_bip_peer]　
+[![b_bip_select]][c_bip_select]　
+[![b_bip_dht]][c_bip_dht]　
+[![b_bip_metainfo]][c_bip_metainfo]　
+[![b_bip_utracker]][c_bip_utracker]　
 
-**About**: The Mainline DHT is used by bittorrent to distribute contact information for peers interested in specified files. More generally, any application can use the Mainline DHT to discover peers in a distributed and decentralized fashion. You can take advantage of the DHT as long as your application has a way of exposing interest in other peers via a SHA-1 hash (20 byte value).
-
-**Example**: For example, a decentralized chat application could ask the user for a room name to join, you could then hash that room name and search for other peers using that application who are also interested in joining the same room.
-
-## Metainfo (bip_metainfo) - [![Documentation](https://docs.rs/bip_metainfo/badge.svg)](https://docs.rs/bip_metainfo) [![Crate](http://meritbadge.herokuapp.com/bip_metainfo)](https://crates.io/crates/bip_metainfo)
-
-**About**: At their core, metainfo files serve the purpose of providing a list of checksums for clients interested in specific files, how long each hashed piece should be, and the directory structure for the files. This allows clients to verify the integrity of received files, as well as the ability to recreate exactly the directory structure for the files. Aside from that, there is a plethora of optional information that can be included in this file such as nodes to be contacted in the DHT, trackers to contact, as well as comments, date created, who created the metainfo file, etc.
-
-## Tracker (bip_utracker) - [![Documentation](https://docs.rs/bip_utracker/badge.svg)](https://docs.rs/bip_utracker) [![Crate](http://meritbadge.herokuapp.com/bip_utracker)](https://crates.io/crates/bip_utracker)
-
-**About**: Trackers provide a centralized solution to peer discovery within the bittorrent eco-system. Clients send messages to a specific set of trackers, updating them with any state changes that have occurred pertaining to the download of files. However, using the start and stop events we can use trackers generically to either add or remove ourselves from a tracker for the purposes of peer discovery for any application.
-
-## References
-
-* Official Specifications:
-    * http://www.bittorrent.org/beps/bep_0000.html
-* Readable Specifications:
-    * https://wiki.theory.org/index.php/BitTorrentSpecification
-* Unofficial Specifications:
-    * ut_holepunch: https://gist.github.com/GGist/714f4f6efd7523bfb28d79e5de145c34
-* Other Interesting Papers
-    * Piece Related Algorithms: http://ieeexplore.ieee.org/document/6409840/
-    * Performance Modelling: https://arxiv.org/ftp/arxiv/papers/1311/1311.1195.pdf
 
 ## License
 
-Licensed under either of
-
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
-
-at your option.
+>___Please note:___ The license of this repository has been changed!
+>> `Apache-2.0`　and/or　`MIT`　→　_(only)_　`Apache-2.0`
+>
+>If this is a particular issue for your project, please open an issue.</br>
+>_The primary motivation that it has [some software-patent protections][apache-2-patent-license]._
 
 ## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any
+for inclusion in the work by you, as defined in the [Apache-2.0 License][rel_copyright], shall licensed as above, without any
 additional terms or conditions.
+
+
+
+[rel_wf_test]:  ../../actions/workflows/test.yaml
+[rel_b_wf_test]: ../../actions/workflows/test.yaml/badge.svg
+[rel_packages]: ./packages/README.md
+[rel_copyright]: ./COPYRIGHT
+
+[BitTorrent]: https://www.bittorrent.org/introduction.html
+[GGist]:  https://github.com/GGist/
+[bip-rs]: https://github.com/GGist/bip-rs
+[apache-2-patent-license]: https://opensource.com/article/18/2/apache-2-patent-license
+
+
+
+[#6]:  https://github.com/torrust/bittorrent-infrastructure-project/pull/6
+[#7]:  https://github.com/torrust/bittorrent-infrastructure-project/pull/7
+[#8]:  https://github.com/torrust/bittorrent-infrastructure-project/pull/8
+[#9]:  https://github.com/torrust/bittorrent-infrastructure-project/pull/9
+[#10]: https://github.com/torrust/bittorrent-infrastructure-project/pull/10
+[#16]: https://github.com/torrust/bittorrent-infrastructure-project/pull/16
+[#17]: https://github.com/torrust/bittorrent-infrastructure-project/pull/17
+[#18]: https://github.com/torrust/bittorrent-infrastructure-project/pull/18
+[#26]: https://github.com/torrust/bittorrent-infrastructure-project/pull/26
+[#27]: https://github.com/torrust/bittorrent-infrastructure-project/pull/27
+[#29]: https://github.com/torrust/bittorrent-infrastructure-project/pull/29
+[#31]: https://github.com/torrust/bittorrent-infrastructure-project/pull/31
+
+[#19]: https://github.com/torrust/bittorrent-infrastructure-project/issues/19
+[#20]: https://github.com/torrust/bittorrent-infrastructure-project/issues/20
+[#21]: https://github.com/torrust/bittorrent-infrastructure-project/issues/21
+[#22]: https://github.com/torrust/bittorrent-infrastructure-project/issues/22
+[#23]: https://github.com/torrust/bittorrent-infrastructure-project/issues/23
+[#25]: https://github.com/torrust/bittorrent-infrastructure-project/issues/25
+[#37]: https://github.com/torrust/bittorrent-infrastructure-project/issues/37
+[#38]: https://github.com/torrust/bittorrent-infrastructure-project/issues/38
+
+[t_i37]: https://img.shields.io/github/issues/detail/title/torrust/bittorrent-infrastructure-project/37?style=for-the-badge&
+[s_i37]: https://img.shields.io/github/issues/detail/state/torrust/bittorrent-infrastructure-project/37?style=for-the-badge&label=%E3%80%80
+
+[b_bip_bencode]:    https://img.shields.io/crates/v/bip_bencode?style=for-the-badge&label=bip_bencode
+[b_bip_disk]:       https://img.shields.io/crates/v/bip_disk?style=for-the-badge&label=bip_disk
+[b_bip_handshake]:  https://img.shields.io/crates/v/bip_handshake?style=for-the-badge&label=bip_handshake
+[b_bip_peer]:       https://img.shields.io/crates/v/bip_peer?style=for-the-badge&label=bip_peer
+[b_bip_select]:     https://img.shields.io/crates/v/bip_select?style=for-the-badge&label=bip_select
+[b_bip_dht]:        https://img.shields.io/crates/v/bip_dht?style=for-the-badge&label=bip_dht
+[b_bip_metainfo]:   https://img.shields.io/crates/v/bip_metainfo?style=for-the-badge&label=bip_metainfo
+[b_bip_utracker]:   https://img.shields.io/crates/v/bip_utracker?style=for-the-badge&label=bip_utracker
+[c_bip_bencode]:    https://crates.io/crates/bip_bencode
+[c_bip_disk]:       https://crates.io/crates/bip_disk
+[c_bip_handshake]:  https://crates.io/crates/bip_handshake
+[c_bip_peer]:       https://crates.io/crates/bip_peer
+[c_bip_select]:     https://crates.io/crates/bip_select
+[c_bip_dht]:        https://crates.io/crates/bip_dht
+[c_bip_metainfo]:   https://crates.io/crates/bip_metainfo
+[c_bip_utracker]:   https://crates.io/crates/bip_utracker
