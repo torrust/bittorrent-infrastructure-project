@@ -1,4 +1,6 @@
 use std::fs;
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
 
 use bencher::{benchmark_group, benchmark_main, Bencher};
 use bytes::BytesMut;
@@ -65,8 +67,8 @@ fn process_blocks<S, R>(
     block_length: usize,
     hash: InfoHash,
     bytes: &[u8],
-    block_send: &mut sink::Wait<S>,
-    block_recv: &mut stream::Wait<R>,
+    block_send: Arc<Mutex<sink::Wait<S>>>,
+    block_recv: Arc<Mutex<stream::Wait<R>>>,
 ) where
     S: Sink<SinkItem = IDiskMessage, SinkError = ()>,
     R: Stream<Item = ODiskMessage, Error = ()>,
@@ -84,12 +86,12 @@ fn process_blocks<S, R>(
                 bytes.freeze(),
             );
 
-            block_send.send(IDiskMessage::ProcessBlock(block)).unwrap();
+            block_send.lock().unwrap().send(IDiskMessage::ProcessBlock(block)).unwrap();
             blocks_sent += 1;
         }
     }
 
-    for res_message in block_recv {
+    for res_message in block_recv.lock().unwrap().deref_mut() {
         match res_message.unwrap() {
             ODiskMessage::BlockProcessed(_) => blocks_sent -= 1,
             ODiskMessage::FoundGoodPiece(_, _) => (),
@@ -118,10 +120,10 @@ where
 
     let (d_send, d_recv) = disk_manager.split();
 
-    let mut block_d_send = d_send.wait();
-    let mut block_d_recv = d_recv.wait();
+    let block_d_send = Arc::new(Mutex::new(d_send.wait()));
+    let block_d_recv = Arc::new(Mutex::new(d_recv.wait()));
 
-    add_metainfo_file(metainfo, &mut block_d_send, &mut block_d_recv);
+    add_metainfo_file(metainfo, &mut block_d_send.lock().unwrap(), &mut block_d_recv.lock().unwrap());
 
     b.iter(|| {
         process_blocks(
@@ -129,8 +131,8 @@ where
             block_length,
             info_hash,
             &bytes[..],
-            &mut block_d_send,
-            &mut block_d_recv,
+            block_d_send.clone(),
+            block_d_recv.clone(),
         )
     })
 }
