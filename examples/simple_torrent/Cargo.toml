@@ -19,7 +19,7 @@ handshake = { path = "../../packages/handshake" }
 metainfo = { path = "../../packages/metainfo" }
 peer = { path = "../../packages/peer" }
 
-clap = "3"
+clap = "4"
 futures = "0.1"
 tokio-core = "0.1"
 tokio-io = "0.1"
