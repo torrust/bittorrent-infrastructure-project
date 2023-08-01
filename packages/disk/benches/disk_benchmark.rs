@@ -60,19 +60,33 @@ where
     }
 }
 
-/// Pushes the given bytes as piece blocks to the given sender, and blocks until all notifications
-/// of the blocks being processed have been received (does not check piece messages).
-fn process_blocks<S, R>(
-    piece_length: usize,
-    block_length: usize,
-    hash: InfoHash,
-    bytes: &[u8],
-    block_send: Arc<Mutex<sink::Wait<S>>>,
-    block_recv: Arc<Mutex<stream::Wait<R>>>,
-) where
+struct ProcessBlockData<S, R>
+where
     S: Sink<SinkItem = IDiskMessage, SinkError = ()>,
     R: Stream<Item = ODiskMessage, Error = ()>,
 {
+    piece_length: usize,
+    block_length: usize,
+    info_hash: InfoHash,
+    bytes: Vec<u8>,
+    block_send: Arc<Mutex<sink::Wait<S>>>,
+    block_recv: Arc<Mutex<stream::Wait<R>>>,
+}
+
+/// Pushes the given bytes as piece blocks to the given sender, and blocks until all notifications
+/// of the blocks being processed have been received (does not check piece messages).
+fn process_blocks<S, R>(data: &ProcessBlockData<S, R>)
+where
+    S: Sink<SinkItem = IDiskMessage, SinkError = ()>,
+    R: Stream<Item = ODiskMessage, Error = ()>,
+{
+    let piece_length = data.piece_length;
+    let block_length = data.block_length;
+    let info_hash = data.info_hash;
+    let bytes = &data.bytes;
+    let block_send = &data.block_send;
+    let block_recv = &data.block_recv;
+
     let mut blocks_sent = 0;
 
     for (piece_index, piece) in bytes.chunks(piece_length).enumerate() {
@@ -82,7 +96,7 @@ fn process_blocks<S, R>(
             bytes.extend_from_slice(block);
 
             let block = Block::new(
-                BlockMetadata::new(hash, piece_index as u64, block_offset as u64, block.len()),
+                BlockMetadata::new(info_hash, piece_index as u64, block_offset as u64, block.len()),
                 bytes.freeze(),
             );
 
@@ -120,21 +134,21 @@ where
 
     let (d_send, d_recv) = disk_manager.split();
 
-    let block_d_send = Arc::new(Mutex::new(d_send.wait()));
-    let block_d_recv = Arc::new(Mutex::new(d_recv.wait()));
+    let block_send = Arc::new(Mutex::new(d_send.wait()));
+    let block_recv = Arc::new(Mutex::new(d_recv.wait()));
 
-    add_metainfo_file(metainfo, &mut block_d_send.lock().unwrap(), &mut block_d_recv.lock().unwrap());
+    add_metainfo_file(metainfo, &mut block_send.lock().unwrap(), &mut block_recv.lock().unwrap());
 
-    b.iter(|| {
-        process_blocks(
-            piece_length,
-            block_length,
-            info_hash,
-            &bytes[..],
-            block_d_send.clone(),
-            block_d_recv.clone(),
-        )
-    })
+    let data = ProcessBlockData {
+        piece_length,
+        block_length,
+        info_hash,
+        bytes,
+        block_send,
+        block_recv,
+    };
+
+    b.iter(|| process_blocks(&data))
 }
 
 fn bench_native_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
