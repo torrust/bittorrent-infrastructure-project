@@ -235,7 +235,7 @@ mod tests {
 
     #[test]
     fn positive_decode_recursion() {
-        let _ = BencodeRef::decode(RECURSION, BDecodeOpt::new(50, true, true)).unwrap_err();
+        BencodeRef::decode(RECURSION, BDecodeOpt::new(50, true, true)).unwrap_err();
 
         // As long as we didn't overflow our call stack, we are good!
     }

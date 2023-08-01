@@ -52,8 +52,8 @@ fn positive_disk_manager_send_backpressure() {
     let m_recv = core.run(m_recv.into_future().map(|(_, recv)| recv).map_err(|_| ())).unwrap();
 
     // Try to send a remove message again which should go through
-    let _ = core.run(m_send.send(IDiskMessage::RemoveTorrent(info_hash))).unwrap();
+    drop(core.run(m_send.send(IDiskMessage::RemoveTorrent(info_hash))).unwrap());
 
     // Receive confirmation (just so the pool doesn't panic because we ended before it could send the message back)
-    let _ = core.run(m_recv.into_future().map(|(_, recv)| recv).map_err(|_| ())).unwrap();
+    drop(core.run(m_recv.into_future().map(|(_, recv)| recv).map_err(|_| ())).unwrap());
 }

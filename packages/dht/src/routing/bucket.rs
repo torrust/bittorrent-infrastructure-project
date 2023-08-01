@@ -52,7 +52,7 @@ impl Bucket {
     /// Iterator over each node within the bucket.
     ///
     /// For buckets newly created, the initial bad nodes are included.
-    pub fn iter(&self) -> Iter<Node> {
+    pub fn iter(&self) -> Iter<'_, Node> {
         self.nodes.iter()
     }
 

@@ -339,7 +339,7 @@ where
 
     // Parse the bencode as a message
     // Check to make sure we issued the transaction id (or that it is still valid)
-    let message = MessageType::<BencodeRef>::new(&bencode, |trans| {
+    let message = MessageType::<BencodeRef<'_>>::new(&bencode, |trans| {
         // Check if we can interpret the response transaction id as one of ours.
         let trans_id = if let Some(t) = TransactionID::from_bytes(trans) {
             t
@@ -460,7 +460,7 @@ where
             // Wrap up the nodes/values we are going to be giving them
             let token = work_storage.token_store.checkout(IpAddr::from_socket_addr(addr));
             let compact_info_type = if !contact_info_bencode.is_empty() {
-                CompactInfoType::<BencodeMut>::Both(
+                CompactInfoType::<BencodeMut<'_>>::Both(
                     CompactNodeInfo::new(&closest_nodes_bytes).unwrap(),
                     CompactValueInfo::new(&contact_info_bencode).unwrap(),
                 )
@@ -468,7 +468,7 @@ where
                 CompactInfoType::Nodes(CompactNodeInfo::new(&closest_nodes_bytes).unwrap())
             };
 
-            let get_peers_rsp = GetPeersResponse::<BencodeMut>::new(
+            let get_peers_rsp = GetPeersResponse::<BencodeMut<'_>>::new(
                 g.transaction_id(),
                 work_storage.routing_table.node_id(),
                 Some(token.as_ref()),

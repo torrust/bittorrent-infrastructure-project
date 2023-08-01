@@ -187,7 +187,7 @@ impl Clone for Node {
 }
 
 impl Debug for Node {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         f.write_fmt(format_args!(
             "Node{{ id: {:?}, addr: {:?}, last_request: {:?}, \
                                   last_response: {:?}, refresh_requests: {:?} }}",

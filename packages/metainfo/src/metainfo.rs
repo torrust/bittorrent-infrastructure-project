@@ -456,7 +456,7 @@ mod tests {
         pieces: Option<&[u8]>,
         private: Option<i64>,
         directory: Option<&str>,
-        files: FilesOpt,
+        files: FilesOpt<'_>,
     ) {
         let mut root_dict = BencodeMut::new_dict();
         let info_hash = {
