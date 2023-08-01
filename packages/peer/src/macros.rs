@@ -1,3 +1,4 @@
+#[allow(unused_macro_rules)]
 macro_rules! throwaway_input (
 
     ($res:expr) => (

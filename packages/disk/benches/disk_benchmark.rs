@@ -163,7 +163,7 @@ fn bench_native_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_128_kb_blocks";
 
     if WIPE_DATA_DIR {
-        let _ = fs::remove_dir_all(data_directory);
+        drop(fs::remove_dir_all(data_directory));
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
@@ -179,7 +179,7 @@ fn bench_native_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_16_kb_blocks";
 
     if WIPE_DATA_DIR {
-        let _ = fs::remove_dir_all(data_directory);
+        drop(fs::remove_dir_all(data_directory));
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
@@ -195,7 +195,7 @@ fn bench_native_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_2_kb_blocks";
 
     if WIPE_DATA_DIR {
-        let _ = fs::remove_dir_all(data_directory);
+        drop(fs::remove_dir_all(data_directory));
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
@@ -211,7 +211,7 @@ fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_128_kb_blocks";
 
     if WIPE_DATA_DIR {
-        let _ = fs::remove_dir_all(data_directory);
+        drop(fs::remove_dir_all(data_directory));
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
@@ -227,7 +227,7 @@ fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_16_kb_blocks";
 
     if WIPE_DATA_DIR {
-        let _ = fs::remove_dir_all(data_directory);
+        drop(fs::remove_dir_all(data_directory));
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
@@ -243,7 +243,7 @@ fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_2_kb_blocks";
 
     if WIPE_DATA_DIR {
-        let _ = fs::remove_dir_all(data_directory);
+        drop(fs::remove_dir_all(data_directory));
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 

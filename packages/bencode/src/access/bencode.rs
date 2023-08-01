@@ -2,7 +2,7 @@ use crate::access::dict::BDictAccess;
 use crate::access::list::BListAccess;
 
 /// Abstract representation of a `BencodeRef` object.
-pub enum BencodeRefKind<'a, K: 'a, V: 'a> {
+pub enum BencodeRefKind<'a, K, V> {
     /// Bencode Integer.
     Int(i64),
     /// Bencode Bytes.
@@ -96,7 +96,7 @@ where
 }
 
 /// Abstract representation of a `BencodeMut` object.
-pub enum BencodeMutKind<'a, K: 'a, V: 'a> {
+pub enum BencodeMutKind<'a, K, V> {
     /// Bencode Integer.
     Int(i64),
     /// Bencode Bytes.

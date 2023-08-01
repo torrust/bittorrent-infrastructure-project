@@ -92,7 +92,7 @@ fn map_ipv6(addr: SocketAddr) -> Option<SocketAddrV6> {
 }
 
 impl Display for Router {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match *self {
             Router::uTorrent => f.write_fmt(format_args!("{}:{}", UTORRENT_DHT.0, UTORRENT_DHT.1)),
             Router::BitTorrent => f.write_fmt(format_args!("{}:{}", BITTORRENT_DHT.0, BITTORRENT_DHT.1)),

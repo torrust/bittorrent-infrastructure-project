@@ -54,7 +54,7 @@ impl<'a, V: 'a> IntoIterator for &'a dyn BListAccess<V> {
     }
 }
 
-pub struct BListIter<'a, V: 'a> {
+pub struct BListIter<'a, V> {
     index: usize,
     access: &'a dyn BListAccess<V>,
 }

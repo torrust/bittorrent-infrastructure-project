@@ -244,7 +244,7 @@ mod tests {
     #[test]
     fn positive_compact_values_empty() {
         let bencode_values = Vec::new();
-        let compact_value: CompactValueInfo<'_, BencodeRef> = CompactValueInfo::new(&bencode_values).unwrap();
+        let compact_value: CompactValueInfo<'_, BencodeRef<'_>> = CompactValueInfo::new(&bencode_values).unwrap();
 
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
 
@@ -255,7 +255,7 @@ mod tests {
     fn positive_compact_values_one() {
         let bytes = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
         let bencode_values = ben_list!(ben_bytes!(&bytes[..]));
-        let compact_value: CompactValueInfo<'_, BencodeMut> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
+        let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
 
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
         assert_eq!(collected_info.len(), 1);
@@ -268,7 +268,7 @@ mod tests {
         let bytes_one = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
         let bytes_two = [10, 0, 0, 1, (6889 >> 8) as u8, (6889 & 0x00FF) as u8];
         let bencode_values = ben_list!(ben_bytes!(&bytes_one[..]), ben_bytes!(&bytes_two[..]));
-        let compact_value: CompactValueInfo<'_, BencodeMut> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
+        let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
 
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
         assert_eq!(collected_info.len(), 2);
