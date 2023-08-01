@@ -21,7 +21,7 @@ peer = { path = "../../packages/peer" }
 select = { path = "../../packages/select" }
 
 clap = "3"
-futures = "0.1"
+futures = "0.3"
 tokio-core = "0.1"
 tokio-io = "0.1"
 tokio-codec = "0.1"
