@@ -1,8 +1,8 @@
 [package]
 name = "htracker"
-
 description = "Communication with bittorrent HTTP trackers"
 keywords = ["tracker", "bittorrent", "http"]
+readme = "README.md"
 
 authors.workspace = true
 categories.workspace = true
@@ -11,6 +11,6 @@ edition.workspace = true
 homepage.workspace = true
 license.workspace = true
 publish.workspace = true
-readme.workspace = true
+
 repository.workspace = true
 version.workspace = true
