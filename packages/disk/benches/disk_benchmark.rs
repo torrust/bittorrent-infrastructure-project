@@ -2,9 +2,8 @@ use std::fs;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
-use bencher::{benchmark_group, benchmark_main, Bencher};
 use bytes::BytesMut;
-use criterion_bencher_compat as bencher;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use disk::fs::NativeFileSystem;
 use disk::fs_cache::FileHandleCache;
 use disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, InfoHash, ODiskMessage};
@@ -120,8 +119,14 @@ where
 }
 
 /// Benchmarking method to setup a torrent file with the given attributes, and benchmark the block processing code.
-fn bench_process_file_with_fs<F>(b: &mut Bencher, piece_length: usize, block_length: usize, file_length: usize, fs: F)
-where
+fn bench_process_file_with_fs<F>(
+    c: &mut Criterion,
+    id: BenchmarkId,
+    piece_length: usize,
+    block_length: usize,
+    file_length: usize,
+    fs: F,
+) where
     F: FileSystem + Send + Sync + 'static,
 {
     let (metainfo, bytes) = generate_single_file_torrent(piece_length, file_length);
@@ -148,10 +153,10 @@ where
         block_recv,
     };
 
-    b.iter(|| process_blocks(&data))
+    c.bench_with_input(id, &data, |b, i| b.iter(|| process_blocks(i)));
 }
 
-fn bench_native_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
+fn bench_native_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 128 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -162,10 +167,12 @@ fn bench_native_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_native_fs", "1_mb_pieces_128_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_native_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
+fn bench_native_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 16 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -176,10 +183,12 @@ fn bench_native_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_native_fs", "1_mb_pieces_16_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_native_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
+fn bench_native_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 2 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -190,10 +199,12 @@ fn bench_native_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_native_fs", "1_mb_pieces_2_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
+fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 128 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -204,10 +215,12 @@ fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_file_handle_cache_fs", "1_mb_pieces_128_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
+fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 16 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -218,10 +231,12 @@ fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_file_handle_cache_fs", "1_mb_pieces_16_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
+fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
     let piece_length = 1024 * 1024;
     let block_length = 2 * 1024;
     let file_length = 2 * 1024 * 1024;
@@ -232,10 +247,12 @@ fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(b: &mut Bencher) {
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
-    bench_process_file_with_fs(b, piece_length, block_length, file_length, filesystem);
+    let id = BenchmarkId::new("bench_file_handle_cache_fs", "1_mb_pieces_2_kb_blocks");
+
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
 }
 
-benchmark_group!(
+criterion_group!(
     benches,
     bench_native_fs_1_mb_pieces_128_kb_blocks,
     bench_native_fs_1_mb_pieces_16_kb_blocks,
@@ -244,4 +261,4 @@ benchmark_group!(
     bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks,
     bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks
 );
-benchmark_main!(benches);
+criterion_main!(benches);
