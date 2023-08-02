@@ -342,7 +342,6 @@ where
     let access_directory = accessor.access_directory().map(std::path::Path::to_string_lossy);
 
     // Move these below access directory for borrow checker
-    let opt_root = opt_root;
     let mut info = info;
 
     // Update the info bencode with values

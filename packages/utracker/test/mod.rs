@@ -73,7 +73,7 @@ impl ServerHandler for MockTrackerHandler {
         let mut inner_lock = self.inner.lock().unwrap();
 
         if inner_lock.cids.contains(&id) {
-            let peers = inner_lock.peers_map.entry(req.info_hash()).or_insert(HashSet::new());
+            let peers = inner_lock.peers_map.entry(req.info_hash()).or_default();
             // Ignore any source ip directives in the request
             let store_addr = match addr {
                 SocketAddr::V4(v4_addr) => SocketAddr::V4(SocketAddrV4::new(*v4_addr.ip(), req.port())),
@@ -142,7 +142,7 @@ impl ServerHandler for MockTrackerHandler {
             let mut response = ScrapeResponse::new();
 
             for hash in req.iter() {
-                let peers = inner_lock.peers_map.entry(hash).or_insert(HashSet::new());
+                let peers = inner_lock.peers_map.entry(hash).or_default();
 
                 response.insert(ScrapeStats::new(peers.len() as i32, 0, peers.len() as i32));
             }
