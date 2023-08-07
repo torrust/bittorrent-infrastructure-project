@@ -119,7 +119,7 @@ fn parse_meta_bytes(bytes: &[u8]) -> ParseResult<Metainfo> {
 
     let opt_announce_list = {
         parse::parse_announce_list(root_dict)
-            .map(|list| parse::convert_announce_list(list))
+            .map(parse::convert_announce_list)
             .or(None)
     };
 

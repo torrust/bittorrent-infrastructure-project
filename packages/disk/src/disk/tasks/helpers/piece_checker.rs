@@ -182,7 +182,7 @@ impl PieceCheckerState {
 
     /// Add a pending piece block to the current pending blocks.
     pub fn add_pending_block(&mut self, msg: BlockMetadata) {
-        self.pending_blocks.entry(msg.piece_index()).or_insert(Vec::new()).push(msg);
+        self.pending_blocks.entry(msg.piece_index()).or_default().push(msg);
     }
 
     /// Run the given closures against `NewGood` and `NewBad` messages. Each of the messages will

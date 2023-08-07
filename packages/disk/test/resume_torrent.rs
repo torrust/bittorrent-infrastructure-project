@@ -125,7 +125,7 @@ fn positive_complete_torrent() {
     let (recv, piece_zero_good) =
         crate::core_loop_with_timeout(&mut core, 500, (false, recv), |piece_zero_good, recv, msg| match msg {
             ODiskMessage::TorrentAdded(_) => Loop::Break((recv, piece_zero_good)),
-            ODiskMessage::FoundGoodPiece(_, piece) if piece == 0 => Loop::Continue((true, recv)),
+            ODiskMessage::FoundGoodPiece(_, 0) => Loop::Continue((true, recv)),
             unexpected => panic!("Unexpected Message: {:?}", unexpected),
         });
 
