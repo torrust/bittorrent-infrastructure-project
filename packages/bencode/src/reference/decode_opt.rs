@@ -6,6 +6,7 @@ const DEFAULT_ENFORCE_FULL_DECODE: bool = true;
 
 /// Stores decoding options for modifying decode behavior.
 #[derive(Copy, Clone)]
+#[allow(clippy::module_name_repetitions)]
 pub struct BDecodeOpt {
     max_recursion: usize,
     check_key_sort: bool,

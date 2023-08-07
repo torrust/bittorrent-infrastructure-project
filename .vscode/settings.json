@@ -16,6 +16,8 @@
         "-W",
         "clippy::perf",
         "-W",
-        "clippy::style"
+        "clippy::style",
+        "-W",
+        "clippy::pedantic"
     ]
 }

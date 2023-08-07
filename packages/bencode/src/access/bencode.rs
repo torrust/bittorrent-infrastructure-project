@@ -2,7 +2,7 @@ use crate::access::dict::BDictAccess;
 use crate::access::list::BListAccess;
 
 /// Abstract representation of a `BencodeRef` object.
-pub enum BencodeRefKind<'a, K, V> {
+pub enum RefKind<'a, K, V> {
     /// Bencode Integer.
     Int(i64),
     /// Bencode Bytes.
@@ -19,7 +19,7 @@ pub trait BRefAccess: Sized {
     type BType: BRefAccess<BKey = Self::BKey>;
 
     /// Access the bencode as a `BencodeRefKind`.
-    fn kind(&self) -> BencodeRefKind<'_, Self::BKey, Self::BType>;
+    fn kind(&self) -> RefKind<'_, Self::BKey, Self::BType>;
 
     /// Attempt to access the bencode as a `str`.
     fn str(&self) -> Option<&str>;
@@ -57,7 +57,7 @@ where
     type BKey = T::BKey;
     type BType = T::BType;
 
-    fn kind(&self) -> BencodeRefKind<'_, Self::BKey, Self::BType> {
+    fn kind(&self) -> RefKind<'_, Self::BKey, Self::BType> {
         (*self).kind()
     }
 
@@ -96,7 +96,7 @@ where
 }
 
 /// Abstract representation of a `BencodeMut` object.
-pub enum BencodeMutKind<'a, K, V> {
+pub enum MutKind<'a, K, V> {
     /// Bencode Integer.
     Int(i64),
     /// Bencode Bytes.
@@ -110,7 +110,7 @@ pub enum BencodeMutKind<'a, K, V> {
 /// Trait for write access to some bencode type.
 pub trait BMutAccess: Sized + BRefAccess {
     /// Access the bencode as a `BencodeMutKind`.
-    fn kind_mut(&mut self) -> BencodeMutKind<'_, Self::BKey, Self::BType>;
+    fn kind_mut(&mut self) -> MutKind<'_, Self::BKey, Self::BType>;
 
     /// Attempt to access the bencode as a mutable `BListAccess`.
     fn list_mut(&mut self) -> Option<&mut dyn BListAccess<Self::BType>>;
