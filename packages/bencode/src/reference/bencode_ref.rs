@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::str;
 
-use crate::access::bencode::{BRefAccess, BRefAccessExt, BencodeRefKind};
+use crate::access::bencode::{BRefAccess, BRefAccessExt, RefKind};
 use crate::access::dict::BDictAccess;
 use crate::access::list::BListAccess;
 use crate::error::{BencodeParseError, BencodeParseErrorKind, BencodeParseResult};
@@ -10,7 +10,7 @@ use crate::reference::decode_opt::BDecodeOpt;
 
 /// Bencode object that holds references to the underlying data.
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
-pub enum InnerBencodeRef<'a> {
+pub enum Inner<'a> {
     /// Bencode Integer.
     Int(i64, &'a [u8]),
     /// Bencode Bytes.
@@ -21,8 +21,8 @@ pub enum InnerBencodeRef<'a> {
     Dict(BTreeMap<&'a [u8], BencodeRef<'a>>, &'a [u8]),
 }
 
-impl<'a> From<InnerBencodeRef<'a>> for BencodeRef<'a> {
-    fn from(val: InnerBencodeRef<'a>) -> Self {
+impl<'a> From<Inner<'a>> for BencodeRef<'a> {
+    fn from(val: Inner<'a>) -> Self {
         BencodeRef { inner: val }
     }
 }
@@ -30,11 +30,12 @@ impl<'a> From<InnerBencodeRef<'a>> for BencodeRef<'a> {
 /// `BencodeRef` object that stores references to some buffer.
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct BencodeRef<'a> {
-    inner: InnerBencodeRef<'a>,
+    inner: Inner<'a>,
 }
 
 impl<'a> BencodeRef<'a> {
     /// Decode the given bytes into a `BencodeRef` using the given decode options.
+    #[allow(clippy::missing_errors_doc)]
     pub fn decode(bytes: &'a [u8], opts: BDecodeOpt) -> BencodeParseResult<BencodeRef<'a>> {
         // Apply try so any errors return before the eof check
         let (bencode, end_pos) = decode::decode(bytes, 0, opts, 0)?;
@@ -51,11 +52,12 @@ impl<'a> BencodeRef<'a> {
     /// Get a byte slice of the current bencode byte representation.
     #[must_use]
     pub fn buffer(&self) -> &'a [u8] {
+        #[allow(clippy::match_same_arms)]
         match self.inner {
-            InnerBencodeRef::Int(_, buffer) => buffer,
-            InnerBencodeRef::Bytes(_, buffer) => buffer,
-            InnerBencodeRef::List(_, buffer) => buffer,
-            InnerBencodeRef::Dict(_, buffer) => buffer,
+            Inner::Int(_, buffer) => buffer,
+            Inner::Bytes(_, buffer) => buffer,
+            Inner::List(_, buffer) => buffer,
+            Inner::Dict(_, buffer) => buffer,
         }
     }
 }
@@ -64,12 +66,12 @@ impl<'a> BRefAccess for BencodeRef<'a> {
     type BKey = &'a [u8];
     type BType = BencodeRef<'a>;
 
-    fn kind<'b>(&'b self) -> BencodeRefKind<'b, &'a [u8], BencodeRef<'a>> {
+    fn kind<'b>(&'b self) -> RefKind<'b, &'a [u8], BencodeRef<'a>> {
         match self.inner {
-            InnerBencodeRef::Int(n, _) => BencodeRefKind::Int(n),
-            InnerBencodeRef::Bytes(n, _) => BencodeRefKind::Bytes(n),
-            InnerBencodeRef::List(ref n, _) => BencodeRefKind::List(n),
-            InnerBencodeRef::Dict(ref n, _) => BencodeRefKind::Dict(n),
+            Inner::Int(n, _) => RefKind::Int(n),
+            Inner::Bytes(n, _) => RefKind::Bytes(n),
+            Inner::List(ref n, _) => RefKind::List(n),
+            Inner::Dict(ref n, _) => RefKind::Dict(n),
         }
     }
 
@@ -79,7 +81,7 @@ impl<'a> BRefAccess for BencodeRef<'a> {
 
     fn int(&self) -> Option<i64> {
         match self.inner {
-            InnerBencodeRef::Int(n, _) => Some(n),
+            Inner::Int(n, _) => Some(n),
             _ => None,
         }
     }
@@ -90,14 +92,14 @@ impl<'a> BRefAccess for BencodeRef<'a> {
 
     fn list(&self) -> Option<&dyn BListAccess<BencodeRef<'a>>> {
         match self.inner {
-            InnerBencodeRef::List(ref n, _) => Some(n),
+            Inner::List(ref n, _) => Some(n),
             _ => None,
         }
     }
 
     fn dict(&self) -> Option<&dyn BDictAccess<&'a [u8], BencodeRef<'a>>> {
         match self.inner {
-            InnerBencodeRef::Dict(ref n, _) => Some(n),
+            Inner::Dict(ref n, _) => Some(n),
             _ => None,
         }
     }
@@ -105,10 +107,7 @@ impl<'a> BRefAccess for BencodeRef<'a> {
 
 impl<'a> BRefAccessExt<'a> for BencodeRef<'a> {
     fn str_ext(&self) -> Option<&'a str> {
-        let bytes = match self.bytes_ext() {
-            Some(n) => n,
-            None => return None,
-        };
+        let bytes = self.bytes_ext()?;
 
         match str::from_utf8(bytes) {
             Ok(n) => Some(n),
@@ -118,7 +117,7 @@ impl<'a> BRefAccessExt<'a> for BencodeRef<'a> {
 
     fn bytes_ext(&self) -> Option<&'a [u8]> {
         match self.inner {
-            InnerBencodeRef::Bytes(n, _) => Some(&n[0..]),
+            Inner::Bytes(n, _) => Some(&n[0..]),
             _ => None,
         }
     }

@@ -2,14 +2,14 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::str;
 
-use crate::access::bencode::{BMutAccess, BRefAccess, BencodeMutKind, BencodeRefKind};
+use crate::access::bencode::{BMutAccess, BRefAccess, MutKind, RefKind};
 use crate::access::dict::BDictAccess;
 use crate::access::list::BListAccess;
 use crate::mutable::encode;
 
 /// Bencode object that holds references to the underlying data.
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
-pub enum InnerBencodeMut<'a> {
+pub enum Inner<'a> {
     /// Bencode Integer.
     Int(i64),
     /// Bencode Bytes.
@@ -23,36 +23,36 @@ pub enum InnerBencodeMut<'a> {
 /// `BencodeMut` object that stores references to some data.
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct BencodeMut<'a> {
-    inner: InnerBencodeMut<'a>,
+    inner: Inner<'a>,
 }
 
 impl<'a> BencodeMut<'a> {
-    fn new(inner: InnerBencodeMut<'a>) -> BencodeMut<'a> {
+    fn new(inner: Inner<'a>) -> BencodeMut<'a> {
         BencodeMut { inner }
     }
 
     /// Create a new `BencodeMut` representing an `i64`.
     #[must_use]
     pub fn new_int(value: i64) -> BencodeMut<'a> {
-        BencodeMut::new(InnerBencodeMut::Int(value))
+        BencodeMut::new(Inner::Int(value))
     }
 
     /// Create a new `BencodeMut` representing a `[u8]`.
     #[must_use]
     pub fn new_bytes(value: Cow<'a, [u8]>) -> BencodeMut<'a> {
-        BencodeMut::new(InnerBencodeMut::Bytes(value))
+        BencodeMut::new(Inner::Bytes(value))
     }
 
     /// Create a new `BencodeMut` representing a `BListAccess`.
     #[must_use]
     pub fn new_list() -> BencodeMut<'a> {
-        BencodeMut::new(InnerBencodeMut::List(Vec::new()))
+        BencodeMut::new(Inner::List(Vec::new()))
     }
 
     /// Create a new `BencodeMut` representing a `BDictAccess`.
     #[must_use]
     pub fn new_dict() -> BencodeMut<'a> {
-        BencodeMut::new(InnerBencodeMut::Dict(BTreeMap::new()))
+        BencodeMut::new(Inner::Dict(BTreeMap::new()))
     }
 
     /// Encode the `BencodeMut` into a buffer representing the bencode.
@@ -70,20 +70,17 @@ impl<'a> BRefAccess for BencodeMut<'a> {
     type BKey = Cow<'a, [u8]>;
     type BType = BencodeMut<'a>;
 
-    fn kind<'b>(&'b self) -> BencodeRefKind<'b, Cow<'a, [u8]>, BencodeMut<'a>> {
+    fn kind<'b>(&'b self) -> RefKind<'b, Cow<'a, [u8]>, BencodeMut<'a>> {
         match self.inner {
-            InnerBencodeMut::Int(n) => BencodeRefKind::Int(n),
-            InnerBencodeMut::Bytes(ref n) => BencodeRefKind::Bytes(n),
-            InnerBencodeMut::List(ref n) => BencodeRefKind::List(n),
-            InnerBencodeMut::Dict(ref n) => BencodeRefKind::Dict(n),
+            Inner::Int(n) => RefKind::Int(n),
+            Inner::Bytes(ref n) => RefKind::Bytes(n),
+            Inner::List(ref n) => RefKind::List(n),
+            Inner::Dict(ref n) => RefKind::Dict(n),
         }
     }
 
     fn str(&self) -> Option<&str> {
-        let bytes = match self.bytes() {
-            Some(n) => n,
-            None => return None,
-        };
+        let bytes = self.bytes()?;
 
         match str::from_utf8(bytes) {
             Ok(n) => Some(n),
@@ -93,53 +90,53 @@ impl<'a> BRefAccess for BencodeMut<'a> {
 
     fn int(&self) -> Option<i64> {
         match self.inner {
-            InnerBencodeMut::Int(n) => Some(n),
+            Inner::Int(n) => Some(n),
             _ => None,
         }
     }
 
     fn bytes(&self) -> Option<&[u8]> {
         match self.inner {
-            InnerBencodeMut::Bytes(ref n) => Some(n.as_ref()),
+            Inner::Bytes(ref n) => Some(n.as_ref()),
             _ => None,
         }
     }
 
     fn list(&self) -> Option<&dyn BListAccess<BencodeMut<'a>>> {
         match self.inner {
-            InnerBencodeMut::List(ref n) => Some(n),
+            Inner::List(ref n) => Some(n),
             _ => None,
         }
     }
 
     fn dict(&self) -> Option<&dyn BDictAccess<Cow<'a, [u8]>, BencodeMut<'a>>> {
         match self.inner {
-            InnerBencodeMut::Dict(ref n) => Some(n),
+            Inner::Dict(ref n) => Some(n),
             _ => None,
         }
     }
 }
 
 impl<'a> BMutAccess for BencodeMut<'a> {
-    fn kind_mut<'b>(&'b mut self) -> BencodeMutKind<'b, Cow<'a, [u8]>, BencodeMut<'a>> {
+    fn kind_mut<'b>(&'b mut self) -> MutKind<'b, Cow<'a, [u8]>, BencodeMut<'a>> {
         match self.inner {
-            InnerBencodeMut::Int(n) => BencodeMutKind::Int(n),
-            InnerBencodeMut::Bytes(ref mut n) => BencodeMutKind::Bytes((*n).as_ref()),
-            InnerBencodeMut::List(ref mut n) => BencodeMutKind::List(n),
-            InnerBencodeMut::Dict(ref mut n) => BencodeMutKind::Dict(n),
+            Inner::Int(n) => MutKind::Int(n),
+            Inner::Bytes(ref mut n) => MutKind::Bytes((*n).as_ref()),
+            Inner::List(ref mut n) => MutKind::List(n),
+            Inner::Dict(ref mut n) => MutKind::Dict(n),
         }
     }
 
     fn list_mut(&mut self) -> Option<&mut dyn BListAccess<BencodeMut<'a>>> {
         match self.inner {
-            InnerBencodeMut::List(ref mut n) => Some(n),
+            Inner::List(ref mut n) => Some(n),
             _ => None,
         }
     }
 
     fn dict_mut(&mut self) -> Option<&mut dyn BDictAccess<Cow<'a, [u8]>, BencodeMut<'a>>> {
         match self.inner {
-            InnerBencodeMut::Dict(ref mut n) => Some(n),
+            Inner::Dict(ref mut n) => Some(n),
             _ => None,
         }
     }

@@ -15,11 +15,11 @@ fn bench_multi_kb_bencode(bencode: &[u8]) {
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("bencode nested lists", |b| {
-        b.iter(|| bench_nested_lists(black_box(B_NESTED_LISTS)))
+        b.iter(|| bench_nested_lists(black_box(B_NESTED_LISTS)));
     });
 
     c.bench_function("bencode multi kb", |b| {
-        b.iter(|| bench_multi_kb_bencode(black_box(MULTI_KB_BENCODE)))
+        b.iter(|| bench_multi_kb_bencode(black_box(MULTI_KB_BENCODE)));
     });
 }
 

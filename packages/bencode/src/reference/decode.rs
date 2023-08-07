@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::str::{self};
 
 use crate::error::{BencodeParseError, BencodeParseErrorKind, BencodeParseResult};
-use crate::reference::bencode_ref::{BencodeRef, InnerBencodeRef};
+use crate::reference::bencode_ref::{BencodeRef, Inner};
 use crate::reference::decode_opt::BDecodeOpt;
 
 pub fn decode(bytes: &[u8], pos: usize, opts: BDecodeOpt, depth: usize) -> BencodeParseResult<(BencodeRef<'_>, usize)> {
@@ -17,20 +17,20 @@ pub fn decode(bytes: &[u8], pos: usize, opts: BDecodeOpt, depth: usize) -> Benco
     match curr_byte {
         crate::INT_START => {
             let (bencode, next_pos) = decode_int(bytes, pos + 1, crate::BEN_END)?;
-            Ok((InnerBencodeRef::Int(bencode, &bytes[pos..next_pos]).into(), next_pos))
+            Ok((Inner::Int(bencode, &bytes[pos..next_pos]).into(), next_pos))
         }
         crate::LIST_START => {
             let (bencode, next_pos) = decode_list(bytes, pos + 1, opts, depth)?;
-            Ok((InnerBencodeRef::List(bencode, &bytes[pos..next_pos]).into(), next_pos))
+            Ok((Inner::List(bencode, &bytes[pos..next_pos]).into(), next_pos))
         }
         crate::DICT_START => {
             let (bencode, next_pos) = decode_dict(bytes, pos + 1, opts, depth)?;
-            Ok((InnerBencodeRef::Dict(bencode, &bytes[pos..next_pos]).into(), next_pos))
+            Ok((Inner::Dict(bencode, &bytes[pos..next_pos]).into(), next_pos))
         }
         crate::BYTE_LEN_LOW..=crate::BYTE_LEN_HIGH => {
             let (bencode, next_pos) = decode_bytes(bytes, pos)?;
             // Include the length digit, don't increment position
-            Ok((InnerBencodeRef::Bytes(bencode, &bytes[pos..next_pos]).into(), next_pos))
+            Ok((Inner::Bytes(bencode, &bytes[pos..next_pos]).into(), next_pos))
         }
         _ => Err(BencodeParseError::from_kind(BencodeParseErrorKind::InvalidByte { pos })),
     }
@@ -39,13 +39,10 @@ pub fn decode(bytes: &[u8], pos: usize, opts: BDecodeOpt, depth: usize) -> Benco
 fn decode_int(bytes: &[u8], pos: usize, delim: u8) -> BencodeParseResult<(i64, usize)> {
     let (_, begin_decode) = bytes.split_at(pos);
 
-    let relative_end_pos = match begin_decode.iter().position(|n| *n == delim) {
-        Some(end_pos) => end_pos,
-        None => {
-            return Err(BencodeParseError::from_kind(BencodeParseErrorKind::InvalidIntNoDelimiter {
-                pos,
-            }))
-        }
+    let Some(relative_end_pos) = begin_decode.iter().position(|n| *n == delim) else {
+        return Err(BencodeParseError::from_kind(BencodeParseErrorKind::InvalidIntNoDelimiter {
+            pos,
+        }));
     };
     let int_byte_slice = &begin_decode[..relative_end_pos];
 
@@ -65,13 +62,10 @@ fn decode_int(bytes: &[u8], pos: usize, delim: u8) -> BencodeParseResult<(i64, u
         }
     }
 
-    let int_str = match str::from_utf8(int_byte_slice) {
-        Ok(n) => n,
-        Err(_) => {
-            return Err(BencodeParseError::from_kind(BencodeParseErrorKind::InvalidIntParseError {
-                pos,
-            }))
-        }
+    let Ok(int_str) = str::from_utf8(int_byte_slice) else {
+        return Err(BencodeParseError::from_kind(BencodeParseErrorKind::InvalidIntParseError {
+            pos,
+        }));
     };
 
     // Position of end of integer type, next byte is the start of the next value
@@ -97,7 +91,8 @@ fn decode_bytes(bytes: &[u8], pos: usize) -> BencodeParseResult<(&[u8], usize)> 
     // Should be safe to cast to usize (TODO: Check if cast would overflow to provide
     // a more helpful error message, otherwise, parsing will probably fail with an
     // unrelated message).
-    let num_bytes = num_bytes as usize;
+    let num_bytes =
+        usize::try_from(num_bytes).map_err(|_| BencodeParseErrorKind::Msg(format!("input length is too long: {}", num_bytes)))?;
 
     if num_bytes > bytes[start_pos..].len() {
         return Err(BencodeParseError::from_kind(BencodeParseErrorKind::InvalidLengthOverflow {

@@ -1,6 +1,6 @@
 use std::iter::Extend;
 
-use crate::access::bencode::{BRefAccess, BencodeRefKind};
+use crate::access::bencode::{BRefAccess, RefKind};
 use crate::access::dict::BDictAccess;
 use crate::access::list::BListAccess;
 
@@ -10,10 +10,10 @@ where
     T::BKey: AsRef<[u8]>,
 {
     match val.kind() {
-        BencodeRefKind::Int(n) => encode_int(n, bytes),
-        BencodeRefKind::Bytes(n) => encode_bytes(n, bytes),
-        BencodeRefKind::List(n) => encode_list(n, bytes),
-        BencodeRefKind::Dict(n) => encode_dict(n, bytes),
+        RefKind::Int(n) => encode_int(n, bytes),
+        RefKind::Bytes(n) => encode_bytes(n, bytes),
+        RefKind::List(n) => encode_list(n, bytes),
+        RefKind::Dict(n) => encode_dict(n, bytes),
     }
 }
 

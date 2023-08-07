@@ -49,11 +49,17 @@ pub mod inner {
 
 /// Traits for extended functionality.
 pub mod ext {
+    #[allow(clippy::module_name_repetitions)]
     pub use crate::access::bencode::BRefAccessExt;
+    #[allow(clippy::module_name_repetitions)]
     pub use crate::access::convert::BConvertExt;
 }
 
-pub use crate::access::bencode::{BMutAccess, BRefAccess, BencodeMutKind, BencodeRefKind};
+#[deprecated(since = "1.0.0", note = "use `MutKind` instead.")]
+pub use crate::access::bencode::MutKind as BencodeMutKind;
+#[deprecated(since = "1.0.0", note = "use `RefKind` instead.")]
+pub use crate::access::bencode::RefKind as BencodeRefKind;
+pub use crate::access::bencode::{BMutAccess, BRefAccess, MutKind, RefKind};
 pub use crate::access::convert::BConvert;
 pub use crate::access::dict::BDictAccess;
 pub use crate::access::list::BListAccess;

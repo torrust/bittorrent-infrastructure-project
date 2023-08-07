@@ -91,11 +91,11 @@ impl<V> BListAccess<V> for Vec<V> {
     }
 
     fn insert(&mut self, index: usize, item: V) {
-        Vec::insert(self, index, item)
+        Vec::insert(self, index, item);
     }
 
     fn push(&mut self, item: V) {
-        Vec::push(self, item)
+        Vec::push(self, item);
     }
 
     fn len(&self) -> usize {
