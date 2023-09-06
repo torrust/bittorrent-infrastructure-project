@@ -1,4 +1,4 @@
-# BitTorrent Infrastructure Project　[![rel_b_wf_test]][rel_wf_test]
+# BitTorrent Infrastructure Project　[![coverage_wf_b]][coverage_wf] [![testing_wf_b]][testing_wf]
 <div align="center"><img src="./docs/media/bittorrent-infrastructure-project-logo.svg" alt="Bittorrent Infrastructure Project Logo" width="200" align="center"/></div>
 
 ___A collection of [packages][rel_packages] that can support the building of applications using [BitTorrent] technologies.___
@@ -58,10 +58,11 @@ Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the [Apache-2.0 License][rel_copyright], shall licensed as above, without any
 additional terms or conditions.
 
+[coverage_wf]: ../../actions/workflows/coverage.yaml
+[coverage_wf_b]: ../../actions/workflows/coverage.yaml/badge.svg
+[testing_wf]: ../../actions/workflows/testing.yaml
+[testing_wf_b]: ../../actions/workflows/testing.yaml/badge.svg
 
-
-[rel_wf_test]:  ../../actions/workflows/test.yaml
-[rel_b_wf_test]: ../../actions/workflows/test.yaml/badge.svg
 [rel_packages]: ./packages/README.md
 [rel_copyright]: ./COPYRIGHT
 
