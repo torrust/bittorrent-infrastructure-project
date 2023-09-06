@@ -48,7 +48,7 @@ jobs:
         name: Upload Coverage Report
         uses: codecov/codecov-action@v3
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ steps.coverage.outputs.report }}
-          # flag: rust
           verbose: true
           fail_ci_if_error: true
