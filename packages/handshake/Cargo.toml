@@ -17,7 +17,7 @@ version.workspace = true
 
 [dependencies]
 util = { path = "../util" }
-bytes = "0.4"
+bytes = "1.5"
 futures = "0.1"
 nom = "3"
 rand = "0.8"
