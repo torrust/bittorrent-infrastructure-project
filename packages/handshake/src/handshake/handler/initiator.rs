@@ -9,6 +9,7 @@ use crate::message::initiate::InitiateMessage;
 use crate::transport::Transport;
 
 /// Handle the initiation of connections, which are returned as a `HandshakeType`.
+#[allow(clippy::module_name_repetitions)]
 pub fn initiator_handler<T>(
     item: InitiateMessage,
     context: &(T, Filters, Handle, HandshakeTimer),

@@ -15,6 +15,7 @@ use crate::worker::ScheduledTaskCheck;
 
 const REFRESH_INTERVAL_TIMEOUT: u64 = 6000;
 
+#[allow(clippy::module_name_repetitions)]
 pub enum RefreshStatus {
     /// Refresh is in progress.
     Refreshing,
@@ -22,6 +23,7 @@ pub enum RefreshStatus {
     Failed,
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct TableRefresh {
     id_generator: MIDGenerator,
     curr_refresh_bucket: usize,

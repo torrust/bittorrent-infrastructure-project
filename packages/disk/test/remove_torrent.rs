@@ -47,7 +47,7 @@ fn positive_remove_torrent() {
             }
             ODiskMessage::TorrentRemoved(_) => Loop::Break((blocking_send, good_pieces, recv)),
             ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue(((blocking_send, good_pieces + 1), recv)),
-            unexpected => panic!("Unexpected Message: {:?}", unexpected),
+            unexpected => panic!("Unexpected Message: {unexpected:?}"),
         },
     );
 
@@ -60,8 +60,8 @@ fn positive_remove_torrent() {
 
     blocking_send.send(IDiskMessage::ProcessBlock(process_block)).unwrap();
 
-    crate::core_loop_with_timeout(&mut core, 500, ((), recv), |_, _, msg| match msg {
+    crate::core_loop_with_timeout(&mut core, 500, ((), recv), |(), _, msg| match msg {
         ODiskMessage::ProcessBlockError(_, _) => Loop::Break(()),
-        unexpected => panic!("Unexpected Message: {:?}", unexpected),
+        unexpected => panic!("Unexpected Message: {unexpected:?}"),
     });
 }

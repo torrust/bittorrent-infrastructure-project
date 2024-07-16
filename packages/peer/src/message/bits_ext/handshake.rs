@@ -295,12 +295,24 @@ impl ExtendedMessage {
     }
 
     /// Write the `ExtendedMessage` out to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It will return an IP error if unable to write the bytes.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if the bencode size it too large.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
     {
         let real_length = 2 + self.bencode_size();
-        message::write_length_id_pair(&mut writer, real_length as u32, Some(bits_ext::EXTENDED_MESSAGE_ID))?;
+        message::write_length_id_pair(
+            &mut writer,
+            real_length.try_into().unwrap(),
+            Some(bits_ext::EXTENDED_MESSAGE_ID),
+        )?;
 
         writer.write_all(&[bits_ext::EXTENDED_MESSAGE_HANDSHAKE_ID]);
 
@@ -353,6 +365,10 @@ impl ExtendedMessage {
     }
 
     /// Retrieve a raw `BencodeRef` representing the current message.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to decode the bencode.
     pub fn bencode_ref(&self) -> BencodeRef<'_> {
         // We already verified that this is valid bencode
         BencodeRef::decode(&self.raw_bencode, BDecodeOpt::default()).unwrap()

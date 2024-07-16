@@ -2,7 +2,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 use chrono::{DateTime, Duration, Utc};
 use util::convert;
-use util::error::{LengthError, LengthErrorKind, LengthResult};
+use util::error::{Error, LengthErrorKind, LengthResult};
 use util::net::IpAddr;
 use util::sha::{self, ShaHash};
 
@@ -33,15 +33,15 @@ pub struct Token {
 
 impl Token {
     pub fn new(bytes: &[u8]) -> LengthResult<Token> {
-        if bytes.len() != sha::SHA_HASH_LEN {
-            Err(LengthError::new(LengthErrorKind::LengthExpected, sha::SHA_HASH_LEN))
-        } else {
+        if bytes.len() == sha::SHA_HASH_LEN {
             let mut token = [0u8; sha::SHA_HASH_LEN];
 
             for (src, dst) in bytes.iter().zip(token.iter_mut()) {
                 *dst = *src;
             }
             Ok(Token::from(token))
+        } else {
+            Err(Error::new(LengthErrorKind::LengthExpected, sha::SHA_HASH_LEN))
         }
     }
 }
@@ -66,6 +66,7 @@ impl AsRef<[u8]> for Token {
 
 // ----------------------------------------------------------------------------//
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone)]
 pub struct TokenStore {
     curr_secret: u32,
@@ -249,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "assertion failed: store.checkin(v4_addr, valid_token)")]
     fn negative_reject_expired_v4_token() {
         let mut store = TokenStore::new();
         let v4_addr = bip_test::dummy_ipv4_addr();
@@ -264,7 +265,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "assertion failed: store.checkin(v6_addr, valid_token)")]
     fn negative_reject_expired_v6_token() {
         let mut store = TokenStore::new();
         let v6_addr = bip_test::dummy_ipv6_addr();

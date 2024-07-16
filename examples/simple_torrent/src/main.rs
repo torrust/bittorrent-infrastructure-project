@@ -67,6 +67,7 @@ impl<S> Handshaker for LegacyHandshaker<S> where S: Sink<SinkItem=InitiateMessag
 const MAX_PENDING_BLOCKS: usize = 50;
 
 // Some enum to store our selection state updates
+#[allow(dead_code)]
 #[derive(Debug)]
 enum SelectState {
     Choke(PeerInfo),
@@ -84,9 +85,11 @@ enum SelectState {
     TorrentAdded,
 }
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     // Command line argument parsing
     let matches = clap_app!(myapp =>
+
         (version: "1.0")
         (author: "Andrew <amiller4421@gmail.com>")
         (about: "Simple torrent downloading")
@@ -130,7 +133,7 @@ fn main() {
         // block when we reach our max peers). Setting these to low
         // values so we don't have more than 2 unused tcp connections.
         .with_config(HandshakerConfig::default().with_wait_buffer_size(0).with_done_buffer_size(0))
-        .build::<TcpTransport>(TcpTransport, core.handle()) // Will handshake over TCP (could swap this for UTP in the future)
+        .build::<TcpTransport>(TcpTransport, &core.handle()) // Will handshake over TCP (could swap this for UTP in the future)
         .unwrap()
         .into_parts();
     // Create a peer manager that will hold our peers and heartbeat/send messages to them
@@ -146,7 +149,7 @@ fn main() {
     let map_peer_manager_send = peer_manager_send.clone().sink_map_err(|_| ());
     core.handle().spawn(
         handshaker_recv
-            .map_err(|_| ())
+            .map_err(|()| ())
             .map(|complete_msg| {
                 // Our handshaker finished handshaking some peer, get
                 // the peer info as well as the peer itself (socket)
@@ -173,7 +176,7 @@ fn main() {
 
     // Map out the errors for these sinks so they match
     let map_select_send = select_send.clone().sink_map_err(|_| ());
-    let map_disk_manager_send = disk_manager_send.clone().sink_map_err(|_| ());
+    let map_disk_manager_send = disk_manager_send.clone().sink_map_err(|()| ());
 
     // Hook up a future that receives messages from the peer manager, and forwards request to the disk manager or selection manager (using loop fn
     // here because we need to be able to access state, like request_map and a different future combinator wouldn't let us keep it around to access)
@@ -241,15 +244,15 @@ fn main() {
                         OPeerManagerMessage::PeerAdded(info) => Some(Either::A(SelectState::NewPeer(info))),
                         OPeerManagerMessage::SentMessage(_, _) => None,
                         OPeerManagerMessage::PeerRemoved(info) => {
-                            println!("We Removed Peer {:?} From The Peer Manager", info);
+                            println!("We Removed Peer {info:?} From The Peer Manager");
                             Some(Either::A(SelectState::RemovedPeer(info)))
                         }
                         OPeerManagerMessage::PeerDisconnect(info) => {
-                            println!("Peer {:?} Disconnected From Us", info);
+                            println!("Peer {info:?} Disconnected From Us");
                             Some(Either::A(SelectState::RemovedPeer(info)))
                         }
                         OPeerManagerMessage::PeerError(info, error) => {
-                            println!("Peer {:?} Disconnected With Error: {:?}", info, error);
+                            println!("Peer {info:?} Disconnected With Error: {error:?}");
                             Some(Either::A(SelectState::RemovedPeer(info)))
                         }
                     };
@@ -305,6 +308,7 @@ fn main() {
                             let peer_info = peer_list.remove(1);
 
                             // Pack up our block into a peer wire protocol message and send it off to the peer
+                            #[allow(clippy::cast_possible_truncation)]
                             let piece =
                                 PieceMessage::new(metadata.piece_index() as u32, metadata.block_offset() as u32, block.freeze());
                             let pwp_message = PeerWireProtocolMessage::Piece(piece);
@@ -360,13 +364,13 @@ fn main() {
                         match opt_item.unwrap() {
                             // Disk manager identified a good piece already downloaded
                             SelectState::GoodPiece(index) => {
-                                piece_requests.retain(|req| req.piece_index() != index as u32);
+                                piece_requests.retain(|req| u64::from(req.piece_index()) != index);
                                 Loop::Continue((select_recv, piece_requests, cur_pieces + 1))
                             }
                             // Disk manager is finished identifying good pieces, torrent has been added
                             SelectState::TorrentAdded => Loop::Break((select_recv, piece_requests, cur_pieces)),
                             // Shouldn't be receiving any other messages...
-                            message => panic!("Unexpected Message Received In Selection Receiver: {:?}", message),
+                            message => panic!("Unexpected Message Received In Selection Receiver: {message:?}"),
                         }
                     })
                     .map_err(|_| ())
@@ -467,14 +471,14 @@ fn main() {
                                 vec![IPeerManagerMessage::SendMessage(
                                     peer,
                                     0,
-                                    PeerWireProtocolMessage::Have(HaveMessage::new(piece as u32)),
+                                    PeerWireProtocolMessage::Have(HaveMessage::new(piece.try_into().unwrap())),
                                 )]
                             } else {
                                 vec![]
                             }
                         }
                         // Decided not to handle these two cases here
-                        SelectState::RemovedPeer(info) => panic!("Peer {:?} Got Disconnected", info),
+                        SelectState::RemovedPeer(info) => panic!("Peer {info:?} Got Disconnected"),
                         SelectState::BadPiece(_) => panic!("Peer Gave Us Bad Piece"),
                         _ => vec![],
                     };
@@ -507,11 +511,11 @@ fn main() {
                         Box::new(
                             map_peer_manager_send
                                 .send_all(stream::iter_result(send_messages.into_iter().map(Ok::<_, ()>)))
-                                .map_err(|_| ())
+                                .map_err(|()| ())
                                 .and_then(|(map_peer_manager_send, _)| {
                                     map_peer_manager_send.send_all(stream::iter_result(next_piece_requests))
                                 })
-                                .map_err(|_| ())
+                                .map_err(|()| ())
                                 .map(move |(map_peer_manager_send, _)| {
                                     Loop::Continue((
                                         select_recv,
@@ -567,6 +571,7 @@ fn generate_requests(info: &Info, block_size: usize) -> Vec<RequestMessage> {
         for block_index in 0..whole_blocks {
             let block_offset = block_index * block_size as u64;
 
+            #[allow(clippy::cast_possible_truncation)]
             requests.push(RequestMessage::new(piece_index as u32, block_offset as u32, block_size));
         }
 
@@ -576,9 +581,9 @@ fn generate_requests(info: &Info, block_size: usize) -> Vec<RequestMessage> {
             let block_offset = whole_blocks * block_size as u64;
 
             requests.push(RequestMessage::new(
-                piece_index as u32,
-                block_offset as u32,
-                partial_block_length as usize,
+                piece_index.try_into().unwrap(),
+                block_offset.try_into().unwrap(),
+                partial_block_length.try_into().unwrap(),
             ));
         }
 

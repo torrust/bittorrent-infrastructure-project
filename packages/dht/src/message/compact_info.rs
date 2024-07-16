@@ -5,7 +5,7 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use bencode::{BListAccess, BRefAccess};
 use util::bt::{self, NodeId};
-use util::error::{LengthError, LengthErrorKind, LengthResult};
+use util::error::{Error, LengthErrorKind, LengthResult};
 use util::sha::ShaHash;
 
 // TODO: Update this module to accept data sources as both a slice of bytes and probably
@@ -22,9 +22,14 @@ pub struct CompactNodeInfo<'a> {
 }
 
 impl<'a> CompactNodeInfo<'a> {
+    /// Make a new `CompactNodeInfo` from bytes
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the byte array is the wrong length.
     pub fn new(nodes: &'a [u8]) -> LengthResult<CompactNodeInfo<'a>> {
         if nodes.len() % BYTES_PER_COMPACT_NODE_INFO != 0 {
-            Err(LengthError::new(
+            Err(Error::new(
                 LengthErrorKind::LengthMultipleExpected,
                 BYTES_PER_COMPACT_NODE_INFO,
             ))
@@ -57,6 +62,7 @@ pub struct CompactNodeInfoIter<'a> {
     pos: usize,
 }
 
+#[allow(clippy::copy_iterator)]
 impl<'a> Iterator for CompactNodeInfoIter<'a> {
     type Item = (NodeId, SocketAddrV4);
 
@@ -90,6 +96,12 @@ where
 {
     /// Creates a new `CompactValueInfo` container for the given values.
     ///
+    /// # Errors
+    ///
+    /// This function will return an error if the byte array is the wrong length.
+    ///
+    /// # Panics
+    ///
     /// It is VERY important that the values have been checked to contain only
     /// bencoded bytes and not other types as that will result in a panic.
     pub fn new(values: &'a dyn BListAccess<B::BType>) -> LengthResult<CompactValueInfo<'a, B>> {
@@ -98,7 +110,7 @@ where
             let compact_value = node.bytes().unwrap();
 
             if compact_value.len() != BYTES_PER_COMPACT_IP {
-                return Err(LengthError::with_index(
+                return Err(Error::with_index(
                     LengthErrorKind::LengthExpected,
                     BYTES_PER_COMPACT_IP,
                     index,
@@ -175,9 +187,7 @@ fn parts_from_compact_info(compact_info: &[u8]) -> (NodeId, SocketAddrV4) {
 }
 
 fn socket_v4_from_bytes_be(bytes: &[u8]) -> LengthResult<SocketAddrV4> {
-    if bytes.len() != BYTES_PER_COMPACT_IP {
-        Err(LengthError::new(LengthErrorKind::LengthExpected, BYTES_PER_COMPACT_IP))
-    } else {
+    if bytes.len() == BYTES_PER_COMPACT_IP {
         let (oc_one, oc_two, oc_three, oc_four) = (bytes[0], bytes[1], bytes[2], bytes[3]);
 
         let mut port = 0u16;
@@ -188,6 +198,8 @@ fn socket_v4_from_bytes_be(bytes: &[u8]) -> LengthResult<SocketAddrV4> {
         let ip = Ipv4Addr::new(oc_one, oc_two, oc_three, oc_four);
 
         Ok(SocketAddrV4::new(ip, port))
+    } else {
+        Err(Error::new(LengthErrorKind::LengthExpected, BYTES_PER_COMPACT_IP))
     }
 }
 
@@ -253,6 +265,7 @@ mod tests {
 
     #[test]
     fn positive_compact_values_one() {
+        #[allow(clippy::cast_possible_truncation)]
         let bytes = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
         let bencode_values = ben_list!(ben_bytes!(&bytes[..]));
         let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
@@ -265,7 +278,9 @@ mod tests {
 
     #[test]
     fn positive_compact_values_many() {
+        #[allow(clippy::cast_possible_truncation)]
         let bytes_one = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
+        #[allow(clippy::cast_possible_truncation)]
         let bytes_two = [10, 0, 0, 1, (6889 >> 8) as u8, (6889 & 0x00FF) as u8];
         let bencode_values = ben_list!(ben_bytes!(&bytes_one[..]), ben_bytes!(&bytes_two[..]));
         let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();

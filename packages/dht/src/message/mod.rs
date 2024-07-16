@@ -56,6 +56,7 @@ impl BConvert for MessageValidate {
 impl BConvertExt for MessageValidate {}
 // ----------------------------------------------------------------------------//
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum MessageType<'a, B>
 where
@@ -72,6 +73,11 @@ where
     B: BRefAccess<BType = B> + Clone,
     B::BType: PartialEq + Eq + core::hash::Hash + Debug,
 {
+    /// Create a new `MessageType`
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to lookup, convert and crate type.
     pub fn new<T>(message: &'a B::BType, trans_mapper: T) -> DhtResult<MessageType<'a, B>>
     where
         T: Fn(&[u8]) -> ExpectedResponse,
@@ -90,7 +96,7 @@ where
             }
             RESPONSE_TYPE_KEY => {
                 let rsp_type = trans_mapper(trans_id);
-                let rsp_message = ResponseType::from_parts(msg_root, trans_id, rsp_type)?;
+                let rsp_message = ResponseType::from_parts(msg_root, trans_id, &rsp_type)?;
                 Ok(MessageType::Response(rsp_message))
             }
             ERROR_TYPE_KEY => {

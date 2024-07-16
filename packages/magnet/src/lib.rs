@@ -67,10 +67,8 @@ impl MagnetLink {
     #[must_use]
     pub fn parse(s: &str) -> Option<Self> {
         // Parse URL
-        let url = match Url::parse(s) {
-            Ok(url) => url,
-            Err(_) => return None,
-        };
+        let Ok(url) = Url::parse(s) else { return None };
+
         // Is Magnet Link?
         if url.scheme() != "magnet" {
             return None;
@@ -81,7 +79,7 @@ impl MagnetLink {
 
         for (k, v) in url.query_pairs() {
             if result.is_none() {
-                result = Some(Self::default())
+                result = Some(Self::default());
             };
 
             if let Some(ref mut r) = result {
@@ -89,12 +87,12 @@ impl MagnetLink {
                     "dn" => r.display_name = Some(v.to_string()),
                     "xl" => {
                         if let Ok(exact_length) = v[..].parse::<usize>() {
-                            r.exact_length = Some(exact_length)
+                            r.exact_length = Some(exact_length);
                         }
                     }
                     "xt" => {
                         if let Some(topic) = Topic::parse(&v[..]) {
-                            r.exact_topic = Some(topic)
+                            r.exact_topic = Some(topic);
                         }
                     }
                     "as" => r.acceptable_source.push(v.to_string()),
@@ -172,7 +170,7 @@ mod tests {
         /* cSpell:enable */
         let link = crate::MagnetLink::parse(url).unwrap();
 
-        println!("link {:?}", link);
+        println!("link {link:?}");
 
         let expected_info_hash = [
             0xd9, 0xbe, 0x69, 0x09, 0x32, 0x5d, 0x28, 0x91, 0x2f, 0x40, 0x0f, 0xcb, 0x32, 0x40, 0x05, 0xdd, 0x58, 0x61, 0xe4,

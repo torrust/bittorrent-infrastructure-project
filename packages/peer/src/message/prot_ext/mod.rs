@@ -30,18 +30,28 @@ impl<P> PeerExtensionProtocolMessage<P>
 where
     P: PeerProtocol,
 {
+    /// Returns the number of bytes needed encode a given slice.
+    ///
+    /// # Errors
+    ///
+    /// This function should not return an error.
     pub fn bytes_needed(bytes: &[u8]) -> io::Result<Option<usize>> {
         // Follows same length prefix logic as our normal wire protocol...
         PeerWireProtocolMessage::<P>::bytes_needed(bytes)
     }
 
+    /// Parse Bytes to create a [`PeerExtensionProtocolMessage`]
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to parse.
     pub fn parse_bytes(
         bytes: Bytes,
         extended: &ExtendedMessage,
         custom_prot: &mut P,
     ) -> io::Result<PeerExtensionProtocolMessage<P>> {
         match parse_extensions(bytes, extended, custom_prot) {
-            IResult::Done(_, result) => result,
+            IResult::Done((), result) => result,
             _ => Err(io::Error::new(
                 io::ErrorKind::Other,
                 "Failed To Parse PeerExtensionProtocolMessage",
@@ -49,24 +59,35 @@ where
         }
     }
 
+    /// Write Bytes from the current state.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write the bytes.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the message is too long.
     pub fn write_bytes<W>(&self, mut writer: W, extended: &ExtendedMessage, custom_prot: &mut P) -> io::Result<()>
     where
         W: Write,
     {
         match self {
             PeerExtensionProtocolMessage::UtMetadata(msg) => {
-                let ext_id = if let Some(ext_id) = extended.query_id(&ExtendedType::UtMetadata) {
-                    ext_id
-                } else {
+                let Some(ext_id) = extended.query_id(&ExtendedType::UtMetadata) else {
                     return Err(io::Error::new(
                         io::ErrorKind::Other,
                         "Can't Send UtMetadataMessage As We Have No Id Mapping",
                     ));
                 };
 
-                let total_len = (2 + msg.message_size()) as u32;
+                let total_len = (2 + msg.message_size());
 
-                message::write_length_id_pair(&mut writer, total_len, Some(bits_ext::EXTENDED_MESSAGE_ID))?;
+                message::write_length_id_pair(
+                    &mut writer,
+                    total_len.try_into().unwrap(),
+                    Some(bits_ext::EXTENDED_MESSAGE_ID),
+                )?;
                 writer.write_u8(ext_id)?;
 
                 msg.write_bytes(writer)

@@ -7,6 +7,7 @@ use crate::filter::filters::Filters;
 use crate::handshake::handler;
 use crate::handshake::handler::HandshakeType;
 
+#[allow(clippy::module_name_repetitions)]
 pub struct ListenerHandler<S> {
     opt_item: Option<HandshakeType<S>>,
 }

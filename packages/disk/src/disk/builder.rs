@@ -7,6 +7,7 @@ const DEFAULT_PENDING_SIZE: usize = 10;
 const DEFAULT_COMPLETED_SIZE: usize = 10;
 
 /// `DiskManagerBuilder` for building `DiskManager`s with different settings.
+#[allow(clippy::module_name_repetitions)]
 pub struct DiskManagerBuilder {
     builder: Builder,
     pending_size: usize,

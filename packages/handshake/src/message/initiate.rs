@@ -5,6 +5,7 @@ use util::bt::InfoHash;
 use crate::message::protocol::Protocol;
 
 /// Message used to initiate a handshake with the `Handshaker`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct InitiateMessage {
     prot: Protocol,

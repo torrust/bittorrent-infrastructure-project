@@ -7,7 +7,7 @@ use crate::error::UberError;
 use crate::extended::{ExtendedListener, ExtendedModule, IExtendedMessage, OExtendedMessage};
 use crate::ControlMessage;
 
-trait DiscoveryTrait:
+pub trait DiscoveryTrait:
     ExtendedListener
     + Sink<SinkItem = IDiscoveryMessage, SinkError = Box<DiscoveryError>>
     + Stream<Item = ODiscoveryMessage, Error = Box<DiscoveryError>>
@@ -53,10 +53,11 @@ type UberDiscovery = Vec<
 
 /// Builder for constructing an `UberModule`.
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default)]
 pub struct UberModuleBuilder {
     // TODO: Remove these bounds when something like https://github.com/rust-lang/rust/pull/45047 lands
-    discovery: UberDiscovery,
+    pub discovery: UberDiscovery,
     ext_builder: Option<ExtendedMessageBuilder>,
 }
 
@@ -81,6 +82,7 @@ impl UberModuleBuilder {
     }
 
     /// Add the given discovery module to the list of discovery modules.
+    #[must_use]
     pub fn with_discovery_module<T>(mut self, module: T) -> UberModuleBuilder
     where
         T: ExtendedListener
@@ -128,6 +130,7 @@ impl<T> IsReady for Async<T> {
 
 //----------------------------------------------------------------------//
 /// Module for multiplexing messages across zero or more other modules.
+#[allow(clippy::module_name_repetitions)]
 pub struct UberModule {
     discovery: UberDiscovery,
     extended: Option<ExtendedModule>,
@@ -169,10 +172,10 @@ impl UberModule {
                 }
             }
             Some(ModuleState::Extended) => {
-                if !self.discovery.is_empty() {
-                    Some(ModuleState::Discovery(0))
-                } else {
+                if self.discovery.is_empty() {
                     None
+                } else {
+                    Some(ModuleState::Discovery(0))
                 }
             }
             Some(ModuleState::Discovery(index)) => {
@@ -329,7 +332,7 @@ impl Sink for UberModule {
 
     fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
         // Currently we don't return NotReady from the module directly, so no saving our task state here
-        self.start_sink_state(&item).map(|a| a.map(|_| item))
+        self.start_sink_state(&item).map(|a| a.map(|()| item))
     }
 
     fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {

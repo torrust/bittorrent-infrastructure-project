@@ -30,12 +30,12 @@ impl Filters {
         });
     }
 
-    pub fn remove_filter<F>(&self, filter: F)
+    pub fn remove_filter<F>(&self, filter: &F)
     where
         F: HandshakeFilter + PartialEq + Eq + 'static,
     {
         self.write_filters(|mut_filters| {
-            let opt_found = check_index(&mut_filters[..], &filter);
+            let opt_found = check_index(&mut_filters[..], filter);
 
             if let Some(index) = opt_found {
                 mut_filters.swap_remove(index);
@@ -47,7 +47,7 @@ impl Filters {
     where
         B: FnOnce(&[Box<dyn HandshakeFilter + Send + Sync>]),
     {
-        self.read_filters(|ref_filters| block(ref_filters))
+        self.read_filters(|ref_filters| block(ref_filters));
     }
 
     pub fn clear_filters(&self) {
@@ -102,6 +102,7 @@ where
     None
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[cfg(test)]
 pub mod test_filters {
     use std::any::Any;
@@ -241,7 +242,7 @@ mod tests {
         let filters = Filters::new();
 
         filters.add_filter(BlockAddrFilter::new("43.43.43.43:4343".parse().unwrap()));
-        filters.remove_filter(BlockAddrFilter::new("43.43.43.43:4343".parse().unwrap()));
+        filters.remove_filter(&BlockAddrFilter::new("43.43.43.43:4343".parse().unwrap()));
 
         let mut num_filters = 0;
         filters.access_filters(|filters| {
@@ -256,7 +257,7 @@ mod tests {
         let filters = Filters::new();
 
         filters.add_filter(BlockAddrFilter::new("43.43.43.43:4343".parse().unwrap()));
-        filters.remove_filter(BlockAddrFilter::new("43.43.43.43:4342".parse().unwrap()));
+        filters.remove_filter(&BlockAddrFilter::new("43.43.43.43:4342".parse().unwrap()));
 
         let mut num_filters = 0;
         filters.access_filters(|filters| {
@@ -272,7 +273,7 @@ mod tests {
 
         filters.add_filter(BlockAddrFilter::new("43.43.43.43:4343".parse().unwrap()));
         filters.add_filter(BlockAddrFilter::new("43.43.43.43:4344".parse().unwrap()));
-        filters.remove_filter(BlockAddrFilter::new("43.43.43.43:4343".parse().unwrap()));
+        filters.remove_filter(&BlockAddrFilter::new("43.43.43.43:4343".parse().unwrap()));
 
         let mut num_filters = 0;
         filters.access_filters(|filters| {

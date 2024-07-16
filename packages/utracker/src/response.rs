@@ -14,6 +14,7 @@ use crate::scrape::ScrapeResponse;
 const ERROR_ACTION_ID: u32 = 3;
 
 /// Enumerates all types of responses that can be received from a tracker.
+#[allow(clippy::module_name_repetitions)]
 pub enum ResponseType<'a> {
     Connect(u64),
     Announce(AnnounceResponse<'a>),
@@ -35,6 +36,7 @@ impl<'a> ResponseType<'a> {
 }
 
 /// `TrackerResponse` which encapsulates any response sent from a tracker.
+#[allow(clippy::module_name_repetitions)]
 pub struct TrackerResponse<'a> {
     transaction_id: u32,
     response_type: ResponseType<'a>,
@@ -57,6 +59,10 @@ impl<'a> TrackerResponse<'a> {
     }
 
     /// Write the `TrackerResponse` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,

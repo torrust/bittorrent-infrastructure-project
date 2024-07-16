@@ -36,6 +36,7 @@ const ANNOUNCE_PICK_NUM: usize = 8; // # Announces
 type Distance = ShaHash;
 type DistanceToBeat = ShaHash;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum LookupStatus {
     Searching,
@@ -44,6 +45,7 @@ pub enum LookupStatus {
     Failed,
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct TableLookup {
     table_id: NodeId,
     target_id: InfoHash,
@@ -111,10 +113,10 @@ impl TableLookup {
         };
 
         // Call start_request_round with the list of initial_nodes (return even if the search completed...for now :D)
-        if table_lookup.start_request_round(initial_pick_nodes_filtered, table, out, event_loop) != LookupStatus::Failed {
-            Some(table_lookup)
-        } else {
+        if table_lookup.start_request_round(initial_pick_nodes_filtered, table, out, event_loop) == LookupStatus::Failed {
             None
+        } else {
+            Some(table_lookup)
         }
     }
 
@@ -137,9 +139,7 @@ impl TableLookup {
         B::BType: PartialEq + Eq + core::hash::Hash + Debug,
     {
         // Process the message transaction id
-        let (dist_to_beat, timeout) = if let Some(lookup) = self.active_lookups.remove(trans_id) {
-            lookup
-        } else {
+        let Some((dist_to_beat, timeout)) = self.active_lookups.remove(trans_id) else {
             warn!(
                 "bip_dht: Received expired/unsolicited node response for an active table \
                    lookup..."
@@ -317,7 +317,7 @@ impl TableLookup {
                 if !fatal_error {
                     // We requested from the node, mark it down if the node is in our routing table
                     if let Some(n) = table.find_node(node) {
-                        n.local_request()
+                        n.local_request();
                     }
                 }
             }
@@ -361,9 +361,7 @@ impl TableLookup {
 
             // Try to start a timeout for the node
             let res_timeout = event_loop.timeout_ms((0, ScheduledTaskCheck::LookupTimeout(trans_id)), LOOKUP_TIMEOUT_MS);
-            let timeout = if let Ok(t) = res_timeout {
-                t
-            } else {
+            let Ok(timeout) = res_timeout else {
                 error!("bip_dht: Failed to set a timeout for a table lookup...");
                 return LookupStatus::Failed;
             };
@@ -383,7 +381,7 @@ impl TableLookup {
 
             // Update the node in the routing table
             if let Some(n) = table.find_node(node) {
-                n.local_request()
+                n.local_request();
             }
 
             messages_sent += 1;
@@ -414,9 +412,7 @@ impl TableLookup {
             (0, ScheduledTaskCheck::LookupEndGame(self.id_generator.generate())),
             ENDGAME_TIMEOUT_MS,
         );
-        let timeout = if let Ok(t) = res_timeout {
-            t
-        } else {
+        let Ok(timeout) = res_timeout else {
             error!("bip_dht: Failed to set a timeout for table lookup endgame...");
             return LookupStatus::Failed;
         };
@@ -443,7 +439,7 @@ impl TableLookup {
 
                 // Mark that we requested from the node in the RoutingTable
                 if let Some(n) = table.find_node(node) {
-                    n.local_request()
+                    n.local_request();
                 }
 
                 // Mark that we requested from the node
@@ -500,12 +496,7 @@ fn insert_closest_nodes(nodes: &mut [(Node, bool)], target_id: InfoHash, new_nod
     let new_distance = target_id ^ new_node.id();
 
     for &mut (ref mut old_node, ref mut used) in &mut *nodes {
-        if !*used {
-            // Slot was not in use, go ahead and place the node
-            *old_node = new_node;
-            *used = true;
-            return;
-        } else {
+        if *used {
             // Slot is in use, see if our node is closer to the target
             let old_distance = target_id ^ old_node.id();
 
@@ -513,6 +504,11 @@ fn insert_closest_nodes(nodes: &mut [(Node, bool)], target_id: InfoHash, new_nod
                 *old_node = new_node;
                 return;
             }
+        } else {
+            // Slot was not in use, go ahead and place the node
+            *old_node = new_node;
+            *used = true;
+            return;
         }
     }
 }

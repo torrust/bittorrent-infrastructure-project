@@ -12,6 +12,7 @@ use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
 use crate::message::request::{self, RequestValidate};
 use crate::message::response::{self, ResponseValidate};
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct GetPeersRequest<'a> {
     trans_id: &'a [u8],
@@ -29,6 +30,11 @@ impl<'a> GetPeersRequest<'a> {
         }
     }
 
+    /// Create a `GetPeersRequest` from parts
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to lookup, convert, and validate node.
     pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<GetPeersRequest<'a>>
     where
         B: BRefAccess,
@@ -86,6 +92,7 @@ where
     Both(CompactNodeInfo<'a>, CompactValueInfo<'a, B::BType>),
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct GetPeersResponse<'a, B>
 where
@@ -120,6 +127,11 @@ where
         }
     }
 
+    /// Create a `GetPeersResponse` from parts.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to lookup, convert, and validate the nodes.
     pub fn from_parts(
         rsp_root: &'a dyn BDictAccess<B::BKey, B::BType>,
         trans_id: &'a [u8],
@@ -182,6 +194,11 @@ where
 }
 
 impl<'a> GetPeersResponse<'a, BencodeMut<'a>> {
+    /// Returns the encode of this [`GetPeersResponse<BencodeMut<'a>>`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if unable to get the bencoded list.
     #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         let mut response_args = BTreeMap::new();

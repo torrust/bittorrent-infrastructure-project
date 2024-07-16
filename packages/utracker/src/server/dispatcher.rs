@@ -21,6 +21,7 @@ pub enum DispatchMessage {
 }
 
 /// Create a new background dispatcher to service requests.
+#[allow(clippy::module_name_repetitions)]
 pub fn create_dispatcher<H>(bind: SocketAddr, handler: H) -> io::Result<Sender<DispatchMessage>>
 where
     H: ServerHandler + 'static,
@@ -66,7 +67,7 @@ where
     fn process_request(
         &mut self,
         provider: &mut Provider<'_, ServerDispatcher<H>>,
-        request: TrackerRequest<'_>,
+        request: &TrackerRequest<'_>,
         addr: SocketAddr,
     ) {
         let conn_id = request.connection_id();
@@ -96,7 +97,7 @@ where
             };
             let response = TrackerResponse::new(trans_id, response_type);
 
-            write_response(provider, response, addr);
+            write_response(provider, &response, addr);
         });
     }
 
@@ -116,7 +117,7 @@ where
             };
             let response = TrackerResponse::new(trans_id, response_type);
 
-            write_response(provider, response, addr);
+            write_response(provider, &response, addr);
         });
     }
 
@@ -136,13 +137,13 @@ where
             };
             let response = TrackerResponse::new(trans_id, response_type);
 
-            write_response(provider, response, addr);
+            write_response(provider, &response, addr);
         });
     }
 }
 
 /// Write the given tracker response through to the given provider.
-fn write_response<H>(provider: &mut Provider<'_, ServerDispatcher<H>>, response: TrackerResponse<'_>, addr: SocketAddr)
+fn write_response<H>(provider: &mut Provider<'_, ServerDispatcher<H>>, response: &TrackerResponse<'_>, addr: SocketAddr)
 where
     H: ServerHandler,
 {
@@ -151,7 +152,7 @@ where
         let success = response.write_bytes(&mut cursor).is_ok();
 
         if success {
-            Some((cursor.position() as usize, addr))
+            Some((cursor.position().try_into().unwrap(), addr))
         } else {
             None
         } // TODO: Add Logging
@@ -166,12 +167,11 @@ where
     type Message = DispatchMessage;
 
     fn incoming(&mut self, mut provider: Provider<'_, Self>, message: &[u8], addr: SocketAddr) {
-        let request = match TrackerRequest::from_bytes(message) {
-            IResult::Done(_, req) => req,
-            _ => return, // TODO: Add Logging
+        let IResult::Done(_, request) = TrackerRequest::from_bytes(message) else {
+            return; // TODO: Add Logging
         };
 
-        self.process_request(&mut provider, request, addr);
+        self.process_request(&mut provider, &request, addr);
     }
 
     fn notify(&mut self, mut provider: Provider<'_, Self>, message: DispatchMessage) {
@@ -180,5 +180,5 @@ where
         }
     }
 
-    fn timeout(&mut self, _: Provider<'_, Self>, _: ()) {}
+    fn timeout(&mut self, _: Provider<'_, Self>, (): ()) {}
 }

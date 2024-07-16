@@ -20,11 +20,11 @@ pub mod refresh;
 pub enum OneshotTask {
     /// Process an incoming message from a remote node.
     Incoming(Vec<u8>, SocketAddr),
-    /// Register a sender to send DhtEvents to.
+    /// Register a sender to send `DhtEvents` to.
     RegisterSender(mpsc::Sender<DhtEvent>),
     /// Load a new bootstrap operation into worker storage.
     StartBootstrap(Vec<Router>, Vec<SocketAddr>),
-    /// Start a lookup for the given InfoHash.
+    /// Start a lookup for the given `InfoHash`.
     StartLookup(InfoHash, bool),
     /// Gracefully shutdown the DHT and associated workers.
     Shutdown(ShutdownCause),
@@ -48,7 +48,7 @@ pub enum ScheduledTaskCheck {
 pub enum DhtEvent {
     /// DHT completed the bootstrap.
     BootstrapCompleted,
-    /// Lookup operation for the given InfoHash completed.
+    /// Lookup operation for the given `InfoHash` completed.
     LookupCompleted(InfoHash),
     /// DHT is shutting down for some reason.
     ShuttingDown(ShutdownCause),

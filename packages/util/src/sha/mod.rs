@@ -1,15 +1,17 @@
 use std::ops::BitXor;
 
-use crate::error::{LengthError, LengthErrorKind, LengthResult};
+use crate::error::{Error, LengthErrorKind, LengthResult};
 
 mod builder;
 
+#[allow(clippy::module_name_repetitions)]
 pub use crate::sha::builder::ShaHashBuilder;
 
 /// Length of a SHA-1 hash.
 pub const SHA_HASH_LEN: usize = 20;
 
 /// SHA-1 hash wrapper type for performing operations on the hash.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 pub struct ShaHash {
     hash: [u8; SHA_HASH_LEN],
@@ -23,15 +25,19 @@ impl ShaHash {
     }
 
     /// Create a `ShaHash` directly from the given hash.
+    ///
+    /// # Errors
+    ///
+    /// It would error if the hash is the wrong group.
     pub fn from_hash(hash: &[u8]) -> LengthResult<ShaHash> {
-        if hash.len() != SHA_HASH_LEN {
-            Err(LengthError::new(LengthErrorKind::LengthExpected, SHA_HASH_LEN))
-        } else {
+        if hash.len() == SHA_HASH_LEN {
             let mut my_hash = [0u8; SHA_HASH_LEN];
 
             my_hash.iter_mut().zip(hash.iter()).map(|(dst, src)| *dst = *src).count();
 
             Ok(ShaHash { hash: my_hash })
+        } else {
+            Err(Error::new(LengthErrorKind::LengthExpected, SHA_HASH_LEN))
         }
     }
 
@@ -98,23 +104,6 @@ pub enum XorRep {
     Same,
 }
 
-/// Iterator over the bits of a xor operation.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct XorBits<'a> {
-    bits: Bits<'a>,
-}
-
-impl<'a> Iterator for XorBits<'a> {
-    type Item = XorRep;
-
-    fn next(&mut self) -> Option<XorRep> {
-        self.bits.next().map(|n| match n {
-            BitRep::Set => XorRep::Diff,
-            BitRep::Unset => XorRep::Same,
-        })
-    }
-}
-
 // ----------------------------------------------------------------------------//
 
 /// Representation of a bit.
@@ -145,6 +134,7 @@ impl<'a> Bits<'a> {
     }
 }
 
+#[allow(clippy::copy_iterator)]
 impl<'a> Iterator for Bits<'a> {
     type Item = BitRep;
 
@@ -220,7 +210,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "called `Result::unwrap()` on an `Err` value: Error { kind: LengthExpected, length: 20, index: None }"
+    )]
     fn negative_from_hash_too_long() {
         let bits = [0u8; super::SHA_HASH_LEN + 1];
 
@@ -228,7 +220,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "called `Result::unwrap()` on an `Err` value: Error { kind: LengthExpected, length: 20, index: None }"
+    )]
     fn negative_from_hash_too_short() {
         let bits = [0u8; super::SHA_HASH_LEN - 1];
 

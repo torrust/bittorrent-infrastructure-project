@@ -8,6 +8,7 @@ use util::bt::InfoHash;
 const MAX_ITEMS_STORED: usize = 500;
 
 /// Manages storage and expiration of contact information for a number of `InfoHash`(s).
+#[allow(clippy::module_name_repetitions)]
 pub struct AnnounceStorage {
     storage: HashMap<InfoHash, Vec<AnnounceItem>>,
     expires: Vec<ItemExpiration>,
@@ -55,7 +56,7 @@ impl AnnounceStorage {
     where
         F: FnMut(SocketAddr),
     {
-        self.find(info_hash, item_func, Utc::now())
+        self.find(info_hash, item_func, Utc::now());
     }
 
     fn find<F>(&mut self, info_hash: &InfoHash, mut item_func: F, curr_time: DateTime<Utc>)
@@ -99,8 +100,7 @@ impl AnnounceStorage {
                 Some(false)
             }
             (false, false) => None,
-            (true, false) => Some(true),
-            (true, true) => Some(true),
+            (true, false | true) => Some(true),
         }
     }
 
@@ -224,6 +224,7 @@ mod tests {
     fn positive_add_and_retrieve_contacts() {
         let mut announce_store = AnnounceStorage::new();
         let info_hash = [0u8; bt::INFO_HASH_LEN].into();
+        #[allow(clippy::cast_possible_truncation)]
         let sock_addrs = bip_test::dummy_block_socket_addrs(storage::MAX_ITEMS_STORED as u16);
 
         for sock_addr in &sock_addrs {
@@ -243,6 +244,7 @@ mod tests {
     fn positive_renew_contacts() {
         let mut announce_store = AnnounceStorage::new();
         let info_hash = [0u8; bt::INFO_HASH_LEN].into();
+        #[allow(clippy::cast_possible_truncation)]
         let sock_addrs = bip_test::dummy_block_socket_addrs((storage::MAX_ITEMS_STORED + 1) as u16);
 
         for sock_addr in sock_addrs.iter().take(storage::MAX_ITEMS_STORED) {
@@ -269,6 +271,7 @@ mod tests {
     fn positive_full_storage_expire_one_infohash() {
         let mut announce_store = AnnounceStorage::new();
         let info_hash = [0u8; bt::INFO_HASH_LEN].into();
+        #[allow(clippy::cast_possible_truncation)]
         let sock_addrs = bip_test::dummy_block_socket_addrs((storage::MAX_ITEMS_STORED + 1) as u16);
 
         // Fill up the announce storage completely
@@ -299,6 +302,7 @@ mod tests {
         let mut announce_store = AnnounceStorage::new();
         let info_hash_one = [0u8; bt::INFO_HASH_LEN].into();
         let info_hash_two = [1u8; bt::INFO_HASH_LEN].into();
+        #[allow(clippy::cast_possible_truncation)]
         let sock_addrs = bip_test::dummy_block_socket_addrs((storage::MAX_ITEMS_STORED + 1) as u16);
 
         // Fill up first info hash

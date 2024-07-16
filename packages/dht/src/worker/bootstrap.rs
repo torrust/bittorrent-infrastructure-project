@@ -20,6 +20,7 @@ const BOOTSTRAP_NODE_TIMEOUT: u64 = 500;
 
 const BOOTSTRAP_PINGS_PER_BUCKET: usize = 8;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum BootstrapStatus {
     /// Bootstrap has been finished.
@@ -32,6 +33,7 @@ pub enum BootstrapStatus {
     Failed,
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct TableBootstrap {
     table_id: NodeId,
     id_generator: MIDGenerator,
@@ -78,9 +80,7 @@ impl TableBootstrap {
             (BOOTSTRAP_INITIAL_TIMEOUT, ScheduledTaskCheck::BootstrapTimeout(trans_id)),
             BOOTSTRAP_INITIAL_TIMEOUT,
         );
-        let timeout = if let Ok(t) = res_timeout {
-            t
-        } else {
+        let Ok(timeout) = res_timeout else {
             error!("bip_dht: Failed to set a timeout for the start of a table bootstrap...");
             return BootstrapStatus::Failed;
         };
@@ -197,8 +197,7 @@ impl TableBootstrap {
             let percent_25_bucket = if let Some(bucket) = buckets.next() {
                 match bucket {
                     BucketContents::Empty => dummy_bucket.iter(),
-                    BucketContents::Sorted(b) => b.iter(),
-                    BucketContents::Assorted(b) => b.iter(),
+                    BucketContents::Sorted(b) | BucketContents::Assorted(b) => b.iter(),
                 }
             } else {
                 dummy_bucket.iter()
@@ -206,8 +205,7 @@ impl TableBootstrap {
             let percent_50_bucket = if let Some(bucket) = buckets.next() {
                 match bucket {
                     BucketContents::Empty => dummy_bucket.iter(),
-                    BucketContents::Sorted(b) => b.iter(),
-                    BucketContents::Assorted(b) => b.iter(),
+                    BucketContents::Sorted(b) | BucketContents::Assorted(b) => b.iter(),
                 }
             } else {
                 dummy_bucket.iter()
@@ -215,8 +213,7 @@ impl TableBootstrap {
             let percent_100_bucket = if let Some(bucket) = buckets.next() {
                 match bucket {
                     BucketContents::Empty => dummy_bucket.iter(),
-                    BucketContents::Sorted(b) => b.iter(),
-                    BucketContents::Assorted(b) => b.iter(),
+                    BucketContents::Sorted(b) | BucketContents::Assorted(b) => b.iter(),
                 }
             } else {
                 dummy_bucket.iter()
@@ -261,9 +258,7 @@ impl TableBootstrap {
                 (BOOTSTRAP_NODE_TIMEOUT, ScheduledTaskCheck::BootstrapTimeout(trans_id)),
                 BOOTSTRAP_NODE_TIMEOUT,
             );
-            let timeout = if let Ok(t) = res_timeout {
-                t
-            } else {
+            let Ok(timeout) = res_timeout else {
                 error!("bip_dht: Failed to set a timeout for the start of a table bootstrap...");
                 return BootstrapStatus::Failed;
             };

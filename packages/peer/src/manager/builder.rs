@@ -14,6 +14,7 @@ const DEFAULT_HEARTBEAT_INTERVAL_MILLIS: u64 = 60 * 1000;
 const DEFAULT_HEARTBEAT_TIMEOUT_MILLIS: u64 = 2 * 60 * 1000;
 
 /// Builder for configuring a `PeerManager`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default, Copy, Clone)]
 pub struct PeerManagerBuilder {
     peer: usize,

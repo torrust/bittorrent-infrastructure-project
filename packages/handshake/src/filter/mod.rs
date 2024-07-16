@@ -16,7 +16,7 @@ pub trait HandshakeFilters {
     where
         F: HandshakeFilter + PartialEq + Eq + Send + Sync + 'static;
 
-    /// Remove the filter from the current set of filters.
+    /// Remove the filter from the current set of filters./* panic message */
     fn remove_filter<F>(&self, filter: F)
     where
         F: HandshakeFilter + PartialEq + Eq + Send + Sync + 'static;
@@ -33,18 +33,18 @@ where
     where
         F: HandshakeFilter + PartialEq + Eq + Send + Sync + 'static,
     {
-        (*self).add_filter(filter)
+        (*self).add_filter(filter);
     }
 
     fn remove_filter<F>(&self, filter: F)
     where
         F: HandshakeFilter + PartialEq + Eq + Send + Sync + 'static,
     {
-        (*self).remove_filter(filter)
+        (*self).remove_filter(filter);
     }
 
     fn clear_filters(&self) {
-        (*self).clear_filters()
+        (*self).clear_filters();
     }
 }
 
@@ -59,6 +59,7 @@ where
 ///
 /// In order for a handshake to pass the filter, each field has to be either not blocked, or
 /// effectively "whitelisted" (see `FilterDecision::Allow`).
+#[allow(clippy::module_name_repetitions)]
 #[allow(unused)]
 pub trait HandshakeFilter {
     /// Used to implement generic equality.
@@ -95,6 +96,7 @@ pub trait HandshakeFilter {
 //----------------------------------------------------------------------------------//
 
 /// Filtering decision made for a given handshake.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum FilterDecision {
     /// Pass on making a filter decision for the given field.

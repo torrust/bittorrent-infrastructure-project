@@ -1,5 +1,5 @@
+use std::io;
 use std::io::Write;
-use std::{io, u8};
 
 use nom::{call, do_parse, take, IResult};
 use util::bt::{self, InfoHash, PeerId};
@@ -7,6 +7,7 @@ use util::bt::{self, InfoHash, PeerId};
 use crate::message::extensions::{self, Extensions};
 use crate::message::protocol::Protocol;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct HandshakeMessage {
     prot: Protocol,
@@ -22,7 +23,7 @@ impl HandshakeMessage {
             assert!(
                 u8::try_from(custom.len()).is_ok(),
                 "bip_handshake: Handshake Message With Protocol Length Greater Than {} Found",
-                u8::max_value()
+                u8::MAX
             );
         }
 
@@ -47,6 +48,7 @@ impl HandshakeMessage {
     }
 
     pub fn write_len(&self) -> usize {
+        #[allow(clippy::cast_possible_truncation)]
         write_len_with_protocol_len(self.prot.write_len() as u8)
     }
 
@@ -169,7 +171,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "bip_handshake: Handshake Message With Protocol Length Greater Than 255 Found")]
     fn negative_create_overflow_protocol() {
         let overflow_protocol = Protocol::Custom(vec![0u8; 256]);
 

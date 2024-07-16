@@ -1,5 +1,3 @@
-#[cfg(feature = "bench")]
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder};
 
@@ -20,11 +18,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     let file_content_buffer = file_content.as_slice();
 
     c.bench_function("metainfo build multi kb", |b| {
-        b.iter(|| bench_build_multi_kb_metainfo(black_box(file_content_buffer)))
+        b.iter(|| bench_build_multi_kb_metainfo(black_box(file_content_buffer)));
     });
 
     c.bench_function("metainfo parse multi kb", |b| {
-        b.iter(|| bench_parse_multi_kb_metainfo(black_box(MULTI_KB_METAINFO)))
+        b.iter(|| bench_parse_multi_kb_metainfo(black_box(MULTI_KB_METAINFO)));
     });
 }
 

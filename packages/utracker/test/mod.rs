@@ -82,9 +82,7 @@ impl ServerHandler for MockTrackerHandler {
 
             // Resolve what to do with the event
             match req.state().event() {
-                AnnounceEvent::None => peers.insert(store_addr),
-                AnnounceEvent::Completed => peers.insert(store_addr),
-                AnnounceEvent::Started => peers.insert(store_addr),
+                AnnounceEvent::Started | AnnounceEvent::Completed | AnnounceEvent::None => peers.insert(store_addr),
                 AnnounceEvent::Stopped => peers.remove(&store_addr),
             };
 
@@ -123,8 +121,8 @@ impl ServerHandler for MockTrackerHandler {
 
             result(Ok(AnnounceResponse::new(
                 1800,
-                peers.len() as i32,
-                peers.len() as i32,
+                peers.len().try_into().unwrap(),
+                peers.len().try_into().unwrap(),
                 compact_peers,
             )));
         } else {
@@ -144,7 +142,11 @@ impl ServerHandler for MockTrackerHandler {
             for hash in req.iter() {
                 let peers = inner_lock.peers_map.entry(hash).or_default();
 
-                response.insert(ScrapeStats::new(peers.len() as i32, 0, peers.len() as i32));
+                response.insert(ScrapeStats::new(
+                    peers.len().try_into().unwrap(),
+                    0,
+                    peers.len().try_into().unwrap(),
+                ));
             }
 
             result(Ok(response));

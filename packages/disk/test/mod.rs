@@ -122,7 +122,7 @@ impl Accessor for MultiFileDirectAccessor {
         C: FnMut(u64, &Path),
     {
         for (buffer, path) in &self.files {
-            callback(buffer.len() as u64, path)
+            callback(buffer.len() as u64, path);
         }
 
         Ok(())
@@ -133,7 +133,7 @@ impl Accessor for MultiFileDirectAccessor {
         C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
     {
         for (buffer, _) in &self.files {
-            callback(PieceAccess::Compute(&mut &buffer[..]))?
+            callback(PieceAccess::Compute(&mut &buffer[..]))?;
         }
 
         Ok(())
@@ -208,7 +208,7 @@ impl FileSystem for InMemoryFileSystem {
             files
                 .get(&file.path)
                 .map(|file_buffer| {
-                    let cast_offset = offset as usize;
+                    let cast_offset: usize = offset.try_into().unwrap();
                     let bytes_to_copy = cmp::min(file_buffer.len() - cast_offset, buffer.len());
                     let bytes = &file_buffer[cast_offset..(bytes_to_copy + cast_offset)];
 
@@ -225,7 +225,7 @@ impl FileSystem for InMemoryFileSystem {
             files
                 .get_mut(&file.path)
                 .map(|file_buffer| {
-                    let cast_offset = offset as usize;
+                    let cast_offset: usize = offset.try_into().unwrap();
 
                     let last_byte_pos = cast_offset + buffer.len();
                     if last_byte_pos > file_buffer.len() {

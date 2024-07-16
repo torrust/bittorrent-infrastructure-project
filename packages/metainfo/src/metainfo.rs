@@ -28,6 +28,10 @@ pub struct Metainfo {
 
 impl Metainfo {
     /// Read a `Metainfo` from metainfo file bytes.
+    ///
+    /// # Errors
+    ///
+    /// It would return an error if unable to parse the bytes as a [`Metainfo`]
     pub fn from_bytes<B>(bytes: B) -> ParseResult<Metainfo>
     where
         B: AsRef<[u8]>,
@@ -80,6 +84,10 @@ impl Metainfo {
     }
 
     /// Retrieve the bencoded bytes for the `Metainfo` file.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to convert to bytes.
     #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
         // Since there are no file system accesses here, should be fine to unwrap
@@ -90,7 +98,7 @@ impl Metainfo {
             .set_created_by(self.created_by())
             .set_private_flag(self.info().is_private())
             // TODO: Revisit this cast...
-            .set_piece_length(PieceLength::Custom(self.info().piece_length() as usize))
+            .set_piece_length(PieceLength::Custom(self.info().piece_length().try_into().unwrap()))
             .build(1, &self.info, |_| ())
             .unwrap()
     }
@@ -158,6 +166,10 @@ pub struct Info {
 
 impl Info {
     /// Read an `Info` from info dictionary bytes.
+    ///
+    /// # Errors
+    ///
+    /// It would return an error if unable to parse bytes into [`Info`].
     pub fn from_bytes<B>(bytes: B) -> ParseResult<Info>
     where
         B: AsRef<[u8]>,
@@ -216,13 +228,17 @@ impl Info {
     }
 
     /// Retrieve the bencoded bytes for the `Info` dictionary.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the bytes.
     #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
         // Since there are no file system accesses here, should be fine to unwrap
         InfoBuilder::new()
             .set_private_flag(self.is_private())
             // TODO: Revisit this cast...
-            .set_piece_length(PieceLength::Custom(self.piece_length() as usize))
+            .set_piece_length(PieceLength::Custom(self.piece_length().try_into().unwrap()))
             .build(1, self, |_| ())
             .unwrap()
     }
@@ -446,6 +462,7 @@ mod tests {
     /// If the metainfo file builds successfully, assertions will be made about the contents of it based
     /// on the parameters given.
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_lines)]
     fn validate_parse_from_params(
         tracker: Option<&str>,
         create_date: Option<i64>,
@@ -456,7 +473,7 @@ mod tests {
         pieces: Option<&[u8]>,
         private: Option<i64>,
         directory: Option<&str>,
-        files: FilesOpt<'_>,
+        files: &FilesOpt<'_>,
     ) {
         let mut root_dict = BencodeMut::new_dict();
         let info_hash = {
@@ -483,7 +500,7 @@ mod tests {
                     .map(|&p| info_dict_access.insert(parse::PRIVATE_KEY.into(), ben_int!(p)));
 
                 directory
-                    .map(|d| {
+                    .inspect(|&d| {
                         // We intended to build a multi file torrent since we provided a directory
                         info_dict_access.insert(parse::NAME_KEY.into(), ben_bytes!(d));
 
@@ -516,14 +533,12 @@ mod tests {
                                         opt_md5.map(|m| file_dict_access.insert(parse::MD5SUM_KEY.into(), ben_bytes!(m)));
                                     }
 
-                                    bencode_files_access.push(file_dict)
+                                    bencode_files_access.push(file_dict);
                                 }
                             }
 
                             info_dict_access.insert(parse::FILES_KEY.into(), bencode_files);
                         };
-
-                        d
                     })
                     .or_else(|| {
                         // We intended to build a single file torrent if a directory was not specified
@@ -556,7 +571,7 @@ mod tests {
         assert_eq!(metainfo_file.creation_date, create_date);
 
         assert_eq!(metainfo_file.info().directory(), directory.map(std::convert::AsRef::as_ref));
-        assert_eq!(metainfo_file.info().piece_length(), piece_length.unwrap() as u64);
+        assert_eq!(metainfo_file.info().piece_length(), piece_length.unwrap().try_into().unwrap());
         assert_eq!(metainfo_file.info().is_private(), private.map(|private| private == 1));
 
         let pieces = pieces.unwrap();
@@ -577,7 +592,7 @@ mod tests {
             let meta_file = meta_files.next().unwrap();
             let supp_file = supp_files.next().unwrap();
 
-            assert_eq!(meta_file.length(), supp_file.0.unwrap() as u64);
+            assert_eq!(meta_file.length(), supp_file.0.unwrap().try_into().unwrap());
             assert_eq!(meta_file.md5sum(), supp_file.1);
 
             let meta_paths: &Path = meta_file.path();
@@ -609,7 +624,7 @@ mod tests {
             Some(&pieces),
             None,
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
@@ -636,7 +651,7 @@ mod tests {
             Some(&pieces),
             None,
             Some(directory),
-            Some(files),
+            &Some(files),
         );
     }
 
@@ -666,7 +681,7 @@ mod tests {
             Some(&pieces),
             None,
             Some(directory),
-            Some(files),
+            &Some(files),
         );
     }
 
@@ -689,7 +704,7 @@ mod tests {
             Some(&pieces),
             None,
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
@@ -714,7 +729,7 @@ mod tests {
             Some(&pieces),
             None,
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
@@ -739,7 +754,7 @@ mod tests {
             Some(&pieces),
             None,
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
@@ -764,7 +779,7 @@ mod tests {
             Some(&pieces),
             None,
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
@@ -789,7 +804,7 @@ mod tests {
             Some(&pieces),
             None,
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
@@ -814,7 +829,7 @@ mod tests {
             Some(&pieces),
             Some(private),
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
@@ -839,7 +854,7 @@ mod tests {
             Some(&pieces),
             Some(private),
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
@@ -864,7 +879,7 @@ mod tests {
             Some(&pieces),
             Some(private),
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
@@ -886,18 +901,22 @@ mod tests {
             Some(&pieces),
             None,
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeParse(BencodeParseError(BytesEmpty { pos: 0 }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
+    )]
     fn negative_parse_from_empty_bytes() {
         Metainfo::from_bytes(b"").unwrap();
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeConvert(BencodeConvertError(MissingKey { key: [112, 105, 101, 99, 101, 32, 108, 101, 110, 103, 116, 104] }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
+    )]
     fn negative_parse_with_no_piece_length() {
         let tracker = "udp://dummy_domain.com:8989";
         let pieces = [0u8; sha::SHA_HASH_LEN];
@@ -917,12 +936,14 @@ mod tests {
             Some(&pieces),
             Some(private),
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeConvert(BencodeConvertError(MissingKey { key: [112, 105, 101, 99, 101, 115] }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
+    )]
     fn negative_parse_with_no_pieces() {
         let tracker = "udp://dummy_domain.com:8989";
         let piece_len = 1024;
@@ -940,12 +961,14 @@ mod tests {
             None,
             None,
             None,
-            Some(vec![(Some(file_len), None, Some(file_paths))]),
+            &Some(vec![(Some(file_len), None, Some(file_paths))]),
         );
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeConvert(BencodeConvertError(MissingKey { key: [102, 105, 108, 101, 115] }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
+    )]
     fn negative_parse_from_single_file_with_no_file_length() {
         let tracker = "udp://dummy_domain.com:8989";
         let piece_len = 1024;
@@ -963,12 +986,14 @@ mod tests {
             Some(&pieces),
             None,
             None,
-            Some(vec![(None, None, Some(file_paths))]),
+            &Some(vec![(None, None, Some(file_paths))]),
         );
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeConvert(BencodeConvertError(MissingKey { key: [110, 97, 109, 101] }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
+    )]
     fn negative_parse_from_single_file_with_no_file_name() {
         let tracker = "udp://dummy_domain.com:8989";
         let piece_len = 1024;
@@ -986,7 +1011,7 @@ mod tests {
             Some(&pieces),
             None,
             None,
-            Some(vec![(Some(file_len), None, None)]),
+            &Some(vec![(Some(file_len), None, None)]),
         );
     }
 }

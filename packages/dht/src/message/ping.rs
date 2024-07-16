@@ -8,6 +8,7 @@ use crate::error::DhtResult;
 use crate::message;
 use crate::message::request::{self, RequestValidate};
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct PingRequest<'a> {
     trans_id: &'a [u8],
@@ -20,6 +21,11 @@ impl<'a> PingRequest<'a> {
         PingRequest { trans_id, node_id }
     }
 
+    /// Create a `PingRequest` from parts.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to lookup, convert, and validate nodes.
     pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<PingRequest<'a>>
     where
         B: BRefAccess,
@@ -57,6 +63,7 @@ impl<'a> PingRequest<'a> {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct PingResponse<'a> {
     trans_id: &'a [u8],
@@ -70,6 +77,11 @@ impl<'a> PingResponse<'a> {
         PingResponse { trans_id, node_id }
     }
 
+    /// Create a new `PingResponse` from parts.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to generate the ping request from the root.
     pub fn from_parts<B>(rsp_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<PingResponse<'a>>
     where
         B: BRefAccess,

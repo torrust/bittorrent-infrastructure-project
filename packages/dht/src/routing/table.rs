@@ -16,6 +16,7 @@ pub const MAX_BUCKETS: usize = sha::SHA_HASH_LEN * 8;
 
 /// Routing table containing a table of routing nodes as well
 /// as the id of the local node participating in the dht.
+#[allow(clippy::module_name_repetitions)]
 pub struct RoutingTable {
     // Important: Our node id will always fall within the range
     // of the last bucket in the buckets array.
@@ -61,8 +62,7 @@ impl RoutingTable {
         } else {
             // Grab the assorted bucket (if it exists)
             self.buckets().find(|c| match *c {
-                BucketContents::Empty => false,
-                BucketContents::Sorted(_) => false,
+                BucketContents::Sorted(_) | BucketContents::Empty => false,
                 BucketContents::Assorted(_) => true,
             })
         };
@@ -76,7 +76,7 @@ impl RoutingTable {
     }
 
     /// Add the node to the `RoutingTable` if there is space for it.
-    pub fn add_node(&mut self, node: Node) {
+    pub fn add_node(&mut self, node: &Node) {
         // Doing some checks and calculations here, outside of the recursion
         if node.status() == NodeStatus::Bad {
             return;
@@ -90,7 +90,7 @@ impl RoutingTable {
     }
 
     /// Recursively tries to place the node into some bucket.
-    fn bucket_node(&mut self, node: Node, num_same_bits: usize) {
+    fn bucket_node(&mut self, node: &Node, num_same_bits: usize) {
         let bucket_index = bucket_placement(num_same_bits, self.buckets.len());
 
         // Try to place in correct bucket
@@ -98,7 +98,7 @@ impl RoutingTable {
             // Bucket was full, try to split it
             if self.split_bucket(bucket_index) {
                 // Bucket split successfully, try to add again
-                self.bucket_node(node.clone(), num_same_bits);
+                self.bucket_node(node, num_same_bits);
             }
         }
     }
@@ -114,9 +114,8 @@ impl RoutingTable {
         // Implementation is easier if we just remove the whole bucket, pretty
         // cheap to copy and we can manipulate the new buckets while they are
         // in the RoutingTable already.
-        let split_bucket = match self.buckets.pop() {
-            Some(bucket) => bucket,
-            None => panic!("No buckets present in RoutingTable, implementation error..."),
+        let Some(split_bucket) = self.buckets.pop() else {
+            panic!("No buckets present in RoutingTable, implementation error...")
         };
 
         // Push two more buckets to distribute nodes between
@@ -124,7 +123,7 @@ impl RoutingTable {
         self.buckets.push(Bucket::new());
 
         for node in split_bucket.iter() {
-            self.add_node(node.clone());
+            self.add_node(node);
         }
 
         true
@@ -213,6 +212,7 @@ impl<'a> Buckets<'a> {
     }
 }
 
+#[allow(clippy::copy_iterator)]
 impl<'a> Iterator for Buckets<'a> {
     type Item = BucketContents<'a>;
 
@@ -367,6 +367,7 @@ fn good_node_filter(iter: Iter<'_, Node>) -> GoodNodes<'_> {
 }
 
 /// Shakes fist at iterator making me take a double reference (could avoid it by mapping, but oh well)
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn is_good_node(node: &&Node) -> bool {
     let status = node.status();
 
@@ -467,11 +468,12 @@ mod tests {
 
         // Trigger a bucket overflow and since the ids are placed in the last bucket, all of
         // the buckets will be recursively created and inserted into the list of all buckets.
+        #[allow(clippy::cast_possible_truncation)]
         let block_addrs = bip_test::dummy_block_socket_addrs((bucket::MAX_BUCKET_SIZE + 1) as u16);
         for &addr in block_addrs.iter().take(bucket::MAX_BUCKET_SIZE + 1) {
             let node = Node::as_good(node_id.into(), addr);
 
-            table.add_node(node);
+            table.add_node(&node);
         }
     }
 
@@ -503,11 +505,12 @@ mod tests {
         // Flip first bit so we are placed in the first bucket
         node_id[0] |= 128;
 
+        #[allow(clippy::cast_possible_truncation)]
         let block_addrs = bip_test::dummy_block_socket_addrs((bucket::MAX_BUCKET_SIZE + 1) as u16);
         for &addr in block_addrs.iter().take(bucket::MAX_BUCKET_SIZE + 1) {
             let node = Node::as_good(node_id.into(), addr);
 
-            table.add_node(node);
+            table.add_node(&node);
         }
 
         // First bucket should be sorted
@@ -515,7 +518,7 @@ mod tests {
         for bucket in table.buckets().take(1) {
             match bucket {
                 BucketContents::Sorted(b) => {
-                    assert_eq!(b.pingable_nodes().count(), bucket::MAX_BUCKET_SIZE)
+                    assert_eq!(b.pingable_nodes().count(), bucket::MAX_BUCKET_SIZE);
                 }
                 _ => panic!("Expected BucketContents::Sorted"),
             }
@@ -551,11 +554,12 @@ mod tests {
         // Flip last bit so we are placed in the last bucket
         node_id[bt::NODE_ID_LEN - 1] = 0;
 
+        #[allow(clippy::cast_possible_truncation)]
         let block_addrs = bip_test::dummy_block_socket_addrs((bucket::MAX_BUCKET_SIZE + 1) as u16);
         for &addr in block_addrs.iter().take(bucket::MAX_BUCKET_SIZE + 1) {
             let node = Node::as_good(node_id.into(), addr);
 
-            table.add_node(node);
+            table.add_node(&node);
         }
 
         // First buckets should be sorted (although they are all empty)
@@ -572,7 +576,7 @@ mod tests {
         for bucket in table.buckets().skip(table::MAX_BUCKETS - 1).take(1) {
             match bucket {
                 BucketContents::Sorted(b) => {
-                    assert_eq!(b.pingable_nodes().count(), bucket::MAX_BUCKET_SIZE)
+                    assert_eq!(b.pingable_nodes().count(), bucket::MAX_BUCKET_SIZE);
                 }
                 _ => panic!("Expected BucketContents::Sorted"),
             }
@@ -587,12 +591,13 @@ mod tests {
         let table_id = [1u8; bt::NODE_ID_LEN];
         let mut table = RoutingTable::new(table_id.into());
 
+        #[allow(clippy::cast_possible_truncation)]
         let block_addrs = bip_test::dummy_block_socket_addrs(bucket::MAX_BUCKET_SIZE as u16);
         for bit_flip_index in 0..table::MAX_BUCKETS {
             for &addr in &block_addrs {
                 let bucket_node_id = flip_id_bit_at_index(table_id.into(), bit_flip_index);
 
-                table.add_node(Node::as_good(bucket_node_id, addr));
+                table.add_node(&Node::as_good(bucket_node_id, addr));
             }
         }
 
@@ -600,7 +605,7 @@ mod tests {
         for bucket in table.buckets() {
             match bucket {
                 BucketContents::Sorted(b) => {
-                    assert_eq!(b.pingable_nodes().count(), bucket::MAX_BUCKET_SIZE)
+                    assert_eq!(b.pingable_nodes().count(), bucket::MAX_BUCKET_SIZE);
                 }
                 _ => panic!("Expected BucketContents::Sorted"),
             }
@@ -615,7 +620,7 @@ mod tests {
         assert_eq!(table.closest_nodes(table_id.into()).count(), 0);
 
         let node = Node::as_good(table_id.into(), bip_test::dummy_socket_addr_v4());
-        table.add_node(node);
+        table.add_node(&node);
 
         assert_eq!(table.closest_nodes(table_id.into()).count(), 0);
     }

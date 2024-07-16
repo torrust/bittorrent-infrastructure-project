@@ -12,10 +12,10 @@ use crate::ConnectedChannel;
 
 #[test]
 fn positive_peer_manager_send_backpressure() {
+    type Peer = ConnectedChannel<PeerWireProtocolMessage<NullProtocol>, PeerWireProtocolMessage<NullProtocol>>;
+
     let mut core = Core::new().unwrap();
     let manager = PeerManagerBuilder::new().with_peer_capacity(1).build(core.handle());
-
-    type Peer = ConnectedChannel<PeerWireProtocolMessage<NullProtocol>, PeerWireProtocolMessage<NullProtocol>>;
 
     // Create two peers
     let (peer_one, peer_two): (Peer, Peer) = crate::connected_channel(5);

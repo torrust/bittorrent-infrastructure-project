@@ -54,7 +54,7 @@ where
         let share_piece_buffers = piece_buffers.clone();
 
         thread::spawn(move || {
-            start_hash_worker(share_master_send, share_work_queue, share_piece_buffers);
+            start_hash_worker(&share_master_send, &share_work_queue, &share_piece_buffers);
         });
     }
 
@@ -64,7 +64,7 @@ where
     });
 
     // Create the master worker to coordinate between the workers
-    start_hash_master(accessor, num_workers, master_recv, work_queue, piece_buffers, prog_send)
+    start_hash_master(accessor, num_workers, &master_recv, &work_queue, &piece_buffers, &prog_send)
 }
 
 // ----------------------------------------------------------------------------//
@@ -74,10 +74,10 @@ where
 fn start_hash_master<A>(
     accessor: A,
     num_workers: usize,
-    recv: Receiver<MasterMessage>,
-    work: Arc<SegQueue<WorkerMessage>>,
-    buffers: Arc<PieceBuffers>,
-    progress_sender: Sender<usize>,
+    recv: &Receiver<MasterMessage>,
+    work: &Arc<SegQueue<WorkerMessage>>,
+    buffers: &Arc<PieceBuffers>,
+    progress_sender: &Sender<usize>,
 ) -> ParseResult<Vec<(usize, ShaHash)>>
 where
     A: Accessor,
@@ -144,10 +144,13 @@ where
     // Wait for all of the workers to finish up the last pieces
     let mut workers_finished = 0;
     while workers_finished < num_workers {
-        match recv.recv() {
-            Ok(MasterMessage::AcceptPiece(index, piece)) => pieces.push((index, piece)),
-            Ok(MasterMessage::WorkerFinished) => workers_finished += 1,
-            Err(_) => panic!("bip_metainfo: Master failed to verify all workers shutdown..."),
+        let Ok(recv) = recv.recv() else {
+            panic!("bip_metainfo: Master failed to verify all workers shutdown...")
+        };
+
+        match recv {
+            MasterMessage::AcceptPiece(index, piece) => pieces.push((index, piece)),
+            MasterMessage::WorkerFinished => workers_finished += 1,
         }
     }
 
@@ -164,6 +167,7 @@ where
     C: FnMut(f64),
 {
     for finished_piece in recv {
+        #[allow(clippy::cast_precision_loss)]
         let percent_complete = (finished_piece as f64) / (num_pieces as f64);
 
         progress(percent_complete);
@@ -173,7 +177,7 @@ where
 // ----------------------------------------------------------------------------//
 
 /// Starts a hasher worker which will hash all of the buffers it receives.
-fn start_hash_worker(send: Sender<MasterMessage>, work: Arc<SegQueue<WorkerMessage>>, buffers: Arc<PieceBuffers>) {
+fn start_hash_worker(send: &Sender<MasterMessage>, work: &Arc<SegQueue<WorkerMessage>>, buffers: &Arc<PieceBuffers>) {
     let mut work_to_do = true;
 
     // Loop until we are instructed to stop working
@@ -276,15 +280,30 @@ mod tests {
         }
     }
 
-    fn validate_entries_pieces(accessor: MockAccessor, piece_length: usize, num_threads: usize) {
+    fn validate_entries_pieces(accessor: &MockAccessor, piece_length: usize, num_threads: usize) {
         let (prog_send, prog_recv) = mpsc::channel();
 
-        let total_num_pieces = ((accessor.as_slice().len() as f64) / (piece_length as f64)).ceil() as u64;
-        let received_pieces =
-            worker::start_hasher_workers(&accessor, piece_length, total_num_pieces, num_threads, move |update| {
+        #[allow(clippy::cast_precision_loss)]
+        let total_num_pieces = (accessor.as_slice().len() as f64) / (piece_length as f64);
+
+        assert!(
+            (0.0..=9_223_372_036_854_775_807_f64).contains(&total_num_pieces), /* i64::MAX */
+            "Value is outside the range of i64"
+        );
+
+        #[allow(clippy::cast_possible_truncation)]
+        let total_num_pieces: i64 = total_num_pieces.ceil() as i64;
+
+        let received_pieces = worker::start_hasher_workers(
+            accessor,
+            piece_length,
+            total_num_pieces.try_into().unwrap(),
+            num_threads,
+            move |update| {
                 prog_send.send(update).unwrap();
-            })
-            .unwrap();
+            },
+        )
+        .unwrap();
 
         let computed_pieces = accessor
             .as_slice()
@@ -295,7 +314,7 @@ mod tests {
 
         let updates_received = prog_recv.iter().count() as u64;
 
-        assert_eq!(total_num_pieces, updates_received);
+        assert_eq!(total_num_pieces, updates_received.try_into().unwrap());
         assert_eq!(received_pieces, computed_pieces);
     }
 
@@ -306,7 +325,7 @@ mod tests {
         let region_length = DEFAULT_PIECE_LENGTH * DEFAULT_NUM_PIECES;
         accessor.create_region(region_length);
 
-        validate_entries_pieces(accessor, DEFAULT_PIECE_LENGTH, 1);
+        validate_entries_pieces(&accessor, DEFAULT_PIECE_LENGTH, 1);
     }
 
     #[test]
@@ -316,7 +335,7 @@ mod tests {
         let region_length = DEFAULT_PIECE_LENGTH * DEFAULT_NUM_PIECES;
         accessor.create_region(region_length);
 
-        validate_entries_pieces(accessor, DEFAULT_PIECE_LENGTH, 4);
+        validate_entries_pieces(&accessor, DEFAULT_PIECE_LENGTH, 4);
     }
 
     #[test]
@@ -326,7 +345,7 @@ mod tests {
         let region_length = DEFAULT_PIECE_LENGTH * DEFAULT_NUM_PIECES + 1;
         accessor.create_region(region_length);
 
-        validate_entries_pieces(accessor, DEFAULT_PIECE_LENGTH, 1);
+        validate_entries_pieces(&accessor, DEFAULT_PIECE_LENGTH, 1);
     }
 
     #[test]
@@ -336,7 +355,7 @@ mod tests {
         let region_length = DEFAULT_PIECE_LENGTH * DEFAULT_NUM_PIECES + 1;
         accessor.create_region(region_length);
 
-        validate_entries_pieces(accessor, DEFAULT_PIECE_LENGTH, 4);
+        validate_entries_pieces(&accessor, DEFAULT_PIECE_LENGTH, 4);
     }
 
     #[test]
@@ -352,7 +371,7 @@ mod tests {
             accessor.create_region(region_length);
         }
 
-        validate_entries_pieces(accessor, DEFAULT_PIECE_LENGTH, 1);
+        validate_entries_pieces(&accessor, DEFAULT_PIECE_LENGTH, 1);
     }
 
     #[test]
@@ -368,7 +387,7 @@ mod tests {
             accessor.create_region(region_length);
         }
 
-        validate_entries_pieces(accessor, DEFAULT_PIECE_LENGTH, 4);
+        validate_entries_pieces(&accessor, DEFAULT_PIECE_LENGTH, 4);
     }
 
     #[test]
@@ -385,7 +404,7 @@ mod tests {
             accessor.create_region(region_length);
         }
 
-        validate_entries_pieces(accessor, DEFAULT_PIECE_LENGTH, 1);
+        validate_entries_pieces(&accessor, DEFAULT_PIECE_LENGTH, 1);
     }
 
     #[test]
@@ -402,6 +421,6 @@ mod tests {
             accessor.create_region(region_length);
         }
 
-        validate_entries_pieces(accessor, DEFAULT_PIECE_LENGTH, 4);
+        validate_entries_pieces(&accessor, DEFAULT_PIECE_LENGTH, 4);
     }
 }

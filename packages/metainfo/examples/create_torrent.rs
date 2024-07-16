@@ -48,6 +48,9 @@ where
 
     let mut prev_progress = 0;
     builder.build(2, src_path, move |progress| {
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_sign_loss)]
+        #[allow(clippy::cast_precision_loss)]
         let whole_progress = (progress * (count as f64)) as u64;
         let delta_progress = whole_progress - prev_progress;
 
@@ -62,16 +65,17 @@ where
 fn print_metainfo_overview(bytes: &[u8]) {
     let metainfo = Metainfo::from_bytes(bytes).unwrap();
     let info = metainfo.info();
-    let info_hash_hex = metainfo
-        .info()
-        .info_hash()
-        .as_ref()
-        .iter()
-        .map(|b| format!("{:02X}", b))
-        .fold(String::new(), |mut acc, nex| {
-            acc.push_str(&nex);
-            acc
-        });
+    let info_hash_hex =
+        metainfo
+            .info()
+            .info_hash()
+            .as_ref()
+            .iter()
+            .map(|b| format!("{b:02X}"))
+            .fold(String::new(), |mut acc, nex| {
+                acc.push_str(&nex);
+                acc
+            });
     let utc_creation_date = metainfo.creation_date().map(|c| Utc.timestamp_opt(c, 0));
 
     println!("\n\n-----------------------------Metainfo File Overview-----------------------------");

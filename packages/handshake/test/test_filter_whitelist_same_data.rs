@@ -56,7 +56,7 @@ fn test_filter_whitelist_same_data() {
     let handshaker_one = HandshakerBuilder::new()
         .with_bind_addr(handshaker_one_addr)
         .with_peer_id(handshaker_one_pid)
-        .build(TcpTransport, core.handle())
+        .build(TcpTransport, &core.handle())
         .unwrap();
 
     handshaker_one_addr.set_port(handshaker_one.port());
@@ -72,7 +72,7 @@ fn test_filter_whitelist_same_data() {
     let handshaker_two = HandshakerBuilder::new()
         .with_bind_addr(handshaker_two_addr)
         .with_peer_id(handshaker_two_pid)
-        .build(TcpTransport, core.handle())
+        .build(TcpTransport, &core.handle())
         .unwrap();
 
     handshaker_two_addr.set_port(handshaker_two.port());
@@ -92,7 +92,7 @@ fn test_filter_whitelist_same_data() {
                 .and_then(|_| {
                     let timeout = Timeout::new(Duration::from_millis(50), &handle)
                         .unwrap()
-                        .map(|_| TimeoutResult::TimedOut)
+                        .map(|()| TimeoutResult::TimedOut)
                         .map_err(|_| ());
 
                     let result_one = stream_one.into_future().map(|_| TimeoutResult::GotResult).map_err(|_| ());

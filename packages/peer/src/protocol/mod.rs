@@ -10,6 +10,7 @@ pub mod unit;
 pub mod wire;
 
 /// Trait for implementing a bittorrent protocol message.
+#[allow(clippy::module_name_repetitions)]
 pub trait PeerProtocol {
     /// Type of message the protocol operates with.
     type ProtocolMessage;
@@ -21,12 +22,24 @@ pub trait PeerProtocol {
     /// If none is returned, it means we need more bytes to determine the number
     /// of bytes needed. If an error is returned, it means the connection should
     /// be dropped, as probably the message exceeded some maximum length.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an IO result if unable to calculate the bytes needed.
     fn bytes_needed(&mut self, bytes: &[u8]) -> io::Result<Option<usize>>;
 
     /// Parse a `ProtocolMessage` from the given bytes.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an IO error if unable to parse the bytes into a [`Self::ProtocolMessage`].
     fn parse_bytes(&mut self, bytes: Bytes) -> io::Result<Self::ProtocolMessage>;
 
     /// Write a `ProtocolMessage` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if it fails to write-out.
     fn write_bytes<W>(&mut self, message: &Self::ProtocolMessage, writer: W) -> io::Result<()>
     where
         W: Write;
@@ -48,6 +61,7 @@ pub trait PeerProtocol {
 /// We need to pass the `ExtensionMessage` down to them before we start receiving
 /// messages with those ids (otherwise we will receive unrecognized messages and
 /// kill the connection).
+#[allow(clippy::module_name_repetitions)]
 pub trait NestedPeerProtocol<M> {
     /// Notify a nested protocol that we have received the given message.
     fn received_message(&mut self, message: &M);

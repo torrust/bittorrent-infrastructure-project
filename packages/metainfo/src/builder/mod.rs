@@ -38,6 +38,7 @@ const TRANSFER_MAX_PIECES_SIZE: usize = 60000;
 const TRANSFER_MIN_PIECE_LENGTH: usize = 1024;
 
 /// Enumerates settings for piece length for generating a torrent file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PieceLength {
     /// Optimize piece length for torrent file size and file transfer.
     OptBalanced,
@@ -50,6 +51,7 @@ pub enum PieceLength {
 }
 
 /// Builder for generating a torrent file from some accessor.
+#[allow(clippy::module_name_repetitions)]
 pub struct MetainfoBuilder<'a> {
     root: BencodeMut<'a>,
     info: InfoBuilder<'a>,
@@ -72,6 +74,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Set announce-list content
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary, or the data is somehow corrupt.
     #[must_use]
     pub fn set_trackers(mut self, opt_trackers: Option<&'a Vec<Vec<String>>>) -> MetainfoBuilder<'a> {
         {
@@ -108,6 +114,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Set or unset the main tracker that this torrent file points to.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     #[must_use]
     pub fn set_main_tracker(mut self, opt_tracker_url: Option<&'a str>) -> MetainfoBuilder<'a> {
         {
@@ -124,6 +134,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Set or unset the creation date for the torrent.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     #[must_use]
     pub fn set_creation_date(mut self, opt_secs_epoch: Option<i64>) -> MetainfoBuilder<'a> {
         {
@@ -140,6 +154,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Set or unset a comment for the torrent file.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     #[must_use]
     pub fn set_comment(mut self, opt_comment: Option<&'a str>) -> MetainfoBuilder<'a> {
         {
@@ -156,6 +174,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Set or unset the created by for the torrent file.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     #[must_use]
     pub fn set_created_by(mut self, opt_created_by: Option<&'a str>) -> MetainfoBuilder<'a> {
         {
@@ -188,6 +210,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Get decoded value of announce-list key
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     pub fn get_trackers(&self) -> Option<Vec<Vec<String>>> {
         let dict_access = self.root.dict().unwrap();
 
@@ -195,6 +221,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Get decoded value of announce-url key
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     pub fn get_main_tracker(&self) -> Option<String> {
         let dict_access = self.root.dict().unwrap();
 
@@ -202,6 +232,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Get decoded value of creation-date key
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     #[must_use]
     pub fn get_creation_date(&self) -> Option<i64> {
         let dict_access = self.root.dict().unwrap();
@@ -210,6 +244,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Get decoded value of comment key
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     pub fn get_comment(&self) -> Option<String> {
         let dict_access = self.root.dict().unwrap();
 
@@ -217,6 +255,10 @@ impl<'a> MetainfoBuilder<'a> {
     }
 
     /// Get decoded value of created-by key
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     pub fn get_created_by(&self) -> Option<String> {
         let dict_access = self.root.dict().unwrap();
 
@@ -225,7 +267,9 @@ impl<'a> MetainfoBuilder<'a> {
 
     /// Build the metainfo file from the given accessor and the number of worker threads.
     ///
-    /// Panics if threads is equal to zero.
+    /// # Errors
+    ///
+    /// It would return an error if unable to get the accessor.
     pub fn build<A, C>(self, threads: usize, accessor: A, progress: C) -> ParseResult<Vec<u8>>
     where
         A: IntoAccessor,
@@ -247,7 +291,7 @@ impl<'a> MetainfoBuilder<'a> {
 // ----------------------------------------------------------------------------//
 
 /// Builder for generating an info dictionary file from some accessor.
-
+#[allow(clippy::module_name_repetitions)]
 pub struct InfoBuilder<'a> {
     info: BencodeMut<'a>,
     // Stored outside of root as some of the variants need the total
@@ -271,6 +315,10 @@ impl<'a> InfoBuilder<'a> {
     }
 
     /// Set or unset the private flag for the torrent file.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the dictionary.
     #[must_use]
     pub fn set_private_flag(mut self, opt_is_private: Option<bool>) -> InfoBuilder<'a> {
         let opt_numeric_is_private = opt_is_private.map(i64::from);
@@ -295,7 +343,9 @@ impl<'a> InfoBuilder<'a> {
 
     /// Build the metainfo file from the given accessor and the number of worker threads.
     ///
-    /// Panics if threads is equal to zero.
+    /// # Errors
+    ///
+    /// It would return an error if unable to get the accessor.
     pub fn build<A, C>(self, threads: usize, accessor: A, progress: C) -> ParseResult<Vec<u8>>
     where
         A: IntoAccessor,
@@ -333,9 +383,26 @@ where
 
     // Build the pieces for the data our accessor is pointing at
     let total_files_len = files_info.iter().fold(0, |acc, nex| acc + nex.0);
-    let piece_length = determine_piece_length(total_files_len, piece_length);
-    let total_num_pieces = ((total_files_len as f64) / (piece_length as f64)).ceil() as u64;
-    let pieces_list = worker::start_hasher_workers(&accessor, piece_length, total_num_pieces, threads, progress)?;
+    let piece_length = determine_piece_length(total_files_len, &piece_length);
+
+    #[allow(clippy::cast_precision_loss)]
+    let total_num_pieces = (total_files_len as f64) / (piece_length as f64);
+
+    assert!(
+        (0.0..=9_223_372_036_854_775_807_f64).contains(&total_num_pieces), /* i64::MAX */
+        "Value is outside the range of i64"
+    );
+
+    #[allow(clippy::cast_possible_truncation)]
+    let total_num_pieces: i64 = total_num_pieces.ceil() as i64;
+
+    let pieces_list = worker::start_hasher_workers(
+        &accessor,
+        piece_length,
+        total_num_pieces.try_into().unwrap(),
+        threads,
+        progress,
+    )?;
     let pieces = map_pieces_list(pieces_list.into_iter().map(|(_, piece)| piece));
 
     let mut single_file_name = String::new();
@@ -348,7 +415,7 @@ where
     {
         let info_access = info.dict_mut().unwrap();
 
-        info_access.insert(parse::PIECE_LENGTH_KEY.into(), ben_int!(piece_length as i64));
+        info_access.insert(parse::PIECE_LENGTH_KEY.into(), ben_int!(piece_length.try_into().unwrap()));
         info_access.insert(parse::PIECES_KEY.into(), ben_bytes!(&pieces[..]));
 
         // If the accessor specifies a directory OR there are multiple files, we will build a multi file torrent
@@ -373,7 +440,7 @@ where
                         }
 
                         bencode_files_access.push(ben_map! {
-                            parse::LENGTH_KEY => ben_int!(len as i64),
+                            parse::LENGTH_KEY => ben_int!(len.try_into().unwrap()),
                             parse::PATH_KEY   => bencode_path
                         });
                     }
@@ -401,7 +468,7 @@ where
                         }
 
                         bencode_files_access.push(ben_map! {
-                            parse::LENGTH_KEY => ben_int!(len as i64),
+                            parse::LENGTH_KEY => ben_int!(len.try_into().unwrap()),
                             parse::PATH_KEY   => bencode_path
                         });
                     }
@@ -416,7 +483,7 @@ where
                     single_file_name.push_str(name_component);
                 }
 
-                info_access.insert(parse::LENGTH_KEY.into(), ben_int!(files_info[0].0 as i64));
+                info_access.insert(parse::LENGTH_KEY.into(), ben_int!(files_info[0].0.try_into().unwrap()));
                 info_access.insert(parse::NAME_KEY.into(), ben_bytes!(&single_file_name[..]));
             }
         }
@@ -434,9 +501,9 @@ where
 /// Calculate the final piece length given the total file size and piece length strategy.
 ///
 /// Lower piece length will result in a bigger file but better transfer reliability and vice versa.
-fn determine_piece_length(total_file_size: u64, piece_length: PieceLength) -> usize {
+fn determine_piece_length(total_file_size: u64, piece_length: &PieceLength) -> usize {
     match piece_length {
-        PieceLength::Custom(len) => len,
+        PieceLength::Custom(len) => *len,
         PieceLength::OptBalanced => calculate_piece_length(total_file_size, BALANCED_MAX_PIECES_SIZE, BALANCED_MIN_PIECE_LENGTH),
         PieceLength::OptFileSize => {
             calculate_piece_length(total_file_size, FILE_SIZE_MAX_PIECES_SIZE, FILE_SIZE_MIN_PIECE_LENGTH)
@@ -447,17 +514,30 @@ fn determine_piece_length(total_file_size: u64, piece_length: PieceLength) -> us
 
 /// Calculate the minimum power of 2 piece length for the given max pieces size and total file size.
 fn calculate_piece_length(total_file_size: u64, max_pieces_size: usize, min_piece_length: usize) -> usize {
+    #[allow(clippy::cast_precision_loss)]
     let num_pieces = (max_pieces_size as f64) / (sha::SHA_HASH_LEN as f64);
-    let piece_length = ((total_file_size as f64) / num_pieces + 0.5) as usize;
+
+    #[allow(clippy::cast_precision_loss)]
+    let piece_length = (total_file_size as f64) / num_pieces + 0.5;
+
+    assert!(
+        (0.0..=9_223_372_036_854_775_807_f64).contains(&piece_length), /* i64::MAX */
+        "Value is outside the range of i64"
+    );
+
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    let piece_length = piece_length as u64;
 
     let pot_piece_length = piece_length.next_power_of_two();
+    let min_piece_length = min_piece_length as u64;
 
     match (
         pot_piece_length > min_piece_length,
-        pot_piece_length < ALL_OPT_MAX_PIECE_LENGTH,
+        pot_piece_length < ALL_OPT_MAX_PIECE_LENGTH.try_into().unwrap(),
     ) {
-        (true, true) => pot_piece_length,
-        (false, _) => min_piece_length,
+        (true, true) => pot_piece_length.try_into().unwrap(),
+        (false, _) => min_piece_length.try_into().unwrap(),
         (_, false) => ALL_OPT_MAX_PIECE_LENGTH,
     }
 }

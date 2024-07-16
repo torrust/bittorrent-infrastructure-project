@@ -9,6 +9,7 @@ use crate::message;
 use crate::message::bits_ext;
 
 /// Message for notifying a peer of our DHT port.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct PortMessage {
     port: u16,
@@ -20,7 +21,7 @@ impl PortMessage {
         PortMessage { port }
     }
 
-    pub fn parse_bytes(_input: (), bytes: Bytes) -> IResult<(), io::Result<PortMessage>> {
+    pub fn parse_bytes(_input: (), bytes: &Bytes) -> IResult<(), io::Result<PortMessage>> {
         match parse_port(bytes.as_ref()) {
             IResult::Done(_, result) => IResult::Done((), Ok(result)),
             IResult::Error(err) => IResult::Error(err),
@@ -28,6 +29,11 @@ impl PortMessage {
         }
     }
 
+    /// Writes bytes into the current [`PortMessage`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,

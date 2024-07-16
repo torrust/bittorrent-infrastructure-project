@@ -57,7 +57,7 @@ fn positive_load_block() {
                 Loop::Continue(((blocking_send, Some(block), None), recv))
             }
             ODiskMessage::BlockLoaded(block) => Loop::Break((opt_pblock.unwrap(), block)),
-            unexpected => panic!("Unexpected Message: {:?}", unexpected),
+            unexpected => panic!("Unexpected Message: {unexpected:?}"),
         },
     );
 

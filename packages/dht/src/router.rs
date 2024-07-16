@@ -16,9 +16,9 @@ const TRANSMISSION_DHT: (&str, u16) = ("dht.transmissionbt.com", 6881);
 pub enum Router {
     /// Bootstrap server maintained by uTorrent.
     uTorrent,
-    /// Bootstrap server maintained by BitTorrent.
+    /// Bootstrap server maintained by `BitTorrent`.
     BitTorrent,
-    /// Bootstrap server maintained by BitComet.
+    /// Bootstrap server maintained by `BitComet`.
     BitComet,
     /// Bootstrap server maintained by Transmission.
     Transmission,
@@ -39,6 +39,11 @@ impl Router {
     // }
     // }
 
+    /// Returns the [`SocketAddrV4`] of this [`Router`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to fund any ipv4 address.
     pub fn ipv4_addr(&self) -> io::Result<SocketAddrV4> {
         let mut addrs = self.socket_addrs()?;
 
@@ -47,6 +52,11 @@ impl Router {
             .ok_or(Error::new(ErrorKind::Other, "No IPv4 Addresses Found For Host"))
     }
 
+    /// Returns the [`SocketAddrV6`] of this [`Router`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to fund any ipv6 address.
     pub fn ipv6_addr(&self) -> io::Result<SocketAddrV6> {
         let mut addrs = self.socket_addrs()?;
 
@@ -55,6 +65,11 @@ impl Router {
             .ok_or(Error::new(ErrorKind::Other, "No IPv6 Addresses Found For Host"))
     }
 
+    /// Returns the [`SocketAddr`] of this [`Router`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to fund a socket address.
     pub fn socket_addr(&self) -> io::Result<SocketAddr> {
         let mut addrs = self.socket_addrs()?;
 

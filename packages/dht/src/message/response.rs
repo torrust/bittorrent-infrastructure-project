@@ -15,6 +15,7 @@ pub const RESPONSE_ARGS_KEY: &str = "r";
 
 // ----------------------------------------------------------------------------//
 
+#[allow(clippy::module_name_repetitions)]
 pub struct ResponseValidate<'a> {
     trans_id: &'a [u8],
 }
@@ -25,6 +26,11 @@ impl<'a> ResponseValidate<'a> {
         ResponseValidate { trans_id }
     }
 
+    /// Validate and deserialize bytes into a `NodeId`
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if to generate the `NodeId`.
     pub fn validate_node_id(&self, node_id: &[u8]) -> DhtResult<NodeId> {
         NodeId::from_hash(node_id).map_err(|_| {
             DhtError::from_kind(DhtErrorKind::InvalidResponse {
@@ -37,7 +43,11 @@ impl<'a> ResponseValidate<'a> {
         })
     }
 
-    /// Validate the given nodes string which should be IPv4 compact
+    /// Validate and deserialize bytes into a `CompactNodeInfo`
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if to generate the `CompactNodeInfo`.
     pub fn validate_nodes<'b>(&self, nodes: &'b [u8]) -> DhtResult<CompactNodeInfo<'b>> {
         CompactNodeInfo::new(nodes).map_err(|_| {
             DhtError::from_kind(DhtErrorKind::InvalidResponse {
@@ -51,6 +61,11 @@ impl<'a> ResponseValidate<'a> {
         })
     }
 
+    /// Validate and deserialize bytes into a `CompactValueInfo`
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if to generate the `CompactValueInfo`.
     pub fn validate_values<'b, B>(&self, values: &'b dyn BListAccess<B::BType>) -> DhtResult<CompactValueInfo<'b, B>>
     where
         B: BRefAccess<BType = B> + Clone,
@@ -87,6 +102,7 @@ impl<'a> BConvertExt for ResponseValidate<'a> {}
 
 // ----------------------------------------------------------------------------//
 
+#[allow(clippy::module_name_repetitions)]
 #[allow(unused)]
 pub enum ExpectedResponse {
     Ping,
@@ -98,6 +114,7 @@ pub enum ExpectedResponse {
     None,
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum ResponseType<'a, B>
 where
@@ -116,10 +133,15 @@ where
     B: BRefAccess<BType = B> + Clone,
     B::BType: PartialEq + Eq + core::hash::Hash + Debug,
 {
+    /// Creates a new `ResponseType` from parts.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to lookup, convert, and generate correct type.
     pub fn from_parts(
         root: &'a dyn BDictAccess<B::BKey, B>,
         trans_id: &'a [u8],
-        rsp_type: ExpectedResponse,
+        rsp_type: &ExpectedResponse,
     ) -> DhtResult<ResponseType<'a, B>>
     where
         B: BRefAccess<BType = B>,

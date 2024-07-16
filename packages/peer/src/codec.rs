@@ -8,6 +8,7 @@ use tokio_io::codec::{Decoder, Encoder};
 use crate::protocol::PeerProtocol;
 
 /// Codec operating over some `PeerProtocol`.
+#[allow(clippy::module_name_repetitions)]
 pub struct PeerProtocolCodec<P> {
     protocol: P,
     max_payload: Option<usize>,

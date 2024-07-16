@@ -10,6 +10,7 @@ use util::convert;
 const SCRAPE_STATS_BYTES: usize = 12;
 
 /// Status for a given `InfoHash`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeStats {
     seeders: i32,
@@ -64,6 +65,7 @@ fn parse_stats(bytes: &[u8]) -> IResult<&[u8], ScrapeStats> {
 // ----------------------------------------------------------------------------//
 
 /// Scrape request sent from the client to the server.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeRequest<'a> {
     hashes: Cow<'a, [u8]>,
@@ -87,6 +89,10 @@ impl<'a> ScrapeRequest<'a> {
     /// Write the `ScrapeRequest` to the given writer.
     ///
     /// Ordering of the written `InfoHash` is identical to that of `ScrapeRequest::iter`().
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -102,6 +108,7 @@ impl<'a> ScrapeRequest<'a> {
     }
 
     /// Iterator over all of the hashes in the request.
+    #[allow(clippy::iter_without_into_iter)]
     #[must_use]
     pub fn iter(&self) -> ScrapeRequestIter<'_> {
         ScrapeRequestIter::new(&self.hashes)
@@ -136,6 +143,7 @@ fn parse_request(bytes: &[u8]) -> IResult<&[u8], ScrapeRequest<'_>> {
 // ----------------------------------------------------------------------------//
 
 /// Scrape response sent from the server to the client.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeResponse<'a> {
     stats: Cow<'a, [u8]>,
@@ -159,6 +167,10 @@ impl<'a> ScrapeResponse<'a> {
     /// Write the `ScrapeResponse` to the given writer.
     ///
     /// Ordering of the written stats is identical to that of `ScrapeResponse::iter`().
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -167,10 +179,14 @@ impl<'a> ScrapeResponse<'a> {
     }
 
     /// Add the scrape statistics to the current response.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if the stats are negative.
     pub fn insert(&mut self, stats: ScrapeStats) {
-        let seeders_bytes = convert::four_bytes_to_array(stats.num_seeders() as u32);
-        let downloads_bytes = convert::four_bytes_to_array(stats.num_downloads() as u32);
-        let leechers_bytes = convert::four_bytes_to_array(stats.num_leechers() as u32);
+        let seeders_bytes = convert::four_bytes_to_array_signed(stats.num_seeders());
+        let downloads_bytes = convert::four_bytes_to_array_signed(stats.num_downloads());
+        let leechers_bytes = convert::four_bytes_to_array_signed(stats.num_leechers());
 
         self.stats.to_mut().reserve(SCRAPE_STATS_BYTES);
 
@@ -183,6 +199,7 @@ impl<'a> ScrapeResponse<'a> {
     ///
     /// Ordering of the status corresponds to the ordering of the `InfoHash` in the
     /// initial request.
+    #[allow(clippy::iter_without_into_iter)]
     #[must_use]
     pub fn iter(&self) -> ScrapeResponseIter<'_> {
         ScrapeResponseIter::new(&self.stats)
@@ -217,6 +234,7 @@ fn parse_response(bytes: &[u8]) -> IResult<&[u8], ScrapeResponse<'_>> {
 // ----------------------------------------------------------------------------//
 
 /// Iterator over a number of `InfoHashes`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeRequestIter<'a> {
     hashes: &'a [u8],
@@ -231,7 +249,7 @@ impl<'a> ScrapeRequestIter<'a> {
         }
     }
 }
-
+#[allow(clippy::copy_iterator)]
 impl<'a> Iterator for ScrapeRequestIter<'a> {
     type Item = InfoHash;
 
@@ -256,6 +274,7 @@ impl<'a> ExactSizeIterator for ScrapeRequestIter<'a> {
 // ----------------------------------------------------------------------------//
 
 /// Iterator over a number of `ScrapeStats`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ScrapeResponseIter<'a> {
     stats: &'a [u8],
@@ -268,6 +287,7 @@ impl<'a> ScrapeResponseIter<'a> {
     }
 }
 
+#[allow(clippy::copy_iterator)]
 impl<'a> Iterator for ScrapeResponseIter<'a> {
     type Item = ScrapeStats;
 

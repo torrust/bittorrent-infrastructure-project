@@ -37,7 +37,10 @@ fn generate_compliant_id(masked_ip_be: u64, num_octets: usize, rand: u8) -> [u8;
 
     let mut node_id = [0u8; bt::NODE_ID_LEN];
     node_id[0] = (crc32c_result >> 24) as u8;
-    node_id[1] = (crc32c_result >> 16) as u8;
+
+    #[allow(clippy::cast_possible_truncation)]
+    let crc32c_result_1 = (crc32c_result >> 16) as u8;
+    node_id[1] = crc32c_result_1;
     node_id[2] = (((crc32c_result >> 8) & 0xF8) as u8) | (rand::random::<u8>() & 0x07);
     for byte in &mut node_id[3..19] {
         *byte = rand::random::<u8>();
@@ -107,6 +110,7 @@ fn is_compliant_addr(masked_ip_be: u64, num_octets: usize, id: NodeId) -> bool {
 ///
 /// We don't have to check the last byte of the node id since we used that byte to generate
 /// the `crc32c_result`.
+#[allow(clippy::cast_possible_truncation)]
 fn is_compliant_id(crc32c_result: u32, id_bytes: [u8; bt::NODE_ID_LEN]) -> bool {
     let mut is_compliant = true;
     is_compliant = is_compliant && (id_bytes[0] == ((crc32c_result >> 24) as u8));

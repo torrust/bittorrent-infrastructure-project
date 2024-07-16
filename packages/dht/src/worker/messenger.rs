@@ -9,6 +9,7 @@ use crate::worker::OneshotTask;
 
 const OUTGOING_MESSAGE_CAPACITY: usize = 4096;
 
+#[allow(clippy::module_name_repetitions)]
 pub fn create_outgoing_messenger(socket: UdpSocket) -> SyncSender<(Vec<u8>, SocketAddr)> {
     let (send, recv) = mpsc::sync_channel::<(Vec<u8>, SocketAddr)>(OUTGOING_MESSAGE_CAPACITY);
 
@@ -43,6 +44,7 @@ fn send_bytes(socket: &UdpSocket, bytes: &[u8], addr: SocketAddr) {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub fn create_incoming_messenger(socket: UdpSocket, send: Sender<OneshotTask>) {
     thread::spawn(move || {
         let mut channel_is_open = true;
@@ -50,13 +52,12 @@ pub fn create_incoming_messenger(socket: UdpSocket, send: Sender<OneshotTask>) {
         while channel_is_open {
             let mut buffer = vec![0u8; 1500];
 
-            match socket.recv_from(&mut buffer) {
-                Ok((size, addr)) => {
-                    buffer.truncate(size);
-                    channel_is_open = send_message(&send, buffer, addr);
-                }
-                Err(_) => warn!("bip_dht: Incoming messenger failed to receive bytes..."),
-            }
+            if let Ok((size, addr)) = socket.recv_from(&mut buffer) {
+                buffer.truncate(size);
+                channel_is_open = send_message(&send, buffer, addr);
+            } else {
+                warn!("bip_dht: Incoming messenger failed to receive bytes...");
+            };
         }
 
         info!("bip_dht: Incoming messenger received a channel hangup, exiting thread...");
