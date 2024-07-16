@@ -15,7 +15,7 @@ jobs:
     steps:
       - id: checkout
         name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - id: setup
         name: Setup Toolchain
@@ -39,71 +39,76 @@ jobs:
 
     strategy:
       matrix:
-        toolchain: [stable, nightly]
+        toolchain: [nightly, stable]
 
     steps:
       - id: checkout
         name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - id: setup
-        name: Setup Toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: nightly
-          components: clippy
-
-      - id: cache
-        name: Enable Workflow Cache
-        uses: Swatinem/rust-cache@v2
-
-      - id: check
-        name: Run Build Checks
-        run: cargo check --workspace --all-targets --all-features
-
-      - id: lint
-        name: Run Lint Checks
-        run: cargo clippy --workspace --all-targets --all-features  -- -D clippy::correctness -D clippy::suspicious
-
-      - id: doc
-        name: Run Documentation Checks
-        run: cargo test --doc
-
-  internal:
-    name: Units and Integrations
-    runs-on: ubuntu-latest
-    needs: check
-
-    strategy:
-      matrix:
-        toolchain: [stable, nightly]
-
-    steps:
-      - id: checkout
-        name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - id: setup
         name: Setup Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.toolchain }}
-          components: llvm-tools-preview
+          components: clippy
+
+      - id: cache
+        name: Enable Workflow Cache
+        uses: Swatinem/rust-cache@v2
+
+      - id: tools
+        name: Install Tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-machete
+
+      - id: check
+        name: Run Build Checks
+        run: cargo check --tests --benches --examples --workspace --all-targets --all-features
+
+      - id: lint
+        name: Run Lint Checks
+        run: cargo clippy --tests --benches --examples --workspace --all-targets --all-features -- -D clippy::correctness -D clippy::suspicious -D clippy::complexity -D clippy::perf -D clippy::style -D clippy::pedantic
+
+      - id: docs
+        name: Lint Documentation
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --no-deps --bins --examples --workspace --all-features
+
+      - id: deps
+        name: Check Unused Dependencies
+        run: cargo machete --with-metadata
+
+  unit:
+    name: Units
+    runs-on: ubuntu-latest
+    needs: check
+
+    strategy:
+      matrix:
+        toolchain: [nightly, stable]
+
+    steps:
+      - id: checkout
+        name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - id: setup
+        name: Setup Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
 
       - id: cache
         name: Enable Job Cache
         uses: Swatinem/rust-cache@v2
 
+      - id: test-docs
+        name: Run Documentation Tests
+        run: cargo test --doc
+
       - id: test
-        name: Run Code Tests
-        run: cargo test --workspace --all-targets --all-features
-
-      - id: tools
-        name: Install Coverage Tools
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-llvm-cov, cargo-nextest
-
-      - id: coverage
-        name: Generate Coverage Report
-        run: cargo llvm-cov nextest --workspace --all-targets --all-features
+        name: Run Unit Tests
+        run: cargo test --tests --benches --examples --workspace --all-targets --all-features

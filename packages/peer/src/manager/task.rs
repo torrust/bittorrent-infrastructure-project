@@ -26,6 +26,7 @@ enum PeerError {
     PeerNoHeartbeat,
 }
 
+#[allow(dead_code)]
 enum MergedError<A, B, C> {
     Peer(PeerError),
     // Fake error types (used to stash future "futures" into an error type to be
@@ -37,6 +38,7 @@ enum MergedError<A, B, C> {
 
 //----------------------------------------------------------------------------//
 
+#[allow(clippy::too_many_lines)]
 pub fn run_peer<P>(
     peer: P,
     info: PeerInfo,
@@ -140,7 +142,7 @@ where
                                     Err((PeerError::ManagerDisconnect, _)) => {
                                         Err(MergedError::Peer(PeerError::ManagerDisconnect))
                                     }
-                                    Err((PeerError::PeerDisconnect, merged_stream)) => Ok((
+                                    Err((PeerError::PeerDisconnect | PeerError::PeerNoHeartbeat, merged_stream)) => Ok((
                                         merged_stream,
                                         None,
                                         None,
@@ -152,13 +154,6 @@ where
                                         None,
                                         None,
                                         Some(OPeerManagerMessage::PeerError(info, err)),
-                                        false,
-                                    )),
-                                    Err((PeerError::PeerNoHeartbeat, merged_stream)) => Ok((
-                                        merged_stream,
-                                        None,
-                                        None,
-                                        Some(OPeerManagerMessage::PeerDisconnect(info)),
                                         false,
                                     )),
                                 };

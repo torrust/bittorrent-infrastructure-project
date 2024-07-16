@@ -10,7 +10,7 @@ pub mod revelation;
 mod extended;
 mod uber;
 
-pub use uber::{IUberMessage, OUberMessage, UberModule, UberModuleBuilder};
+pub use uber::{DiscoveryTrait, IUberMessage, OUberMessage, UberModule, UberModuleBuilder};
 
 pub use crate::extended::{ExtendedListener, ExtendedPeerInfo, IExtendedMessage, OExtendedMessage};
 

@@ -16,6 +16,7 @@ use crate::ControlMessage;
 
 /// Revelation module that will honestly report any pieces we have to peers.
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default)]
 pub struct HonestRevealModule {
     torrents: HashMap<InfoHash, PeersInfo>,
@@ -85,80 +86,73 @@ impl HonestRevealModule {
 
         let out_bytes = &mut self.out_bytes;
         let out_queue = &mut self.out_queue;
-        self.torrents
-            .get_mut(&info_hash)
-            .map(|peers_info| {
-                // Add the peer to our list, so we send have messages to them
-                peers_info.peers.insert(peer);
+        let Some(peers_info) = self.torrents.get_mut(&info_hash) else {
+            return Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                hash: info_hash,
+            })));
+        };
 
-                // If our bitfield has any pieces in it, send the bitfield, otherwise, don't send it
-                if !peers_info.status.is_empty() {
-                    // Get our current bitfield, write it to our shared bytes
-                    let bitfield_slice = peers_info.status.get_ref().storage();
-                    // Bitfield stores index 0 at bit 7 from the left, we want index 0 to be at bit 0 from the left
-                    insert_reversed_bits(out_bytes, bitfield_slice);
+        // Add the peer to our list, so we send have messages to them
+        peers_info.peers.insert(peer);
 
-                    // Split off what we wrote, send this in the message, will be re-used on drop
-                    let bitfield_bytes = out_bytes.split_off(0).freeze();
-                    let bitfield = BitFieldMessage::new(bitfield_bytes);
+        // If our bitfield has any pieces in it, send the bitfield, otherwise, don't send it
+        if !peers_info.status.is_empty() {
+            // Get our current bitfield, write it to our shared bytes
+            let bitfield_slice = peers_info.status.get_ref().storage();
+            // Bitfield stores index 0 at bit 7 from the left, we want index 0 to be at bit 0 from the left
+            insert_reversed_bits(out_bytes, bitfield_slice);
 
-                    // Enqueue the bitfield message so that we send it to the peer
-                    out_queue.push_back(ORevealMessage::SendBitField(peer, bitfield));
-                }
+            // Split off what we wrote, send this in the message, will be re-used on drop
+            let bitfield_bytes = out_bytes.split_off(0).freeze();
+            let bitfield = BitFieldMessage::new(bitfield_bytes);
 
-                Ok(AsyncSink::Ready)
-            })
-            .unwrap_or_else(|| {
-                Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
-                    hash: info_hash,
-                })))
-            })
+            // Enqueue the bitfield message so that we send it to the peer
+            out_queue.push_back(ORevealMessage::SendBitField(peer, bitfield));
+        }
+
+        Ok(AsyncSink::Ready)
     }
 
     fn remove_peer(&mut self, peer: PeerInfo) -> StartSend<IRevealMessage, Box<RevealError>> {
         let info_hash = *peer.hash();
 
-        self.torrents
-            .get_mut(&info_hash)
-            .map(|peers_info| {
-                peers_info.peers.remove(&peer);
+        let Some(peers_info) = self.torrents.get_mut(&info_hash) else {
+            return Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                hash: info_hash,
+            })));
+        };
 
-                Ok(AsyncSink::Ready)
-            })
-            .unwrap_or_else(|| {
-                Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
-                    hash: info_hash,
-                })))
-            })
+        peers_info.peers.remove(&peer);
+
+        Ok(AsyncSink::Ready)
     }
 
     fn insert_piece(&mut self, hash: InfoHash, index: u64) -> StartSend<IRevealMessage, Box<RevealError>> {
         let out_queue = &mut self.out_queue;
-        self.torrents
-            .get_mut(&hash)
-            .map(|peers_info| {
-                if index as usize >= peers_info.num_pieces {
-                    Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidPieceOutOfRange {
-                        index,
-                        hash,
-                    })))
-                } else {
-                    // Queue up all have messages
-                    for peer in &peers_info.peers {
-                        out_queue.push_back(ORevealMessage::SendHave(*peer, HaveMessage::new(index as u32)));
-                    }
+        let Some(peers_info) = self.torrents.get_mut(&hash) else {
+            return Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
+                hash,
+            })));
+        };
 
-                    // Insert into bitfield
-                    peers_info.status.insert(index as usize);
+        let index: usize = index.try_into().unwrap();
 
-                    Ok(AsyncSink::Ready)
-                }
-            })
-            .unwrap_or_else(|| {
-                Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidMetainfoNotExists {
-                    hash,
-                })))
-            })
+        if index >= peers_info.num_pieces {
+            Err(Box::new(RevealError::from_kind(RevealErrorKind::InvalidPieceOutOfRange {
+                index: index.try_into().unwrap(),
+                hash,
+            })))
+        } else {
+            // Queue up all have messages
+            for peer in &peers_info.peers {
+                out_queue.push_back(ORevealMessage::SendHave(*peer, HaveMessage::new(index.try_into().unwrap())));
+            }
+
+            // Insert into bitfield
+            peers_info.status.insert(index);
+
+            Ok(AsyncSink::Ready)
+        }
     }
 
     //------------------------------------------------------//
@@ -298,11 +292,8 @@ mod tests {
             .send(IRevealMessage::Control(ControlMessage::PeerConnected(peer_info)))
             .unwrap();
 
-        let (info, bitfield) = match block_recv.next().unwrap().unwrap() {
-            ORevealMessage::SendBitField(info, bitfield) => (info, bitfield),
-            _ => {
-                panic!("Received Unexpected Message")
-            }
+        let ORevealMessage::SendBitField(info, bitfield) = block_recv.next().unwrap().unwrap() else {
+            panic!("Received Unexpected Message")
         };
 
         assert_eq!(peer_info, info);
@@ -330,11 +321,8 @@ mod tests {
             .send(IRevealMessage::Control(ControlMessage::PeerConnected(peer_info)))
             .unwrap();
 
-        let (info, bitfield) = match block_recv.next().unwrap().unwrap() {
-            ORevealMessage::SendBitField(info, bitfield) => (info, bitfield),
-            _ => {
-                panic!("Received Unexpected Message")
-            }
+        let ORevealMessage::SendBitField(info, bitfield) = block_recv.next().unwrap().unwrap() else {
+            panic!("Received Unexpected Message")
         };
 
         assert_eq!(peer_info, info);

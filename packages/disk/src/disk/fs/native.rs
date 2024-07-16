@@ -8,6 +8,7 @@ use crate::disk::fs::FileSystem;
 // TODO: This should be sanitizing paths passed into it so they don't escape the base directory!!!
 
 /// File that exists on disk.
+#[allow(clippy::module_name_repetitions)]
 pub struct NativeFile {
     file: File,
 }
@@ -20,6 +21,7 @@ impl NativeFile {
 }
 
 /// File system that maps to the OS file system.
+#[allow(clippy::module_name_repetitions)]
 pub struct NativeFileSystem {
     current_dir: PathBuf,
 }
@@ -84,7 +86,12 @@ where
         Some(parent_dir) => {
             fs::create_dir_all(parent_dir)?;
 
-            OpenOptions::new().read(true).write(true).create(true).open(&path)
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .truncate(false)
+                .open(&path)
         }
         None => Err(io::Error::new(io::ErrorKind::InvalidInput, "File Path Has No Paren't")),
     }

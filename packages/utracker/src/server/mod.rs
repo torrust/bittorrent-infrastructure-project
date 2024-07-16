@@ -12,12 +12,17 @@ pub mod handler;
 /// Tracker server that executes responses asynchronously.
 ///
 /// Server will shutdown on drop.
+#[allow(clippy::module_name_repetitions)]
 pub struct TrackerServer {
     send: Sender<DispatchMessage>,
 }
 
 impl TrackerServer {
     /// Run a new `TrackerServer`.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to run the server.
     pub fn run<H>(bind: SocketAddr, handler: H) -> io::Result<TrackerServer>
     where
         H: ServerHandler + 'static,

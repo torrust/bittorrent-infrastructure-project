@@ -1,5 +1,5 @@
 /// Result type for a `LengthError`.
-pub type LengthResult<T> = Result<T, LengthError>;
+pub type LengthResult<T> = Result<T, Error>;
 
 /// Enumerates a set of length related errors.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
@@ -14,17 +14,17 @@ pub enum LengthErrorKind {
 
 /// Generic length error for various types.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct LengthError {
+pub struct Error {
     kind: LengthErrorKind,
     length: usize,
     index: Option<usize>,
 }
 
-impl LengthError {
+impl Error {
     /// Create a `LengthError`.
     #[must_use]
-    pub fn new(kind: LengthErrorKind, length: usize) -> LengthError {
-        LengthError {
+    pub fn new(kind: LengthErrorKind, length: usize) -> Error {
+        Error {
             kind,
             length,
             index: None,
@@ -33,8 +33,8 @@ impl LengthError {
 
     /// Create a `LengthError` for a given element index.
     #[must_use]
-    pub fn with_index(kind: LengthErrorKind, length: usize, index: usize) -> LengthError {
-        LengthError {
+    pub fn with_index(kind: LengthErrorKind, length: usize, index: usize) -> Error {
+        Error {
             kind,
             length,
             index: Some(index),

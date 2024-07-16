@@ -36,7 +36,7 @@ impl<I, O> Stream for ConnectedChannel<I, O> {
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         self.recv
             .poll()
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Receiver Failed To Receive"))
+            .map_err(|()| io::Error::new(io::ErrorKind::Other, "Receiver Failed To Receive"))
     }
 }
 

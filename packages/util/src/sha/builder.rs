@@ -4,6 +4,7 @@ use crypto::sha1::Sha1;
 use crate::sha::{self, ShaHash};
 
 /// Building `ShaHash` objects by adding byte slices to the hash.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 pub struct ShaHashBuilder {
     sha: Sha1,

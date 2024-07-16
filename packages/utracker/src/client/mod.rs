@@ -22,6 +22,7 @@ pub mod error;
 const DEFAULT_CAPACITY: usize = 4096;
 
 /// Request made by the `TrackerClient`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub enum ClientRequest {
     Announce(InfoHash, ClientState),
@@ -29,6 +30,7 @@ pub enum ClientRequest {
 }
 
 /// Response metadata from a request.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct ClientMetadata {
     token: ClientToken,
@@ -55,6 +57,7 @@ impl ClientMetadata {
 }
 
 /// Response received by the `TrackerClient`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub enum ClientResponse {
     /// Announce response.
@@ -96,6 +99,7 @@ impl ClientResponse {
 /// Tracker client that executes requests asynchronously.
 ///
 /// Client will shutdown on drop.
+#[allow(clippy::module_name_repetitions)]
 pub struct TrackerClient {
     send: Sender<DispatchMessage>,
     // We are in charge of incrementing this, background worker is in charge of decrementing
@@ -105,6 +109,10 @@ pub struct TrackerClient {
 
 impl TrackerClient {
     /// Create a new `TrackerClient`.
+    ///
+    /// # Errors
+    ///
+    /// It would return a IO error if unable build a new client.
     pub fn new<H>(bind: SocketAddr, handshaker: H) -> io::Result<TrackerClient>
     where
         H: Sink + DiscoveryInfo + Send + 'static,
@@ -116,6 +124,14 @@ impl TrackerClient {
     /// Create a new `TrackerClient` with the given message capacity.
     ///
     /// Panics if capacity == `usize::max_value`().
+    ///
+    /// # Errors
+    ///
+    /// It would return a IO error if unable build a new client.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if the desired capacity is too large.
     pub fn with_capacity<H>(bind: SocketAddr, handshaker: H, capacity: usize) -> io::Result<TrackerClient>
     where
         H: Sink + DiscoveryInfo + Send + 'static,
@@ -141,6 +157,10 @@ impl TrackerClient {
     /// Execute an asynchronous request to the given tracker.
     ///
     /// If the maximum number of requests are currently in progress, return None.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to send request message.
     pub fn request(&mut self, addr: SocketAddr, request: ClientRequest) -> Option<ClientToken> {
         if self.limiter.can_initiate() {
             let token = self.generator.generate();
@@ -166,6 +186,7 @@ impl Drop for TrackerClient {
 // ----------------------------------------------------------------------------//
 
 /// Associates a `ClientRequest` with a `ClientResponse`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ClientToken(u32);
 

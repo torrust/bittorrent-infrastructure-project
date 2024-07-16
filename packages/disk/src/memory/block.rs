@@ -6,6 +6,7 @@ use util::bt::{self, InfoHash};
 //----------------------------------------------------------------------------//
 
 /// `BlockMetadata` which tracks metadata associated with a `Block` of memory.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
 pub struct BlockMetadata {
     info_hash: InfoHash,
@@ -99,6 +100,7 @@ impl Deref for Block {
 //----------------------------------------------------------------------------//
 
 /// `BlockMut` of mutable memory.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct BlockMut {
     metadata: BlockMetadata,

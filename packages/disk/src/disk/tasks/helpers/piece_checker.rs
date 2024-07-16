@@ -31,7 +31,7 @@ where
             let mut piece_checker = PieceChecker::with_state(fs, info_dict, &mut checker_state);
 
             piece_checker.validate_files_sizes()?;
-            piece_checker.fill_checker_state()?;
+            piece_checker.fill_checker_state();
             piece_checker.calculate_diff()?;
         }
 
@@ -52,25 +52,26 @@ where
     pub fn calculate_diff(self) -> io::Result<()> {
         let piece_length = self.info_dict.piece_length();
         // TODO: Use Block Allocator
-        let mut piece_buffer = vec![0u8; piece_length as usize];
+        let mut piece_buffer = vec![0u8; piece_length.try_into().unwrap()];
 
         let info_dict = self.info_dict;
         let piece_accessor = PieceAccessor::new(&self.fs, self.info_dict);
 
-        self.checker_state.run_with_whole_pieces(piece_length as usize, |message| {
-            piece_accessor.read_piece(&mut piece_buffer[..message.block_length()], message)?;
+        self.checker_state
+            .run_with_whole_pieces(piece_length.try_into().unwrap(), |message| {
+                piece_accessor.read_piece(&mut piece_buffer[..message.block_length()], message)?;
 
-            let calculated_hash = InfoHash::from_bytes(&piece_buffer[..message.block_length()]);
-            let expected_hash = InfoHash::from_hash(
-                info_dict
-                    .pieces()
-                    .nth(message.piece_index() as usize)
-                    .expect("bip_peer: Piece Checker Failed To Retrieve Expected Hash"),
-            )
-            .expect("bip_peer: Wrong Length Of Expected Hash Received");
+                let calculated_hash = InfoHash::from_bytes(&piece_buffer[..message.block_length()]);
+                let expected_hash = InfoHash::from_hash(
+                    info_dict
+                        .pieces()
+                        .nth(message.piece_index().try_into().unwrap())
+                        .expect("bip_peer: Piece Checker Failed To Retrieve Expected Hash"),
+                )
+                .expect("bip_peer: Wrong Length Of Expected Hash Received");
 
-            Ok(calculated_hash == expected_hash)
-        })?;
+                Ok(calculated_hash == expected_hash)
+            })?;
 
         Ok(())
     }
@@ -79,7 +80,7 @@ where
     ///
     /// This is done once when a torrent file is added to see if we have any good pieces that
     /// the caller can use to skip (if the torrent was partially downloaded before).
-    fn fill_checker_state(&mut self) -> io::Result<()> {
+    fn fill_checker_state(&mut self) {
         let piece_length = self.info_dict.piece_length();
         let total_bytes: u64 = self.info_dict.files().map(metainfo::File::length).sum();
 
@@ -87,16 +88,17 @@ where
         let last_piece_size = last_piece_size(self.info_dict);
 
         for piece_index in 0..full_pieces {
-            self.checker_state
-                .add_pending_block(BlockMetadata::with_default_hash(piece_index, 0, piece_length as usize));
+            self.checker_state.add_pending_block(BlockMetadata::with_default_hash(
+                piece_index,
+                0,
+                piece_length.try_into().unwrap(),
+            ));
         }
 
         if last_piece_size != 0 {
             self.checker_state
                 .add_pending_block(BlockMetadata::with_default_hash(full_pieces, 0, last_piece_size));
         }
-
-        Ok(())
     }
 
     /// Validates the file sizes for the given torrent file and block allocates them if they do not exist.
@@ -145,12 +147,13 @@ fn last_piece_size(info_dict: &Info) -> usize {
     let piece_length = info_dict.piece_length();
     let total_bytes: u64 = info_dict.files().map(metainfo::File::length).sum();
 
-    (total_bytes % piece_length) as usize
+    (total_bytes % piece_length).try_into().unwrap()
 }
 
 // ----------------------------------------------------------------------------//
 
 /// Stores state for the `PieceChecker` between invocations.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct PieceCheckerState {
     new_states: Vec<PieceState>,
@@ -265,12 +268,12 @@ impl PieceCheckerState {
 /// True if the piece is ready to be hashed and checked (full) as good or not.
 fn piece_is_complete(total_blocks: usize, last_block_size: usize, piece_length: usize, messages: &[BlockMetadata]) -> bool {
     let is_single_message = messages.len() == 1;
-    let is_piece_length = messages.get(0).is_some_and(|message| message.block_length() == piece_length);
+    let is_piece_length = messages.first().is_some_and(|message| message.block_length() == piece_length);
     let is_last_block = messages
-        .get(0)
+        .first()
         .is_some_and(|message| message.piece_index() == (total_blocks - 1) as u64);
     let is_last_block_length = messages
-        .get(0)
+        .first()
         .is_some_and(|message| message.block_length() == last_block_size);
 
     is_single_message && (is_piece_length || (is_last_block && is_last_block_length))
@@ -299,12 +302,22 @@ fn merge_piece_messages(message_a: &BlockMetadata, message_b: &BlockMetadata) ->
         let end_to_take = cmp::max(end_a, end_b);
         let length = end_to_take - start_a;
 
-        Some(BlockMetadata::new(info_hash, piece_index, start_a, length as usize))
+        Some(BlockMetadata::new(
+            info_hash,
+            piece_index,
+            start_a,
+            length.try_into().unwrap(),
+        ))
     } else if start_a >= start_b && start_a <= end_b {
         let end_to_take = cmp::max(end_a, end_b);
         let length = end_to_take - start_b;
 
-        Some(BlockMetadata::new(info_hash, piece_index, start_b, length as usize))
+        Some(BlockMetadata::new(
+            info_hash,
+            piece_index,
+            start_b,
+            length.try_into().unwrap(),
+        ))
     } else {
         None
     }

@@ -46,14 +46,19 @@ mod null;
 mod prot_ext;
 mod standard;
 
+#[allow(clippy::module_name_repetitions)]
 pub use crate::message::bits_ext::{BitsExtensionMessage, ExtendedMessage, ExtendedMessageBuilder, ExtendedType, PortMessage};
+#[allow(clippy::module_name_repetitions)]
 pub use crate::message::null::NullProtocolMessage;
+#[allow(clippy::module_name_repetitions)]
 pub use crate::message::prot_ext::{
     PeerExtensionProtocolMessage, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
 };
+#[allow(clippy::module_name_repetitions)]
 pub use crate::message::standard::{BitFieldIter, BitFieldMessage, CancelMessage, HaveMessage, PieceMessage, RequestMessage};
 
 /// Enumeration of messages for `PeerWireProtocol`.
+#[allow(clippy::module_name_repetitions)]
 pub enum PeerWireProtocolMessage<P>
 where
     P: PeerProtocol,
@@ -62,7 +67,7 @@ where
     KeepAlive,
     /// Message to tell a peer we will not be responding to their requests.
     ///
-    /// Peers may wish to send *Interested and/or KeepAlive messages.
+    /// Peers may wish to send *Interested and/or `KeepAlive` messages.
     Choke,
     /// Message to tell a peer we will now be responding to their requests.
     UnChoke,
@@ -72,7 +77,7 @@ where
     UnInterested,
     /// Message to tell a peer we have some (validated) piece.
     Have(HaveMessage),
-    /// Message to effectively send multiple HaveMessages in a single message.
+    /// Message to effectively send multiple `HaveMessages` in a single message.
     ///
     /// This message is only valid when the connection is initiated with the peer.
     BitField(BitFieldMessage),
@@ -108,6 +113,11 @@ impl<P> PeerWireProtocolMessage<P>
 where
     P: PeerProtocol,
 {
+    /// Bytes Needed to encode Byte Slice
+    ///
+    /// # Errors
+    ///
+    /// This function will not return an error.
     pub fn bytes_needed(bytes: &[u8]) -> io::Result<Option<usize>> {
         match be_u32(bytes) {
             // We need 4 bytes for the length, plus whatever the length is...
@@ -116,9 +126,14 @@ where
         }
     }
 
+    /// Parse Bytes into a [`PeerWireProtocolMessage`]
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to parse bytes for supplied protocol.
     pub fn parse_bytes(bytes: Bytes, ext_protocol: &mut P) -> io::Result<PeerWireProtocolMessage<P>> {
         match parse_message(bytes, ext_protocol) {
-            IResult::Done(_, result) => result,
+            IResult::Done((), result) => result,
             _ => Err(io::Error::new(
                 io::ErrorKind::Other,
                 "Failed To Parse PeerWireProtocolMessage",
@@ -126,6 +141,11 @@ where
         }
     }
 
+    /// Write out current states as bytes.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write bytes.
     pub fn write_bytes<W>(&self, writer: W, ext_protocol: &mut P) -> io::Result<()>
     where
         W: Write,
@@ -197,12 +217,7 @@ fn parse_message_length(bytes: &[u8]) -> usize {
 
 /// Panics if the conversion from a u32 to usize is not valid.
 fn u32_to_usize(value: u32) -> usize {
-    assert!(
-        value as usize as u32 == value,
-        "bip_peer: Cannot Convert u32 To usize, usize Is Less Than 32-Bits"
-    );
-
-    value as usize
+    value.try_into().expect("it should be able to convert from u32 to usize")
 }
 
 // Since these messages may come over a stream oriented protocol, if a message is incomplete
@@ -235,7 +250,7 @@ where
                 Ok(PeerWireProtocolMessage::UnInterested)
             ) |
             (HAVE_MESSAGE_LEN, Some(HAVE_MESSAGE_ID)) => map!(
-                call!(HaveMessage::parse_bytes, bytes.split_off(HEADER_LEN)),
+                call!(HaveMessage::parse_bytes, &bytes.split_off(HEADER_LEN)),
                 |res_have| res_have.map(|have| PeerWireProtocolMessage::Have(have))
             ) |
             (message_len, Some(BITFIELD_MESSAGE_ID)) => map!(
@@ -243,15 +258,15 @@ where
                 |res_bitfield| res_bitfield.map(|bitfield| PeerWireProtocolMessage::BitField(bitfield))
             ) |
             (REQUEST_MESSAGE_LEN, Some(REQUEST_MESSAGE_ID)) => map!(
-                call!(RequestMessage::parse_bytes, bytes.split_off(HEADER_LEN)),
+                call!(RequestMessage::parse_bytes, &bytes.split_off(HEADER_LEN)),
                 |res_request| res_request.map(|request| PeerWireProtocolMessage::Request(request))
             ) |
             (message_len, Some(PIECE_MESSAGE_ID)) => map!(
-                call!(PieceMessage::parse_bytes, bytes.split_off(HEADER_LEN), message_len - 1),
+                call!(PieceMessage::parse_bytes, &bytes.split_off(HEADER_LEN), message_len - 1),
                 |res_piece| res_piece.map(|piece| PeerWireProtocolMessage::Piece(piece))
             ) |
             (CANCEL_MESSAGE_LEN, Some(CANCEL_MESSAGE_ID)) => map!(
-                call!(CancelMessage::parse_bytes, bytes.split_off(HEADER_LEN)),
+                call!(CancelMessage::parse_bytes, &bytes.split_off(HEADER_LEN)),
                 |res_cancel| res_cancel.map(|cancel| PeerWireProtocolMessage::Cancel(cancel))
             )
         )) | map!(call!(BitsExtensionMessage::parse_bytes, bytes.clone()), |res_bits_ext| {

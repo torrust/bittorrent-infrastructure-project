@@ -28,6 +28,7 @@ use crate::message::initiate::InitiateMessage;
 use crate::transport::Transport;
 
 /// Build configuration for `Handshaker` object creation.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone)]
 pub struct HandshakerBuilder {
     bind: SocketAddr,
@@ -51,8 +52,8 @@ impl Default for HandshakerBuilder {
             bind,
             port: Default::default(),
             pid,
-            ext: Default::default(),
-            config: Default::default(),
+            ext: Extensions::default(),
+            config: HandshakerConfig::default(),
         }
     }
 }
@@ -87,7 +88,7 @@ impl HandshakerBuilder {
     ///
     /// Defaults to a random SHA-1 hash; official clients should use an encoding scheme.
     ///
-    /// See http://www.bittorrent.org/beps/bep_0020.html.
+    /// See [BEP 0020](http://www.bittorrent.org/beps/bep_0020.html).
     pub fn with_peer_id(&mut self, peer_id: PeerId) -> &mut HandshakerBuilder {
         self.pid = peer_id;
 
@@ -111,7 +112,11 @@ impl HandshakerBuilder {
     }
 
     /// Build a `Handshaker` over the given `Transport` with a `Remote` instance.
-    pub fn build<T>(&self, transport: T, handle: Handle) -> io::Result<Handshaker<T::Socket>>
+    ///
+    /// # Errors
+    ///
+    /// Returns a IO error if unable to build.
+    pub fn build<T>(&self, transport: T, handle: &Handle) -> io::Result<Handshaker<T::Socket>>
     where
         T: Transport + 'static,
     {
@@ -152,11 +157,11 @@ impl<S> Handshaker<S>
 where
     S: AsyncRead + AsyncWrite + 'static,
 {
-    fn with_builder<T>(builder: &HandshakerBuilder, transport: T, handle: Handle) -> io::Result<Handshaker<T::Socket>>
+    fn with_builder<T>(builder: &HandshakerBuilder, transport: T, handle: &Handle) -> io::Result<Handshaker<T::Socket>>
     where
         T: Transport<Socket = S> + 'static,
     {
-        let listener = transport.listen(&builder.bind, &handle)?;
+        let listener = transport.listen(&builder.bind, handle)?;
 
         // Resolve our "real" public port
         let open_port = if builder.port == 0 {
@@ -179,15 +184,15 @@ where
             initiator::initiator_handler,
             hand_send.clone(),
             (transport, filters.clone(), handle.clone(), initiate_timer),
-            &handle,
+            handle,
         );
-        handler::loop_handler(listener, ListenerHandler::new, hand_send, filters.clone(), &handle);
+        handler::loop_handler(listener, ListenerHandler::new, hand_send, filters.clone(), handle);
         handler::loop_handler(
             hand_recv.map(Result::Ok).buffer_unordered(100),
             handshaker::execute_handshake,
             sock_send,
             (builder.ext, builder.pid, filters.clone(), handshake_timer),
-            &handle,
+            handle,
         );
 
         let sink = HandshakerSink::new(addr_send, open_port, builder.pid, filters);
@@ -255,6 +260,7 @@ impl<S> HandshakeFilters for Handshaker<S> {
 //----------------------------------------------------------------------------------//
 
 /// `Sink` portion of the `Handshaker` for initiating handshakes.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 pub struct HandshakerSink {
     send: Sender<InitiateMessage>,
@@ -309,7 +315,7 @@ impl HandshakeFilters for HandshakerSink {
     where
         F: HandshakeFilter + PartialEq + Eq + Send + Sync + 'static,
     {
-        self.filters.remove_filter(filter);
+        self.filters.remove_filter(&filter);
     }
 
     fn clear_filters(&self) {
@@ -320,6 +326,7 @@ impl HandshakeFilters for HandshakerSink {
 //----------------------------------------------------------------------------------//
 
 /// `Stream` portion of the `Handshaker` for completed handshakes.
+#[allow(clippy::module_name_repetitions)]
 pub struct HandshakerStream<S> {
     recv: Receiver<CompleteMessage<S>>,
 }

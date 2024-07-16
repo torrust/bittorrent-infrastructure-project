@@ -1,5 +1,5 @@
+use std::io;
 use std::io::Write;
-use std::{io, u8};
 
 use nom::{be_u8, call, do_parse, error_node_position, error_position, map, switch, take, value, IResult};
 
@@ -21,6 +21,10 @@ impl Protocol {
     }
 
     /// Write the `Protocol` out to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -30,6 +34,7 @@ impl Protocol {
             Protocol::Custom(prot) => (prot.len(), &prot[..]),
         };
 
+        #[allow(clippy::cast_possible_truncation)]
         writer.write_all(&[len as u8][..])?;
         writer.write_all(bytes)?;
 

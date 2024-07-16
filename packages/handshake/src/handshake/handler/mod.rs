@@ -30,6 +30,7 @@ enum LoopError<D> {
 /// Create loop for feeding the handler with the items coming from the stream, and forwarding the result to the sink.
 ///
 /// If the stream is used up, or an error is propagated from any of the elements, the loop will terminate.
+#[allow(clippy::module_name_repetitions)]
 pub fn loop_handler<M, H, K, F, R, C>(stream: M, handler: H, sink: K, context: C, handle: &Handle)
 where
     M: Stream + 'static,

@@ -1,6 +1,7 @@
 use util::bt::PeerId;
 
 /// Trait for advertisement information that other peers can discover.
+#[allow(clippy::module_name_repetitions)]
 pub trait DiscoveryInfo {
     /// Retrieve our public port that we advertise to others.
     fn port(&self) -> u16;

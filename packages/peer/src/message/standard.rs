@@ -18,10 +18,15 @@ impl HaveMessage {
         HaveMessage { piece_index }
     }
 
-    pub fn parse_bytes(_input: (), bytes: Bytes) -> IResult<(), io::Result<HaveMessage>> {
+    pub fn parse_bytes(_input: (), bytes: &Bytes) -> IResult<(), io::Result<HaveMessage>> {
         throwaway_input!(parse_have(bytes.as_ref()))
     }
 
+    /// Write-out current state as bytes.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -71,12 +76,25 @@ impl BitFieldMessage {
         }
     }
 
+    /// Write-out current state as bytes.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write bytes.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the the length is too long.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
     {
-        let actual_length = (1 + self.bytes.len()) as u32;
-        message::write_length_id_pair(&mut writer, actual_length, Some(message::BITFIELD_MESSAGE_ID))?;
+        let actual_length = self.bytes.len() + 1;
+        message::write_length_id_pair(
+            &mut writer,
+            actual_length.try_into().unwrap(),
+            Some(message::BITFIELD_MESSAGE_ID),
+        )?;
 
         writer.write_all(&self.bytes)
     }
@@ -85,6 +103,7 @@ impl BitFieldMessage {
         &self.bytes
     }
 
+    #[allow(clippy::iter_without_into_iter)]
     pub fn iter(&self) -> BitFieldIter {
         BitFieldIter::new(self.bytes.clone())
     }
@@ -112,7 +131,7 @@ impl Iterator for BitFieldIter {
 
         let opt_byte = self.bytes.get(byte_in_bytes).copied();
         opt_byte.and_then(|byte| {
-            let have_message = HaveMessage::new(self.cur_bit as u32);
+            let have_message = HaveMessage::new(self.cur_bit.try_into().unwrap());
             self.cur_bit += 1;
 
             if (byte << bit_in_byte) >> 7 == 1 {
@@ -144,10 +163,19 @@ impl RequestMessage {
         }
     }
 
-    pub fn parse_bytes(_input: (), bytes: Bytes) -> IResult<(), io::Result<RequestMessage>> {
+    pub fn parse_bytes(_input: (), bytes: &Bytes) -> IResult<(), io::Result<RequestMessage>> {
         throwaway_input!(parse_request(bytes.as_ref()))
     }
 
+    /// Write-out current state as bytes.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write bytes.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the `block_length` is too large.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -156,7 +184,7 @@ impl RequestMessage {
 
         writer.write_u32::<BigEndian>(self.piece_index)?;
         writer.write_u32::<BigEndian>(self.block_offset)?;
-        writer.write_u32::<BigEndian>(self.block_length as u32)
+        writer.write_u32::<BigEndian>(self.block_length.try_into().unwrap())
     }
 
     #[must_use]
@@ -204,16 +232,29 @@ impl PieceMessage {
         }
     }
 
-    pub fn parse_bytes(_input: (), bytes: Bytes, len: u32) -> IResult<(), io::Result<PieceMessage>> {
-        throwaway_input!(parse_piece(&bytes, len))
+    pub fn parse_bytes(_input: (), bytes: &Bytes, len: u32) -> IResult<(), io::Result<PieceMessage>> {
+        throwaway_input!(parse_piece(bytes, len))
     }
 
+    /// Write-out current state as bytes.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write bytes.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the block length is too large.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
     {
-        let actual_length = (9 + self.block_length()) as u32;
-        message::write_length_id_pair(&mut writer, actual_length, Some(message::PIECE_MESSAGE_ID))?;
+        let actual_length = self.block_length() + 9;
+        message::write_length_id_pair(
+            &mut writer,
+            actual_length.try_into().unwrap(),
+            Some(message::PIECE_MESSAGE_ID),
+        )?;
 
         writer.write_u32::<BigEndian>(self.piece_index)?;
         writer.write_u32::<BigEndian>(self.block_offset)?;
@@ -268,10 +309,19 @@ impl CancelMessage {
         }
     }
 
-    pub fn parse_bytes(_input: (), bytes: Bytes) -> IResult<(), io::Result<CancelMessage>> {
+    pub fn parse_bytes(_input: (), bytes: &Bytes) -> IResult<(), io::Result<CancelMessage>> {
         throwaway_input!(parse_cancel(bytes.as_ref()))
     }
 
+    /// Write-out current state as bytes.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write bytes.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the block length is too large.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -280,7 +330,7 @@ impl CancelMessage {
 
         writer.write_u32::<BigEndian>(self.piece_index)?;
         writer.write_u32::<BigEndian>(self.block_offset)?;
-        writer.write_u32::<BigEndian>(self.block_length as u32)
+        writer.write_u32::<BigEndian>(self.block_length.try_into().unwrap())
     }
 
     #[must_use]

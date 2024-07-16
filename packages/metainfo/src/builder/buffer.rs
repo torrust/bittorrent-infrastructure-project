@@ -40,13 +40,12 @@ impl PieceBuffers {
         while pb.is_none() {
             pb = self.piece_queue.pop();
 
-            match pb {
-                Some(_) => break,
-                None => {
-                    thread::sleep(ten_millis);
-                    continue;
-                }
+            if pb.is_some() {
+                break;
             }
+
+            thread::sleep(ten_millis);
+            continue;
         }
 
         pb.expect("Checked is_some in loop above.")
@@ -61,6 +60,7 @@ fn calculate_total_buffers(num_workers: usize) -> usize {
 // ----------------------------------------------------------------------------//
 
 /// Piece buffer that can be filled up until it contains a full piece.
+#[allow(clippy::module_name_repetitions)]
 #[derive(PartialEq, Eq)]
 pub struct PieceBuffer {
     buffer: Vec<u8>,

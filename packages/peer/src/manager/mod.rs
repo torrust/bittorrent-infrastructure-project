@@ -28,6 +28,7 @@ mod task;
 const DEFAULT_TIMER_SLOTS: usize = 2048;
 
 /// Manages a set of peers with beating hearts.
+#[allow(clippy::module_name_repetitions)]
 pub struct PeerManager<P>
 where
     P: Sink + Stream,
@@ -220,7 +221,7 @@ where
         if took_lock {
             // Just notify a single person waiting on the lock to reduce contention
             if let Some(task) = self.task_queue.pop() {
-                task.notify()
+                task.notify();
             }
         }
 
@@ -270,7 +271,7 @@ where
         if took_lock {
             // Just notify a single person waiting on the lock to reduce contention
             if let Some(task) = self.task_queue.pop() {
-                task.notify()
+                task.notify();
             }
         }
 
@@ -355,6 +356,7 @@ where
 //----------------------------------------------------------------------------//
 
 /// Stream half of a `PeerManager`.
+#[allow(clippy::option_option)]
 pub struct PeerManagerStream<P>
 where
     P: Sink + Stream,
@@ -415,7 +417,7 @@ where
         if took_lock {
             // Just notify a single person waiting on the lock to reduce contention
             if let Some(task) = self.task_queue.pop() {
-                task.notify()
+                task.notify();
             }
         }
 

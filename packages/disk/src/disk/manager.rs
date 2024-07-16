@@ -14,6 +14,7 @@ use crate::disk::tasks::context::DiskManagerContext;
 use crate::disk::{tasks, IDiskMessage, ODiskMessage};
 
 /// `DiskManager` object which handles the storage of `Blocks` to the `FileSystem`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct DiskManager<F> {
     sink: DiskManagerSink<F>,

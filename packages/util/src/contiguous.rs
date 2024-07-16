@@ -1,6 +1,7 @@
 use std::cmp;
 
 /// Trait for metadata, reading, and writing to a contiguous buffer that doesn't re allocate.
+#[allow(clippy::module_name_repetitions)]
 pub trait ContiguousBuffer<T> {
     /// Total capacity of the underlying buffer.
     fn capacity(&self) -> usize;
@@ -63,6 +64,7 @@ where
 //----------------------------------------------------------------------------//
 
 /// Struct for providing a `ContiguousBuffer` abstraction over many contiguous buffers.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default)]
 pub struct ContiguousBuffers<T> {
     buffers: Vec<T>,
@@ -153,7 +155,7 @@ mod tests {
     use super::{ContiguousBuffer, ContiguousBuffers};
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "bip_util: ContiguousBuffer::write Detected Write That Overflows ContiguousBuffers")]
     fn positive_write_no_buffers() {
         let mut buffers: ContiguousBuffers<Vec<u8>> = ContiguousBuffers::new();
 

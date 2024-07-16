@@ -11,6 +11,7 @@ const DEFAULT_HANDSHAKE_TIMEOUT_MILLIS: u64 = 1000;
 const DEFAULT_HANDSHAKE_CONNECT_TIMEOUT_MILLIS: u64 = 1000;
 
 /// Configures the internals of a `Handshaker`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct HandshakerConfig {
     sink_buffer_size: usize,

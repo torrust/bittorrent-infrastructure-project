@@ -13,9 +13,9 @@ const SOCKET_ADDR_V6_BYTES: usize = 18;
 /// Container for peers to be sent/received from a tracker.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CompactPeers<'a> {
-    /// IPv4 variant of CompactPeers.
+    /// IPv4 variant of `CompactPeers`.
     V4(CompactPeersV4<'a>),
-    /// IPv6 variant of CompactPeers.
+    /// IPv6 variant of `CompactPeers`.
     V6(CompactPeersV6<'a>),
 }
 
@@ -41,6 +41,10 @@ impl<'a> CompactPeers<'a> {
     }
 
     /// Write the underlying `CompactPeers` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
     where
         W: Write,
@@ -52,6 +56,7 @@ impl<'a> CompactPeers<'a> {
     }
 
     /// Iterator over all of the contact information.
+    #[allow(clippy::iter_without_into_iter)]
     #[must_use]
     pub fn iter(&self) -> CompactPeersIter<'_> {
         match self {
@@ -92,6 +97,7 @@ impl<'a> CompactPeersIter<'a> {
     }
 }
 
+#[allow(clippy::copy_iterator)]
 impl<'a> Iterator for CompactPeersIter<'a> {
     type Item = SocketAddr;
 
@@ -127,6 +133,10 @@ impl<'a> CompactPeersV4<'a> {
     }
 
     /// Write the `CompactPeersV4` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -144,6 +154,7 @@ impl<'a> CompactPeersV4<'a> {
     }
 
     /// Iterator over all of the contact information.
+    #[allow(clippy::iter_without_into_iter)]
     #[must_use]
     pub fn iter(&self) -> CompactPeersV4Iter<'_> {
         CompactPeersV4Iter::new(&self.peers)
@@ -191,6 +202,7 @@ impl<'a> CompactPeersV4Iter<'a> {
     }
 }
 
+#[allow(clippy::copy_iterator)]
 impl<'a> Iterator for CompactPeersV4Iter<'a> {
     type Item = SocketAddrV4;
 
@@ -240,6 +252,10 @@ impl<'a> CompactPeersV6<'a> {
     }
 
     /// Write the `CompactPeersV6` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -257,6 +273,7 @@ impl<'a> CompactPeersV6<'a> {
     }
 
     /// Iterator over all of the contact information.
+    #[allow(clippy::iter_without_into_iter)]
     #[must_use]
     pub fn iter(&self) -> CompactPeersV6Iter<'_> {
         CompactPeersV6Iter::new(&self.peers)
@@ -304,6 +321,7 @@ impl<'a> CompactPeersV6Iter<'a> {
     }
 }
 
+#[allow(clippy::copy_iterator)]
 impl<'a> Iterator for CompactPeersV6Iter<'a> {
     type Item = SocketAddrV6;
 

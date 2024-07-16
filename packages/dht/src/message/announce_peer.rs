@@ -19,6 +19,7 @@ pub enum ConnectPort {
     Explicit(u16),
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct AnnouncePeerRequest<'a> {
     trans_id: &'a [u8],
@@ -46,6 +47,11 @@ impl<'a> AnnouncePeerRequest<'a> {
         }
     }
 
+    /// Generate a  `AnnouncePeerRequest` from parts
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error unable to get bytes unable do lookup.
     pub fn from_parts<B>(rqst_root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerRequest<'a>>
     where
         B: BRefAccess,
@@ -67,7 +73,8 @@ impl<'a> AnnouncePeerRequest<'a> {
             Some(Some(n)) if n != 0 => ConnectPort::Implied,
             _ => {
                 // If we hit this, the port either was not provided or it was of the wrong bencode type
-                let port_number = port? as u16;
+                #[allow(clippy::cast_possible_truncation)]
+                let port_number = (port?).unsigned_abs() as u16;
                 ConnectPort::Explicit(port_number)
             }
         };
@@ -126,6 +133,7 @@ impl<'a> AnnouncePeerRequest<'a> {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct AnnouncePeerResponse<'a> {
     trans_id: &'a [u8],
@@ -138,6 +146,11 @@ impl<'a> AnnouncePeerResponse<'a> {
         AnnouncePeerResponse { trans_id, node_id }
     }
 
+    /// Generate a  `AnnouncePeerResponse` from parts
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error unable to get bytes or unable to validate the node id.
     pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerResponse<'a>>
     where
         B: BRefAccess,

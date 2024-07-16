@@ -6,6 +6,7 @@ use crate::message::extensions::Extensions;
 use crate::message::protocol::Protocol;
 
 /// Message containing completed handshaking information.
+#[allow(clippy::module_name_repetitions)]
 pub struct CompleteMessage<S> {
     prot: Protocol,
     ext: Extensions,

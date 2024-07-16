@@ -38,6 +38,7 @@ const MAX_BOOTSTRAP_ATTEMPTS: usize = 3;
 const BOOTSTRAP_GOOD_NODE_THRESHOLD: usize = 10;
 
 /// Spawns a DHT handler that maintains our routing table and executes our actions on the DHT.
+#[allow(clippy::module_name_repetitions)]
 pub fn create_dht_handler<H>(
     table: RoutingTable,
     out: SyncSender<(Vec<u8>, SocketAddr)>,
@@ -102,6 +103,7 @@ enum PostBootstrapAction {
 }
 
 /// Storage for our `EventLoop` to invoke actions upon.
+#[allow(clippy::module_name_repetitions)]
 pub struct DhtHandler<H> {
     detached: DetachedDhtHandler<H>,
     table_actions: HashMap<ActionID, TableAction>,
@@ -323,6 +325,7 @@ where
 
 // ----------------------------------------------------------------------------//
 
+#[allow(clippy::too_many_lines)]
 fn handle_incoming<H>(handler: &mut DhtHandler<H>, event_loop: &mut EventLoop<DhtHandler<H>>, buffer: &[u8], addr: SocketAddr)
 where
     H: HandshakerTrait,
@@ -330,9 +333,7 @@ where
     let (work_storage, table_actions) = (&mut handler.detached, &mut handler.table_actions);
 
     // Parse the buffer as a bencoded message
-    let bencode = if let Ok(b) = BencodeRef::decode(buffer, BDecodeOpt::default()) {
-        b
-    } else {
+    let Ok(bencode) = BencodeRef::decode(buffer, BDecodeOpt::default()) else {
         warn!("bip_dht: Received invalid bencode data...");
         return;
     };
@@ -341,17 +342,14 @@ where
     // Check to make sure we issued the transaction id (or that it is still valid)
     let message = MessageType::<BencodeRef<'_>>::new(&bencode, |trans| {
         // Check if we can interpret the response transaction id as one of ours.
-        let trans_id = if let Some(t) = TransactionID::from_bytes(trans) {
-            t
-        } else {
+        let Some(trans_id) = TransactionID::from_bytes(trans) else {
             return ExpectedResponse::None;
         };
 
         // Match the response action id with our current actions
         match table_actions.get(&trans_id.action_id()) {
             Some(&TableAction::Lookup(_)) => ExpectedResponse::GetPeers,
-            Some(&TableAction::Refresh(_)) => ExpectedResponse::FindNode,
-            Some(&TableAction::Bootstrap(_, _)) => ExpectedResponse::FindNode,
+            Some(&TableAction::Refresh(_) | &TableAction::Bootstrap(_, _)) => ExpectedResponse::FindNode,
             None => ExpectedResponse::None,
         }
     });
@@ -374,7 +372,7 @@ where
 
             // Node requested from us, mark it in the routing table
             if let Some(n) = work_storage.routing_table.find_node(&node) {
-                n.remote_request()
+                n.remote_request();
             }
 
             let ping_rsp = PingResponse::new(p.transaction_id(), work_storage.routing_table.node_id());
@@ -391,7 +389,7 @@ where
 
             // Node requested from us, mark it in the routing table
             if let Some(n) = work_storage.routing_table.find_node(&node) {
-                n.remote_request()
+                n.remote_request();
             }
 
             // Grab the closest nodes
@@ -415,7 +413,7 @@ where
 
             // Node requested from us, mark it in the routing table
             if let Some(n) = work_storage.routing_table.find_node(&node) {
-                n.remote_request()
+                n.remote_request();
             }
 
             // TODO: Move socket address serialization code into bip_util
@@ -459,13 +457,13 @@ where
 
             // Wrap up the nodes/values we are going to be giving them
             let token = work_storage.token_store.checkout(IpAddr::from_socket_addr(addr));
-            let compact_info_type = if !contact_info_bencode.is_empty() {
+            let compact_info_type = if contact_info_bencode.is_empty() {
+                CompactInfoType::Nodes(CompactNodeInfo::new(&closest_nodes_bytes).unwrap())
+            } else {
                 CompactInfoType::<BencodeMut<'_>>::Both(
                     CompactNodeInfo::new(&closest_nodes_bytes).unwrap(),
                     CompactValueInfo::new(&contact_info_bencode).unwrap(),
                 )
-            } else {
-                CompactInfoType::Nodes(CompactNodeInfo::new(&closest_nodes_bytes).unwrap())
             };
 
             let get_peers_rsp = GetPeersResponse::<BencodeMut<'_>>::new(
@@ -487,7 +485,7 @@ where
 
             // Node requested from us, mark it in the routing table
             if let Some(n) = work_storage.routing_table.find_node(&node) {
-                n.remote_request()
+                n.remote_request();
             }
 
             // Validate the token
@@ -549,18 +547,18 @@ where
             for (id, v4_addr) in f.nodes() {
                 let sock_addr = SocketAddr::V4(v4_addr);
 
-                work_storage.routing_table.add_node(Node::as_questionable(id, sock_addr));
+                work_storage.routing_table.add_node(&Node::as_questionable(id, sock_addr));
             }
 
             let bootstrap_complete = {
                 let opt_bootstrap = match table_actions.get_mut(&trans_id.action_id()) {
                     Some(&mut TableAction::Refresh(_)) => {
-                        work_storage.routing_table.add_node(node);
+                        work_storage.routing_table.add_node(&node);
                         None
                     }
                     Some(&mut TableAction::Bootstrap(ref mut bootstrap, ref mut attempts)) => {
                         if !bootstrap.is_router(&node.addr()) {
-                            work_storage.routing_table.add_node(node);
+                            work_storage.routing_table.add_node(&node);
                         }
                         Some((bootstrap, attempts))
                     }
@@ -626,7 +624,7 @@ where
             let trans_id = TransactionID::from_bytes(g.transaction_id()).unwrap();
             let node = Node::as_good(g.node_id(), addr);
 
-            work_storage.routing_table.add_node(node.clone());
+            work_storage.routing_table.add_node(&node);
 
             let opt_lookup = {
                 match table_actions.get_mut(&trans_id.action_id()) {
@@ -734,9 +732,9 @@ fn handle_start_bootstrap<H>(
         BootstrapStatus::Completed => {
             // Check if our bootstrap was actually good
             if should_rebootstrap(&work_storage.routing_table) {
-                let (bootstrap, attempts) = match table_actions.get_mut(&action_id) {
-                    Some(&mut TableAction::Bootstrap(ref mut bootstrap, ref mut attempts)) => (bootstrap, attempts),
-                    _ => panic!("bip_dht: Bug, in DhtHandler..."),
+                let Some(&mut TableAction::Bootstrap(ref mut bootstrap, ref mut attempts)) = table_actions.get_mut(&action_id)
+                else {
+                    panic!("bip_dht: Bug, in DhtHandler...")
                 };
 
                 attempt_rebootstrap(bootstrap, attempts, work_storage, event_loop) == Some(false)
@@ -834,8 +832,7 @@ fn handle_check_table_refresh<H>(
     };
 
     match opt_refresh_status {
-        None => (),
-        Some(RefreshStatus::Refreshing) => (),
+        Some(RefreshStatus::Refreshing) | None => (),
         Some(RefreshStatus::Failed) => shutdown_event_loop(event_loop, ShutdownCause::Unspecified),
     }
 }
@@ -880,9 +877,8 @@ fn handle_check_bootstrap_timeout<H>(
         };
 
         match opt_bootstrap_info {
-            None => false,
             Some((BootstrapStatus::Idle, _, _)) => true,
-            Some((BootstrapStatus::Bootstrapping, _, _)) => false,
+            Some((BootstrapStatus::Bootstrapping, _, _)) | None => false,
             Some((BootstrapStatus::Failed, _, _)) => {
                 shutdown_event_loop(event_loop, ShutdownCause::Unspecified);
                 false
@@ -938,10 +934,9 @@ where
     };
 
     match opt_lookup_info {
-        None => (),
-        Some((LookupStatus::Searching, _)) => (),
+        Some((LookupStatus::Searching, _)) | None => (),
         Some((LookupStatus::Completed, info_hash)) => {
-            broadcast_dht_event(&mut work_storage.event_notifiers, DhtEvent::LookupCompleted(info_hash))
+            broadcast_dht_event(&mut work_storage.event_notifiers, DhtEvent::LookupCompleted(info_hash));
         }
         Some((LookupStatus::Failed, _)) => shutdown_event_loop(event_loop, ShutdownCause::Unspecified),
         Some((LookupStatus::Values(v), info_hash)) => {
@@ -994,10 +989,9 @@ where
     };
 
     match opt_lookup_info {
-        None => (),
-        Some((LookupStatus::Searching, _)) => (),
+        Some((LookupStatus::Searching, _)) | None => (),
         Some((LookupStatus::Completed, info_hash)) => {
-            broadcast_dht_event(&mut work_storage.event_notifiers, DhtEvent::LookupCompleted(info_hash))
+            broadcast_dht_event(&mut work_storage.event_notifiers, DhtEvent::LookupCompleted(info_hash));
         }
         Some((LookupStatus::Failed, _)) => shutdown_event_loop(event_loop, ShutdownCause::Unspecified),
         Some((LookupStatus::Values(v), info_hash)) => {

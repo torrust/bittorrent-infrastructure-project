@@ -22,15 +22,24 @@ pub trait Transport {
     type Listener: Stream<Item = (Self::Socket, SocketAddr), Error = io::Error> + LocalAddr + 'static;
 
     /// Connect to the given address over this transport, using the supplied `Handle`.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to connect to socket.
     fn connect(&self, addr: &SocketAddr, handle: &Handle) -> io::Result<Self::FutureSocket>;
 
     /// Listen to the given address for this transport, using the supplied `Handle`.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to listen to socket.
     fn listen(&self, addr: &SocketAddr, handle: &Handle) -> io::Result<Self::Listener>;
 }
 
 //----------------------------------------------------------------------------------//
 
 /// Defines a `Transport` operating over TCP.
+#[allow(clippy::module_name_repetitions)]
 pub struct TcpTransport;
 
 impl Transport for TcpTransport {

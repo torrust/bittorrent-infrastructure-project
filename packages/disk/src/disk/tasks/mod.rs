@@ -28,24 +28,24 @@ where
                 let info_hash = metainfo.info().info_hash();
 
                 match execute_add_torrent(metainfo, &context, &mut blocking_sender) {
-                    Ok(_) => ODiskMessage::TorrentAdded(info_hash),
+                    Ok(()) => ODiskMessage::TorrentAdded(info_hash),
                     Err(err) => ODiskMessage::TorrentError(info_hash, err),
                 }
             }
             IDiskMessage::RemoveTorrent(hash) => match execute_remove_torrent(hash, &context) {
-                Ok(_) => ODiskMessage::TorrentRemoved(hash),
+                Ok(()) => ODiskMessage::TorrentRemoved(hash),
                 Err(err) => ODiskMessage::TorrentError(hash, err),
             },
             IDiskMessage::SyncTorrent(hash) => match execute_sync_torrent(hash, &context) {
-                Ok(_) => ODiskMessage::TorrentSynced(hash),
+                Ok(()) => ODiskMessage::TorrentSynced(hash),
                 Err(err) => ODiskMessage::TorrentError(hash, err),
             },
             IDiskMessage::LoadBlock(mut block) => match execute_load_block(&mut block, &context) {
-                Ok(_) => ODiskMessage::BlockLoaded(block),
+                Ok(()) => ODiskMessage::BlockLoaded(block),
                 Err(err) => ODiskMessage::LoadBlockError(block, err),
             },
             IDiskMessage::ProcessBlock(block) => match execute_process_block(&block, &context, &mut blocking_sender) {
-                Ok(_) => ODiskMessage::BlockProcessed(block),
+                Ok(()) => ODiskMessage::BlockProcessed(block),
                 Err(err) => ODiskMessage::ProcessBlockError(block, err),
             },
         };
@@ -59,7 +59,7 @@ where
 
         Ok::<(), ()>(())
     })
-    .forget()
+    .forget();
 }
 
 fn execute_add_torrent<F>(
@@ -132,7 +132,7 @@ where
         let piece_accessor = PieceAccessor::new(context.filesystem(), metainfo_file.info());
 
         // Read The Piece In From The Filesystem
-        access_result = piece_accessor.read_piece(&mut *block, &metadata)
+        access_result = piece_accessor.read_piece(&mut *block, &metadata);
     });
 
     if found_hash {
@@ -163,7 +163,7 @@ where
         let piece_accessor = PieceAccessor::new(context.filesystem(), metainfo_file.info());
 
         // Write Out Piece Out To The Filesystem And Recalculate The Diff
-        block_result = piece_accessor.write_piece(block, &metadata).and_then(|_| {
+        block_result = piece_accessor.write_piece(block, &metadata).and_then(|()| {
             checker_state.add_pending_block(metadata);
 
             PieceChecker::with_state(context.filesystem(), metainfo_file.info(), checker_state).calculate_diff()
@@ -205,5 +205,5 @@ fn send_piece_diff(
                 .flush()
                 .expect("bip_disk: Failed To Flush Piece State Message");
         }
-    })
+    });
 }

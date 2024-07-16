@@ -22,6 +22,7 @@ pub const ANNOUNCE_PEER_TYPE_KEY: &str = "announce_peer";
 
 // ----------------------------------------------------------------------------//
 
+#[allow(clippy::module_name_repetitions)]
 pub struct RequestValidate<'a> {
     trans_id: &'a [u8],
 }
@@ -32,6 +33,11 @@ impl<'a> RequestValidate<'a> {
         RequestValidate { trans_id }
     }
 
+    /// Validate and deserialize bytes into a `NodeId`
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if to generate the `NodeId`.
     pub fn validate_node_id(&self, node_id: &[u8]) -> DhtResult<NodeId> {
         NodeId::from_hash(node_id).map_err(|_| {
             let error_msg = ErrorMessage::new(
@@ -44,6 +50,11 @@ impl<'a> RequestValidate<'a> {
         })
     }
 
+    /// Validate and deserialize bytes into a `InfoHash`
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if to generate the `InfoHash`.
     pub fn validate_info_hash(&self, info_hash: &[u8]) -> DhtResult<InfoHash> {
         InfoHash::from_hash(info_hash).map_err(|_| {
             let error_msg = ErrorMessage::new(
@@ -68,6 +79,7 @@ impl<'a> BConvertExt for RequestValidate<'a> {}
 
 // ----------------------------------------------------------------------------//
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum RequestType<'a> {
     Ping(PingRequest<'a>),
@@ -78,6 +90,11 @@ pub enum RequestType<'a> {
 }
 
 impl<'a> RequestType<'a> {
+    /// Creates a new `RequestType` from parts.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to lookup, convert, and generate correct type.
     pub fn from_parts<B>(root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8], rqst_type: &str) -> DhtResult<RequestType<'a>>
     where
         B: BRefAccess<BType = B>,

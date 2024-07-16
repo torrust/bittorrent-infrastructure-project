@@ -43,6 +43,11 @@ impl BitsExtensionMessage {
         parse_extension(bytes)
     }
 
+    /// Writes bytes into the current [`BitsExtensionMessage`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write the bytes.
     pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
     where
         W: Write,
@@ -68,7 +73,7 @@ fn parse_extension(mut bytes: Bytes) -> IResult<(), io::Result<BitsExtensionMess
         (),
         ignore_input!(switch!(header_bytes.as_ref(), throwaway_input!(tuple!(be_u32, be_u8)),
             (PORT_MESSAGE_LEN, PORT_MESSAGE_ID) => map!(
-                call!(PortMessage::parse_bytes, bytes.split_off(message::HEADER_LEN)),
+                call!(PortMessage::parse_bytes, &bytes.split_off(message::HEADER_LEN)),
                 |res_port| res_port.map(BitsExtensionMessage::Port)
             )
         )) | ignore_input!(switch!(header_bytes.as_ref(), throwaway_input!(tuple!(be_u32, be_u8, be_u8)),

@@ -188,6 +188,7 @@ fn generate_mids(next_alloc: u64) -> (u64, [u64; MESSAGE_ID_PREALLOC_LEN]) {
 
 // ----------------------------------------------------------------------------//
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct TransactionID {
     trans_id: u64,

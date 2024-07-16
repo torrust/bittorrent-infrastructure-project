@@ -21,8 +21,9 @@ use peer::protocols::{NullProtocol, PeerExtensionProtocol, PeerWireProtocol};
 use peer::{IPeerManagerMessage, OPeerManagerMessage, PeerInfo, PeerManagerBuilder, PeerProtocolCodec};
 use pendulum::future::TimerBuilder;
 use pendulum::HashedWheelBuilder;
+use select::discovery::error::DiscoveryError;
 use select::discovery::{IDiscoveryMessage, ODiscoveryMessage, UtMetadataModule};
-use select::{ControlMessage, IExtendedMessage, IUberMessage, OExtendedMessage, OUberMessage, UberModuleBuilder};
+use select::{ControlMessage, DiscoveryTrait, IExtendedMessage, IUberMessage, OExtendedMessage, OUberMessage, UberModuleBuilder};
 use tokio_core::reactor::Core;
 
 // Legacy Handshaker, when bip_dht is migrated, it will accept S directly
@@ -69,6 +70,7 @@ where
     fn metadata(&mut self, _data: ()) {}
 }
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     let matches = clap_app!(myapp =>
         (version: "1.0")
@@ -100,7 +102,7 @@ fn main() {
             // Set a low handshake timeout so we don't wait on peers that aren't listening on tcp
             HandshakerConfig::default().with_connect_timeout(Duration::from_millis(500)),
         )
-        .build(TcpTransport, core.handle())
+        .build(TcpTransport, &core.handle())
         .unwrap()
         .into_parts();
     // Create a peer manager that will hold our peers and heartbeat/send messages to them
@@ -109,7 +111,7 @@ fn main() {
     // Hook up a future that feeds incoming (handshaken) peers over to the peer manager
     core.handle().spawn(
         handshaker_recv
-            .map_err(|_| ())
+            .map_err(|()| ())
             .map(|complete_msg| {
                 // Our handshaker finished handshaking some peer, get
                 // the peer info as well as the peer itself (socket)
@@ -141,11 +143,22 @@ fn main() {
     );
 
     // Create our UtMetadata selection module
-    let (uber_send, uber_recv) = UberModuleBuilder::new()
-        .with_extended_builder(Some(ExtendedMessageBuilder::new()))
-        .with_discovery_module(UtMetadataModule::new())
-        .build()
-        .split();
+    let (uber_send, uber_recv) = {
+        let mut this = UberModuleBuilder::new().with_extended_builder(Some(ExtendedMessageBuilder::new()));
+        let module = UtMetadataModule::new();
+        this.discovery.push(Box::new(module)
+            as Box<
+                dyn DiscoveryTrait<
+                    SinkItem = IDiscoveryMessage,
+                    SinkError = Box<DiscoveryError>,
+                    Item = ODiscoveryMessage,
+                    Error = Box<DiscoveryError>,
+                >,
+            >);
+        this
+    }
+    .build()
+    .split();
 
     // Tell the uber module we want to download metainfo for the given hash
     let uber_send = core
@@ -159,7 +172,7 @@ fn main() {
     let timer = TimerBuilder::default().build(HashedWheelBuilder::default().build());
     let timer_recv = timer.sleep_stream(Duration::from_millis(100)).unwrap().map(Either::B);
 
-    let merged_recv = peer_manager_recv.map(Either::A).map_err(|_| ()).select(timer_recv);
+    let merged_recv = peer_manager_recv.map(Either::A).map_err(|()| ()).select(timer_recv);
 
     // Hook up a future that receives messages from the peer manager
     core.handle().spawn(future::loop_fn(
@@ -183,23 +196,23 @@ fn main() {
                             info, message,
                         ))),
                         Either::A(OPeerManagerMessage::PeerAdded(info)) => {
-                            println!("Connected To Peer: {:?}", info);
+                            println!("Connected To Peer: {info:?}");
                             Some(IUberMessage::Control(ControlMessage::PeerConnected(info)))
                         }
                         Either::A(OPeerManagerMessage::PeerRemoved(info)) => {
-                            println!("We Removed Peer {:?} From The Peer Manager", info);
+                            println!("We Removed Peer {info:?} From The Peer Manager");
                             Some(IUberMessage::Control(ControlMessage::PeerDisconnected(info)))
                         }
                         Either::A(OPeerManagerMessage::PeerDisconnect(info)) => {
-                            println!("Peer {:?} Disconnected From Us", info);
+                            println!("Peer {info:?} Disconnected From Us");
                             Some(IUberMessage::Control(ControlMessage::PeerDisconnected(info)))
                         }
                         Either::A(OPeerManagerMessage::PeerError(info, error)) => {
-                            println!("Peer {:?} Disconnected With Error: {:?}", info, error);
+                            println!("Peer {info:?} Disconnected With Error: {error:?}");
                             Some(IUberMessage::Control(ControlMessage::PeerDisconnected(info)))
                         }
-                        Either::B(_) => Some(IUberMessage::Control(ControlMessage::Tick(Duration::from_millis(100)))),
-                        _ => None,
+                        Either::B(()) => Some(IUberMessage::Control(ControlMessage::Tick(Duration::from_millis(100)))),
+                        Either::A(_) => None,
                     };
 
                     match opt_message {

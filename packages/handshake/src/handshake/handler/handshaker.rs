@@ -86,7 +86,7 @@ where
                     }
                 })
         })
-        .or_else(|_| Ok(None));
+        .or_else(|()| Ok(None));
 
     Box::new(composed_future)
 }
@@ -142,7 +142,7 @@ where
             }
         })
         .flatten()
-        .or_else(|_| Ok(None));
+        .or_else(|()| Ok(None));
 
     Box::new(composed_future)
 }

@@ -13,6 +13,7 @@ const REJECT_MESSAGE_TYPE_ID: u8 = 2;
 const ROOT_ERROR_KEY: &str = "PeerExtensionProtocolMessage";
 
 /// Enumeration of messages for `PeerExtensionProtocolMessage::UtMetadata`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum UtMetadataMessage {
     Request(UtMetadataRequestMessage),
@@ -21,6 +22,11 @@ pub enum UtMetadataMessage {
 }
 
 impl UtMetadataMessage {
+    /// Create a new [`UtMetadataMessage`] from [`Bytes`]
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to parse given bytes into type.
     pub fn parse_bytes(mut bytes: Bytes) -> io::Result<UtMetadataMessage> {
         // Our bencode is pretty flat, and we don't want to enforce a full decode, as data
         // messages have the raw data appended outside of the bencode structure...
@@ -38,11 +44,11 @@ impl UtMetadataMessage {
                 match msg_type {
                     REQUEST_MESSAGE_TYPE_ID => Ok(UtMetadataMessage::Request(UtMetadataRequestMessage::with_bytes(
                         piece,
-                        bencode_bytes,
+                        &bencode_bytes,
                     ))),
                     REJECT_MESSAGE_TYPE_ID => Ok(UtMetadataMessage::Reject(UtMetadataRejectMessage::with_bytes(
                         piece,
-                        bencode_bytes,
+                        &bencode_bytes,
                     ))),
                     DATA_MESSAGE_TYPE_ID => {
                         let total_size = bencode_util::parse_total_size(bencode_dict)?;
@@ -51,7 +57,7 @@ impl UtMetadataMessage {
                             piece,
                             total_size,
                             extra_bytes,
-                            bencode_bytes,
+                            &bencode_bytes,
                         )))
                     }
                     other => Err(io::Error::new(
@@ -67,6 +73,11 @@ impl UtMetadataMessage {
         }
     }
 
+    /// Writes Bytes from Current State
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write the bytes.
     pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
     where
         W: Write,
@@ -90,6 +101,7 @@ impl UtMetadataMessage {
 // ----------------------------------------------------------------------------//
 
 /// Message for requesting a piece of metadata from a peer.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct UtMetadataRequestMessage {
     piece: i64,
@@ -112,13 +124,18 @@ impl UtMetadataRequestMessage {
         }
     }
 
-    pub fn with_bytes(piece: i64, bytes: Bytes) -> UtMetadataRequestMessage {
+    pub fn with_bytes(piece: i64, bytes: &Bytes) -> UtMetadataRequestMessage {
         UtMetadataRequestMessage {
             piece,
             bencode_size: bytes.len(),
         }
     }
 
+    /// Writes bytes from the current state.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -144,6 +161,7 @@ impl UtMetadataRequestMessage {
 }
 
 /// Message for sending a piece of metadata from a peer.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct UtMetadataDataMessage {
     piece: i64,
@@ -170,7 +188,7 @@ impl UtMetadataDataMessage {
         }
     }
 
-    pub fn with_bytes(piece: i64, total_size: i64, data: Bytes, bytes: Bytes) -> UtMetadataDataMessage {
+    pub fn with_bytes(piece: i64, total_size: i64, data: Bytes, bytes: &Bytes) -> UtMetadataDataMessage {
         UtMetadataDataMessage {
             piece,
             total_size,
@@ -179,6 +197,11 @@ impl UtMetadataDataMessage {
         }
     }
 
+    /// Write Bytes from current state.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -213,6 +236,7 @@ impl UtMetadataDataMessage {
 }
 
 /// Message for rejecting a request for metadata from a peer.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct UtMetadataRejectMessage {
     piece: i64,
@@ -235,13 +259,18 @@ impl UtMetadataRejectMessage {
         }
     }
 
-    pub fn with_bytes(piece: i64, bytes: Bytes) -> UtMetadataRejectMessage {
+    pub fn with_bytes(piece: i64, bytes: &Bytes) -> UtMetadataRejectMessage {
         UtMetadataRejectMessage {
             piece,
             bencode_size: bytes.len(),
         }
     }
 
+    /// Write bytes from the current state.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,

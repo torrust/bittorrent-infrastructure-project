@@ -119,16 +119,19 @@ where
             Err(_) => return Err(RecurringTimeoutError::Disconnect),
         }
 
+        let Ok(poll) = self.sleep.poll() else {
+            panic!("bip_peer: Timer Error In Manager Stream, Timer Capacity Is Probably Too Small...")
+        };
+
         // Now check the timer
-        match self.sleep.poll() {
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-            Ok(Async::Ready(_)) => {
+        match poll {
+            Async::NotReady => Ok(Async::NotReady),
+            Async::Ready(()) => {
                 // Reset the timeout
                 self.sleep = self.timer.sleep(self.dur);
 
                 Err(RecurringTimeoutError::Timeout)
             }
-            Err(_) => panic!("bip_peer: Timer Error In Manager Stream, Timer Capacity Is Probably Too Small..."),
         }
     }
 }

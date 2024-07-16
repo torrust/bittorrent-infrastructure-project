@@ -17,6 +17,7 @@ const SERVER_ERROR_CODE: u8 = 202;
 const PROTOCOL_ERROR_CODE: u8 = 203;
 const METHOD_UNKNOWN_CODE: u8 = 204;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum ErrorCode {
     GenericError,
@@ -56,7 +57,7 @@ impl From<ErrorCode> for u8 {
 struct ErrorValidate;
 
 impl ErrorValidate {
-    fn extract_error_args<B>(&self, args: &dyn BListAccess<B::BType>) -> DhtResult<(u8, String)>
+    fn extract_error_args<B>(self, args: &dyn BListAccess<B::BType>) -> DhtResult<(u8, String)>
     where
         B: BRefAccess<BType = B>,
     {
@@ -67,10 +68,11 @@ impl ErrorValidate {
         }
 
         let code = self.convert_int(&args[0], format!("{ERROR_ARGS_KEY}[0]"))?;
-        let message = String::from(self.convert_str(&args[1], &format!("{ERROR_ARGS_KEY}[1]"))?);
+        let message = String::from(self.convert_str(&args[1], format!("{ERROR_ARGS_KEY}[1]"))?);
 
-        let code2 = code;
+        let code = code.unsigned_abs();
 
+        #[allow(clippy::cast_possible_truncation)]
         Ok((code as u8, message))
     }
 }
@@ -87,6 +89,7 @@ impl BConvertExt for ErrorValidate {}
 
 // ----------------------------------------------------------------------------//
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct ErrorMessage<'a> {
     trans_id: Cow<'a, [u8]>,
@@ -110,6 +113,11 @@ impl<'a> ErrorMessage<'a> {
         }
     }
 
+    /// Generate a `BRefAccess` from parts.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to lookup the error.
     pub fn from_parts<B>(root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<ErrorMessage<'a>>
     where
         B: BRefAccess<BType = B>,

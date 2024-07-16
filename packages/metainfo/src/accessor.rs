@@ -11,6 +11,10 @@ pub trait IntoAccessor {
     type Accessor: Accessor;
 
     /// Convert the type into some Accessor as a Result.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO error if unable to convert to an ancestor.
     fn into_accessor(self) -> io::Result<Self::Accessor>;
 }
 
@@ -20,11 +24,19 @@ pub trait Accessor {
     fn access_directory(&self) -> Option<&Path>;
 
     /// Access the metadata for all files including their length and path.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO error if unable to access the metadata.
     fn access_metadata<C>(&self, callback: C) -> io::Result<()>
     where
         C: FnMut(u64, &Path);
 
     /// Access the sequential pieces that make up all of the files.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO error if unable to access the pieces.
     fn access_pieces<C>(&self, callback: C) -> io::Result<()>
     where
         C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>;
@@ -73,6 +85,7 @@ pub enum PieceAccess<'a> {
 // ----------------------------------------------------------------------------//
 
 /// Accessor that pulls data in from the file system.
+#[allow(clippy::module_name_repetitions)]
 pub struct FileAccessor {
     absolute_path: PathBuf,
     directory_name: Option<PathBuf>,
@@ -80,6 +93,14 @@ pub struct FileAccessor {
 
 impl FileAccessor {
     /// Create a new `FileAccessor` from the given file/directory path.
+    ///
+    /// # Errors
+    ///
+    /// It would return an error if unable to canonicalize the path.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if unable to get the last directory name.
     pub fn new<T>(path: T) -> io::Result<FileAccessor>
     where
         T: AsRef<Path>,
@@ -174,6 +195,7 @@ fn entry_file_filter(res_entry: &walkdir::Result<DirEntry>) -> bool {
 // ----------------------------------------------------------------------------//
 
 /// Accessor that pulls data in directly from memory.
+#[allow(clippy::module_name_repetitions)]
 pub struct DirectAccessor<'a> {
     file_name: &'a str,
     file_contents: &'a [u8],

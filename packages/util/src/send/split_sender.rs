@@ -84,6 +84,7 @@ where
 // ----------------------------------------------------------------------------//
 
 /// `SplitSenderAck` allows a client to ack messages received from a `SplitSender`.
+#[allow(clippy::module_name_repetitions)]
 pub struct SplitSenderAck {
     count: Arc<AtomicUsize>,
 }

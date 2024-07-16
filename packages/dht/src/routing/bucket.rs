@@ -110,6 +110,7 @@ impl<'a> GoodNodes<'a> {
     }
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn good_nodes_filter(node: &&Node) -> bool {
     node.status() == NodeStatus::Good
 }
@@ -136,6 +137,7 @@ impl<'a> PingableNodes<'a> {
     }
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn pingable_nodes_filter(node: &&Node) -> bool {
     // Function is moderately expensive
     let status = node.status();
@@ -174,6 +176,7 @@ mod tests {
         let mut bucket = Bucket::new();
 
         let dummy_addr = bip_test::dummy_socket_addr_v4();
+        #[allow(clippy::cast_possible_truncation)]
         let dummy_ids = bip_test::dummy_block_node_ids(super::MAX_BUCKET_SIZE as u8);
         for &id in dummy_ids.iter().take(super::MAX_BUCKET_SIZE) {
             let node = Node::as_questionable(id, dummy_addr);
@@ -189,6 +192,7 @@ mod tests {
         let mut bucket = Bucket::new();
 
         let dummy_addr = bip_test::dummy_socket_addr_v4();
+        #[allow(clippy::cast_possible_truncation)]
         let dummy_ids = bip_test::dummy_block_node_ids(super::MAX_BUCKET_SIZE as u8);
         for &id in dummy_ids.iter().take(super::MAX_BUCKET_SIZE) {
             let node = Node::as_good(id, dummy_addr);
@@ -204,6 +208,7 @@ mod tests {
         let mut bucket = Bucket::new();
 
         let dummy_addr = bip_test::dummy_socket_addr_v4();
+        #[allow(clippy::cast_possible_truncation)]
         let dummy_ids = bip_test::dummy_block_node_ids(super::MAX_BUCKET_SIZE as u8);
         for &id in dummy_ids.iter().take(super::MAX_BUCKET_SIZE) {
             let node = Node::as_questionable(id, dummy_addr);
@@ -226,6 +231,7 @@ mod tests {
         let mut bucket = Bucket::new();
 
         let dummy_addr = bip_test::dummy_socket_addr_v4();
+        #[allow(clippy::cast_possible_truncation)]
         let dummy_ids = bip_test::dummy_block_node_ids((super::MAX_BUCKET_SIZE as u8) + 1);
         for &id in dummy_ids.iter().take(super::MAX_BUCKET_SIZE) {
             let node = Node::as_good(id, dummy_addr);
@@ -254,6 +260,7 @@ mod tests {
         let mut bucket = Bucket::new();
 
         let dummy_addr = bip_test::dummy_socket_addr_v4();
+        #[allow(clippy::cast_possible_truncation)]
         let dummy_ids = bip_test::dummy_block_node_ids((super::MAX_BUCKET_SIZE as u8) + 1);
         for &id in dummy_ids.iter().take(super::MAX_BUCKET_SIZE) {
             let node = Node::as_questionable(id, dummy_addr);

@@ -19,6 +19,7 @@ const TRANSACTION_ID_PREALLOC_LEN: usize = 2048;
 /// This allows us to uphold the uniqueness property for any large
 /// transaction type (such as u64) but also works with smaller types.
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default)]
 pub struct LocallyShuffledIds<T> {
     sequential: SequentialIds<T>,
@@ -108,6 +109,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
+        #[allow(clippy::cast_possible_truncation)]
         for count in &tid_count {
             assert_eq!(*count, duplicates_to_find as u8);
         }
@@ -128,6 +130,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
+        #[allow(clippy::cast_possible_truncation)]
         for count in &tid_count {
             assert_eq!(*count, duplicates_to_find as u8);
         }
@@ -148,6 +151,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
+        #[allow(clippy::cast_possible_truncation)]
         for count in &tid_count {
             assert_eq!(*count, duplicates_to_find as i8);
         }
@@ -168,6 +172,7 @@ mod tests {
             tid_count[index] += 1;
         }
 
+        #[allow(clippy::cast_possible_truncation)]
         for count in &tid_count {
             assert_eq!(*count, duplicates_to_find as i8);
         }

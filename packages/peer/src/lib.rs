@@ -30,6 +30,7 @@ pub mod messages {
 }
 
 /// `PeerManager` error types.
+#[allow(clippy::module_name_repetitions)]
 pub mod error {
     pub use crate::manager::error::{PeerManagerError, PeerManagerErrorKind, PeerManagerResult, PeerManagerResultExt};
 }

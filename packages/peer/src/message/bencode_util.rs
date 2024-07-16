@@ -40,7 +40,8 @@ where
     if let Ok(ben_id_map) = CONVERT.lookup_and_convert_dict(root, ID_MAP_KEY) {
         for (id, ben_value) in ben_id_map.to_list() {
             if let (Ok(str_id), Ok(value)) = (str::from_utf8(id.as_ref()), CONVERT.convert_int(ben_value, id)) {
-                id_map.insert(ExtendedType::from_id(str_id), value as u8);
+                let value: u8 = value.try_into().unwrap();
+                id_map.insert(ExtendedType::from_id(str_id), value);
             }
         }
     }
@@ -66,11 +67,8 @@ where
         .lookup_and_convert_int(root, CLIENT_TCP_PORT_KEY)
         .ok()
         .and_then(|port| {
-            if i64::from(port as u16) == port {
-                Some(port as u16)
-            } else {
-                None
-            }
+            let port: Option<u16> = port.try_into().ok();
+            port
         })
 }
 
@@ -172,7 +170,7 @@ where
 {
     CONVERT
         .lookup_and_convert_int(root, MESSAGE_TYPE_KEY)
-        .map(|msg_type| msg_type as u8)
+        .map(|msg_type| msg_type.try_into().unwrap())
 }
 
 pub fn parse_piece_index<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<i64>

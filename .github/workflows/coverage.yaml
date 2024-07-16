@@ -19,7 +19,7 @@ jobs:
     steps:
       - id: checkout
         name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - id: setup
         name: Setup Toolchain
@@ -46,7 +46,7 @@ jobs:
 
       - id: upload
         name: Upload Coverage Report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ steps.coverage.outputs.report }}

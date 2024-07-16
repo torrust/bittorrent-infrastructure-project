@@ -68,6 +68,10 @@ impl Extensions {
     }
 
     /// Write the `Extensions` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO error if unable to write bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,

@@ -57,7 +57,7 @@ impl HandshakerTrait for SimpleHandshaker {
     }
 
     /// Send the given Metadata back to the client.
-    fn metadata(&mut self, _: Self::MetadataEnvelope) {}
+    fn metadata(&mut self, (): Self::MetadataEnvelope) {}
 }
 
 fn main() {
@@ -80,7 +80,7 @@ fn main() {
     let events = dht.events();
     thread::spawn(move || {
         for event in events {
-            println!("\nReceived Dht Event {:?}", event);
+            println!("\nReceived Dht Event {event:?}");
         }
     });
 

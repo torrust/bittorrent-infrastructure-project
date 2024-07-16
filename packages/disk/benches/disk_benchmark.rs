@@ -1,5 +1,4 @@
 use std::fs;
-use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
 use bytes::BytesMut;
@@ -104,11 +103,10 @@ where
         }
     }
 
-    for res_message in block_recv.lock().unwrap().deref_mut() {
+    for res_message in &mut *block_recv.lock().unwrap() {
         match res_message.unwrap() {
             ODiskMessage::BlockProcessed(_) => blocks_sent -= 1,
-            ODiskMessage::FoundGoodPiece(_, _) => (),
-            ODiskMessage::FoundBadPiece(_, _) => (),
+            ODiskMessage::FoundGoodPiece(_, _) | ODiskMessage::FoundBadPiece(_, _) => (),
             _ => panic!("Unexpected Message Received In process_blocks"),
         }
 

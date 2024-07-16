@@ -7,6 +7,7 @@ use tokio_core::reactor::Core;
 
 use crate::{InMemoryFileSystem, MultiFileDirectAccessor};
 
+#[allow(clippy::too_many_lines)]
 #[test]
 fn positive_complete_torrent() {
     // Create some "files" as random bytes
@@ -36,7 +37,7 @@ fn positive_complete_torrent() {
     let (good_pieces, recv) = crate::core_loop_with_timeout(&mut core, 500, (0, recv), |good_pieces, recv, msg| match msg {
         ODiskMessage::TorrentAdded(_) => Loop::Break((good_pieces, recv)),
         ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue((good_pieces + 1, recv)),
-        unexpected => panic!("Unexpected Message: {:?}", unexpected),
+        unexpected => panic!("Unexpected Message: {unexpected:?}"),
     });
 
     // Make sure we have no good pieces
@@ -140,7 +141,7 @@ fn positive_complete_torrent() {
                 ODiskMessage::FoundGoodPiece(_, index) => (Some(index), true),
                 ODiskMessage::FoundBadPiece(_, index) => (Some(index), false),
                 ODiskMessage::BlockProcessed(_) => (None, false),
-                unexpected => panic!("Unexpected Message: {:?}", unexpected),
+                unexpected => panic!("Unexpected Message: {unexpected:?}"),
             };
 
             let (piece_zero_good, piece_one_good, piece_two_good) = match opt_piece_index {
@@ -148,7 +149,7 @@ fn positive_complete_torrent() {
                 Some(0) => (new_value, piece_one_good, piece_two_good),
                 Some(1) => (piece_zero_good, new_value, piece_two_good),
                 Some(2) => (piece_zero_good, piece_one_good, new_value),
-                Some(x) => panic!("Unexpected Index {:?}", x),
+                Some(x) => panic!("Unexpected Index {x:?}"),
             };
 
             // One message for each block (8 blocks), plus 3 messages for bad/good
@@ -207,13 +208,13 @@ fn positive_complete_torrent() {
                 ODiskMessage::FoundGoodPiece(_, index) => (Some(index), true),
                 ODiskMessage::FoundBadPiece(_, index) => (Some(index), false),
                 ODiskMessage::BlockProcessed(_) => (None, false),
-                unexpected => panic!("Unexpected Message: {:?}", unexpected),
+                unexpected => panic!("Unexpected Message: {unexpected:?}"),
             };
 
             let piece_zero_good = match opt_piece_index {
                 None => piece_zero_good,
                 Some(0) => new_value,
-                Some(x) => panic!("Unexpected Index {:?}", x),
+                Some(x) => panic!("Unexpected Index {x:?}"),
             };
 
             // One message for each block (3 blocks), plus 1 messages for bad/good

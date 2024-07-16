@@ -20,6 +20,7 @@ enum HandshakeState {
 // bytes than we need for a handshake. That is unacceptable for us
 // because we are giving a raw socket to the client of this library.
 // We don't want to steal any of their bytes during our handshake!
+#[allow(clippy::module_name_repetitions)]
 pub struct FramedHandshake<S> {
     sock: S,
     write_buffer: BytesMut,

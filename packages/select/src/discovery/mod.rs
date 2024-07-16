@@ -23,7 +23,7 @@ pub enum IDiscoveryMessage {
     Control(ControlMessage),
     /// Find peers and download the metainfo for the `InfoHash`.
     DownloadMetainfo(InfoHash),
-    /// Received a UtMetadata message.
+    /// Received a `UtMetadata` message.
     ReceivedUtMetadataMessage(PeerInfo, UtMetadataMessage),
 }
 
@@ -34,7 +34,7 @@ pub enum ODiscoveryMessage {
     SendDhtAnnounce(InfoHash),
     /// Send a udp tracker announce for the `InfoHash`.
     SendUdpTrackerAnnounce(InfoHash, SocketAddr, ClientState),
-    /// Send a UtMetadata message.
+    /// Send a `UtMetadata` message.
     SendUtMetadataMessage(PeerInfo, UtMetadataMessage),
     /// We have finished downloading the given `Metainfo`.
     DownloadedMetainfo(Metainfo),

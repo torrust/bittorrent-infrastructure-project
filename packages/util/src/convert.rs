@@ -2,14 +2,19 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 
 /// Convert a 4 byte value to an array of 4 bytes.
 #[must_use]
-pub fn four_bytes_to_array(bytes: u32) -> [u8; 4] {
-    let eight_bytes = eight_bytes_to_array(u64::from(bytes));
+pub fn four_bytes_to_array(unsigned: u32) -> [u8; 4] {
+    unsigned.to_be_bytes()
+}
 
-    [eight_bytes[4], eight_bytes[5], eight_bytes[6], eight_bytes[7]]
+/// Convert a 4 byte value to an array of 4 bytes.
+#[must_use]
+pub fn four_bytes_to_array_signed(signed: i32) -> [u8; 4] {
+    signed.to_be_bytes()
 }
 
 /// Convert an 8 byte value to an array of 8 bytes.
 #[must_use]
+#[allow(clippy::cast_possible_truncation)]
 pub fn eight_bytes_to_array(bytes: u64) -> [u8; 8] {
     [
         (bytes >> 56) as u8,
@@ -41,6 +46,7 @@ pub fn ipv6_to_bytes_be(v6_addr: Ipv6Addr) -> [u8; 16] {
         let segment_byte_index = index % 2;
         let byte_shift_bits = 8 - (segment_byte_index * 8);
 
+        #[allow(clippy::cast_possible_truncation)]
         let byte = (segments[segment_index] >> byte_shift_bits) as u8;
 
         *item = byte;
@@ -52,6 +58,7 @@ pub fn ipv6_to_bytes_be(v6_addr: Ipv6Addr) -> [u8; 16] {
 // Convert a port to an array of 2 bytes big endian.
 #[must_use]
 pub fn port_to_bytes_be(port: u16) -> [u8; 2] {
+    #[allow(clippy::cast_possible_truncation)]
     [(port >> 8) as u8, port as u8]
 }
 
@@ -174,6 +181,7 @@ mod tests {
         let sock_addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 1600);
 
         let received = super::sock_v4_to_bytes_be(sock_addr);
+        #[allow(clippy::cast_possible_truncation)]
         let expected = [127, 0, 0, 1, (1600 >> 8) as u8, 1600_u32 as u8];
 
         assert_eq!(received, expected);
@@ -184,6 +192,8 @@ mod tests {
         let sock_addr = SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), 1821, 0, 0);
 
         let received = super::sock_v6_to_bytes_be(sock_addr);
+
+        #[allow(clippy::cast_possible_truncation)]
         let expected = [
             0,
             0,

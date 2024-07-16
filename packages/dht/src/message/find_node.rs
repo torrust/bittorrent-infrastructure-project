@@ -7,6 +7,7 @@ use crate::message::compact_info::CompactNodeInfo;
 use crate::message::request::{self, RequestValidate};
 use crate::message::response::ResponseValidate;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct FindNodeRequest<'a> {
     trans_id: &'a [u8],
@@ -28,6 +29,10 @@ impl<'a> FindNodeRequest<'a> {
     ///
     /// The `target_key` argument is provided for cases where, due to forward compatibility,
     /// the target key we are interested in could fall under the target key or another key.
+    ///
+    /// # Errors
+    ///
+    /// It will return an error if unable to lookup an validate the node parts.
     pub fn from_parts<B>(
         rqst_root: &dyn BDictAccess<B::BKey, B>,
         trans_id: &'a [u8],
@@ -78,6 +83,7 @@ impl<'a> FindNodeRequest<'a> {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct FindNodeResponse<'a> {
     trans_id: &'a [u8],
@@ -86,6 +92,11 @@ pub struct FindNodeResponse<'a> {
 }
 
 impl<'a> FindNodeResponse<'a> {
+    /// Create a new `FindNodeResponse`.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to validate the nodes.
     pub fn new(trans_id: &'a [u8], node_id: NodeId, nodes: &'a [u8]) -> DhtResult<FindNodeResponse<'a>> {
         let validate = ResponseValidate::new(trans_id);
         let compact_nodes = validate.validate_nodes(nodes)?;
@@ -97,6 +108,11 @@ impl<'a> FindNodeResponse<'a> {
         })
     }
 
+    /// Create a new `FindNodeResponse` from parts.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to lookup and and validate node.
     pub fn from_parts<B>(rsp_root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<FindNodeResponse<'a>>
     where
         B: BRefAccess,

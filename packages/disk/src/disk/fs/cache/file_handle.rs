@@ -11,6 +11,7 @@ use crate::disk::fs::FileSystem;
 /// This is especially useful for consumer computers that have anti-virus software
 /// installed, which will significantly increase the cost for opening any files
 /// (with windows built in anti virus, I saw 20x slow downs).
+#[allow(clippy::module_name_repetitions)]
 pub struct FileHandleCache<F>
 where
     F: FileSystem,

@@ -15,6 +15,7 @@ use crate::scrape::ScrapeRequest;
 pub const CONNECT_ID_PROTOCOL_ID: u64 = 0x0417_2710_1980;
 
 /// Enumerates all types of requests that can be made to a tracker.
+#[allow(clippy::module_name_repetitions)]
 pub enum RequestType<'a> {
     Connect,
     Announce(AnnounceRequest<'a>),
@@ -34,6 +35,7 @@ impl<'a> RequestType<'a> {
 }
 
 /// `TrackerRequest` which encapsulates any request sent to a tracker.
+#[allow(clippy::module_name_repetitions)]
 pub struct TrackerRequest<'a> {
     // Both the connection id and transaction id are technically not unsigned according
     // to the spec, but since they are just bits we will keep them as unsigned since it
@@ -61,6 +63,10 @@ impl<'a> TrackerRequest<'a> {
     }
 
     /// Write the `TrackerRequest` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,

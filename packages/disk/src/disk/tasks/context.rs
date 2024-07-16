@@ -9,6 +9,7 @@ use util::bt::InfoHash;
 use crate::disk::tasks::helpers::piece_checker::PieceCheckerState;
 use crate::disk::ODiskMessage;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct DiskManagerContext<F> {
     torrents: Arc<RwLock<HashMap<InfoHash, Mutex<MetainfoState>>>>,

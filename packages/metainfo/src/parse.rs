@@ -41,6 +41,7 @@ pub const MD5SUM_KEY: &[u8] = b"md5sum";
 pub const PATH_KEY: &[u8] = b"path";
 
 /// Parses the root bencode as a dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_root_dict<B>(root_bencode: &B) -> ParseResult<&dyn BDictAccess<B::BKey, B::BType>>
 where
     B: BRefAccess,
@@ -49,6 +50,7 @@ where
 }
 
 /// Parses the announce list from the root dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_announce_list<B>(root_dict: &dyn BDictAccess<B::BKey, B>) -> Option<&dyn BListAccess<B>>
 where
     B: BRefAccess<BType = B>,
@@ -74,6 +76,7 @@ where
 }
 
 /// Parses the announce url from the root dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_announce_url<'a, B>(root_dict: &'a dyn BDictAccess<B::BKey, B>) -> Option<&'a str>
 where
     B: BRefAccess + 'a,
@@ -82,6 +85,7 @@ where
 }
 
 /// Parses the creation date from the root dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_creation_date<B>(root_dict: &dyn BDictAccess<B::BKey, B>) -> Option<i64>
 where
     B: BRefAccess,
@@ -90,6 +94,7 @@ where
 }
 
 /// Parses the comment from the root dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_comment<'a, B>(root_dict: &'a dyn BDictAccess<B::BKey, B>) -> Option<&'a str>
 where
     B: BRefAccess + 'a,
@@ -98,6 +103,7 @@ where
 }
 
 /// Parses the created by from the root dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_created_by<'a, B>(root_dict: &'a dyn BDictAccess<B::BKey, B>) -> Option<&'a str>
 where
     B: BRefAccess + 'a,
@@ -106,6 +112,7 @@ where
 }
 
 /// Parses the encoding from the root dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_encoding<'a, B>(root_dict: &'a dyn BDictAccess<B::BKey, B>) -> Option<&'a str>
 where
     B: BRefAccess + 'a,
@@ -114,6 +121,7 @@ where
 }
 
 /// Parses the info dictionary from the root dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_info_bencode<B>(root_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<&B>
 where
     B: BRefAccess,
@@ -124,16 +132,18 @@ where
 // ----------------------------------------------------------------------------//
 
 /// Parses the piece length from the info dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_piece_length<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<u64>
 where
     B: BRefAccess,
 {
     CONVERT
         .lookup_and_convert_int(info_dict, PIECE_LENGTH_KEY)
-        .map(|len| len as u64)
+        .map(|len| len.try_into().unwrap())
 }
 
 /// Parses the pieces from the info dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_pieces<'a, B>(info_dict: &'a dyn BDictAccess<B::BKey, B>) -> ParseResult<&'a [u8]>
 where
     B: BRefAccess + 'a,
@@ -142,6 +152,7 @@ where
 }
 
 /// Parses the private flag from the info dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_private<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> Option<bool>
 where
     B: BRefAccess,
@@ -150,6 +161,7 @@ where
 }
 
 /// Parses the name from the info dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_name<'a, B>(info_dict: &'a dyn BDictAccess<B::BKey, B>) -> ParseResult<&'a str>
 where
     B: BRefAccess + 'a,
@@ -158,6 +170,7 @@ where
 }
 
 /// Parses the files list from the info dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_files_list<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<&dyn BListAccess<B>>
 where
     B: BRefAccess<BType = B> + PartialEq,
@@ -168,6 +181,7 @@ where
 // ----------------------------------------------------------------------------//
 
 /// Parses the file dictionary from the file bencode.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_file_dict<B>(file_bencode: &B) -> ParseResult<&dyn BDictAccess<B::BKey, B::BType>>
 where
     B: BRefAccess,
@@ -176,16 +190,18 @@ where
 }
 
 /// Parses the length from the info or file dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_length<B>(info_or_file_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<u64>
 where
     B: BRefAccess,
 {
     CONVERT
         .lookup_and_convert_int(info_or_file_dict, LENGTH_KEY)
-        .map(|len| len as u64)
+        .map(|len| len.try_into().unwrap())
 }
 
 /// Parses the md5sum from the info or file dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_md5sum<'a, B>(info_or_file_dict: &'a dyn BDictAccess<B::BKey, B>) -> Option<&'a [u8]>
 where
     B: BRefAccess + 'a,
@@ -194,6 +210,7 @@ where
 }
 
 /// Parses the path list from the file dictionary.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_path_list<B>(file_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<&dyn BListAccess<B>>
 where
     B: BRefAccess<BType = B>,
@@ -202,6 +219,7 @@ where
 }
 
 /// Parses the path string from the path bencode.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_path_str<B>(path_bencode: &B) -> ParseResult<&str>
 where
     B: BRefAccess,

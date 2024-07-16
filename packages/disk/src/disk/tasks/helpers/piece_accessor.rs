@@ -66,6 +66,7 @@ where
                 let actual_bytes_to_access = cmp::min(total_max_bytes_to_access, bytes_to_access);
                 let offset = total_file_size - bytes_to_access;
 
+                #[allow(clippy::cast_possible_truncation)]
                 let (begin, end) = (
                     total_bytes_accessed as usize,
                     (total_bytes_accessed + actual_bytes_to_access) as usize,

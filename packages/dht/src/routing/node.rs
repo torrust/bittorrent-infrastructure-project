@@ -29,6 +29,7 @@ const MAX_REFRESH_REQUESTS: usize = 2;
 /// Status of the node.
 /// Ordering of the enumerations is important, variants higher
 /// up are considered to be less than those further down.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum NodeStatus {
     Bad,
@@ -130,14 +131,17 @@ impl Node {
                         *dst = *src;
                     }
                 }
-                _ => panic!("bip_dht: Cannot encode a SocketAddrV6..."),
+                SocketAddr::V6(_) => panic!("bip_dht: Cannot encode a SocketAddrV6..."),
             }
         }
 
         // Copy the port over
         let port = self.addr.port();
         encoded[24] = (port >> 8) as u8;
-        encoded[25] = port as u8;
+
+        #[allow(clippy::cast_possible_truncation)]
+        let port = port as u8;
+        encoded[25] = port;
 
         encoded
     }
@@ -274,6 +278,7 @@ mod tests {
 
         let encoded_node = node.encode();
 
+        #[allow(clippy::cast_possible_truncation)]
         let port_bytes = [(port >> 8) as u8, port as u8];
         for (expected, actual) in node_id
             .iter()

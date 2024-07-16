@@ -3,6 +3,7 @@ use std::time::Duration;
 use futures::Future;
 use tokio_timer::{Timeout, TimeoutError, Timer};
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 pub struct HandshakeTimer {
     timer: Timer,
@@ -41,7 +42,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ()")]
     fn negative_finish_after_timeout() {
         let timer = HandshakeTimer::new(tokio_timer::wheel().build(), Duration::from_millis(50));
 

@@ -49,7 +49,7 @@ fn positive_process_block() {
                 Loop::Continue(((blocking_send, None), recv))
             }
             ODiskMessage::BlockProcessed(_) => Loop::Break(()),
-            unexpected => panic!("Unexpected Message: {:?}", unexpected),
+            unexpected => panic!("Unexpected Message: {unexpected:?}"),
         },
     );
 

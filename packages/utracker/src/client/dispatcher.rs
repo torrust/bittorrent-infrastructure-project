@@ -43,6 +43,7 @@ pub enum DispatchMessage {
 /// Create a new background dispatcher to execute request and send responses back.
 ///
 /// Assumes `msg_capacity` is less than `usize::max_value`().
+#[allow(clippy::module_name_repetitions)]
 pub fn create_dispatcher<H>(
     bind: SocketAddr,
     handshaker: H,
@@ -160,7 +161,7 @@ where
         &mut self,
         provider: &mut Provider<'_, ClientDispatcher<H>>,
         addr: SocketAddr,
-        response: TrackerResponse<'_>,
+        response: &TrackerResponse<'_>,
     ) {
         let token = ClientToken(response.transaction_id());
 
@@ -216,20 +217,15 @@ where
     ///
     /// If this call is the result of a timeout, that will decide whether to cancel the request or not.
     fn process_request(&mut self, provider: &mut Provider<'_, ClientDispatcher<H>>, token: ClientToken, timed_out: bool) {
-        let mut conn_timer = if let Some(conn_timer) = self.active_requests.remove(&token) {
-            conn_timer
-        } else {
+        let Some(mut conn_timer) = self.active_requests.remove(&token) else {
             return;
         }; // TODO: Add logging
 
         // Resolve the duration of the current timeout to use
-        let next_timeout = match conn_timer.current_timeout(timed_out) {
-            Some(timeout) => timeout,
-            None => {
-                self.notify_client(token, Err(ClientError::MaxTimeout));
+        let Some(next_timeout) = conn_timer.current_timeout(timed_out) else {
+            self.notify_client(token, Err(ClientError::MaxTimeout));
 
-                return;
-            }
+            return;
         };
 
         let addr = conn_timer.message_params().0;
@@ -275,16 +271,14 @@ where
             write_success = tracker_request.write_bytes(&mut writer).is_ok();
 
             if write_success {
-                Some((writer.position() as usize, addr))
+                Some((writer.position().try_into().unwrap(), addr))
             } else {
                 None
             }
         });
 
         // If message was not sent (too long to fit) then end the request
-        if !write_success {
-            self.notify_client(token, Err(ClientError::MaxLength));
-        } else {
+        if write_success {
             conn_timer.set_timeout_id(
                 provider
                     .set_timeout(DispatchTimeout::Connect(token), next_timeout)
@@ -292,6 +286,8 @@ where
             );
 
             self.active_requests.insert(token, conn_timer);
+        } else {
+            self.notify_client(token, Err(ClientError::MaxLength));
         }
     }
 }
@@ -305,12 +301,11 @@ where
     type Message = DispatchMessage;
 
     fn incoming(&mut self, mut provider: Provider<'_, Self>, message: &[u8], addr: SocketAddr) {
-        let response = match TrackerResponse::from_bytes(message) {
-            IResult::Done(_, rsp) => rsp,
-            _ => return, // TODO: Add Logging
+        let IResult::Done(_, response) = TrackerResponse::from_bytes(message) else {
+            return; // TODO: Add Logging
         };
 
-        self.recv_response(&mut provider, addr, response);
+        self.recv_response(&mut provider, addr, &response);
     }
 
     fn notify(&mut self, mut provider: Provider<'_, Self>, message: DispatchMessage) {
@@ -390,7 +385,9 @@ impl ConnectTimer {
 
 /// Calculates the timeout for the request given the attempt count.
 fn calculate_message_timeout_millis(attempt: u64) -> u64 {
-    (15 * 2u64.pow(attempt as u32)) * 1000
+    #[allow(clippy::cast_possible_truncation)]
+    let attempt = attempt as u32;
+    (15 * 2u64.pow(attempt)) * 1000
 }
 
 // ----------------------------------------------------------------------------//

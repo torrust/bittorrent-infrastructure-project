@@ -28,6 +28,7 @@ const ANNOUNCE_STOPPED_EVENT: i32 = 3;
 /// Announce request sent from the client to the server.
 ///
 /// IPv6 is supported but is [not standard](http://opentracker.blog.h3q.com/2007/12/28/the-ipv6-situation/).
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AnnounceRequest<'a> {
     info_hash: InfoHash,
@@ -77,6 +78,10 @@ impl<'a> AnnounceRequest<'a> {
     }
 
     /// Write the `AnnounceRequest` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -185,6 +190,7 @@ fn parse_request(bytes: &[u8], ip_type: fn(bytes: &[u8]) -> IResult<&[u8], Sourc
 // ----------------------------------------------------------------------------//
 
 /// Announce response sent from the server to the client.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AnnounceResponse<'a> {
     interval: i32,
@@ -216,6 +222,10 @@ impl<'a> AnnounceResponse<'a> {
     }
 
     /// Write the `AnnounceResponse` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -311,6 +321,10 @@ impl ClientState {
     }
 
     /// Write the `ClientState` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -362,6 +376,7 @@ fn parse_state(bytes: &[u8]) -> IResult<&[u8], ClientState> {
 // ----------------------------------------------------------------------------//
 
 /// Announce event of a client reported to the server.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum AnnounceEvent {
     /// No event is reported.
@@ -382,6 +397,10 @@ impl AnnounceEvent {
     }
 
     /// Write the `AnnounceEvent` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -441,15 +460,19 @@ impl SourceIP {
     }
 
     /// Write the `SourceIP` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
     where
         W: Write,
     {
         match *self {
-            SourceIP::ImpliedV4 => self.write_bytes_slice(writer, &IMPLIED_IPV4_ID[..]),
-            SourceIP::ImpliedV6 => self.write_bytes_slice(writer, &IMPLIED_IPV6_ID[..]),
-            SourceIP::ExplicitV4(addr) => self.write_bytes_slice(writer, &convert::ipv4_to_bytes_be(addr)[..]),
-            SourceIP::ExplicitV6(addr) => self.write_bytes_slice(writer, &convert::ipv6_to_bytes_be(addr)[..]),
+            SourceIP::ImpliedV4 => SourceIP::write_bytes_slice(writer, &IMPLIED_IPV4_ID[..]),
+            SourceIP::ImpliedV6 => SourceIP::write_bytes_slice(writer, &IMPLIED_IPV6_ID[..]),
+            SourceIP::ExplicitV4(addr) => SourceIP::write_bytes_slice(writer, &convert::ipv4_to_bytes_be(addr)[..]),
+            SourceIP::ExplicitV6(addr) => SourceIP::write_bytes_slice(writer, &convert::ipv6_to_bytes_be(addr)[..]),
         }
     }
 
@@ -457,10 +480,8 @@ impl SourceIP {
     #[must_use]
     pub fn is_ipv6(&self) -> bool {
         match *self {
-            SourceIP::ImpliedV6 => true,
-            SourceIP::ExplicitV6(_) => true,
-            SourceIP::ImpliedV4 => false,
-            SourceIP::ExplicitV4(_) => false,
+            SourceIP::ExplicitV6(_) | SourceIP::ImpliedV6 => true,
+            SourceIP::ImpliedV4 | SourceIP::ExplicitV4(_) => false,
         }
     }
 
@@ -471,7 +492,7 @@ impl SourceIP {
     }
 
     /// Write the given byte slice to the given writer.
-    fn write_bytes_slice<W>(&self, mut writer: W, bytes: &[u8]) -> io::Result<()>
+    fn write_bytes_slice<W>(mut writer: W, bytes: &[u8]) -> io::Result<()>
     where
         W: Write,
     {
@@ -520,6 +541,10 @@ impl DesiredPeers {
     }
 
     /// Write the `DesiredPeers` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
@@ -790,9 +815,8 @@ mod tests {
         bytes.write_i32::<BigEndian>(num_want).unwrap();
         bytes.write_u16::<BigEndian>(port).unwrap();
 
-        let received = match AnnounceRequest::from_bytes_v4(&bytes) {
-            IResult::Done(_, rec) => rec,
-            _ => panic!("AnnounceRequest Parsing Failed..."),
+        let IResult::Done(_, received) = AnnounceRequest::from_bytes_v4(&bytes) else {
+            panic!("AnnounceRequest Parsing Failed...")
         };
 
         assert_eq!(received.info_hash(), InfoHash::from(info_hash));
@@ -1045,7 +1069,7 @@ mod tests {
 
     #[test]
     fn positive_parse_desired_peers_default() {
-        let default_bytes = convert::four_bytes_to_array(-1i32 as u32);
+        let default_bytes = convert::four_bytes_to_array(u32::MAX);
 
         let received = DesiredPeers::from_bytes(&default_bytes);
         let expected = DesiredPeers::Default;

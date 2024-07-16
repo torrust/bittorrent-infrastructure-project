@@ -23,10 +23,11 @@ pub enum OExtendedMessage {
 }
 
 /// Trait for a module to take part in constructing the extended message for a peer.
+#[allow(clippy::module_name_repetitions)]
 pub trait ExtendedListener {
     /// Extend the given extended message builder for the given peer.
-    fn extend(&self, _info: &PeerInfo, _builder: ExtendedMessageBuilder) -> ExtendedMessageBuilder {
-        _builder
+    fn extend(&self, _info: &PeerInfo, builder: ExtendedMessageBuilder) -> ExtendedMessageBuilder {
+        builder
     }
 
     /// One or both sides of a peer connection had their extended information updated.
@@ -36,6 +37,7 @@ pub trait ExtendedListener {
 }
 
 /// Container for both the local and remote `ExtendedMessage`.
+#[allow(clippy::module_name_repetitions)]
 pub struct ExtendedPeerInfo {
     ours: Option<ExtendedMessage>,
     theirs: Option<ExtendedMessage>,
@@ -65,6 +67,7 @@ impl ExtendedPeerInfo {
 
 //------------------------------------------------------------------------------//
 
+#[allow(clippy::module_name_repetitions)]
 pub struct ExtendedModule {
     builder: ExtendedMessageBuilder,
     peers: HashMap<PeerInfo, ExtendedPeerInfo>,
@@ -117,7 +120,7 @@ impl ExtendedModule {
                     d_module.on_update(&info, ext_peer_info);
                 }
             }
-            _ => (),
+            IExtendedMessage::Control(_) => (),
         }
 
         self.check_stream_unblock();

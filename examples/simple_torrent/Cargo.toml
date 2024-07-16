@@ -23,6 +23,4 @@ peer = { path = "../../packages/peer" }
 clap = "3"
 futures = "0.1"
 tokio-core = "0.1"
-tokio-io = "0.1"
-tokio-timer = "0.1"
 tokio-codec = "0.1"

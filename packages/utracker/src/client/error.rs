@@ -4,6 +4,7 @@ use crate::error::ErrorResponse;
 pub type ClientResult<T> = Result<T, ClientError>;
 
 /// Errors occurring as the result of a `ClientRequest`.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientError {
     /// Request timeout reached.

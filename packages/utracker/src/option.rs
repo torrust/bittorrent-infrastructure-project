@@ -13,6 +13,7 @@ const NO_OPERATION_BYTE: u8 = 0x01;
 const URL_DATA_BYTE: u8 = 0x02;
 
 /// Trait for supplying optional information in an `AnnounceRequest`.
+#[allow(clippy::module_name_repetitions)]
 pub trait AnnounceOption<'a>: Sized {
     /// Byte specifying what option this is.
     fn option_byte() -> u8;
@@ -55,14 +56,21 @@ impl<'a> AnnounceOptions<'a> {
     }
 
     /// Write the `AnnounceOptions` to the given writer.
-    #[allow(unused)]
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
+    ///
+    /// # Panics
+    ///
+    /// It would panic if the chuck length is too large.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
     {
         for (byte, content) in &self.raw_options {
-            for content_chunk in content.chunks(u8::max_value() as usize) {
-                let content_chunk_len = content_chunk.len() as u8;
+            for content_chunk in content.chunks(u8::MAX as usize) {
+                let content_chunk_len: u8 = content_chunk.len().try_into().unwrap();
 
                 writer.write_u8(*byte)?;
                 writer.write_u8(content_chunk_len)?;
@@ -187,6 +195,7 @@ named!(byte_usize<&[u8], usize>, map!(
 // ----------------------------------------------------------------------------//
 
 /// Concatenated PATH and QUERY of a UDP tracker URL.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct URLDataOption<'a> {
     url_data: &'a [u8],
@@ -221,7 +230,6 @@ impl<'a> AnnounceOption<'a> for URLDataOption<'a> {
 #[cfg(test)]
 mod tests {
     use std::io::Write;
-    use std::u8;
 
     use nom::IResult;
 
@@ -390,7 +398,7 @@ mod tests {
 
         let mut bytes = [0u8; NUM_BYTES];
         bytes[0] = super::URL_DATA_BYTE;
-        bytes[1] = u8::max_value();
+        bytes[1] = u8::MAX;
         bytes[256] = 230;
 
         let received = AnnounceOptions::from_bytes(&bytes);
@@ -411,7 +419,7 @@ mod tests {
         {
             let bytes_one = &mut bytes[..NUM_BYTES];
             bytes_one[0] = super::URL_DATA_BYTE;
-            bytes_one[1] = u8::max_value();
+            bytes_one[1] = u8::MAX;
             bytes_one[256] = 230;
 
             url_data_bytes.extend_from_slice(&bytes_one[2..]);
@@ -419,7 +427,7 @@ mod tests {
         {
             let bytes_two = &mut bytes[NUM_BYTES..];
             bytes_two[0] = super::URL_DATA_BYTE;
-            bytes_two[1] = u8::max_value();
+            bytes_two[1] = u8::MAX;
             bytes_two[256] = 210;
 
             url_data_bytes.extend_from_slice(&bytes_two[2..]);
@@ -445,7 +453,7 @@ mod tests {
         {
             let bytes_one = &mut bytes[..NUM_BYTES];
             bytes_one[0] = super::URL_DATA_BYTE;
-            bytes_one[1] = u8::max_value();
+            bytes_one[1] = u8::MAX;
             bytes_one[256] = 230;
 
             url_data_bytes.extend_from_slice(&bytes_one[2..]);

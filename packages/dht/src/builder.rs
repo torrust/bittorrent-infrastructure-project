@@ -96,6 +96,7 @@ impl Drop for MainlineDht {
 // ----------------------------------------------------------------------------//
 
 /// Stores information for initializing a DHT.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug)]
 pub struct DhtBuilder {
     nodes: HashSet<SocketAddr>,
@@ -193,6 +194,10 @@ impl DhtBuilder {
     }
 
     /// Start a mainline DHT with the current configuration.
+    ///
+    /// # Errors
+    ///
+    /// It would return error if unable to build from the handshaker.
     pub fn start_mainline<H>(self, handshaker: H) -> io::Result<MainlineDht>
     where
         H: HandshakerTrait + 'static,

@@ -5,6 +5,7 @@ use bytes::Bytes;
 use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Unit protocol which will always return a unit if called.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default)]
 pub struct UnitProtocol;
 

@@ -6,6 +6,7 @@ use std::io::{self, Write};
 use nom::{call, error_position, map, map_res, take, take_str, IResult};
 
 /// Error reported by the server and sent to the client.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ErrorResponse<'a> {
     message: Cow<'a, str>,
@@ -26,6 +27,10 @@ impl<'a> ErrorResponse<'a> {
     }
 
     /// Write the `ErrorResponse` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// It would return an IO Error if unable to write the bytes.
     pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
     where
         W: Write,
