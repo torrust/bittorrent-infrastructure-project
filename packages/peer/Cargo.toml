@@ -21,7 +21,7 @@ bencode = { path = "../bencode" }
 handshake = { path = "../handshake" }
 util = { path = "../util" }
 
-bytes = "0.4"
+bytes = "1.7"
 byteorder = "1"
 crossbeam = "0.8"
 error-chain = "0.12"

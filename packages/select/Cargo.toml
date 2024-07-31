@@ -23,7 +23,7 @@ metainfo = { path = "../metainfo" }
 utracker = { path = "../utracker" }
 
 bit-set = "0.5"
-bytes = "0.4"
+bytes = "1.7"
 error-chain = "0.12"
 futures = "0.1"
 rand = "0.8"
