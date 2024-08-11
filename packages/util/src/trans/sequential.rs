@@ -7,7 +7,7 @@ use crate::trans::TransactionIds;
 
 /// Generates sequentially unique ids and wraps when overflow occurs.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct SequentialIds<T> {
     next_id: T,
 }

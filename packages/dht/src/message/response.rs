@@ -1,10 +1,8 @@
-use std::fmt::Debug;
-
 use bencode::ext::BConvertExt;
 use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
 use util::bt::NodeId;
 
-use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::error::DhtError;
 use crate::message::announce_peer::AnnouncePeerResponse;
 use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
 use crate::message::find_node::FindNodeResponse;
@@ -31,15 +29,13 @@ impl<'a> ResponseValidate<'a> {
     /// # Errors
     ///
     /// This function will return an error if to generate the `NodeId`.
-    pub fn validate_node_id(&self, node_id: &[u8]) -> DhtResult<NodeId> {
-        NodeId::from_hash(node_id).map_err(|_| {
-            DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                details: format!(
-                    "TID {:?} Found Node ID With Invalid Length {:?}",
-                    self.trans_id,
-                    node_id.len()
-                ),
-            })
+    pub fn validate_node_id(&self, node_id: &[u8]) -> Result<NodeId, DhtError> {
+        NodeId::from_hash(node_id).map_err(|_| DhtError::InvalidResponse {
+            details: format!(
+                "TID {:?} Found Node ID With Invalid Length {:?}",
+                self.trans_id,
+                node_id.len()
+            ),
         })
     }
 
@@ -48,16 +44,14 @@ impl<'a> ResponseValidate<'a> {
     /// # Errors
     ///
     /// This function will return an error if to generate the `CompactNodeInfo`.
-    pub fn validate_nodes<'b>(&self, nodes: &'b [u8]) -> DhtResult<CompactNodeInfo<'b>> {
-        CompactNodeInfo::new(nodes).map_err(|_| {
-            DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                details: format!(
-                    "TID {:?} Found Nodes Structure With {} Number Of Bytes Instead \
+    pub fn validate_nodes<'b>(&self, nodes: &'b [u8]) -> Result<CompactNodeInfo<'b>, DhtError> {
+        CompactNodeInfo::new(nodes).map_err(|_| DhtError::InvalidResponse {
+            details: format!(
+                "TID {:?} Found Nodes Structure With {} Number Of Bytes Instead \
                                   Of Correct Multiple",
-                    self.trans_id,
-                    nodes.len()
-                ),
-            })
+                self.trans_id,
+                nodes.len()
+            ),
         })
     }
 
@@ -66,26 +60,24 @@ impl<'a> ResponseValidate<'a> {
     /// # Errors
     ///
     /// This function will return an error if to generate the `CompactValueInfo`.
-    pub fn validate_values<'b, B>(&self, values: &'b dyn BListAccess<B::BType>) -> DhtResult<CompactValueInfo<'b, B>>
+    pub fn validate_values<'b, B>(&self, values: &'b dyn BListAccess<B::BType>) -> Result<CompactValueInfo<'b, B>, DhtError>
     where
         B: BRefAccess<BType = B> + Clone,
-        B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+        B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
     {
         for bencode in values {
             match bencode.bytes() {
                 Some(_) => (),
                 None => {
-                    return Err(DhtError::from_kind(DhtErrorKind::InvalidResponse {
+                    return Err(DhtError::InvalidResponse {
                         details: format!("TID {:?} Found Values Structure As Non Bytes Type", self.trans_id),
-                    }))
+                    })
                 }
             }
         }
 
-        CompactValueInfo::new(values).map_err(|_| {
-            DhtError::from_kind(DhtErrorKind::InvalidResponse {
-                details: format!("TID {:?} Found Values Structure With Wrong Number Of Bytes", self.trans_id),
-            })
+        CompactValueInfo::new(values).map_err(|_| DhtError::InvalidResponse {
+            details: format!("TID {:?} Found Values Structure With Wrong Number Of Bytes", self.trans_id),
         })
     }
 }
@@ -119,7 +111,7 @@ pub enum ExpectedResponse {
 pub enum ResponseType<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
-    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+    B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
 {
     Ping(PingResponse<'a>),
     FindNode(FindNodeResponse<'a>),
@@ -131,7 +123,7 @@ where
 impl<'a, B> ResponseType<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
-    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+    B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
 {
     /// Creates a new `ResponseType` from parts.
     ///
@@ -142,7 +134,7 @@ where
         root: &'a dyn BDictAccess<B::BKey, B>,
         trans_id: &'a [u8],
         rsp_type: &ExpectedResponse,
-    ) -> DhtResult<ResponseType<'a, B>>
+    ) -> Result<ResponseType<'a, B>, DhtError>
     where
         B: BRefAccess<BType = B>,
     {
@@ -172,7 +164,7 @@ where
             ExpectedResponse::PutData => {
                 unimplemented!();
             }
-            ExpectedResponse::None => Err(DhtError::from_kind(DhtErrorKind::UnsolicitedResponse)),
+            ExpectedResponse::None => Err(DhtError::UnsolicitedResponse),
         }
     }
 }

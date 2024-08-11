@@ -1,13 +1,13 @@
 use std::any::Any;
 use std::time::Duration;
 
-use common::TimeoutResult;
-use futures::sink::Sink;
-use futures::stream::Stream;
-use futures::Future;
+use common::{tracing_stderr_init, INIT};
+use futures::sink::SinkExt;
+use futures::stream::{self, StreamExt};
+use futures::FutureExt as _;
 use handshake::transports::TcpTransport;
 use handshake::{DiscoveryInfo, FilterDecision, HandshakeFilter, HandshakeFilters, HandshakerBuilder, InitiateMessage, Protocol};
-use tokio_core::reactor::{Core, Timeout};
+use tracing::level_filters::LevelFilter;
 use util::bt::{self, InfoHash};
 
 mod common;
@@ -46,20 +46,23 @@ impl HandshakeFilter for FilterAllowHash {
     }
 }
 
-#[test]
-fn test_filter_whitelist_same_data() {
-    let mut core = Core::new().unwrap();
-    let handle = core.handle();
+#[tokio::test]
+async fn test_filter_whitelist_same_data() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::INFO);
+    });
 
-    let mut handshaker_one_addr = "127.0.0.1:0".parse().unwrap();
+    let handshaker_one_addr = "127.0.0.1:0".parse().unwrap();
     let handshaker_one_pid = [4u8; bt::PEER_ID_LEN].into();
 
-    let handshaker_one = HandshakerBuilder::new()
+    let (handshaker_one, mut tasks_one) = HandshakerBuilder::new()
         .with_bind_addr(handshaker_one_addr)
         .with_peer_id(handshaker_one_pid)
-        .build(TcpTransport, &core.handle())
+        .build(TcpTransport)
+        .await
         .unwrap();
 
+    let mut handshaker_one_addr = handshaker_one_addr;
     handshaker_one_addr.set_port(handshaker_one.port());
     // Filter all incoming handshake requests hash's, then whitelist
     let allow_info_hash = [55u8; bt::INFO_HASH_LEN].into();
@@ -67,48 +70,59 @@ fn test_filter_whitelist_same_data() {
     handshaker_one.add_filter(FilterBlockAllHash);
     handshaker_one.add_filter(FilterAllowHash { hash: allow_info_hash });
 
-    let mut handshaker_two_addr = "127.0.0.1:0".parse().unwrap();
+    let handshaker_two_addr = "127.0.0.1:0".parse().unwrap();
     let handshaker_two_pid = [5u8; bt::PEER_ID_LEN].into();
 
-    let handshaker_two = HandshakerBuilder::new()
+    let (handshaker_two, mut tasks_two) = HandshakerBuilder::new()
         .with_bind_addr(handshaker_two_addr)
         .with_peer_id(handshaker_two_pid)
-        .build(TcpTransport, &core.handle())
+        .build(TcpTransport)
+        .await
         .unwrap();
 
+    let mut handshaker_two_addr = handshaker_two_addr;
     handshaker_two_addr.set_port(handshaker_two.port());
 
     let (_, stream_one) = handshaker_one.into_parts();
-    let (sink_two, stream_two) = handshaker_two.into_parts();
+    let (mut sink_two, stream_two) = handshaker_two.into_parts();
 
-    let timeout_result = core
-        .run(
-            sink_two
-                .send(InitiateMessage::new(
-                    Protocol::BitTorrent,
-                    allow_info_hash,
-                    handshaker_one_addr,
-                ))
-                .map_err(|_| ())
-                .and_then(|_| {
-                    let timeout = Timeout::new(Duration::from_millis(50), &handle)
-                        .unwrap()
-                        .map(|()| TimeoutResult::TimedOut)
-                        .map_err(|_| ());
+    let test = tokio::spawn(async move {
+        // Send the initiate message
+        sink_two
+            .send(InitiateMessage::new(
+                Protocol::BitTorrent,
+                allow_info_hash,
+                handshaker_one_addr,
+            ))
+            .await
+            .unwrap();
 
-                    let result_one = stream_one.into_future().map(|_| TimeoutResult::GotResult).map_err(|_| ());
-                    let result_two = stream_two.into_future().map(|_| TimeoutResult::GotResult).map_err(|_| ());
+        // Use tokio timeout to wait for the result
+        let get_handshake = async move {
+            let mut merged = stream::select(stream_one, stream_two);
+            loop {
+                tokio::time::sleep(Duration::from_millis(5)).await;
 
-                    result_one
-                        .select(result_two)
-                        .map(|_| TimeoutResult::GotResult)
-                        .map_err(|_| ())
-                        .select(timeout)
-                        .map(|(item, _)| item)
-                        .map_err(|_| ())
-                }),
-        )
-        .unwrap();
+                let Some(res) = merged.next().now_or_never() else {
+                    continue;
+                };
+                break res;
+            }
+        };
 
-    assert_eq!(TimeoutResult::GotResult, timeout_result);
+        let res = tokio::time::timeout(Duration::from_millis(50), get_handshake).await;
+
+        if let Ok(item) = res {
+            tracing::debug!("handshake was produced: {item:?}");
+        } else {
+            panic!("expected item, but got a timeout!");
+        }
+    });
+
+    let res = test.await;
+
+    tasks_one.shutdown().await;
+    tasks_two.shutdown().await;
+
+    res.unwrap();
 }

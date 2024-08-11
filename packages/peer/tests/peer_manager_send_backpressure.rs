@@ -1,107 +1,63 @@
-use common::{connected_channel, ConnectedChannel};
-use futures::sink::Sink;
-use futures::stream::Stream;
-use futures::{future, AsyncSink, Future};
+use common::connected_channel::{connected_channel, ConnectedChannel};
+use common::{add_peer, remove_peer, tracing_stderr_init, INIT};
+use futures::SinkExt as _;
 use handshake::Extensions;
+use peer::error::PeerManagerError;
 use peer::messages::PeerWireProtocolMessage;
 use peer::protocols::NullProtocol;
-use peer::{IPeerManagerMessage, OPeerManagerMessage, PeerInfo, PeerManagerBuilder};
-use tokio_core::reactor::Core;
+use peer::{PeerInfo, PeerManagerBuilder, PeerManagerInputMessage};
+use tracing::level_filters::LevelFilter;
 use util::bt;
 
 mod common;
 
-#[test]
-fn positive_peer_manager_send_backpressure() {
-    type Peer = ConnectedChannel<PeerWireProtocolMessage<NullProtocol>, PeerWireProtocolMessage<NullProtocol>>;
+type Peer = ConnectedChannel<
+    Result<PeerWireProtocolMessage<NullProtocol>, std::io::Error>,
+    Result<PeerWireProtocolMessage<NullProtocol>, std::io::Error>,
+>;
 
-    let mut core = Core::new().unwrap();
-    let manager = PeerManagerBuilder::new().with_peer_capacity(1).build(core.handle());
+#[tokio::test]
+async fn positive_peer_manager_send_backpressure() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::INFO);
+    });
+
+    let (mut send, mut recv) = PeerManagerBuilder::new()
+        .with_peer_capacity(1)
+        .build::<Peer, PeerWireProtocolMessage<NullProtocol>>()
+        .into_parts();
 
     // Create two peers
     let (peer_one, peer_two): (Peer, Peer) = connected_channel(5);
-    let peer_one_info = PeerInfo::new(
-        "127.0.0.1:0".parse().unwrap(),
-        [0u8; bt::PEER_ID_LEN].into(),
-        [0u8; bt::INFO_HASH_LEN].into(),
-        Extensions::new(),
-    );
-    let peer_two_info = PeerInfo::new(
-        "127.0.0.1:1".parse().unwrap(),
-        [1u8; bt::PEER_ID_LEN].into(),
-        [1u8; bt::INFO_HASH_LEN].into(),
-        Extensions::new(),
-    );
+    let peer_one_info = create_peer_info("127.0.0.1:0", [0u8; bt::PEER_ID_LEN], [0u8; bt::INFO_HASH_LEN]);
+    let peer_two_info = create_peer_info("127.0.0.1:1", [1u8; bt::PEER_ID_LEN], [1u8; bt::INFO_HASH_LEN]);
 
     // Add peer one to the manager
-    let manager = core
-        .run(manager.send(IPeerManagerMessage::AddPeer(peer_one_info, peer_one)))
-        .unwrap();
-
-    // Check that peer one was added
-    let (response, mut manager) = core
-        .run(
-            manager
-                .into_future()
-                .map(|(opt_item, stream)| (opt_item.unwrap(), stream))
-                .map_err(|_| ()),
-        )
-        .unwrap();
-    match response {
-        OPeerManagerMessage::PeerAdded(info) => assert_eq!(peer_one_info, info),
-        _ => panic!("Unexpected First Peer Manager Response"),
-    };
+    add_peer(&mut send, &mut recv, peer_one_info, peer_one).await.unwrap();
 
     // Try to add peer two, but make sure it was denied (start send returned not ready)
-    let (response, manager) = core
-        .run(future::lazy(|| {
-            future::ok::<_, ()>((
-                manager.start_send(IPeerManagerMessage::AddPeer(peer_two_info, peer_two)),
-                manager,
-            ))
-        }))
-        .unwrap();
-    let peer_two = match response {
-        Ok(AsyncSink::NotReady(IPeerManagerMessage::AddPeer(info, peer_two))) => {
-            assert_eq!(peer_two_info, info);
-            peer_two
-        }
-        _ => panic!("Unexpected Second Peer Manager Response"),
+    let Err(full) = send.start_send_unpin(Ok(PeerManagerInputMessage::AddPeer(peer_two_info, peer_two.clone()))) else {
+        panic!("it should not add to full peer store")
     };
+
+    let PeerManagerError::PeerStoreFull(capacity) = full else {
+        panic!("it should be a peer store full error, but got: {full:?}")
+    };
+
+    assert_eq!(capacity, 1);
 
     // Remove peer one from the manager
-    let manager = core
-        .run(manager.send(IPeerManagerMessage::RemovePeer(peer_one_info)))
-        .unwrap();
-
-    // Check that peer one was removed
-    let (response, manager) = core
-        .run(
-            manager
-                .into_future()
-                .map(|(opt_item, stream)| (opt_item.unwrap(), stream))
-                .map_err(|_| ()),
-        )
-        .unwrap();
-    match response {
-        OPeerManagerMessage::PeerRemoved(info) => assert_eq!(peer_one_info, info),
-        _ => panic!("Unexpected Third Peer Manager Response"),
-    };
+    remove_peer(&mut send, &mut recv, peer_one_info).await.unwrap();
 
     // Try to add peer two, but make sure it goes through
-    let manager = core
-        .run(manager.send(IPeerManagerMessage::AddPeer(peer_two_info, peer_two)))
-        .unwrap();
-    let (response, _manager) = core
-        .run(
-            manager
-                .into_future()
-                .map(|(opt_item, stream)| (opt_item.unwrap(), stream))
-                .map_err(|_| ()),
-        )
-        .unwrap();
-    match response {
-        OPeerManagerMessage::PeerAdded(info) => assert_eq!(peer_two_info, info),
-        _ => panic!("Unexpected Fourth Peer Manager Response"),
-    };
+    add_peer(&mut send, &mut recv, peer_two_info, peer_two).await.unwrap();
+}
+
+fn create_peer_info(addr: &str, peer_id: [u8; bt::PEER_ID_LEN], info_hash: [u8; bt::INFO_HASH_LEN]) -> PeerInfo {
+    PeerInfo::new(
+        addr.parse().expect("Invalid address"),
+        peer_id.into(),
+        info_hash.into(),
+        Extensions::new(),
+    )
 }

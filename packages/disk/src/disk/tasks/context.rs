@@ -1,89 +1,115 @@
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 
-use futures::sink::{Sink, Wait};
-use futures::sync::mpsc::Sender;
+use futures::channel::mpsc;
+use futures::future::BoxFuture;
+use futures::lock::Mutex;
+use futures::sink::SinkExt;
 use metainfo::Metainfo;
 use util::bt::InfoHash;
 
 use crate::disk::tasks::helpers::piece_checker::PieceCheckerState;
 use crate::disk::ODiskMessage;
+use crate::FileSystem;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
-pub struct DiskManagerContext<F> {
-    torrents: Arc<RwLock<HashMap<InfoHash, Mutex<MetainfoState>>>>,
-    out: Sender<ODiskMessage>,
+pub struct DiskManagerContext<F>
+where
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
+{
+    torrents: Arc<RwLock<HashMap<InfoHash, MetainfoState>>>,
+    pub out: mpsc::Sender<ODiskMessage>,
     fs: Arc<F>,
 }
 
-#[derive(Debug)]
+impl<F> Clone for DiskManagerContext<F>
+where
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
+{
+    fn clone(&self) -> Self {
+        Self {
+            torrents: self.torrents.clone(),
+            out: self.out.clone(),
+            fs: self.fs.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct MetainfoState {
-    file: Metainfo,
-    state: PieceCheckerState,
+    pub file: Metainfo,
+    pub checker: Arc<Mutex<PieceCheckerState>>,
 }
 
 impl MetainfoState {
-    pub fn new(file: Metainfo, state: PieceCheckerState) -> MetainfoState {
-        MetainfoState { file, state }
+    pub fn new(file: Metainfo, state: Arc<Mutex<PieceCheckerState>>) -> MetainfoState {
+        MetainfoState { file, checker: state }
     }
 }
 
-impl<F> DiskManagerContext<F> {
-    pub fn new(out: Sender<ODiskMessage>, fs: F) -> DiskManagerContext<F> {
+impl<F> DiskManagerContext<F>
+where
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
+{
+    pub fn new(out: mpsc::Sender<ODiskMessage>, fs: Arc<F>) -> DiskManagerContext<F> {
         DiskManagerContext {
             torrents: Arc::new(RwLock::new(HashMap::new())),
             out,
-            fs: Arc::new(fs),
+            fs,
         }
     }
 
-    pub fn blocking_sender(&self) -> Wait<Sender<ODiskMessage>> {
-        self.out.clone().wait()
+    #[allow(dead_code)]
+    pub async fn send_message(&mut self, message: ODiskMessage) -> Result<(), futures::channel::mpsc::SendError> {
+        self.out.send(message).await
     }
 
-    pub fn filesystem(&self) -> &F {
+    pub fn filesystem(&self) -> &Arc<F> {
         &self.fs
     }
 
-    pub fn insert_torrent(&self, file: Metainfo, state: PieceCheckerState) -> bool {
+    pub fn insert_torrent(
+        &self,
+        file: Metainfo,
+        state: &Arc<Mutex<PieceCheckerState>>,
+    ) -> Result<InfoHash, (InfoHash, Box<MetainfoState>)> {
         let mut write_torrents = self
             .torrents
             .write()
             .expect("bip_disk: DiskManagerContext::insert_torrents Failed To Write Torrent");
 
         let hash = file.info().info_hash();
-        let hash_not_exists = !write_torrents.contains_key(&hash);
 
-        if hash_not_exists {
-            write_torrents.insert(hash, Mutex::new(MetainfoState::new(file, state)));
+        let entry = write_torrents.entry(hash);
+
+        match entry {
+            Entry::Occupied(key) => Err((hash, key.get().clone().into())),
+            Entry::Vacant(vac) => {
+                vac.insert(MetainfoState::new(file, state.clone()));
+                Ok(hash)
+            }
         }
-
-        hash_not_exists
     }
 
-    pub fn update_torrent<C>(&self, hash: InfoHash, call: C) -> bool
+    pub async fn update_torrent<'a, C, D>(self, hash: InfoHash, with_state: C) -> Option<D>
     where
-        C: FnOnce(&Metainfo, &mut PieceCheckerState),
+        C: FnOnce(Arc<F>, MetainfoState) -> BoxFuture<'a, D>,
     {
-        let read_torrents = self
-            .torrents
-            .read()
-            .expect("bip_disk: DiskManagerContext::update_torrent Failed To Read Torrent");
+        let state = {
+            let read_torrents = self
+                .torrents
+                .read()
+                .expect("bip_disk: DiskManagerContext::update_torrent Failed To Read Torrent");
 
-        match read_torrents.get(&hash) {
-            Some(state) => {
-                let mut lock_state = state
-                    .lock()
-                    .expect("bip_disk: DiskManagerContext::update_torrent Failed To Lock State");
-                let deref_state = &mut *lock_state;
+            read_torrents.get(&hash)?.clone()
+        };
 
-                call(&deref_state.file, &mut deref_state.state);
-
-                true
-            }
-            None => false,
-        }
+        Some(with_state(self.fs.clone(), state.clone()).await)
     }
 
     pub fn remove_torrent(&self, hash: InfoHash) -> bool {
@@ -92,16 +118,6 @@ impl<F> DiskManagerContext<F> {
             .write()
             .expect("bip_disk: DiskManagerContext::remove_torrent Failed To Write Torrent");
 
-        write_torrents.remove(&hash).is_some_and(|_| true)
-    }
-}
-
-impl<F> Clone for DiskManagerContext<F> {
-    fn clone(&self) -> DiskManagerContext<F> {
-        DiskManagerContext {
-            torrents: self.torrents.clone(),
-            out: self.out.clone(),
-            fs: self.fs.clone(),
-        }
+        write_torrents.remove(&hash).is_some()
     }
 }

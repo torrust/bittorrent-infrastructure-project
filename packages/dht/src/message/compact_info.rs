@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::fmt::Debug;
 use std::hash::Hash;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
@@ -132,7 +131,7 @@ where
 impl<'a, B> IntoIterator for CompactValueInfo<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
-    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+    B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
 {
     type Item = SocketAddrV4;
     type IntoIter = CompactValueInfoIter<'a, B>;

@@ -1,7 +1,8 @@
 use std::net::UdpSocket;
 use std::time::Duration;
 
-use common::MockTrackerHandler;
+use common::{tracing_stderr_init, MockTrackerHandler, INIT};
+use tracing::level_filters::LevelFilter;
 use utracker::request::{self, RequestType, TrackerRequest};
 use utracker::TrackerServer;
 
@@ -10,6 +11,10 @@ mod common;
 #[test]
 #[allow(unused)]
 fn positive_server_dropped() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::ERROR);
+    });
+
     let server_addr = "127.0.0.1:3508".parse().unwrap();
     let mock_handler = MockTrackerHandler::new();
 

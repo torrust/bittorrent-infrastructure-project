@@ -1,4 +1,3 @@
-use std::default::Default;
 use std::time::Duration;
 
 const DEFAULT_HANDSHAKE_BUFFER_SIZE: usize = 1000;

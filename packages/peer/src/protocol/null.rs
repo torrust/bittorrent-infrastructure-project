@@ -1,7 +1,3 @@
-use std::io::{self, Write};
-
-use bytes::Bytes;
-
 use crate::message::NullProtocolMessage;
 use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 
@@ -14,7 +10,7 @@ use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 /// Of course, you should make sure that you don't tell peers
 /// that you support any extended messages.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Default)]
+#[derive(Debug, Default, Clone)]
 pub struct NullProtocol;
 
 impl NullProtocol {
@@ -27,34 +23,39 @@ impl NullProtocol {
 
 impl PeerProtocol for NullProtocol {
     type ProtocolMessage = NullProtocolMessage;
+    type ProtocolMessageError = std::io::Error;
 
-    fn bytes_needed(&mut self, _bytes: &[u8]) -> io::Result<Option<usize>> {
+    fn bytes_needed(&mut self, _: &[u8]) -> std::io::Result<Option<usize>> {
         Ok(Some(0))
     }
 
-    fn parse_bytes(&mut self, _bytes: Bytes) -> io::Result<Self::ProtocolMessage> {
-        Err(io::Error::new(
-            io::ErrorKind::Other,
+    fn parse_bytes(&mut self, _: &[u8]) -> std::io::Result<Result<Self::ProtocolMessage, Self::ProtocolMessageError>> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
             "Attempted To Parse Bytes As Null Protocol",
         ))
     }
 
-    fn write_bytes<W>(&mut self, _message: &Self::ProtocolMessage, _writer: W) -> io::Result<()>
+    fn write_bytes<W>(&mut self, _: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>, _: W) -> std::io::Result<usize>
     where
-        W: Write,
+        W: std::io::Write,
     {
         panic!(
             "bip_peer: NullProtocol::write_bytes Was Called...Wait, How Did You Construct An Instance Of NullProtocolMessage? :)"
-        )
+        );
     }
 
-    fn message_size(&mut self, _message: &Self::ProtocolMessage) -> usize {
-        0
+    fn message_size(&mut self, _: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>) -> std::io::Result<usize> {
+        Ok(0)
     }
 }
 
 impl<M> NestedPeerProtocol<M> for NullProtocol {
-    fn received_message(&mut self, _message: &M) {}
+    fn received_message(&mut self, _message: &M) -> usize {
+        0
+    }
 
-    fn sent_message(&mut self, _message: &M) {}
+    fn sent_message(&mut self, _message: &M) -> usize {
+        0
+    }
 }

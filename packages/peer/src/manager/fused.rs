@@ -1,137 +1,131 @@
-use std::io;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use std::time::Duration;
 
 use futures::stream::{Fuse, Stream};
-use futures::{Async, Future, Poll};
-use tokio_timer::{Sleep, TimeoutError, Timer};
+use futures::{StreamExt, TryStream};
+use tokio::time::Instant;
 
 /// Error type for `PersistentStream`.
-pub enum PersistentError {
+pub enum PersistentError<Err> {
+    Disconnect,
+    StreamError(Err),
+}
+
+/// Error type for `RecurringTimeoutStream`.
+pub enum RecurringTimeoutError<Err> {
     Disconnect,
     Timeout,
-    IoError(io::Error),
+    StreamError(Err),
 }
 
-impl<T> From<TimeoutError<T>> for PersistentError {
-    fn from(error: TimeoutError<T>) -> PersistentError {
-        match error {
-            TimeoutError::Timer(_, err) => {
-                panic!("bip_peer: Timer Error In Peer Stream, Timer Capacity Is Probably Too Small: {err}")
-            }
-            TimeoutError::TimedOut(_) => PersistentError::Timeout,
-        }
-    }
-}
-
-/// Stream for persistent connections, where a value of None from the underlying
-/// stream maps to an actual error, and calling poll multiple times will always
-/// return such error.
-pub struct PersistentStream<S> {
-    stream: Fuse<S>,
-}
-
-impl<S> PersistentStream<S>
+/// A stream wrapper that ensures persistent connections. If the underlying stream yields `None`,
+/// it is treated as an error, and subsequent polls will continue to return this error.
+pub struct PersistentStream<St, Ty, Err>
 where
-    S: Stream,
+    St: Stream<Item = Result<Ty, Err>>,
+    St: TryStream<Ok = Ty, Error = Err>,
 {
-    /// Create a new `PersistentStream`.
-    pub fn new(stream: S) -> PersistentStream<S> {
+    stream: Fuse<St>,
+}
+
+impl<St, Ty, Err> PersistentStream<St, Ty, Err>
+where
+    St: Stream<Item = Result<Ty, Err>>,
+    St: TryStream<Ok = Ty, Error = Err>,
+{
+    /// Creates a new `PersistentStream`.
+    pub fn new(stream: St) -> PersistentStream<St, Ty, Err> {
         PersistentStream { stream: stream.fuse() }
     }
 }
 
-impl<S> Stream for PersistentStream<S>
+impl<St, Ty, Err> Stream for PersistentStream<St, Ty, Err>
 where
-    S: Stream<Error = io::Error>,
+    St: Stream<Item = Result<Ty, Err>>,
+    St: TryStream<Ok = Ty, Error = Err> + Unpin,
 {
-    type Item = S::Item;
-    type Error = PersistentError;
+    type Item = Result<Ty, PersistentError<Err>>;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        self.stream
-            .poll()
-            .map_err(PersistentError::IoError)
-            .and_then(|item| match item {
-                Async::Ready(None) => Err(PersistentError::Disconnect),
-                other => Ok(other),
-            })
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let ready = match self.stream.poll_next_unpin(cx) {
+            Poll::Ready(ready) => ready,
+            Poll::Pending => return Poll::Pending,
+        };
+
+        let Some(item) = ready else {
+            return Poll::Ready(Some(Err(PersistentError::Disconnect)));
+        };
+
+        match item {
+            Ok(message) => Poll::Ready(Some(Ok(message))),
+            Err(err) => Poll::Ready(Some(Err(PersistentError::StreamError(err)))),
+        }
     }
 }
 
 //----------------------------------------------------------------------------//
 
-/// Error type for `RecurringTimeoutStream`.
-pub enum RecurringTimeoutError {
-    /// None and any errors are mapped to this type...
-    Disconnect,
-    Timeout,
+/// A stream wrapper that enforces a recurring timeout. If the underlying stream does not yield
+/// an item within the specified duration, a timeout error is returned.
+pub struct RecurringTimeoutStream<St, Ty, Err>
+where
+    St: Stream<Item = Result<Ty, Err>>,
+    St: TryStream<Ok = Ty, Error = Err>,
+{
+    stream: Fuse<St>,
+    timeout: Duration,
+    deadline: Instant,
 }
 
-/// Stream similar to `tokio_timer::TimeoutStream`, but which doesn't return
-/// the underlying stream if a single timeout occurs. Instead, it signals that
-/// the timeout occurred before the stream produced an item, but keeps the
-/// stream in tact (does not return it), so that we can continue polling.
-///
-/// Whereas `tokio_timer::TimeoutStream` would be used for detecting if a
-/// client timed out, `RecurringTimeoutStream` could be used for a local
-/// stream to send heartbeats if, for example, the local client hadn't sent
-/// any other message to the client for n seconds and we would like to send
-/// some heartbeat message in that case, but continue polling the stream.
-pub struct RecurringTimeoutStream<S> {
-    dur: Duration,
-    timer: Timer,
-    sleep: Sleep,
-    stream: S,
-}
-
-impl<S> RecurringTimeoutStream<S> {
-    pub fn new(stream: S, timer: Timer, dur: Duration) -> RecurringTimeoutStream<S> {
-        let sleep = timer.sleep(dur);
-
+impl<St, Ty, Err> RecurringTimeoutStream<St, Ty, Err>
+where
+    St: Stream<Item = Result<Ty, Err>>,
+    St: TryStream<Ok = Ty, Error = Err>,
+{
+    /// Creates a new `RecurringTimeoutStream`.
+    pub fn new(stream: St, timeout: Duration) -> RecurringTimeoutStream<St, Ty, Err> {
         RecurringTimeoutStream {
-            dur,
-            timer,
-            sleep,
-            stream,
+            stream: stream.fuse(),
+            timeout,
+            deadline: Instant::now() + timeout,
         }
     }
 }
 
-impl<S> Stream for RecurringTimeoutStream<S>
+impl<St, Ty, Err> Stream for RecurringTimeoutStream<St, Ty, Err>
 where
-    S: Stream,
+    St: Stream<Item = Result<Ty, Err>>,
+    St: TryStream<Ok = Ty, Error = Err> + Unpin,
 {
-    type Item = S::Item;
-    type Error = RecurringTimeoutError;
+    type Item = Result<Ty, RecurringTimeoutError<Err>>;
 
-    fn poll(&mut self) -> Poll<Option<S::Item>, RecurringTimeoutError> {
-        // First, try polling the future
-        match self.stream.poll() {
-            Ok(Async::NotReady) => {}
-            Ok(Async::Ready(Some(v))) => {
-                // Reset the timeout
-                self.sleep = self.timer.sleep(self.dur);
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let ready = match self.stream.poll_next_unpin(cx) {
+            Poll::Ready(ready) => ready,
+            Poll::Pending => {
+                let now = Instant::now();
+                if now > self.deadline {
+                    self.deadline = now + self.timeout;
 
-                // Return the value
-                return Ok(Async::Ready(Some(v)));
+                    return Poll::Ready(Some(Err(RecurringTimeoutError::Timeout)));
+                }
+                return Poll::Pending;
             }
-            Ok(Async::Ready(None)) => return Ok(Async::Ready(None)),
-            Err(_) => return Err(RecurringTimeoutError::Disconnect),
-        }
-
-        let Ok(poll) = self.sleep.poll() else {
-            panic!("bip_peer: Timer Error In Manager Stream, Timer Capacity Is Probably Too Small...")
         };
 
-        // Now check the timer
-        match poll {
-            Async::NotReady => Ok(Async::NotReady),
-            Async::Ready(()) => {
-                // Reset the timeout
-                self.sleep = self.timer.sleep(self.dur);
+        let Some(item) = ready else {
+            return Poll::Ready(Some(Err(RecurringTimeoutError::Disconnect)));
+        };
 
-                Err(RecurringTimeoutError::Timeout)
+        match item {
+            Ok(message) => {
+                // Reset the timeout
+                self.deadline = Instant::now() + self.timeout;
+
+                Poll::Ready(Some(Ok(message)))
             }
+            Err(err) => Poll::Ready(Some(Err(RecurringTimeoutError::StreamError(err)))),
         }
     }
 }

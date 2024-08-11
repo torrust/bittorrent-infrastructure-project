@@ -1,9 +1,10 @@
-use std::io;
-use std::io::Write;
+use std::io::Write as _;
 
 use bencode::{ben_int, ben_map, BConvert, BDecodeOpt, BencodeRef};
 use bytes::Bytes;
+use thiserror::Error;
 
+use super::PeerExtensionProtocolMessageError;
 use crate::message::bencode_util;
 
 const REQUEST_MESSAGE_TYPE_ID: u8 = 0;
@@ -11,6 +12,13 @@ const DATA_MESSAGE_TYPE_ID: u8 = 1;
 const REJECT_MESSAGE_TYPE_ID: u8 = 2;
 
 const ROOT_ERROR_KEY: &str = "PeerExtensionProtocolMessage";
+
+#[allow(clippy::module_name_repetitions)]
+#[derive(Error, Debug, Clone)]
+pub enum UtMetadataMessageError {
+    #[error("Failed to match message type: {0}")]
+    UnknownMessageType(u8),
+}
 
 /// Enumeration of messages for `PeerExtensionProtocolMessage::UtMetadata`.
 #[allow(clippy::module_name_repetitions)]
@@ -27,7 +35,7 @@ impl UtMetadataMessage {
     /// # Errors
     ///
     /// This function will return an error if unable to parse given bytes into type.
-    pub fn parse_bytes(mut bytes: Bytes) -> io::Result<UtMetadataMessage> {
+    pub fn parse_bytes(mut bytes: Bytes) -> std::io::Result<Result<UtMetadataMessage, UtMetadataMessageError>> {
         // Our bencode is pretty flat, and we don't want to enforce a full decode, as data
         // messages have the raw data appended outside of the bencode structure...
         let decode_opts = BDecodeOpt::new(2, false, false);
@@ -41,7 +49,7 @@ impl UtMetadataMessage {
                 let bencode_bytes = bytes.split_to(bencode.buffer().len());
                 let extra_bytes = bytes;
 
-                match msg_type {
+                let message = match msg_type {
                     REQUEST_MESSAGE_TYPE_ID => Ok(UtMetadataMessage::Request(UtMetadataRequestMessage::with_bytes(
                         piece,
                         &bencode_bytes,
@@ -60,14 +68,13 @@ impl UtMetadataMessage {
                             &bencode_bytes,
                         )))
                     }
-                    other => Err(io::Error::new(
-                        io::ErrorKind::Other,
-                        format!("Failed To Recognize Message Type For UtMetadataMessage: {msg_type}"),
-                    )),
-                }
+                    other => Err(UtMetadataMessageError::UnknownMessageType(other)),
+                };
+
+                Ok(message)
             }
-            Err(err) => Err(io::Error::new(
-                io::ErrorKind::Other,
+            Err(err) => Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
                 format!("Failed To Parse UtMetadataMessage As Bencode: {err}"),
             )),
         }
@@ -78,9 +85,9 @@ impl UtMetadataMessage {
     /// # Errors
     ///
     /// This function will return an error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
         match self {
             UtMetadataMessage::Request(request) => request.write_bytes(writer),
@@ -136,9 +143,9 @@ impl UtMetadataRequestMessage {
     /// # Errors
     ///
     /// This function will return an error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
         let encoded_bytes = (ben_map! {
             bencode_util::MESSAGE_TYPE_KEY => ben_int!(i64::from(REQUEST_MESSAGE_TYPE_ID)),
@@ -202,9 +209,9 @@ impl UtMetadataDataMessage {
     /// # Errors
     ///
     /// This function will return an error if unable to write bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
         let encoded_bytes = (ben_map! {
             bencode_util::MESSAGE_TYPE_KEY => ben_int!(i64::from(DATA_MESSAGE_TYPE_ID)),
@@ -271,9 +278,9 @@ impl UtMetadataRejectMessage {
     /// # Errors
     ///
     /// This function will return an error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
         let encoded_bytes = (ben_map! {
             bencode_util::MESSAGE_TYPE_KEY => ben_int!(i64::from(REJECT_MESSAGE_TYPE_ID)),

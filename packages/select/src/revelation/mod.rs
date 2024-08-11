@@ -10,9 +10,10 @@ pub mod error;
 
 mod honest;
 
-pub use self::honest::HonestRevealModule;
+pub use self::honest::{HonestRevealModule, HonestRevealModuleBuilder};
 
 /// Enumeration of revelation messages that can be sent to a revelation module.
+#[derive(Debug)]
 pub enum IRevealMessage {
     /// Control message.
     Control(ControlMessage),
@@ -25,6 +26,7 @@ pub enum IRevealMessage {
 }
 
 /// Enumeration of revelation messages that can be received from a revelation module.
+#[derive(Debug)]
 pub enum ORevealMessage {
     /// Send a `BitFieldMessage`.
     SendBitField(PeerInfo, BitFieldMessage),

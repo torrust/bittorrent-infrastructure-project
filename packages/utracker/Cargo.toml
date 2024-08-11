@@ -20,8 +20,14 @@ handshake = { path = "../handshake" }
 util = { path = "../util" }
 
 byteorder = "1"
-chrono = "0.4"
-futures = "0.1"
-nom = "3"
-rand = "0.8"
-umio = "0.3"
+chrono = "0"
+futures = "0"
+nom = "7"
+rand = "0"
+thiserror = "1"
+tracing = "0"
+umio = "0"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+tracing-subscriber = "0"

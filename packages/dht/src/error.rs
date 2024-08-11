@@ -1,42 +1,21 @@
-use std::io;
-
 use bencode::BencodeConvertError;
-use error_chain::error_chain;
+use thiserror::Error;
 
 use crate::message::error::ErrorMessage;
 
-error_chain! {
-    types {
-        DhtError, DhtErrorKind, DhtResultExt, DhtResult;
-    }
-
-    foreign_links {
-        Bencode(BencodeConvertError);
-        Io(io::Error);
-    }
-
-    errors {
-        InvalidMessage {
-            code: String
-        } {
-            description("Node Sent An Invalid Message")
-            display("Node Sent An Invalid Message With Message Code {}", code)
-        }
-        InvalidResponse {
-            details: String
-        } {
-            description("Node Sent Us An Invalid Response")
-            display("Node Sent Us An Invalid Response: {}", details)
-        }
-        UnsolicitedResponse {
-            description("Node Sent Us An Unsolicited Response")
-            display("Node Sent Us An Unsolicited Response")
-        }
-        InvalidRequest {
-            msg: ErrorMessage<'static>
-        } {
-            description("Node Sent Us An Invalid Request Message")
-            display("Node Sent Us An Invalid Request Message With Code {:?} And Message {}", msg.error_code(), msg.error_message())
-        }
-    }
+#[allow(clippy::module_name_repetitions)]
+#[derive(Error, Debug)]
+pub enum DhtError {
+    #[error("Bencode error: {0}")]
+    Bencode(#[from] BencodeConvertError),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Node Sent An Invalid Message With Message Code {code}")]
+    InvalidMessage { code: String },
+    #[error("Node Sent Us An Invalid Response: {details}")]
+    InvalidResponse { details: String },
+    #[error("Node Sent Us An Unsolicited Response")]
+    UnsolicitedResponse,
+    #[error("Node Sent Us An Invalid Request Message With Code {msg:?} And Message {msg}")]
+    InvalidRequest { msg: ErrorMessage<'static> },
 }

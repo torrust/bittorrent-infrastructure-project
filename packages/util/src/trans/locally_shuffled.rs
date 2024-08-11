@@ -20,7 +20,7 @@ const TRANSACTION_ID_PREALLOC_LEN: usize = 2048;
 /// transaction type (such as u64) but also works with smaller types.
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct LocallyShuffledIds<T> {
     sequential: SequentialIds<T>,
     stored_ids: Vec<T>,

@@ -1,6 +1,6 @@
 use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
 
-use crate::error::{ParseError, ParseResult};
+use crate::error::ParseError;
 
 /// Struct implemented the `BencodeConvert` trait for decoding the metainfo file.
 struct MetainfoConverter;
@@ -42,7 +42,7 @@ pub const PATH_KEY: &[u8] = b"path";
 
 /// Parses the root bencode as a dictionary.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_root_dict<B>(root_bencode: &B) -> ParseResult<&dyn BDictAccess<B::BKey, B::BType>>
+pub fn parse_root_dict<B>(root_bencode: &B) -> Result<&dyn BDictAccess<B::BKey, B::BType>, ParseError>
 where
     B: BRefAccess,
 {
@@ -122,7 +122,7 @@ where
 
 /// Parses the info dictionary from the root dictionary.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_info_bencode<B>(root_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<&B>
+pub fn parse_info_bencode<B>(root_dict: &dyn BDictAccess<B::BKey, B>) -> Result<&B, ParseError>
 where
     B: BRefAccess,
 {
@@ -133,7 +133,7 @@ where
 
 /// Parses the piece length from the info dictionary.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_piece_length<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<u64>
+pub fn parse_piece_length<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> Result<u64, ParseError>
 where
     B: BRefAccess,
 {
@@ -144,7 +144,7 @@ where
 
 /// Parses the pieces from the info dictionary.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_pieces<'a, B>(info_dict: &'a dyn BDictAccess<B::BKey, B>) -> ParseResult<&'a [u8]>
+pub fn parse_pieces<'a, B>(info_dict: &'a dyn BDictAccess<B::BKey, B>) -> Result<&'a [u8], ParseError>
 where
     B: BRefAccess + 'a,
 {
@@ -162,7 +162,7 @@ where
 
 /// Parses the name from the info dictionary.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_name<'a, B>(info_dict: &'a dyn BDictAccess<B::BKey, B>) -> ParseResult<&'a str>
+pub fn parse_name<'a, B>(info_dict: &'a dyn BDictAccess<B::BKey, B>) -> Result<&'a str, ParseError>
 where
     B: BRefAccess + 'a,
 {
@@ -171,7 +171,7 @@ where
 
 /// Parses the files list from the info dictionary.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_files_list<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<&dyn BListAccess<B>>
+pub fn parse_files_list<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> Result<&dyn BListAccess<B>, ParseError>
 where
     B: BRefAccess<BType = B> + PartialEq,
 {
@@ -182,7 +182,7 @@ where
 
 /// Parses the file dictionary from the file bencode.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_file_dict<B>(file_bencode: &B) -> ParseResult<&dyn BDictAccess<B::BKey, B::BType>>
+pub fn parse_file_dict<B>(file_bencode: &B) -> Result<&dyn BDictAccess<B::BKey, B::BType>, ParseError>
 where
     B: BRefAccess,
 {
@@ -191,7 +191,7 @@ where
 
 /// Parses the length from the info or file dictionary.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_length<B>(info_or_file_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<u64>
+pub fn parse_length<B>(info_or_file_dict: &dyn BDictAccess<B::BKey, B>) -> Result<u64, ParseError>
 where
     B: BRefAccess,
 {
@@ -211,7 +211,7 @@ where
 
 /// Parses the path list from the file dictionary.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_path_list<B>(file_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<&dyn BListAccess<B>>
+pub fn parse_path_list<B>(file_dict: &dyn BDictAccess<B::BKey, B>) -> Result<&dyn BListAccess<B>, ParseError>
 where
     B: BRefAccess<BType = B>,
 {
@@ -220,7 +220,7 @@ where
 
 /// Parses the path string from the path bencode.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_path_str<B>(path_bencode: &B) -> ParseResult<&str>
+pub fn parse_path_str<B>(path_bencode: &B) -> Result<&str, ParseError>
 where
     B: BRefAccess,
 {

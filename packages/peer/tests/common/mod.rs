@@ -1,56 +1,130 @@
-use std::io;
+use std::sync::Once;
+use std::time::Duration;
 
+use futures::channel::mpsc::SendError;
 use futures::sink::Sink;
 use futures::stream::Stream;
-use futures::sync::mpsc::{self, Receiver, Sender};
-use futures::{Poll, StartSend};
+use futures::{SinkExt as _, StreamExt as _, TryStream};
+use peer::error::PeerManagerError;
+use peer::{ManagedMessage, PeerInfo, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage};
+use thiserror::Error;
+use tokio::time::error::Elapsed;
+use tracing::level_filters::LevelFilter;
 
-pub struct ConnectedChannel<I, O> {
-    send: Sender<I>,
-    recv: Receiver<O>,
+pub mod connected_channel;
+
+#[derive(Debug, Error)]
+pub enum Error<Message>
+where
+    Message: ManagedMessage + Send + 'static,
+{
+    #[error("Send Timed Out")]
+    SendTimedOut(Elapsed),
+
+    #[error("Receive Timed Out")]
+    ReceiveTimedOut(Elapsed),
+
+    #[error("mpsc::Receiver Closed")]
+    ReceiverClosed(),
+
+    #[error("Peer Manager Input Error {0}")]
+    PeerManagerErr(#[from] PeerManagerError<SendError>),
+
+    #[error("Peer Manager Output Error {0}")]
+    PeerManagerOutputErr(#[from] PeerManagerOutputError),
+
+    #[error("Failed to correct response, but got: {0:?}")]
+    WrongResponse(#[from] PeerManagerOutputMessage<Message>),
+
+    #[error("Failed to receive Peer Added with matching infohash: got: {0:?}, expected: {1:?}")]
+    InfoHashMissMatch(PeerInfo, PeerInfo),
 }
 
-impl<I, O> Sink for ConnectedChannel<I, O> {
-    type SinkItem = I;
-    type SinkError = io::Error;
+#[allow(dead_code)]
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_millis(500);
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
-        self.send
-            .start_send(item)
-            .map_err(|_| io::Error::new(io::ErrorKind::ConnectionAborted, "Sender Failed To Send"))
-    }
+#[allow(dead_code)]
+pub static INIT: Once = Once::new();
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        self.send
-            .poll_complete()
-            .map_err(|_| io::Error::new(io::ErrorKind::ConnectionAborted, "Sender Failed To Send"))
+#[allow(dead_code)]
+pub fn tracing_stderr_init(filter: LevelFilter) {
+    let builder = tracing_subscriber::fmt()
+        .with_max_level(filter)
+        .with_ansi(true)
+        .with_writer(std::io::stderr);
+
+    builder.pretty().with_file(true).init();
+
+    tracing::info!("Logging initialized");
+}
+
+pub async fn add_peer<Si, St, Peer, Message>(
+    send: &mut Si,
+    recv: &mut St,
+    info: PeerInfo,
+    peer: Peer,
+) -> Result<(), Error<Message>>
+where
+    Si: Sink<std::io::Result<PeerManagerInputMessage<Peer, Message>>, Error = PeerManagerError<SendError>> + Unpin,
+    St: Stream<Item = Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>> + Unpin,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
+{
+    let () = tokio::time::timeout(DEFAULT_TIMEOUT, send.send(Ok(PeerManagerInputMessage::AddPeer(info, peer))))
+        .await
+        .map_err(|e| Error::SendTimedOut(e))??;
+
+    let response = tokio::time::timeout(DEFAULT_TIMEOUT, recv.next())
+        .await
+        .map(|res| res.ok_or(Error::ReceiverClosed()))
+        .map_err(|e| Error::ReceiveTimedOut(e))???;
+
+    if let PeerManagerOutputMessage::PeerAdded(info_recv) = response {
+        if info_recv == info {
+            Ok(())
+        } else {
+            Err(Error::InfoHashMissMatch(info_recv, info))
+        }
+    } else {
+        Err(Error::from(response))
     }
 }
 
-impl<I, O> Stream for ConnectedChannel<I, O> {
-    type Item = O;
-    type Error = io::Error;
+pub async fn remove_peer<Si, St, Peer, Message>(send: &mut Si, recv: &mut St, info: PeerInfo) -> Result<(), Error<Message>>
+where
+    Si: Sink<std::io::Result<PeerManagerInputMessage<Peer, Message>>, Error = PeerManagerError<SendError>> + Unpin,
+    St: Stream<Item = Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>> + Unpin,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
+{
+    let () = tokio::time::timeout(DEFAULT_TIMEOUT, send.send(Ok(PeerManagerInputMessage::RemovePeer(info))))
+        .await
+        .map_err(|e| Error::SendTimedOut(e))??;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        self.recv
-            .poll()
-            .map_err(|()| io::Error::new(io::ErrorKind::Other, "Receiver Failed To Receive"))
+    let response = tokio::time::timeout(DEFAULT_TIMEOUT, recv.next())
+        .await
+        .map(|res| res.ok_or(Error::ReceiverClosed()))
+        .map_err(|e| Error::ReceiveTimedOut(e))???;
+
+    if let PeerManagerOutputMessage::PeerRemoved(info_recv) = response {
+        if info_recv == info {
+            Ok(())
+        } else {
+            Err(Error::InfoHashMissMatch(info_recv, info))
+        }
+    } else {
+        Err(Error::from(response))
     }
-}
-
-#[must_use]
-pub fn connected_channel<I, O>(capacity: usize) -> (ConnectedChannel<I, O>, ConnectedChannel<O, I>) {
-    let (send_one, recv_one) = mpsc::channel(capacity);
-    let (send_two, recv_two) = mpsc::channel(capacity);
-
-    (
-        ConnectedChannel {
-            send: send_one,
-            recv: recv_two,
-        },
-        ConnectedChannel {
-            send: send_two,
-            recv: recv_one,
-        },
-    )
 }

@@ -1,5 +1,3 @@
-use std::default::Default;
-
 use url::Url;
 use util::bt::InfoHash;
 use util::sha::ShaHash;
@@ -27,7 +25,7 @@ impl Topic {
             }
         } else if s.starts_with("urn:btih:") && s.len() == 9 + 32 {
             // BitTorrent Info Hash, base-32
-            base32::decode(base32::Alphabet::RFC4648 { padding: true }, &s[9..]).and_then(|hash| {
+            base32::decode(base32::Alphabet::Rfc4648 { padding: true }, &s[9..]).and_then(|hash| {
                 match ShaHash::from_hash(&hash[..]) {
                     Ok(sha_hash) => Some(Topic::BitTorrentInfoHash(sha_hash)),
                     Err(_) => None,

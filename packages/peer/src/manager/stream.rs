@@ -1,138 +1,138 @@
-//! Stream half of a `PeerManager`.
-
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::task::{Context, Poll};
 
-use crossbeam::queue::SegQueue;
-use futures::sink::Sink;
+use futures::channel::mpsc;
 use futures::stream::Stream;
-use futures::sync::mpsc::{Receiver, Sender};
-use futures::task::{self as futures_task, Task};
-use futures::{Async, Poll};
+use futures::{Sink, StreamExt, TryStream};
+use pin_project::pin_project;
 
-use super::messages::{IPeerManagerMessage, OPeerManagerMessage};
+use super::messages::{ManagedMessage, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage};
 use crate::manager::peer_info::PeerInfo;
 
+/// Stream half of a `PeerManager`.
 #[allow(clippy::module_name_repetitions)]
-#[allow(clippy::option_option)]
-pub struct PeerManagerStream<P>
+#[pin_project]
+pub struct PeerManagerStream<Peer, Message>
 where
-    P: Sink + Stream,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
 {
-    recv: Receiver<OPeerManagerMessage<P::Item>>,
-    peers: Arc<Mutex<HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>>>,
-    task_queue: Arc<SegQueue<Task>>,
-    opt_pending: Option<Option<OPeerManagerMessage<P::Item>>>,
+    recv: mpsc::Receiver<Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>>,
+    #[allow(clippy::type_complexity)]
+    peers: Arc<Mutex<HashMap<PeerInfo, mpsc::Sender<PeerManagerInputMessage<Peer, Message>>>>>,
+    opt_pending: Option<Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>>,
 }
 
-impl<P> PeerManagerStream<P>
+impl<Peer, Message> PeerManagerStream<Peer, Message>
 where
-    P: Sink + Stream,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
 {
-    pub(super) fn new(
-        recv: Receiver<OPeerManagerMessage<P::Item>>,
-        peers: Arc<Mutex<HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>>>,
-        task_queue: Arc<SegQueue<Task>>,
-    ) -> PeerManagerStream<P> {
-        PeerManagerStream {
+    #[allow(clippy::type_complexity)]
+    pub fn new(
+        recv: mpsc::Receiver<Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>>,
+        peers: Arc<Mutex<HashMap<PeerInfo, mpsc::Sender<PeerManagerInputMessage<Peer, Message>>>>>,
+    ) -> Self {
+        Self {
             recv,
             peers,
-            task_queue,
             opt_pending: None,
         }
     }
-
-    fn run_with_lock_poll<F, T, E, I, G>(&mut self, item: I, call: F, not: G) -> Poll<T, E>
-    where
-        F: FnOnce(I, &mut HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>) -> Poll<T, E>,
-        G: FnOnce(I) -> Option<OPeerManagerMessage<P::Item>>,
-    {
-        let (result, took_lock) = if let Ok(mut guard) = self.peers.try_lock() {
-            let result = call(item, &mut *guard);
-
-            // Nothing calling us will return NotReady, so we don't have to push to queue here
-
-            (result, true)
-        } else {
-            // Couldn't get the lock, stash a task away
-            self.task_queue.push(futures_task::current());
-
-            // Try to get the lock once more, in case of a race condition with stashing the task
-            if let Ok(mut guard) = self.peers.try_lock() {
-                let result = call(item, &mut *guard);
-
-                // Nothing calling us will return NotReady, so we don't have to push to queue here
-
-                (result, true)
-            } else {
-                // If we couldn't get the lock, stash the item
-                self.opt_pending = Some(not(item));
-
-                (Ok(Async::NotReady), false)
-            }
-        };
-
-        if took_lock {
-            // Just notify a single person waiting on the lock to reduce contention
-            if let Some(task) = self.task_queue.pop() {
-                task.notify();
-            }
-        }
-
-        result
-    }
 }
 
-impl<P> Stream for PeerManagerStream<P>
+impl<Peer, Message> Stream for PeerManagerStream<Peer, Message>
 where
-    P: Sink + Stream,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
 {
-    type Item = OPeerManagerMessage<P::Item>;
-    type Error = ();
+    type Item = Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        // Intercept and propagate any messages indicating the peer shutdown so we can remove them from our peer map
-        let next_message = self
-            .opt_pending
-            .take()
-            .map(|pending| Ok(Async::Ready(pending)))
-            .unwrap_or_else(|| self.recv.poll());
+    fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let next_message = match self.opt_pending.take() {
+            Some(message) => message,
+            None => match self.recv.poll_next_unpin(cx) {
+                Poll::Ready(Some(message)) => message,
+                Poll::Ready(None) => return Poll::Ready(None),
+                Poll::Pending => return Poll::Pending,
+            },
+        };
 
-        next_message.and_then(|result| match result {
-            Async::Ready(Some(OPeerManagerMessage::PeerRemoved(info))) => self.run_with_lock_poll(
-                info,
-                |info, peers| {
-                    peers
-                        .remove(&info)
-                        .unwrap_or_else(|| panic!("bip_peer: Received PeerRemoved Message With No Matching Peer In Map"));
+        let ready = match next_message {
+            Err(err) => match err {
+                PeerManagerOutputError::PeerError(info, _) => {
+                    let Ok(mut peers) = self.peers.try_lock() else {
+                        cx.waker().wake_by_ref();
+                        return Poll::Pending;
+                    };
 
-                    Ok(Async::Ready(Some(OPeerManagerMessage::PeerRemoved(info))))
-                },
-                |info| Some(OPeerManagerMessage::PeerRemoved(info)),
-            ),
-            Async::Ready(Some(OPeerManagerMessage::PeerDisconnect(info))) => self.run_with_lock_poll(
-                info,
-                |info, peers| {
-                    peers
-                        .remove(&info)
-                        .unwrap_or_else(|| panic!("bip_peer: Received PeerDisconnect Message With No Matching Peer In Map"));
+                    match peers.remove(&info) {
+                        Some(peer) => {
+                            drop(peer);
+                            Poll::Ready(Some(Ok(PeerManagerOutputMessage::PeerRemoved(info))))
+                        }
+                        None => Poll::Ready(Some(Err(PeerManagerOutputError::PeerErrorAndMissing(
+                            info,
+                            Some(Box::new(err)),
+                        )))),
+                    }
+                }
+                PeerManagerOutputError::PeerErrorAndMissing(_, _)
+                | PeerManagerOutputError::PeerDisconnectedAndMissing(_)
+                | PeerManagerOutputError::PeerRemovedAndMissing(_) => Poll::Ready(Some(Err(err))),
+            },
+            Ok(PeerManagerOutputMessage::PeerRemoved(info)) => {
+                let Ok(mut peers) = self.peers.try_lock() else {
+                    cx.waker().wake_by_ref();
+                    return Poll::Pending;
+                };
 
-                    Ok(Async::Ready(Some(OPeerManagerMessage::PeerDisconnect(info))))
-                },
-                |info| Some(OPeerManagerMessage::PeerDisconnect(info)),
-            ),
-            Async::Ready(Some(OPeerManagerMessage::PeerError(info, error))) => self.run_with_lock_poll(
-                (info, error),
-                |(info, error), peers| {
-                    peers
-                        .remove(&info)
-                        .unwrap_or_else(|| panic!("bip_peer: Received PeerError Message With No Matching Peer In Map"));
+                match peers.remove(&info) {
+                    Some(peer) => {
+                        drop(peer);
+                        Poll::Ready(Some(Ok(PeerManagerOutputMessage::PeerRemoved(info))))
+                    }
+                    None => Poll::Ready(Some(Err(PeerManagerOutputError::PeerRemovedAndMissing(info)))),
+                }
+            }
 
-                    Ok(Async::Ready(Some(OPeerManagerMessage::PeerError(info, error))))
-                },
-                |(info, error)| Some(OPeerManagerMessage::PeerError(info, error)),
-            ),
-            other => Ok(other),
-        })
+            Ok(PeerManagerOutputMessage::PeerDisconnect(info)) => {
+                let Ok(mut peers) = self.peers.try_lock() else {
+                    cx.waker().wake_by_ref();
+                    return Poll::Pending;
+                };
+
+                match peers.remove(&info) {
+                    Some(peer) => {
+                        drop(peer);
+                        Poll::Ready(Some(Ok(PeerManagerOutputMessage::PeerRemoved(info))))
+                    }
+                    None => Poll::Ready(Some(Err(PeerManagerOutputError::PeerDisconnectedAndMissing(info)))),
+                }
+            }
+
+            Ok(msg) => Poll::Ready(Some(Ok(msg))),
+        };
+
+        ready
     }
 }

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::{io, str};
+use std::str;
 
 use bencode::{BConvert, BDictAccess, BRefAccess, BencodeConvertError};
 use util::convert;
@@ -12,10 +12,10 @@ pub const CONVERT: IoErrorBencodeConvert = IoErrorBencodeConvert;
 pub struct IoErrorBencodeConvert;
 
 impl BConvert for IoErrorBencodeConvert {
-    type Error = io::Error;
+    type Error = std::io::Error;
 
     fn handle_error(&self, error: BencodeConvertError) -> Self::Error {
-        io::Error::new(io::ErrorKind::Other, error.to_string())
+        std::io::Error::new(std::io::ErrorKind::Other, error.to_string())
     }
 }
 
@@ -164,7 +164,7 @@ pub const MESSAGE_TYPE_KEY: &[u8] = b"msg_type";
 pub const PIECE_INDEX_KEY: &[u8] = b"piece";
 pub const TOTAL_SIZE_KEY: &[u8] = b"total_size";
 
-pub fn parse_message_type<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<u8>
+pub fn parse_message_type<K, V>(root: &dyn BDictAccess<K, V>) -> std::io::Result<u8>
 where
     V: BRefAccess,
 {
@@ -173,14 +173,14 @@ where
         .map(|msg_type| msg_type.try_into().unwrap())
 }
 
-pub fn parse_piece_index<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<i64>
+pub fn parse_piece_index<K, V>(root: &dyn BDictAccess<K, V>) -> std::io::Result<i64>
 where
     V: BRefAccess,
 {
     CONVERT.lookup_and_convert_int(root, PIECE_INDEX_KEY)
 }
 
-pub fn parse_total_size<K, V>(root: &dyn BDictAccess<K, V>) -> io::Result<i64>
+pub fn parse_total_size<K, V>(root: &dyn BDictAccess<K, V>) -> std::io::Result<i64>
 where
     V: BRefAccess,
 {

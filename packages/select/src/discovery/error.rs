@@ -1,33 +1,16 @@
 //! Module for discovery error types.
 
-use error_chain::error_chain;
 use handshake::InfoHash;
 use peer::PeerInfo;
+use thiserror::Error;
 
-error_chain! {
-    types {
-        DiscoveryError, DiscoveryErrorKind, DiscoveryResultExt;
-    }
-
-    errors {
-        InvalidMessage {
-            info:    PeerInfo,
-            message: String
-        } {
-            description("Peer Sent An Invalid Message")
-            display("Peer {:?} Sent An Invalid Message: {:?}", info, message)
-        }
-        InvalidMetainfoExists {
-            hash: InfoHash
-        } {
-            description("Metainfo Has Already Been Added")
-            display("Metainfo With Hash {:?} Has Already Been Added", hash)
-        }
-        InvalidMetainfoNotExists {
-            hash: InfoHash
-        } {
-            description("Metainfo Was Not Already Added")
-            display("Metainfo With Hash {:?} Was Not Already Added", hash)
-        }
-    }
+#[allow(clippy::module_name_repetitions)]
+#[derive(Error, Debug)]
+pub enum DiscoveryError {
+    #[error("Peer {info:?} Sent An Invalid Message: {message:?}")]
+    InvalidMessage { info: PeerInfo, message: String },
+    #[error("Metainfo With Hash {hash:?} Has Already Been Added")]
+    InvalidMetainfoExists { hash: InfoHash },
+    #[error("Metainfo With Hash {hash:?} Was Not Already Added")]
+    InvalidMetainfoNotExists { hash: InfoHash },
 }

@@ -1,69 +1,76 @@
 use std::collections::{HashMap, HashSet};
-use std::{cmp, io};
+use std::sync::Arc;
 
-use metainfo::Info;
+use futures::future::BoxFuture;
+use futures::lock::Mutex;
+use metainfo::{Info, Metainfo};
 use util::bt::InfoHash;
 
 use crate::disk::fs::FileSystem;
+use crate::disk::tasks::context::MetainfoState;
 use crate::disk::tasks::helpers;
 use crate::disk::tasks::helpers::piece_accessor::PieceAccessor;
-use crate::error::{TorrentError, TorrentErrorKind, TorrentResult};
+use crate::error::{TorrentError, TorrentResult};
 use crate::memory::block::BlockMetadata;
 
 /// Calculates hashes on existing files within the file system given and reports good/bad pieces.
-pub struct PieceChecker<'a, F> {
-    fs: F,
-    info_dict: &'a Info,
-    checker_state: &'a mut PieceCheckerState,
+pub struct PieceChecker<F> {
+    fs: Arc<F>,
+    state: MetainfoState,
 }
 
-impl<'a, F> PieceChecker<'a, F>
+impl<'a, F> PieceChecker<F>
 where
-    F: FileSystem + 'a,
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
 {
     /// Create the initial `PieceCheckerState` for the `PieceChecker`.
-    pub fn init_state(fs: F, info_dict: &'a Info) -> TorrentResult<PieceCheckerState> {
+    pub async fn init_state(fs: Arc<F>, info_dict: Info) -> TorrentResult<Arc<Mutex<PieceCheckerState>>> {
         let total_blocks = info_dict.pieces().count();
-        let last_piece_size = last_piece_size(info_dict);
+        let last_piece_size = last_piece_size(&info_dict);
 
-        let mut checker_state = PieceCheckerState::new(total_blocks, last_piece_size);
+        let checker_state = Arc::new(Mutex::new(PieceCheckerState::new(total_blocks, last_piece_size)));
+
+        let file = Metainfo::new(info_dict.clone());
+
+        let state = MetainfoState::new(file, checker_state.clone());
         {
-            let mut piece_checker = PieceChecker::with_state(fs, info_dict, &mut checker_state);
+            let mut piece_checker = PieceChecker::with_state(fs, state);
 
             piece_checker.validate_files_sizes()?;
-            piece_checker.fill_checker_state();
-            piece_checker.calculate_diff()?;
+            piece_checker.fill_checker_state().await;
+            piece_checker.calculate_diff().await?;
         }
 
         Ok(checker_state)
     }
 
     /// Create a new `PieceChecker` with the given state.
-    pub fn with_state(fs: F, info_dict: &'a Info, checker_state: &'a mut PieceCheckerState) -> PieceChecker<'a, F> {
-        PieceChecker {
-            fs,
-            info_dict,
-            checker_state,
-        }
+    pub fn with_state(fs: Arc<F>, state: MetainfoState) -> PieceChecker<F> {
+        PieceChecker { fs, state }
     }
 
     /// Calculate the diff of old to new good/bad pieces and store them in the piece checker state
     /// to be retrieved by the caller.
-    pub fn calculate_diff(self) -> io::Result<()> {
-        let piece_length = self.info_dict.piece_length();
+    pub async fn calculate_diff(self) -> std::io::Result<()> {
+        let piece_length = self.state.file.info().piece_length();
         // TODO: Use Block Allocator
         let mut piece_buffer = vec![0u8; piece_length.try_into().unwrap()];
 
-        let info_dict = self.info_dict;
-        let piece_accessor = PieceAccessor::new(&self.fs, self.info_dict);
+        let piece_accessor = PieceAccessor::new(self.fs.clone(), self.state.clone());
 
-        self.checker_state
+        self.state
+            .checker
+            .lock()
+            .await
             .run_with_whole_pieces(piece_length.try_into().unwrap(), |message| {
                 piece_accessor.read_piece(&mut piece_buffer[..message.block_length()], message)?;
 
                 let calculated_hash = InfoHash::from_bytes(&piece_buffer[..message.block_length()]);
                 let expected_hash = InfoHash::from_hash(
-                    info_dict
+                    self.state
+                        .file
+                        .info()
                         .pieces()
                         .nth(message.piece_index().try_into().unwrap())
                         .expect("bip_peer: Piece Checker Failed To Retrieve Expected Hash"),
@@ -80,15 +87,16 @@ where
     ///
     /// This is done once when a torrent file is added to see if we have any good pieces that
     /// the caller can use to skip (if the torrent was partially downloaded before).
-    fn fill_checker_state(&mut self) {
-        let piece_length = self.info_dict.piece_length();
-        let total_bytes: u64 = self.info_dict.files().map(metainfo::File::length).sum();
+    async fn fill_checker_state(&mut self) {
+        let piece_length = self.state.file.info().piece_length();
+        let total_bytes: u64 = self.state.file.info().files().map(metainfo::File::length).sum();
 
         let full_pieces = total_bytes / piece_length;
-        let last_piece_size = last_piece_size(self.info_dict);
+        let last_piece_size = last_piece_size(self.state.file.info());
 
+        let mut check_state = self.state.checker.lock().await;
         for piece_index in 0..full_pieces {
-            self.checker_state.add_pending_block(BlockMetadata::with_default_hash(
+            check_state.add_pending_block(BlockMetadata::with_default_hash(
                 piece_index,
                 0,
                 piece_length.try_into().unwrap(),
@@ -96,8 +104,7 @@ where
         }
 
         if last_piece_size != 0 {
-            self.checker_state
-                .add_pending_block(BlockMetadata::with_default_hash(full_pieces, 0, last_piece_size));
+            check_state.add_pending_block(BlockMetadata::with_default_hash(full_pieces, 0, last_piece_size));
         }
     }
 
@@ -108,8 +115,8 @@ where
     /// size, an error will be thrown as we do not want to overwrite and existing file that maybe just had the same
     /// name as a file in our dictionary.
     fn validate_files_sizes(&mut self) -> TorrentResult<()> {
-        for file in self.info_dict.files() {
-            let file_path = helpers::build_path(self.info_dict.directory(), file);
+        for file in self.state.file.info().files() {
+            let file_path = helpers::build_path(self.state.file.info().directory(), file);
             let expected_size = file.length();
 
             self.fs
@@ -128,11 +135,11 @@ where
                             .write_file(&mut file, expected_size - 1, &[0])
                             .expect("bip_peer: Failed To Create File When Validating Sizes");
                     } else if !size_matches {
-                        return Err(TorrentError::from_kind(TorrentErrorKind::ExistingFileSizeCheck {
+                        return Err(TorrentError::ExistingFileSizeCheck {
                             file_path,
                             expected_size,
                             actual_size,
-                        }));
+                        });
                     }
 
                     Ok(())
@@ -190,12 +197,12 @@ impl PieceCheckerState {
 
     /// Run the given closures against `NewGood` and `NewBad` messages. Each of the messages will
     /// then either be dropped (`NewBad`) or converted to `OldGood` (`NewGood`).
-    pub fn run_with_diff<F>(&mut self, mut callback: F)
+    pub async fn run_with_diff<F>(&mut self, mut callback: F)
     where
-        F: FnMut(&PieceState),
+        F: FnMut(&PieceState) -> BoxFuture<'_, ()>,
     {
         for piece_state in self.new_states.drain(..) {
-            callback(&piece_state);
+            callback(&piece_state).await;
 
             self.old_states.insert(piece_state);
         }
@@ -203,9 +210,9 @@ impl PieceCheckerState {
 
     /// Pass any pieces that have not been identified as `OldGood` into the callback which determines
     /// if the piece is good or bad so it can be marked as `NewGood` or `NewBad`.
-    fn run_with_whole_pieces<F>(&mut self, piece_length: usize, mut callback: F) -> io::Result<()>
+    fn run_with_whole_pieces<F>(&mut self, piece_length: usize, mut callback: F) -> std::io::Result<()>
     where
-        F: FnMut(&BlockMetadata) -> io::Result<bool>,
+        F: FnMut(&BlockMetadata) -> std::io::Result<bool>,
     {
         self.merge_pieces();
 
@@ -299,7 +306,7 @@ fn merge_piece_messages(message_a: &BlockMetadata, message_b: &BlockMetadata) ->
     // If start b falls between start and end a, then start a is where we start, and we end at the max of end a
     // or end b, then calculate the length from end minus start. Vice versa if a falls between start and end b.
     if start_b >= start_a && start_b <= end_a {
-        let end_to_take = cmp::max(end_a, end_b);
+        let end_to_take = std::cmp::max(end_a, end_b);
         let length = end_to_take - start_a;
 
         Some(BlockMetadata::new(
@@ -309,7 +316,7 @@ fn merge_piece_messages(message_a: &BlockMetadata, message_b: &BlockMetadata) ->
             length.try_into().unwrap(),
         ))
     } else if start_a >= start_b && start_a <= end_b {
-        let end_to_take = cmp::max(end_a, end_b);
+        let end_to_take = std::cmp::max(end_a, end_b);
         let length = end_to_take - start_b;
 
         Some(BlockMetadata::new(

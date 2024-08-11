@@ -1,17 +1,15 @@
-//! Build configuration for `Handshaker` object creation.
-
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use rand::Rng as _;
-use tokio_core::reactor::Handle;
+use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::task::JoinSet;
 use util::bt::PeerId;
 use util::convert;
 
 use super::Handshaker;
-use crate::handshake::config::HandshakerConfig;
-use crate::message::extensions::Extensions;
-use crate::transport::Transport;
+use crate::{Extensions, HandshakerConfig, Transport};
 
+/// Build configuration for `Handshaker` object creation.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone)]
 pub struct HandshakerBuilder {
@@ -100,10 +98,12 @@ impl HandshakerBuilder {
     /// # Errors
     ///
     /// Returns a IO error if unable to build.
-    pub fn build<T>(&self, transport: T, handle: &Handle) -> std::io::Result<Handshaker<T::Socket>>
+    pub async fn build<T>(&self, transport: T) -> std::io::Result<(Handshaker<T::Socket>, JoinSet<()>)>
     where
-        T: Transport + 'static,
+        T: Transport + Send + Sync + 'static,
+        <T as Transport>::Socket: AsyncWrite + AsyncRead + std::fmt::Debug + Send + Sync,
+        <T as Transport>::Listener: Send,
     {
-        Handshaker::with_builder(self, transport, handle)
+        Handshaker::with_builder(self, transport).await
     }
 }

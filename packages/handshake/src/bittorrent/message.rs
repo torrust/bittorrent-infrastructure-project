@@ -1,7 +1,8 @@
-use std::io;
-use std::io::Write;
-
-use nom::{call, do_parse, take, IResult};
+use nom::bytes::complete::take;
+use nom::combinator::map_res;
+use nom::sequence::tuple;
+use nom::IResult;
+use tokio::io::{AsyncWrite, AsyncWriteExt as _};
 use util::bt::{self, InfoHash, PeerId};
 
 use crate::message::extensions::{self, Extensions};
@@ -30,16 +31,30 @@ impl HandshakeMessage {
         HandshakeMessage { prot, ext, hash, pid }
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], HandshakeMessage> {
+    pub fn from_bytes(bytes: &Vec<u8>) -> IResult<(), HandshakeMessage> {
         parse_remote_handshake(bytes)
     }
 
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    #[allow(dead_code)]
+    pub async fn write_bytes<W>(&self, writer: &mut W) -> std::io::Result<()>
     where
-        W: Write,
+        W: AsyncWrite + Unpin,
     {
-        self.prot.write_bytes(&mut writer)?;
-        self.ext.write_bytes(&mut writer)?;
+        self.prot.write_bytes(writer).await?;
+        self.ext.write_bytes(writer).await?;
+        writer.write_all(self.hash.as_ref()).await?;
+
+        writer.write_all(self.pid.as_ref()).await?;
+
+        Ok(())
+    }
+
+    pub fn write_bytes_sync<W>(&self, writer: &mut W) -> std::io::Result<()>
+    where
+        W: std::io::Write,
+    {
+        self.prot.write_bytes_sync(writer)?;
+        self.ext.write_bytes_sync(writer)?;
         writer.write_all(self.hash.as_ref())?;
 
         writer.write_all(self.pid.as_ref())?;
@@ -61,33 +76,35 @@ pub fn write_len_with_protocol_len(protocol_len: u8) -> usize {
     1 + (protocol_len as usize) + extensions::NUM_EXTENSION_BYTES + bt::INFO_HASH_LEN + bt::PEER_ID_LEN
 }
 
-fn parse_remote_handshake(bytes: &[u8]) -> IResult<&[u8], HandshakeMessage> {
-    do_parse!(bytes,
-        prot: call!(Protocol::from_bytes)   >>
-        ext:  call!(Extensions::from_bytes) >>
-        hash: call!(parse_remote_hash)      >>
-        pid:  call!(parse_remote_pid)       >>
-        (HandshakeMessage::from_parts(prot, ext, hash, pid))
-    )
+#[allow(clippy::ptr_arg)]
+fn parse_remote_handshake(bytes: &Vec<u8>) -> IResult<(), HandshakeMessage> {
+    let res = tuple((
+        Protocol::from_bytes,
+        Extensions::from_bytes,
+        parse_remote_hash,
+        parse_remote_pid,
+    ))(bytes);
+
+    let (_, (prot, ext, hash, pid)) = res.map_err(|e: nom::Err<nom::error::Error<&[u8]>>| e.map_input(|_| ()))?;
+
+    Ok(((), HandshakeMessage::from_parts(prot, ext, hash, pid)))
 }
 
 fn parse_remote_hash(bytes: &[u8]) -> IResult<&[u8], InfoHash> {
-    do_parse!(bytes,
-        hash: take!(bt::INFO_HASH_LEN) >>
-        (InfoHash::from_hash(hash).unwrap())
-    )
+    map_res(take(bt::INFO_HASH_LEN), |hash: &[u8]| {
+        InfoHash::from_hash(hash).map_err(|_| nom::Err::Error((bytes, nom::error::ErrorKind::LengthValue)))
+    })(bytes)
 }
 
 fn parse_remote_pid(bytes: &[u8]) -> IResult<&[u8], PeerId> {
-    do_parse!(bytes,
-        pid: take!(bt::PEER_ID_LEN) >>
-        (PeerId::from_hash(pid).unwrap())
-    )
+    map_res(take(bt::PEER_ID_LEN), |pid: &[u8]| {
+        PeerId::from_hash(pid).map_err(|_| nom::Err::Error((bytes, nom::error::ErrorKind::LengthValue)))
+    })(bytes)
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
+    use std::io::Write as _;
 
     use util::bt::{self, InfoHash, PeerId};
 
@@ -118,8 +135,8 @@ mod tests {
 
         let exp_message = HandshakeMessage::from_parts(exp_protocol.clone(), exp_extensions, exp_hash, exp_pid);
 
-        exp_protocol.write_bytes(&mut buffer).unwrap();
-        exp_extensions.write_bytes(&mut buffer).unwrap();
+        exp_protocol.write_bytes_sync(&mut buffer).unwrap();
+        exp_extensions.write_bytes_sync(&mut buffer).unwrap();
         buffer.write_all(exp_hash.as_ref()).unwrap();
         buffer.write_all(exp_pid.as_ref()).unwrap();
 
@@ -139,8 +156,8 @@ mod tests {
 
         let exp_message = HandshakeMessage::from_parts(exp_protocol.clone(), exp_extensions, exp_hash, exp_pid);
 
-        exp_protocol.write_bytes(&mut buffer).unwrap();
-        exp_extensions.write_bytes(&mut buffer).unwrap();
+        exp_protocol.write_bytes_sync(&mut buffer).unwrap();
+        exp_extensions.write_bytes_sync(&mut buffer).unwrap();
         buffer.write_all(exp_hash.as_ref()).unwrap();
         buffer.write_all(exp_pid.as_ref()).unwrap();
 
@@ -160,8 +177,8 @@ mod tests {
 
         let exp_message = HandshakeMessage::from_parts(exp_protocol.clone(), exp_extensions, exp_hash, exp_pid);
 
-        exp_protocol.write_bytes(&mut buffer).unwrap();
-        exp_extensions.write_bytes(&mut buffer).unwrap();
+        exp_protocol.write_bytes_sync(&mut buffer).unwrap();
+        exp_extensions.write_bytes_sync(&mut buffer).unwrap();
         buffer.write_all(exp_hash.as_ref()).unwrap();
         buffer.write_all(exp_pid.as_ref()).unwrap();
 

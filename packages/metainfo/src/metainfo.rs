@@ -1,7 +1,5 @@
 //! Accessing the fields of a Metainfo file.
 
-use std::fmt::Debug;
-use std::io;
 use std::path::{Path, PathBuf};
 
 use bencode::{BDecodeOpt, BDictAccess, BRefAccess, BencodeRef};
@@ -10,7 +8,7 @@ use util::sha::{self, ShaHash};
 
 use crate::accessor::{Accessor, IntoAccessor, PieceAccess};
 use crate::builder::{InfoBuilder, MetainfoBuilder, PieceLength};
-use crate::error::{ParseError, ParseErrorKind, ParseResult};
+use crate::error::ParseError;
 use crate::iter::{Files, Pieces};
 use crate::parse;
 
@@ -27,12 +25,25 @@ pub struct Metainfo {
 }
 
 impl Metainfo {
+    #[must_use]
+    pub fn new(info: Info) -> Self {
+        Self {
+            comment: None,
+            announce: None,
+            announce_list: None,
+            encoding: None,
+            created_by: None,
+            creation_date: None,
+            info,
+        }
+    }
+
     /// Read a `Metainfo` from metainfo file bytes.
     ///
     /// # Errors
     ///
     /// It would return an error if unable to parse the bytes as a [`Metainfo`]
-    pub fn from_bytes<B>(bytes: B) -> ParseResult<Metainfo>
+    pub fn from_bytes<B>(bytes: B) -> Result<Metainfo, ParseError>
     where
         B: AsRef<[u8]>,
     {
@@ -119,7 +130,7 @@ impl From<Info> for Metainfo {
 }
 
 /// Parses the given metainfo bytes and builds a Metainfo from them.
-fn parse_meta_bytes(bytes: &[u8]) -> ParseResult<Metainfo> {
+fn parse_meta_bytes(bytes: &[u8]) -> Result<Metainfo, ParseError> {
     let root_bencode = BencodeRef::decode(bytes, BDecodeOpt::default())?;
     let root_dict = parse::parse_root_dict(&root_bencode)?;
 
@@ -170,7 +181,7 @@ impl Info {
     /// # Errors
     ///
     /// It would return an error if unable to parse bytes into [`Info`].
-    pub fn from_bytes<B>(bytes: B) -> ParseResult<Info>
+    pub fn from_bytes<B>(bytes: B) -> Result<Info, ParseError>
     where
         B: AsRef<[u8]>,
     {
@@ -247,7 +258,7 @@ impl Info {
 impl IntoAccessor for Info {
     type Accessor = Info;
 
-    fn into_accessor(self) -> io::Result<Info> {
+    fn into_accessor(self) -> std::io::Result<Info> {
         Ok(self)
     }
 }
@@ -255,7 +266,7 @@ impl IntoAccessor for Info {
 impl<'a> IntoAccessor for &'a Info {
     type Accessor = &'a Info;
 
-    fn into_accessor(self) -> io::Result<&'a Info> {
+    fn into_accessor(self) -> std::io::Result<&'a Info> {
         Ok(self)
     }
 }
@@ -265,7 +276,7 @@ impl Accessor for Info {
         self.directory()
     }
 
-    fn access_metadata<C>(&self, mut callback: C) -> io::Result<()>
+    fn access_metadata<C>(&self, mut callback: C) -> std::io::Result<()>
     where
         C: FnMut(u64, &Path),
     {
@@ -276,9 +287,9 @@ impl Accessor for Info {
         Ok(())
     }
 
-    fn access_pieces<C>(&self, mut callback: C) -> io::Result<()>
+    fn access_pieces<C>(&self, mut callback: C) -> std::io::Result<()>
     where
-        C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
+        C: for<'a> FnMut(PieceAccess<'a>) -> std::io::Result<()>,
     {
         for piece in self.pieces() {
             callback(PieceAccess::PreComputed(ShaHash::from_hash(piece).unwrap()))?;
@@ -289,14 +300,14 @@ impl Accessor for Info {
 }
 
 /// Parses the given info dictionary bytes and builds a Metainfo from them.
-fn parse_info_bytes(bytes: &[u8]) -> ParseResult<Info> {
+fn parse_info_bytes(bytes: &[u8]) -> Result<Info, ParseError> {
     let info_bencode = BencodeRef::decode(bytes, BDecodeOpt::default())?;
 
     parse_info_dictionary(&info_bencode)
 }
 
 /// Parses the given info dictionary and builds an Info from it.
-fn parse_info_dictionary(info_bencode: &BencodeRef<'_>) -> ParseResult<Info> {
+fn parse_info_dictionary(info_bencode: &BencodeRef<'_>) -> Result<Info, ParseError> {
     let info_hash = InfoHash::from_bytes(info_bencode.buffer());
 
     let info_dict = parse::parse_root_dict(info_bencode)?;
@@ -352,10 +363,10 @@ where
 }
 
 /// Validates and allocates the hash pieces on the heap.
-fn allocate_pieces(pieces: &[u8]) -> ParseResult<Vec<[u8; sha::SHA_HASH_LEN]>> {
+fn allocate_pieces(pieces: &[u8]) -> Result<Vec<[u8; sha::SHA_HASH_LEN]>, ParseError> {
     if pieces.len() % sha::SHA_HASH_LEN != 0 {
         let error_msg = format!("Piece Hash Length Of {} Is Invalid", pieces.len());
-        Err(ParseError::from_kind(ParseErrorKind::MissingData { details: error_msg }))
+        Err(ParseError::MissingData { details: error_msg })
     } else {
         let mut hash_buffers = Vec::with_capacity(pieces.len() / sha::SHA_HASH_LEN);
         let mut hash_bytes = [0u8; sha::SHA_HASH_LEN];
@@ -384,7 +395,7 @@ pub struct File {
 
 impl File {
     /// Parse the info dictionary and generate a single file File.
-    fn as_single_file<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<File>
+    fn as_single_file<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> Result<File, ParseError>
     where
         B: BRefAccess,
     {
@@ -400,7 +411,7 @@ impl File {
     }
 
     /// Parse the file dictionary and generate a multi file File.
-    fn as_multi_file<B>(file_dict: &dyn BDictAccess<B::BKey, B>) -> ParseResult<File>
+    fn as_multi_file<B>(file_dict: &dyn BDictAccess<B::BKey, B>) -> Result<File, ParseError>
     where
         B: BRefAccess<BType = B>,
     {
@@ -906,16 +917,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeParse(BencodeParseError(BytesEmpty { pos: 0 }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
-    )]
+    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: BencodeParse(BytesEmpty { pos: 0 })")]
     fn negative_parse_from_empty_bytes() {
         Metainfo::from_bytes(b"").unwrap();
     }
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeConvert(BencodeConvertError(MissingKey { key: [112, 105, 101, 99, 101, 32, 108, 101, 110, 103, 116, 104] }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
+        expected = "called `Result::unwrap()` on an `Err` value: BencodeConvert(MissingKey { key: [112, 105, 101, 99, 101, 32, 108, 101, 110, 103, 116, 104] })"
     )]
     fn negative_parse_with_no_piece_length() {
         let tracker = "udp://dummy_domain.com:8989";
@@ -942,7 +951,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeConvert(BencodeConvertError(MissingKey { key: [112, 105, 101, 99, 101, 115] }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
+        expected = "called `Result::unwrap()` on an `Err` value: BencodeConvert(MissingKey { key: [112, 105, 101, 99, 101, 115] })"
     )]
     fn negative_parse_with_no_pieces() {
         let tracker = "udp://dummy_domain.com:8989";
@@ -967,7 +976,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeConvert(BencodeConvertError(MissingKey { key: [102, 105, 108, 101, 115] }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
+        expected = "called `Result::unwrap()` on an `Err` value: BencodeConvert(MissingKey { key: [102, 105, 108, 101, 115] })"
     )]
     fn negative_parse_from_single_file_with_no_file_length() {
         let tracker = "udp://dummy_domain.com:8989";
@@ -992,7 +1001,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: ParseError(BencodeConvert(BencodeConvertError(MissingKey { key: [110, 97, 109, 101] }, State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })"
+        expected = "called `Result::unwrap()` on an `Err` value: BencodeConvert(MissingKey { key: [110, 97, 109, 101] })"
     )]
     fn negative_parse_from_single_file_with_no_file_name() {
         let tracker = "udp://dummy_domain.com:8989";

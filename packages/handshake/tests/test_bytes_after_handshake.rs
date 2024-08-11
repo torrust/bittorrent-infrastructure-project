@@ -1,34 +1,38 @@
-use std::io::{Read, Write};
-use std::net::TcpStream;
-use std::thread;
+use std::io::{Read as _, Write as _};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 
-use futures::stream::Stream;
-use futures::Future;
+use common::{tracing_stderr_init, INIT};
+use futures::stream::StreamExt;
 use handshake::transports::TcpTransport;
 use handshake::{DiscoveryInfo, HandshakerBuilder};
-use tokio_core::reactor::Core;
-use tokio_io::io;
+use tokio::io::AsyncReadExt as _;
+use tracing::level_filters::LevelFilter;
 use util::bt::{self};
 
 mod common;
 
-#[test]
-fn positive_recover_bytes() {
-    let mut core = Core::new().unwrap();
+#[tokio::test]
+async fn positive_recover_bytes() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::INFO);
+    });
 
-    let mut handshaker_one_addr = "127.0.0.1:0".parse().unwrap();
+    let mut handshaker_one_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0);
+
     let handshaker_one_pid = [4u8; bt::PEER_ID_LEN].into();
 
-    let handshaker_one = HandshakerBuilder::new()
+    let (mut handshaker_one, mut tasks_one) = HandshakerBuilder::new()
         .with_bind_addr(handshaker_one_addr)
         .with_peer_id(handshaker_one_pid)
-        .build(TcpTransport, &core.handle())
+        .build(TcpTransport)
+        .await
         .unwrap();
 
     handshaker_one_addr.set_port(handshaker_one.port());
 
-    thread::spawn(move || {
+    tasks_one.spawn_blocking(move || {
         let mut stream = TcpStream::connect(handshaker_one_addr).unwrap();
+
         let mut write_buffer = Vec::new();
 
         write_buffer.write_all(&[1, 1]).unwrap();
@@ -43,20 +47,23 @@ fn positive_recover_bytes() {
         stream.read_exact(&mut vec![0u8; expect_read_length][..]).unwrap();
     });
 
-    let recv_buffer = core
-        .run(
-            handshaker_one
-                .into_future()
-                .map_err(|_| ())
-                .and_then(|(opt_message, _)| {
-                    let (_, _, _, _, _, sock) = opt_message.unwrap().into_parts();
+    let test = tokio::spawn(async move {
+        if let Some(message) = handshaker_one.next().await {
+            let (_, _, _, _, _, mut sock) = message.unwrap().into_parts();
 
-                    io::read_exact(sock, vec![0u8; 100]).map_err(|_| ())
-                })
-                .and_then(|(_, buf)| Ok(buf)),
-        )
-        .unwrap();
+            let mut recv_buffer = vec![0u8; 100];
+            sock.read_exact(&mut recv_buffer).await.unwrap();
 
-    // Assert that our buffer contains the bytes after the handshake
-    assert_eq!(vec![55u8; 100], recv_buffer);
+            // Assert that our buffer contains the bytes after the handshake
+            assert_eq!(vec![55u8; 100], recv_buffer);
+        } else {
+            panic!("Failed to receive handshake message");
+        }
+    });
+
+    let res = test.await;
+
+    tasks_one.shutdown().await;
+
+    res.unwrap();
 }

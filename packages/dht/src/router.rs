@@ -1,5 +1,3 @@
-use std::fmt::{self, Display, Formatter};
-use std::io::{self, Error, ErrorKind};
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
 use std::vec::IntoIter;
 
@@ -28,7 +26,7 @@ pub enum Router {
 
 impl Router {
     // TODO: USES DEPRECATED FUNCTIONS
-    // pub fn hostname(&self) -> io::Result<Cow<'static, str>> {
+    // pub fn hostname(&self) -> std::io::Result<Cow<'static, str>> {
     // match self {
     // &Router::uTorrent     => Ok(UTORRENT_DHT.0.into_cow()),
     // &Router::BitComet     => Ok(BITCOMET_DHT.0.into_cow()),
@@ -44,12 +42,13 @@ impl Router {
     /// # Errors
     ///
     /// This function will return an error if unable to fund any ipv4 address.
-    pub fn ipv4_addr(&self) -> io::Result<SocketAddrV4> {
+    pub fn ipv4_addr(&self) -> std::io::Result<SocketAddrV4> {
         let mut addrs = self.socket_addrs()?;
 
-        addrs
-            .find_map(map_ipv4)
-            .ok_or(Error::new(ErrorKind::Other, "No IPv4 Addresses Found For Host"))
+        addrs.find_map(map_ipv4).ok_or(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No IPv4 Addresses Found For Host",
+        ))
     }
 
     /// Returns the [`SocketAddrV6`] of this [`Router`].
@@ -57,12 +56,13 @@ impl Router {
     /// # Errors
     ///
     /// This function will return an error if unable to fund any ipv6 address.
-    pub fn ipv6_addr(&self) -> io::Result<SocketAddrV6> {
+    pub fn ipv6_addr(&self) -> std::io::Result<SocketAddrV6> {
         let mut addrs = self.socket_addrs()?;
 
-        addrs
-            .find_map(map_ipv6)
-            .ok_or(Error::new(ErrorKind::Other, "No IPv6 Addresses Found For Host"))
+        addrs.find_map(map_ipv6).ok_or(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No IPv6 Addresses Found For Host",
+        ))
     }
 
     /// Returns the [`SocketAddr`] of this [`Router`].
@@ -70,15 +70,16 @@ impl Router {
     /// # Errors
     ///
     /// This function will return an error if unable to fund a socket address.
-    pub fn socket_addr(&self) -> io::Result<SocketAddr> {
+    pub fn socket_addr(&self) -> std::io::Result<SocketAddr> {
         let mut addrs = self.socket_addrs()?;
 
-        addrs
-            .next()
-            .ok_or(Error::new(ErrorKind::Other, "No SocketAddresses Found For Host"))
+        addrs.next().ok_or(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No SocketAddresses Found For Host",
+        ))
     }
 
-    fn socket_addrs(&self) -> io::Result<IntoIter<SocketAddr>> {
+    fn socket_addrs(&self) -> std::io::Result<IntoIter<SocketAddr>> {
         match *self {
             Router::uTorrent => UTORRENT_DHT.to_socket_addrs(),
             Router::BitTorrent => BITTORRENT_DHT.to_socket_addrs(),
@@ -106,14 +107,14 @@ fn map_ipv6(addr: SocketAddr) -> Option<SocketAddrV6> {
     }
 }
 
-impl Display for Router {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+impl std::fmt::Display for Router {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match *self {
             Router::uTorrent => f.write_fmt(format_args!("{}:{}", UTORRENT_DHT.0, UTORRENT_DHT.1)),
             Router::BitTorrent => f.write_fmt(format_args!("{}:{}", BITTORRENT_DHT.0, BITTORRENT_DHT.1)),
             Router::BitComet => f.write_fmt(format_args!("{}:{}", BITCOMET_DHT.0, BITCOMET_DHT.1)),
             Router::Transmission => f.write_fmt(format_args!("{}:{}", TRANSMISSION_DHT.0, TRANSMISSION_DHT.1)),
-            Router::Custom(n) => Display::fmt(&n, f),
+            Router::Custom(n) => std::fmt::Display::fmt(&n, f),
         }
     }
 }

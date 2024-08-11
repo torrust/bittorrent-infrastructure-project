@@ -3,10 +3,17 @@
 use std::borrow::Cow;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::io::{self, Write};
+use std::io::Write as _;
 
 use byteorder::WriteBytesExt;
-use nom::{alt, be_u8, call, do_parse, eof, error_position, length_bytes, length_data, map, named, tag, take, IResult};
+use nom::branch::alt;
+use nom::bytes::complete::{tag, take};
+use nom::combinator::{eof, map};
+use nom::multi::length_data;
+use nom::number::complete::be_u8;
+use nom::sequence::tuple;
+use nom::IResult;
+use tracing::instrument;
 
 const END_OF_OPTIONS_BYTE: u8 = 0x00;
 const NO_OPERATION_BYTE: u8 = 0x01;
@@ -46,13 +53,15 @@ impl<'a> AnnounceOptions<'a> {
     }
 
     /// Parse a set of `AnnounceOptions` from the given bytes.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// It will return an error when unable to parse the bytes.
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceOptions<'a>> {
         let mut raw_options = HashMap::new();
 
-        map!(bytes, call!(parse_options, &mut raw_options), |_| {
-            AnnounceOptions { raw_options }
-        })
+        let (remaining, _) = parse_options(bytes, &mut raw_options)?;
+        Ok((remaining, AnnounceOptions { raw_options }))
     }
 
     /// Write the `AnnounceOptions` to the given writer.
@@ -63,11 +72,13 @@ impl<'a> AnnounceOptions<'a> {
     ///
     /// # Panics
     ///
-    /// It would panic if the chuck length is too large.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    /// It would panic if the chunk length is too large.
+    #[instrument(skip(self, writer))]
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
+        tracing::trace!("writing {} options", self.raw_options.len());
         for (byte, content) in &self.raw_options {
             for content_chunk in content.chunks(u8::MAX as usize) {
                 let content_chunk_len: u8 = content_chunk.len().try_into().unwrap();
@@ -80,10 +91,17 @@ impl<'a> AnnounceOptions<'a> {
 
         // If we can fit it in, include the option terminating byte, otherwise as per the
         // spec, we can leave it out since we are assuming this is the end of the packet.
-        // TODO: Allow unused when the compile flag is stabilized
-        writer.write_u8(END_OF_OPTIONS_BYTE);
-
-        Ok(())
+        match writer.write_u8(END_OF_OPTIONS_BYTE) {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                if e.kind() == std::io::ErrorKind::WriteZero {
+                    tracing::trace!("no space to write ending marker");
+                    Ok(())
+                } else {
+                    Err(e)
+                }
+            }
+        }
     }
 
     /// Search for and construct the given `AnnounceOption` from the current `AnnounceOptions`.
@@ -109,10 +127,6 @@ impl<'a> AnnounceOptions<'a> {
         let mut bytes = vec![0u8; option.option_length()];
         option.write_option(&mut bytes[..]);
 
-        // Unfortunately we cannot return the replaced value unless we modified the
-        // AnnounceOption::read_option method to accept a Cow and give it that because
-        // we cant guarantee that the buffer is not Cow::Owned at the moment and would be
-        // dropped (replaced) after being constructed.
         self.insert_bytes(O::option_byte(), bytes);
     }
 
@@ -138,61 +152,50 @@ fn parse_options<'a>(bytes: &'a [u8], option_map: &mut HashMap<u8, Cow<'a, [u8]>
     let mut curr_bytes = bytes;
     let mut eof = false;
 
-    // Iteratively try all parsers until one succeeds and check whether the eof has been reached.
-    // Return early on incomplete or error.
     while !eof {
-        let parse_result = alt!(
-            curr_bytes,
-            parse_end_option | call!(parse_no_option) | call!(parse_user_option, option_map)
-        );
+        let parse_result = alt((parse_end_option, parse_no_option, |input| {
+            parse_user_option(input, option_map)
+        }))(curr_bytes);
 
         match parse_result {
-            IResult::Done(new_bytes, found_eof) => {
+            Ok((new_bytes, found_eof)) => {
                 eof = found_eof;
-
                 curr_bytes = new_bytes;
             }
-            some_error => {
-                return some_error;
+            Err(e) => {
+                return Err(e);
             }
         };
     }
 
-    IResult::Done(curr_bytes, eof)
+    Ok((curr_bytes, eof))
 }
 
 /// Parse an end of buffer or the end of option byte.
-named!(parse_end_option<&[u8], bool>, map!(alt!(
-    eof!() | tag!([END_OF_OPTIONS_BYTE])
-), |_| true));
+fn parse_end_option(input: &[u8]) -> IResult<&[u8], bool> {
+    map(alt((eof, tag([END_OF_OPTIONS_BYTE]))), |_| true)(input)
+}
 
 /// Parse a noop byte.
-fn parse_no_option(bytes: &[u8]) -> IResult<&[u8], bool> {
-    map!(bytes, tag!([NO_OPERATION_BYTE]), |_| false)
+fn parse_no_option(input: &[u8]) -> IResult<&[u8], bool> {
+    map(tag([NO_OPERATION_BYTE]), |_| false)(input)
 }
 
 /// Parse a user defined option.
-fn parse_user_option<'a>(bytes: &'a [u8], option_map: &mut HashMap<u8, Cow<'a, [u8]>>) -> IResult<&'a [u8], bool> {
-    do_parse!(bytes,
-        option_byte:     be_u8 >>
-        option_contents: length_bytes!(byte_usize) >>
-        ({
-            match option_map.entry(option_byte) {
-                Entry::Occupied(mut occ) => { occ.get_mut().to_mut().extend_from_slice(option_contents); },
-                Entry::Vacant(vac)       => { vac.insert(Cow::Borrowed(option_contents)); }
-            };
+fn parse_user_option<'a>(input: &'a [u8], option_map: &mut HashMap<u8, Cow<'a, [u8]>>) -> IResult<&'a [u8], bool> {
+    let (input, (option_byte, option_contents)) = tuple((be_u8, length_data(be_u8)))(input)?;
 
-            false
-        })
-    )
+    match option_map.entry(option_byte) {
+        Entry::Occupied(mut occ) => {
+            occ.get_mut().to_mut().extend_from_slice(option_contents);
+        }
+        Entry::Vacant(vac) => {
+            vac.insert(Cow::Borrowed(option_contents));
+        }
+    };
+
+    Ok((input, false))
 }
-
-/// Parse a single byte as an unsigned pointer size.
-named!(byte_usize<&[u8], usize>, map!(
-    be_u8, |b| b as usize
-));
-
-// ----------------------------------------------------------------------------//
 
 /// Concatenated PATH and QUERY of a UDP tracker URL.
 #[allow(clippy::module_name_repetitions)]
@@ -229,14 +232,36 @@ impl<'a> AnnounceOption<'a> for URLDataOption<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
+
+    use std::io::Write as _;
+    use std::sync::Once;
 
     use nom::IResult;
+    use tracing::level_filters::LevelFilter;
 
     use super::{AnnounceOptions, URLDataOption};
 
+    #[allow(dead_code)]
+    pub static INIT: Once = Once::new();
+
+    #[allow(dead_code)]
+    pub fn tracing_stderr_init(filter: LevelFilter) {
+        let builder = tracing_subscriber::fmt()
+            .with_max_level(filter)
+            .with_ansi(true)
+            .with_writer(std::io::stderr);
+
+        builder.pretty().with_file(true).init();
+
+        tracing::info!("Logging initialized");
+    }
+
     #[test]
     fn positive_write_eof_option() {
+        INIT.call_once(|| {
+            tracing_stderr_init(LevelFilter::INFO);
+        });
+
         let mut received = [];
 
         let options = AnnounceOptions::new();
@@ -303,7 +328,7 @@ mod tests {
         let received = AnnounceOptions::from_bytes(&bytes);
         let expected = AnnounceOptions::new();
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -313,7 +338,7 @@ mod tests {
         let received = AnnounceOptions::from_bytes(&bytes);
         let expected = AnnounceOptions::new();
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -323,7 +348,7 @@ mod tests {
         let received = AnnounceOptions::from_bytes(&bytes);
         let expected = AnnounceOptions::new();
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -337,7 +362,7 @@ mod tests {
         let url_data = URLDataOption::new(&url_data_bytes);
         expected.insert(&url_data);
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -351,7 +376,7 @@ mod tests {
         let url_data = URLDataOption::new(&url_data_bytes);
         expected.insert(&url_data);
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -365,7 +390,7 @@ mod tests {
         let url_data = URLDataOption::new(&url_data_bytes);
         expected.insert(&url_data);
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -389,7 +414,7 @@ mod tests {
         let url_data = URLDataOption::new(&url_data_bytes);
         expected.insert(&url_data);
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -407,7 +432,7 @@ mod tests {
         let url_data = URLDataOption::new(&bytes[2..]);
         expected.insert(&url_data);
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -439,7 +464,7 @@ mod tests {
         let url_data = URLDataOption::new(&url_data_bytes[..]);
         expected.insert(&url_data);
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -473,7 +498,7 @@ mod tests {
         let url_data = URLDataOption::new(&url_data_bytes[..]);
         expected.insert(&url_data);
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -482,7 +507,7 @@ mod tests {
 
         let received = AnnounceOptions::from_bytes(&bytes);
 
-        assert!(received.is_incomplete());
+        assert!(received.is_err());
     }
 
     #[test]
@@ -491,6 +516,6 @@ mod tests {
 
         let received = AnnounceOptions::from_bytes(&bytes);
 
-        assert!(received.is_incomplete());
+        assert!(received.is_err());
     }
 }

@@ -18,10 +18,13 @@ version.workspace = true
 [dependencies]
 util = { path = "../util" }
 
-bytes = "0.4"
-futures = "0.1"
-nom = "3"
-rand = "0.8"
-tokio-core = "0.1"
-tokio-io = "0.1"
-tokio-timer = "0.1"
+bytes = "1"
+futures = "0"
+nom = "7"
+pin-project = "1"
+rand = "0"
+tokio = { version = "1", features = ["full"] }
+tracing = "0"
+
+[dev-dependencies]
+tracing-subscriber = "0"

@@ -1,5 +1,5 @@
-use std::io::{self};
 use std::path::Path;
+use std::sync::Arc;
 
 pub mod cache;
 pub mod native;
@@ -18,7 +18,7 @@ pub trait FileSystem {
     /// # Errors
     ///
     /// It would return an IO error if there is an problem.
-    fn open_file<P>(&self, path: P) -> io::Result<Self::File>
+    fn open_file<P>(&self, path: P) -> std::io::Result<Self::File>
     where
         P: AsRef<Path> + Send + 'static;
 
@@ -27,7 +27,7 @@ pub trait FileSystem {
     /// # Errors
     ///
     /// It would return an IO error if there is an problem.
-    fn sync_file<P>(&self, path: P) -> io::Result<()>
+    fn sync_file<P>(&self, path: P) -> std::io::Result<()>
     where
         P: AsRef<Path> + Send + 'static;
 
@@ -36,7 +36,7 @@ pub trait FileSystem {
     /// # Errors
     ///
     /// It would return an IO error if there is an problem.
-    fn file_size(&self, file: &Self::File) -> io::Result<u64>;
+    fn file_size(&self, file: &Self::File) -> std::io::Result<u64>;
 
     /// Read the contents of the file at the given offset.
     ///
@@ -45,7 +45,7 @@ pub trait FileSystem {
     /// # Errors
     ///
     /// It would return an IO error if there is an problem.
-    fn read_file(&self, file: &mut Self::File, offset: u64, buffer: &mut [u8]) -> io::Result<usize>;
+    fn read_file(&self, file: &mut Self::File, offset: u64, buffer: &mut [u8]) -> std::io::Result<usize>;
 
     /// Write the contents of the file at the given offset.
     ///
@@ -55,38 +55,39 @@ pub trait FileSystem {
     /// # Errors
     ///
     /// It would return an IO error if there is an problem.
-    fn write_file(&self, file: &mut Self::File, offset: u64, buffer: &[u8]) -> io::Result<usize>;
+    fn write_file(&self, file: &mut Self::File, offset: u64, buffer: &[u8]) -> std::io::Result<usize>;
 }
 
 impl<'a, F> FileSystem for &'a F
 where
-    F: FileSystem,
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
 {
     type File = F::File;
 
-    fn open_file<P>(&self, path: P) -> io::Result<Self::File>
+    fn open_file<P>(&self, path: P) -> std::io::Result<Self::File>
     where
         P: AsRef<Path> + Send + 'static,
     {
         FileSystem::open_file(*self, path)
     }
 
-    fn sync_file<P>(&self, path: P) -> io::Result<()>
+    fn sync_file<P>(&self, path: P) -> std::io::Result<()>
     where
         P: AsRef<Path> + Send + 'static,
     {
         FileSystem::sync_file(*self, path)
     }
 
-    fn file_size(&self, file: &Self::File) -> io::Result<u64> {
+    fn file_size(&self, file: &Self::File) -> std::io::Result<u64> {
         FileSystem::file_size(*self, file)
     }
 
-    fn read_file(&self, file: &mut Self::File, offset: u64, buffer: &mut [u8]) -> io::Result<usize> {
+    fn read_file(&self, file: &mut Self::File, offset: u64, buffer: &mut [u8]) -> std::io::Result<usize> {
         FileSystem::read_file(*self, file, offset, buffer)
     }
 
-    fn write_file(&self, file: &mut Self::File, offset: u64, buffer: &[u8]) -> io::Result<usize> {
+    fn write_file(&self, file: &mut Self::File, offset: u64, buffer: &[u8]) -> std::io::Result<usize> {
         FileSystem::write_file(*self, file, offset, buffer)
     }
 }

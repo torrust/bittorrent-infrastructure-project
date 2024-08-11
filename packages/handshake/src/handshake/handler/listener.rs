@@ -1,7 +1,9 @@
+use std::cell::Cell;
 use std::net::SocketAddr;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 use futures::future::Future;
-use futures::{Async, Poll};
 
 use crate::filter::filters::Filters;
 use crate::handshake::handler;
@@ -9,12 +11,15 @@ use crate::handshake::handler::HandshakeType;
 
 #[allow(clippy::module_name_repetitions)]
 pub struct ListenerHandler<S> {
-    opt_item: Option<HandshakeType<S>>,
+    opt_item: Cell<std::io::Result<Option<HandshakeType<S>>>>,
 }
 
 impl<S> ListenerHandler<S> {
-    pub fn new(item: (S, SocketAddr), context: &Filters) -> ListenerHandler<S> {
-        let (sock, addr) = item;
+    pub fn new(item: std::io::Result<(S, SocketAddr)>, context: &Filters) -> ListenerHandler<S> {
+        let (sock, addr) = match item {
+            Ok(item) => item,
+            Err(e) => return ListenerHandler { opt_item: Err(e).into() },
+        };
 
         let opt_item = if handler::should_filter(Some(&addr), None, None, None, None, context) {
             None
@@ -22,22 +27,22 @@ impl<S> ListenerHandler<S> {
             Some(HandshakeType::Complete(sock, addr))
         };
 
-        ListenerHandler { opt_item }
+        ListenerHandler {
+            opt_item: Ok(opt_item).into(),
+        }
     }
 }
 
 impl<S> Future for ListenerHandler<S> {
-    type Item = Option<HandshakeType<S>>;
-    type Error = ();
+    type Output = std::io::Result<Option<HandshakeType<S>>>;
 
-    fn poll(&mut self) -> Poll<Option<HandshakeType<S>>, ()> {
-        Ok(Async::Ready(self.opt_item.take()))
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        Poll::Ready(self.opt_item.replace(Ok(None)))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use futures::Future;
 
     use super::ListenerHandler;
     use crate::filter::filters::test_filters::{BlockAddrFilter, BlockProtocolFilter};
@@ -45,66 +50,66 @@ mod tests {
     use crate::handshake::handler::HandshakeType;
     use crate::message::protocol::Protocol;
 
-    #[test]
-    fn positive_empty_filter() {
+    #[tokio::test]
+    async fn positive_empty_filter() {
         let exp_item = ("Testing", "0.0.0.0:0".parse().unwrap());
-        let handler = ListenerHandler::new(exp_item, &Filters::new());
+        let handler = ListenerHandler::new(Ok(exp_item), &Filters::new());
 
-        let recv_enum_item = handler.wait().unwrap();
+        let recv_enum_item = handler.await.unwrap().unwrap();
 
         let recv_item = match recv_enum_item {
-            Some(HandshakeType::Complete(sock, addr)) => (sock, addr),
-            Some(HandshakeType::Initiate(_, _)) | None => panic!("Expected HandshakeType::Complete"),
+            HandshakeType::Complete(sock, addr) => (sock, addr),
+            HandshakeType::Initiate(_, _) => panic!("Expected HandshakeType::Complete"),
         };
 
         assert_eq!(exp_item, recv_item);
     }
 
-    #[test]
-    fn positive_passes_filter() {
+    #[tokio::test]
+    async fn positive_passes_filter() {
         let filters = Filters::new();
         filters.add_filter(BlockAddrFilter::new("1.2.3.4:5".parse().unwrap()));
 
         let exp_item = ("Testing", "0.0.0.0:0".parse().unwrap());
-        let handler = ListenerHandler::new(exp_item, &filters);
+        let handler = ListenerHandler::new(Ok(exp_item), &filters);
 
-        let recv_enum_item = handler.wait().unwrap();
+        let recv_enum_item = handler.await.unwrap().unwrap();
 
         let recv_item = match recv_enum_item {
-            Some(HandshakeType::Complete(sock, addr)) => (sock, addr),
-            Some(HandshakeType::Initiate(_, _)) | None => panic!("Expected HandshakeType::Complete"),
+            HandshakeType::Complete(sock, addr) => (sock, addr),
+            HandshakeType::Initiate(_, _) => panic!("Expected HandshakeType::Complete"),
         };
 
         assert_eq!(exp_item, recv_item);
     }
 
-    #[test]
-    fn positive_needs_data_filter() {
+    #[tokio::test]
+    async fn positive_needs_data_filter() {
         let filters = Filters::new();
         filters.add_filter(BlockProtocolFilter::new(Protocol::BitTorrent));
 
         let exp_item = ("Testing", "0.0.0.0:0".parse().unwrap());
-        let handler = ListenerHandler::new(exp_item, &filters);
+        let handler = ListenerHandler::new(Ok(exp_item), &filters);
 
-        let recv_enum_item = handler.wait().unwrap();
+        let recv_enum_item = handler.await.unwrap().unwrap();
 
         let recv_item = match recv_enum_item {
-            Some(HandshakeType::Complete(sock, addr)) => (sock, addr),
-            Some(HandshakeType::Initiate(_, _)) | None => panic!("Expected HandshakeType::Complete"),
+            HandshakeType::Complete(sock, addr) => (sock, addr),
+            HandshakeType::Initiate(_, _) => panic!("Expected HandshakeType::Complete"),
         };
 
         assert_eq!(exp_item, recv_item);
     }
 
-    #[test]
-    fn positive_fails_filter() {
+    #[tokio::test]
+    async fn positive_fails_filter() {
         let filters = Filters::new();
         filters.add_filter(BlockAddrFilter::new("0.0.0.0:0".parse().unwrap()));
 
         let exp_item = ("Testing", "0.0.0.0:0".parse().unwrap());
-        let handler = ListenerHandler::new(exp_item, &filters);
+        let handler = ListenerHandler::new(Ok(exp_item), &filters);
 
-        let recv_enum_item = handler.wait().unwrap();
+        let recv_enum_item = handler.await.unwrap();
 
         if let Some(HandshakeType::Complete(_, _) | HandshakeType::Initiate(_, _)) = recv_enum_item {
             panic!("Expected No HandshakeType")

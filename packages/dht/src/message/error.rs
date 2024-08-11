@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use bencode::ext::BConvertExt;
 use bencode::{ben_bytes, ben_int, ben_list, ben_map, BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
 
-use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::error::DhtError;
 use crate::message;
 
 const ERROR_ARGS_KEY: &str = "e";
@@ -27,15 +27,15 @@ pub enum ErrorCode {
 }
 
 impl ErrorCode {
-    fn new(code: u8) -> DhtResult<ErrorCode> {
+    fn new(code: u8) -> Result<ErrorCode, DhtError> {
         match code {
             GENERIC_ERROR_CODE => Ok(ErrorCode::GenericError),
             SERVER_ERROR_CODE => Ok(ErrorCode::ServerError),
             PROTOCOL_ERROR_CODE => Ok(ErrorCode::ProtocolError),
             METHOD_UNKNOWN_CODE => Ok(ErrorCode::MethodUnknown),
-            unknown => Err(DhtError::from_kind(DhtErrorKind::InvalidResponse {
+            unknown => Err(DhtError::InvalidResponse {
                 details: format!("Error Message Invalid Error Code {unknown:?}"),
-            })),
+            }),
         }
     }
 }
@@ -57,14 +57,14 @@ impl From<ErrorCode> for u8 {
 struct ErrorValidate;
 
 impl ErrorValidate {
-    fn extract_error_args<B>(self, args: &dyn BListAccess<B::BType>) -> DhtResult<(u8, String)>
+    fn extract_error_args<B>(self, args: &dyn BListAccess<B::BType>) -> Result<(u8, String), DhtError>
     where
         B: BRefAccess<BType = B>,
     {
         if args.len() != NUM_ERROR_ARGS {
-            return Err(DhtError::from_kind(DhtErrorKind::InvalidResponse {
+            return Err(DhtError::InvalidResponse {
                 details: format!("Error Message Invalid Number Of Error Args: {}", args.len()),
-            }));
+            });
         }
 
         let code = self.convert_int(&args[0], format!("{ERROR_ARGS_KEY}[0]"))?;
@@ -118,7 +118,7 @@ impl<'a> ErrorMessage<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup the error.
-    pub fn from_parts<B>(root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<ErrorMessage<'a>>
+    pub fn from_parts<B>(root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<ErrorMessage<'a>, DhtError>
     where
         B: BRefAccess<BType = B>,
     {
@@ -167,5 +167,15 @@ impl<'a> ErrorMessage<'a> {
             )
         })
         .encode()
+    }
+}
+
+impl<'a> std::fmt::Display for ErrorMessage<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ErrorMessage {{ trans_id: {:?}, code: {:?}, message: {} }}",
+            self.trans_id, self.code, self.message
+        )
     }
 }

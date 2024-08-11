@@ -1,16 +1,21 @@
 use bytes::BytesMut;
-use common::{core_loop_with_timeout, random_buffer, InMemoryFileSystem, MultiFileDirectAccessor};
+use common::{
+    random_buffer, runtime_loop_with_timeout, tracing_stderr_init, InMemoryFileSystem, MultiFileDirectAccessor, DEFAULT_TIMEOUT,
+    INIT,
+};
 use disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, ODiskMessage};
-use futures::future::Loop;
-use futures::sink::Sink;
-use futures::stream::Stream;
+use futures::{future, FutureExt as _, SinkExt as _};
 use metainfo::{Metainfo, MetainfoBuilder, PieceLength};
-use tokio_core::reactor::Core;
+use tracing::level_filters::LevelFilter;
 
 mod common;
 
-#[test]
-fn positive_process_block() {
+#[tokio::test]
+async fn positive_process_block() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::INFO);
+    });
+
     // Create some "files" as random bytes
     let data_a = (random_buffer(1023), "/path/to/file/a".into());
     let data_b = (random_buffer(2000), "/path/to/file/b".into());
@@ -35,24 +40,28 @@ fn positive_process_block() {
         process_bytes.freeze(),
     );
 
-    let (send, recv) = disk_manager.split();
-    let mut blocking_send = send.wait();
-    blocking_send.send(IDiskMessage::AddTorrent(metainfo_file)).unwrap();
+    let (mut send, recv) = disk_manager.into_parts();
+    send.send(IDiskMessage::AddTorrent(metainfo_file)).await.unwrap();
 
-    let mut core = Core::new().unwrap();
-    core_loop_with_timeout(
-        &mut core,
-        500,
-        ((blocking_send, Some(process_block)), recv),
-        |(mut blocking_send, opt_pblock), recv, msg| match msg {
-            ODiskMessage::TorrentAdded(_) => {
-                blocking_send.send(IDiskMessage::ProcessBlock(opt_pblock.unwrap())).unwrap();
-                Loop::Continue(((blocking_send, None), recv))
+    runtime_loop_with_timeout(
+        DEFAULT_TIMEOUT,
+        ((send, Some(process_block)), recv),
+        |(mut send, opt_pblock), recv, msg| match msg {
+            Ok(ODiskMessage::TorrentAdded(_)) => {
+                let fut = async move {
+                    send.send(IDiskMessage::ProcessBlock(opt_pblock.unwrap())).await.unwrap();
+
+                    ((send, None), recv)
+                }
+                .boxed();
+
+                future::Either::Right(fut)
             }
-            ODiskMessage::BlockProcessed(_) => Loop::Break(()),
+            Ok(ODiskMessage::BlockProcessed(_)) => future::Either::Left(future::ready(()).boxed()),
             unexpected => panic!("Unexpected Message: {unexpected:?}"),
         },
-    );
+    )
+    .await;
 
     // Verify block was updated in data_b
     let mut received_file_b = filesystem.open_file(data_b.1).unwrap();

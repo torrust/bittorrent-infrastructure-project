@@ -1,12 +1,14 @@
 use std::collections::{HashMap, VecDeque};
+use std::pin::Pin;
+use std::sync::{Arc, Mutex};
+use std::task::{Context, Poll, Waker};
 
-use futures::task::Task;
-use futures::{task, Async, Poll, Stream};
+use futures::stream::Stream;
 use peer::messages::builders::ExtendedMessageBuilder;
 use peer::messages::ExtendedMessage;
 use peer::PeerInfo;
 
-use crate::error::UberError;
+use crate::error::Error;
 use crate::ControlMessage;
 
 /// Enumeration of extended messages that can be sent to the extended module.
@@ -68,24 +70,25 @@ impl ExtendedPeerInfo {
 //------------------------------------------------------------------------------//
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Clone)]
 pub struct ExtendedModule {
     builder: ExtendedMessageBuilder,
-    peers: HashMap<PeerInfo, ExtendedPeerInfo>,
-    out_queue: VecDeque<OExtendedMessage>,
-    opt_task: Option<Task>,
+    peers: Arc<Mutex<HashMap<PeerInfo, ExtendedPeerInfo>>>,
+    out_queue: Arc<Mutex<VecDeque<OExtendedMessage>>>,
+    opt_waker: Arc<Mutex<Option<Waker>>>,
 }
 
 impl ExtendedModule {
     pub fn new(builder: ExtendedMessageBuilder) -> ExtendedModule {
         ExtendedModule {
             builder,
-            peers: HashMap::new(),
-            out_queue: VecDeque::new(),
-            opt_task: None,
+            peers: Arc::default(),
+            out_queue: Arc::default(),
+            opt_waker: Arc::default(),
         }
     }
 
-    pub fn process_message<D>(&mut self, message: IExtendedMessage, d_modules: &mut [Box<D>])
+    pub fn process_message<D>(&self, message: IExtendedMessage, d_modules: &mut [Arc<D>])
     where
         D: ExtendedListener + ?Sized,
     {
@@ -102,22 +105,25 @@ impl ExtendedModule {
                 let ext_peer_info = ExtendedPeerInfo::new(Some(ext_message.clone()), None);
 
                 for d_module in d_modules {
-                    d_module.on_update(&info, &ext_peer_info);
+                    Arc::get_mut(d_module).unwrap().on_update(&info, &ext_peer_info);
                 }
 
-                self.peers.insert(info, ext_peer_info);
+                self.peers.lock().unwrap().insert(info, ext_peer_info);
                 self.out_queue
+                    .lock()
+                    .unwrap()
                     .push_back(OExtendedMessage::SendExtendedMessage(info, ext_message));
             }
             IExtendedMessage::Control(ControlMessage::PeerDisconnected(info)) => {
-                self.peers.remove(&info);
+                self.peers.lock().unwrap().remove(&info);
             }
             IExtendedMessage::ReceivedExtendedMessage(info, ext_message) => {
-                let ext_peer_info = self.peers.get_mut(&info).unwrap();
-                ext_peer_info.update_theirs(ext_message);
+                if let Some(ext_peer_info) = self.peers.lock().unwrap().get_mut(&info) {
+                    ext_peer_info.update_theirs(ext_message);
 
-                for d_module in d_modules {
-                    d_module.on_update(&info, ext_peer_info);
+                    for d_module in d_modules {
+                        Arc::get_mut(d_module).unwrap().on_update(&info, ext_peer_info);
+                    }
                 }
             }
             IExtendedMessage::Control(_) => (),
@@ -126,28 +132,24 @@ impl ExtendedModule {
         self.check_stream_unblock();
     }
 
-    fn check_stream_unblock(&mut self) {
-        if !self.out_queue.is_empty() {
-            if let Some(task) = self.opt_task.take() {
-                task.notify();
+    fn check_stream_unblock(&self) {
+        if !self.out_queue.lock().unwrap().is_empty() {
+            if let Some(waker) = self.opt_waker.lock().unwrap().take() {
+                waker.wake();
             }
         }
     }
 }
 
 impl Stream for ExtendedModule {
-    type Item = OExtendedMessage;
-    type Error = Box<UberError>;
+    type Item = Result<OExtendedMessage, Error>;
 
-    fn poll(&mut self) -> Poll<Option<OExtendedMessage>, Self::Error> {
-        let opt_message = self.out_queue.pop_front();
-
-        if let Some(message) = opt_message {
-            Ok(Async::Ready(Some(message)))
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        if let Some(message) = self.out_queue.lock().unwrap().pop_front() {
+            Poll::Ready(Some(Ok(message)))
         } else {
-            self.opt_task = Some(task::current());
-
-            Ok(Async::NotReady)
+            self.opt_waker.lock().unwrap().replace(cx.waker().clone());
+            Poll::Pending
         }
     }
 }

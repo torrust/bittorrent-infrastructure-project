@@ -4,7 +4,7 @@ use bencode::{ben_bytes, ben_int, ben_map, BMutAccess, BRefAccess, BencodeMut};
 use util::sha::{self, ShaHash};
 
 use crate::accessor::{Accessor, IntoAccessor};
-use crate::error::ParseResult;
+use crate::error::ParseError;
 use crate::parse;
 
 mod buffer;
@@ -270,7 +270,7 @@ impl<'a> MetainfoBuilder<'a> {
     /// # Errors
     ///
     /// It would return an error if unable to get the accessor.
-    pub fn build<A, C>(self, threads: usize, accessor: A, progress: C) -> ParseResult<Vec<u8>>
+    pub fn build<A, C>(self, threads: usize, accessor: A, progress: C) -> Result<Vec<u8>, ParseError>
     where
         A: IntoAccessor,
         C: FnMut(f64) + Send + 'static,
@@ -346,7 +346,7 @@ impl<'a> InfoBuilder<'a> {
     /// # Errors
     ///
     /// It would return an error if unable to get the accessor.
-    pub fn build<A, C>(self, threads: usize, accessor: A, progress: C) -> ParseResult<Vec<u8>>
+    pub fn build<A, C>(self, threads: usize, accessor: A, progress: C) -> Result<Vec<u8>, ParseError>
     where
         A: IntoAccessor,
         C: FnMut(f64) + Send + 'static,
@@ -366,7 +366,7 @@ fn build_with_accessor<'a, A, C>(
     opt_root: Option<BencodeMut<'a>>,
     info: BencodeMut<'a>,
     piece_length: PieceLength,
-) -> ParseResult<Vec<u8>>
+) -> Result<Vec<u8>, ParseError>
 where
     A: Accessor,
     C: FnMut(f64) + Send + 'static,

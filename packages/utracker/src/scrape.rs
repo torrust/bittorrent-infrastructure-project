@@ -1,9 +1,14 @@
 //! Messaging primitives for scraping.
 
 use std::borrow::Cow;
-use std::io::{self, Write};
+use std::io::Write as _;
+use std::num::NonZero;
 
-use nom::{be_i32, call, do_parse, IResult, Needed};
+use nom::bytes::complete::take;
+use nom::combinator::map_res;
+use nom::number::complete::be_i32;
+use nom::sequence::tuple;
+use nom::{IResult, Needed};
 use util::bt::{self, InfoHash};
 use util::convert;
 
@@ -54,12 +59,8 @@ impl ScrapeStats {
 }
 
 fn parse_stats(bytes: &[u8]) -> IResult<&[u8], ScrapeStats> {
-    do_parse!(bytes,
-        seeders:    be_i32 >>
-        downloaded: be_i32 >>
-        leechers:   be_i32 >>
-        (ScrapeStats::new(seeders, downloaded, leechers))
-    )
+    let (remaining, (seeders, downloaded, leechers)) = tuple((be_i32, be_i32, be_i32))(bytes)?;
+    Ok((remaining, ScrapeStats::new(seeders, downloaded, leechers)))
 }
 
 // ----------------------------------------------------------------------------//
@@ -81,7 +82,10 @@ impl<'a> ScrapeRequest<'a> {
     }
 
     /// Construct a `ScrapeRequest` from the given bytes.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// It will return an error when unable to parse the bytes.
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ScrapeRequest<'a>> {
         parse_request(bytes)
     }
@@ -93,9 +97,9 @@ impl<'a> ScrapeRequest<'a> {
     /// # Errors
     ///
     /// It would return an IO Error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
         writer.write_all(&self.hashes)
     }
@@ -124,19 +128,21 @@ impl<'a> ScrapeRequest<'a> {
 }
 
 fn parse_request(bytes: &[u8]) -> IResult<&[u8], ScrapeRequest<'_>> {
-    let remainder_bytes = bytes.len() % bt::INFO_HASH_LEN;
+    let remainder_bytes = NonZero::new(bytes.len() % bt::INFO_HASH_LEN);
 
-    if remainder_bytes != 0 {
-        IResult::Incomplete(Needed::Size(bt::INFO_HASH_LEN - remainder_bytes))
+    let needed = remainder_bytes.and_then(|rem| bt::INFO_HASH_LEN.checked_sub(rem.into()).and_then(NonZero::new));
+
+    if let Some(needed) = needed {
+        Err(nom::Err::Incomplete(Needed::Size(needed)))
     } else {
         let end_of_bytes = &bytes[bytes.len()..bytes.len()];
 
-        IResult::Done(
+        Ok((
             end_of_bytes,
             ScrapeRequest {
                 hashes: Cow::Borrowed(bytes),
             },
-        )
+        ))
     }
 }
 
@@ -159,7 +165,10 @@ impl<'a> ScrapeResponse<'a> {
     }
 
     /// Construct a `ScrapeResponse` from the given bytes.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// It will return an error when unable to parse the bytes.
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ScrapeResponse<'a>> {
         parse_response(bytes)
     }
@@ -171,9 +180,9 @@ impl<'a> ScrapeResponse<'a> {
     /// # Errors
     ///
     /// It would return an IO Error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
         writer.write_all(&self.stats)
     }
@@ -215,19 +224,21 @@ impl<'a> ScrapeResponse<'a> {
 }
 
 fn parse_response(bytes: &[u8]) -> IResult<&[u8], ScrapeResponse<'_>> {
-    let remainder_bytes = bytes.len() % SCRAPE_STATS_BYTES;
+    let remainder_bytes = NonZero::new(bytes.len() % SCRAPE_STATS_BYTES);
 
-    if remainder_bytes != 0 {
-        IResult::Incomplete(Needed::Size(SCRAPE_STATS_BYTES - remainder_bytes))
+    let needed = remainder_bytes.and_then(|rem| SCRAPE_STATS_BYTES.checked_sub(rem.into()).and_then(NonZero::new));
+
+    if let Some(needed) = needed {
+        Err(nom::Err::Incomplete(Needed::Size(needed)))
     } else {
         let end_of_bytes = &bytes[bytes.len()..bytes.len()];
 
-        IResult::Done(
+        Ok((
             end_of_bytes,
             ScrapeResponse {
                 stats: Cow::Borrowed(bytes),
             },
-        )
+        ))
     }
 }
 
@@ -299,7 +310,7 @@ impl<'a> Iterator for ScrapeResponseIter<'a> {
             self.offset = end;
 
             match ScrapeStats::from_bytes(&self.stats[start..end]) {
-                IResult::Done(_, stats) => Some(stats),
+                Ok((_, stats)) => Some(stats),
                 _ => panic!("Bug In ScrapeResponseIter Caused ScrapeStats Parsing To Fail..."),
             }
         }
@@ -420,13 +431,13 @@ mod tests {
 
     #[test]
     fn positive_parse_request_empty() {
-        let hash_one = [];
+        let hash_none = [];
 
-        let received = ScrapeRequest::from_bytes(&hash_one);
+        let received = ScrapeRequest::from_bytes(&hash_none).unwrap();
 
         let expected = ScrapeRequest::new();
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, (&b""[..], expected));
     }
 
     #[test]
@@ -438,7 +449,7 @@ mod tests {
         let mut expected = ScrapeRequest::new();
         expected.insert(hash_one.into());
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -456,18 +467,18 @@ mod tests {
         expected.insert(hash_one.into());
         expected.insert(hash_two.into());
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
     fn positive_parse_response_empty() {
         let stats_bytes = [];
 
-        let received = ScrapeResponse::from_bytes(&stats_bytes);
+        let received = ScrapeResponse::from_bytes(&stats_bytes).unwrap();
 
         let expected = ScrapeResponse::new();
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, (&b""[..], expected));
     }
 
     #[test]
@@ -479,7 +490,7 @@ mod tests {
         let mut expected = ScrapeResponse::new();
         expected.insert(ScrapeStats::new(255, 256, 512));
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -492,6 +503,6 @@ mod tests {
         expected.insert(ScrapeStats::new(255, 256, 512));
         expected.insert(ScrapeStats::new(1, 2, 3));
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 }

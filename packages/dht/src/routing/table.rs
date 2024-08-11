@@ -1,7 +1,3 @@
-// TODO: Remove when we use find_node,
-#![allow(unused)]
-
-use std::cmp;
 use std::iter::Filter;
 use std::slice::Iter;
 
@@ -184,6 +180,7 @@ pub enum BucketContents<'a> {
     Assorted(&'a Bucket),
 }
 
+#[allow(dead_code)]
 impl<'a> BucketContents<'a> {
     fn is_empty(&self) -> bool {
         matches!(self, &BucketContents::Empty)
@@ -384,7 +381,7 @@ fn next_bucket_index(num_buckets: usize, start_index: usize, curr_index: usize) 
     // to the right. All assuming we can actually do this without going out of bounds.
 
     match curr_index.cmp(&start_index) {
-        cmp::Ordering::Less => {
+        std::cmp::Ordering::Less => {
             let offset = (start_index - curr_index) + 1;
 
             let right_index = start_index.checked_add(offset);
@@ -398,7 +395,7 @@ fn next_bucket_index(num_buckets: usize, start_index: usize, curr_index: usize) 
                 None
             }
         }
-        cmp::Ordering::Equal => {
+        std::cmp::Ordering::Equal => {
             let right_index = start_index.checked_add(1);
             let left_index = start_index.checked_sub(1);
 
@@ -410,7 +407,7 @@ fn next_bucket_index(num_buckets: usize, start_index: usize, curr_index: usize) 
                 None
             }
         }
-        cmp::Ordering::Greater => {
+        std::cmp::Ordering::Greater => {
             let offset = curr_index - start_index;
 
             let left_index = start_index.checked_sub(offset);
@@ -480,7 +477,7 @@ mod tests {
     #[test]
     fn positive_initial_empty_buckets() {
         let table_id = [1u8; bt::NODE_ID_LEN];
-        let mut table = RoutingTable::new(table_id.into());
+        let table = RoutingTable::new(table_id.into());
 
         // First buckets should be empty
         assert_eq!(table.buckets().take(table::MAX_BUCKETS).count(), table::MAX_BUCKETS);

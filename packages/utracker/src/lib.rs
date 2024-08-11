@@ -28,6 +28,6 @@ mod server;
 pub use util::bt::{InfoHash, PeerId};
 
 pub use crate::client::error::{ClientError, ClientResult};
-pub use crate::client::{ClientMetadata, ClientRequest, ClientResponse, ClientToken, TrackerClient};
+pub use crate::client::{ClientMetadata, ClientRequest, ClientResponse, ClientToken, HandshakerMessage, TrackerClient};
 pub use crate::server::handler::{ServerHandler, ServerResult};
 pub use crate::server::TrackerServer;

@@ -2,7 +2,7 @@ use bencode::ext::BConvertExt;
 use bencode::{BConvert, BDictAccess, BRefAccess, BencodeConvertError};
 use util::bt::{InfoHash, NodeId};
 
-use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::error::DhtError;
 use crate::message;
 use crate::message::announce_peer::AnnouncePeerRequest;
 use crate::message::error::{ErrorCode, ErrorMessage};
@@ -38,7 +38,7 @@ impl<'a> RequestValidate<'a> {
     /// # Errors
     ///
     /// This function will return an error if to generate the `NodeId`.
-    pub fn validate_node_id(&self, node_id: &[u8]) -> DhtResult<NodeId> {
+    pub fn validate_node_id(&self, node_id: &[u8]) -> Result<NodeId, DhtError> {
         NodeId::from_hash(node_id).map_err(|_| {
             let error_msg = ErrorMessage::new(
                 self.trans_id.to_owned(),
@@ -46,7 +46,7 @@ impl<'a> RequestValidate<'a> {
                 format!("Node ID With Length {} Is Not Valid", node_id.len()),
             );
 
-            DhtError::from_kind(DhtErrorKind::InvalidRequest { msg: error_msg })
+            DhtError::InvalidRequest { msg: error_msg }
         })
     }
 
@@ -55,7 +55,7 @@ impl<'a> RequestValidate<'a> {
     /// # Errors
     ///
     /// This function will return an error if to generate the `InfoHash`.
-    pub fn validate_info_hash(&self, info_hash: &[u8]) -> DhtResult<InfoHash> {
+    pub fn validate_info_hash(&self, info_hash: &[u8]) -> Result<InfoHash, DhtError> {
         InfoHash::from_hash(info_hash).map_err(|_| {
             let error_msg = ErrorMessage::new(
                 self.trans_id.to_owned(),
@@ -63,7 +63,7 @@ impl<'a> RequestValidate<'a> {
                 format!("InfoHash With Length {} Is Not Valid", info_hash.len()),
             );
 
-            DhtError::from_kind(DhtErrorKind::InvalidRequest { msg: error_msg })
+            DhtError::InvalidRequest { msg: error_msg }
         })
     }
 }
@@ -95,7 +95,11 @@ impl<'a> RequestType<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup, convert, and generate correct type.
-    pub fn from_parts<B>(root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8], rqst_type: &str) -> DhtResult<RequestType<'a>>
+    pub fn from_parts<B>(
+        root: &'a dyn BDictAccess<B::BKey, B>,
+        trans_id: &'a [u8],
+        rqst_type: &str,
+    ) -> Result<RequestType<'a>, DhtError>
     where
         B: BRefAccess<BType = B>,
     {
@@ -138,7 +142,7 @@ impl<'a> RequestType<'a> {
                         format!("Received Unknown Request Method: {unknown}"),
                     );
 
-                    Err(DhtError::from_kind(DhtErrorKind::InvalidRequest { msg: error_message }))
+                    Err(DhtError::InvalidRequest { msg: error_message })
                 }
             }
         }

@@ -1,5 +1,3 @@
-use std::cmp;
-
 /// Trait for metadata, reading, and writing to a contiguous buffer that doesn't re allocate.
 #[allow(clippy::module_name_repetitions)]
 pub trait ContiguousBuffer<T> {
@@ -125,7 +123,7 @@ where
                 break;
             }
             let available_capacity = buffer.capacity() - buffer.length();
-            let amount_to_write = cmp::min(available_capacity, data.len() - bytes_written);
+            let amount_to_write = std::cmp::min(available_capacity, data.len() - bytes_written);
 
             let (start, end) = (bytes_written, bytes_written + amount_to_write);
 

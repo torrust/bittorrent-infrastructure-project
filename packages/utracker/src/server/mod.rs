@@ -1,6 +1,6 @@
-use std::io;
 use std::net::SocketAddr;
 
+use tracing::instrument;
 use umio::external::Sender;
 
 use crate::server::dispatcher::DispatchMessage;
@@ -13,8 +13,9 @@ pub mod handler;
 ///
 /// Server will shutdown on drop.
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug)]
 pub struct TrackerServer {
-    send: Sender<DispatchMessage>,
+    dispatcher: Sender<DispatchMessage>,
 }
 
 impl TrackerServer {
@@ -23,17 +24,25 @@ impl TrackerServer {
     /// # Errors
     ///
     /// It would return an IO Error if unable to run the server.
-    pub fn run<H>(bind: SocketAddr, handler: H) -> io::Result<TrackerServer>
+    #[instrument(skip(), ret)]
+    pub fn run<H>(bind: SocketAddr, handler: H) -> std::io::Result<TrackerServer>
     where
-        H: ServerHandler + 'static,
+        H: ServerHandler + std::fmt::Debug + 'static,
     {
-        dispatcher::create_dispatcher(bind, handler).map(|send| TrackerServer { send })
+        tracing::info!("running server");
+
+        let dispatcher = dispatcher::create_dispatcher(bind, handler)?;
+
+        Ok(TrackerServer { dispatcher })
     }
 }
 
 impl Drop for TrackerServer {
+    #[instrument(skip(self))]
     fn drop(&mut self) {
-        self.send
+        tracing::debug!("server was dropped, sending shutdown notification...");
+
+        self.dispatcher
             .send(DispatchMessage::Shutdown)
             .expect("bip_utracker: TrackerServer Failed To Send Shutdown Message");
     }

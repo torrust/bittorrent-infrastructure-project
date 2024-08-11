@@ -1,8 +1,12 @@
-use std::io::{self, Write};
+use std::io::Write as _;
 
 use byteorder::{BigEndian, WriteBytesExt};
 use bytes::Bytes;
-use nom::{be_u32, call, do_parse, map, take, tuple, tuple_parser, value, IResult, Needed};
+use nom::bytes::complete::take;
+use nom::combinator::{map, map_res};
+use nom::number::complete::be_u32;
+use nom::sequence::tuple;
+use nom::{IResult, Needed};
 
 use crate::message;
 
@@ -13,37 +17,85 @@ pub struct HaveMessage {
 }
 
 impl HaveMessage {
+    /// Creates a new `HaveMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `piece_index`: The index of the piece that you have.
+    ///
+    /// # Returns
+    ///
+    /// A new `HaveMessage` instance.
     #[must_use]
     pub fn new(piece_index: u32) -> HaveMessage {
         HaveMessage { piece_index }
     }
 
-    pub fn parse_bytes(_input: (), bytes: &Bytes) -> IResult<(), io::Result<HaveMessage>> {
-        throwaway_input!(parse_have(bytes.as_ref()))
+    /// Parses a byte slice into a `HaveMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `bytes`: The byte slice to parse.
+    ///
+    /// # Returns
+    ///
+    /// An `io::Result` containing the parsed `HaveMessage` or an error if parsing fails.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the byte slice cannot be parsed into a `HaveMessage`.
+    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<HaveMessage> {
+        match parse_have(bytes) {
+            Ok((_, msg)) => msg,
+            Err(_) => Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to parse HaveMessage")),
+        }
     }
 
-    /// Write-out current state as bytes.
+    /// Writes the current state of the `HaveMessage` as bytes.
+    ///
+    /// # Parameters
+    ///
+    /// - `writer`: The writer to which the bytes will be written.
     ///
     /// # Errors
     ///
     /// This function will return an error if unable to write bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<usize>
     where
-        W: Write,
+        W: std::io::Write,
     {
-        message::write_length_id_pair(&mut writer, message::HAVE_MESSAGE_LEN, Some(message::HAVE_MESSAGE_ID))?;
+        let id_length = message::write_length_id_pair(&mut writer, message::HAVE_MESSAGE_LEN, Some(message::HAVE_MESSAGE_ID))?;
+        let () = writer.write_u32::<BigEndian>(self.piece_index)?;
 
-        writer.write_u32::<BigEndian>(self.piece_index)
+        Ok(id_length + 4) // + u32
     }
 
+    /// Returns the piece index of the `HaveMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The piece index.
     #[must_use]
     pub fn piece_index(&self) -> u32 {
         self.piece_index
     }
 }
 
-fn parse_have(bytes: &[u8]) -> IResult<&[u8], io::Result<HaveMessage>> {
-    map!(bytes, be_u32, |index| Ok(HaveMessage::new(index)))
+/// Parses a byte slice into a `HaveMessage`.
+///
+/// # Parameters
+///
+/// - `bytes`: The byte slice to parse.
+///
+/// # Returns
+///
+/// An `IResult` containing the remaining byte slice and an `io::Result` with the parsed `HaveMessage`.
+///
+/// # Errors
+///
+/// This function will return an error if the byte slice cannot be parsed into a `HaveMessage`.
+fn parse_have(bytes: &[u8]) -> IResult<&[u8], std::io::Result<HaveMessage>> {
+    map(be_u32, |index| Ok(HaveMessage::new(index)))(bytes)
 }
 
 // ----------------------------------------------------------------------------//
@@ -57,26 +109,48 @@ pub struct BitFieldMessage {
 }
 
 impl BitFieldMessage {
+    /// Creates a new `BitFieldMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `bytes`: The bytes representing the bitfield.
+    ///
+    /// # Returns
+    ///
+    /// A new `BitFieldMessage` instance.
     pub fn new(bytes: Bytes) -> BitFieldMessage {
         BitFieldMessage { bytes }
     }
 
-    pub fn parse_bytes(_input: (), mut bytes: Bytes, len: u32) -> IResult<(), io::Result<BitFieldMessage>> {
-        let cast_len = message::u32_to_usize(len);
-
-        if bytes.len() >= cast_len {
-            IResult::Done(
-                (),
-                Ok(BitFieldMessage {
-                    bytes: bytes.split_to(cast_len),
-                }),
-            )
-        } else {
-            IResult::Incomplete(Needed::Size(cast_len - bytes.len()))
+    /// Parses a byte slice into a `BitFieldMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `bytes`: The byte slice to parse.
+    ///
+    /// # Returns
+    ///
+    /// An `io::Result` containing the parsed `BitFieldMessage` or an error if parsing fails.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the byte slice cannot be parsed into a `BitFieldMessage`.
+    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<BitFieldMessage> {
+        let len = bytes.len();
+        match parse_bitfield(bytes, len) {
+            Ok((_, msg)) => msg,
+            Err(_) => Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to parse BitFieldMessage",
+            )),
         }
     }
 
-    /// Write-out current state as bytes.
+    /// Writes the current state of the `BitFieldMessage` as bytes.
+    ///
+    /// # Parameters
+    ///
+    /// - `writer`: The writer to which the bytes will be written.
     ///
     /// # Errors
     ///
@@ -84,28 +158,69 @@ impl BitFieldMessage {
     ///
     /// # Panics
     ///
-    /// This function will panic if the the length is too long.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    /// This function will panic if the length is too long.
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<usize>
     where
-        W: Write,
+        W: std::io::Write,
     {
-        let actual_length = self.bytes.len() + 1;
-        message::write_length_id_pair(
-            &mut writer,
-            actual_length.try_into().unwrap(),
-            Some(message::BITFIELD_MESSAGE_ID),
-        )?;
+        let message_length: u32 = self
+            .bytes
+            .len()
+            .try_into()
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Unsupported, e))?;
 
-        writer.write_all(&self.bytes)
+        let actual_length = message_length + 1; // + Some(message::BITFIELD_MESSAGE_ID);
+
+        let id_length = message::write_length_id_pair(&mut writer, actual_length, Some(message::BITFIELD_MESSAGE_ID))?;
+        let () = writer.write_all(&self.bytes)?;
+
+        Ok(id_length + message_length as usize)
     }
 
+    /// Returns the bitfield bytes.
+    ///
+    /// # Returns
+    ///
+    /// A slice of the bitfield bytes.
     pub fn bitfield(&self) -> &[u8] {
         &self.bytes
     }
 
+    /// Returns an iterator over the `BitFieldMessage` that yields `HaveMessage`s.
+    ///
+    /// # Returns
+    ///
+    /// An iterator over the `BitFieldMessage`.
     #[allow(clippy::iter_without_into_iter)]
     pub fn iter(&self) -> BitFieldIter {
         BitFieldIter::new(self.bytes.clone())
+    }
+}
+
+/// Parses a byte slice into a `BitFieldMessage`.
+///
+/// # Parameters
+///
+/// - `bytes`: The byte slice to parse.
+/// - `len`: The length of the bitfield.
+///
+/// # Returns
+///
+/// An `IResult` containing the remaining byte slice and an `io::Result` with the parsed `BitFieldMessage`.
+///
+/// # Errors
+///
+/// This function will return an error if the byte slice cannot be parsed into a `BitFieldMessage`.
+fn parse_bitfield(bytes: &[u8], len: usize) -> IResult<&[u8], std::io::Result<BitFieldMessage>> {
+    if bytes.len() >= len {
+        Ok((
+            &bytes[len..],
+            Ok(BitFieldMessage {
+                bytes: Bytes::copy_from_slice(&bytes[..len]),
+            }),
+        ))
+    } else {
+        Err(nom::Err::Incomplete(Needed::new(len - bytes.len())))
     }
 }
 
@@ -144,7 +259,6 @@ impl Iterator for BitFieldIter {
 }
 
 // ----------------------------------------------------------------------------//
-
 /// Message for requesting a block from a peer.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct RequestMessage {
@@ -154,6 +268,17 @@ pub struct RequestMessage {
 }
 
 impl RequestMessage {
+    /// Creates a new `RequestMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `piece_index`: The index of the piece being requested.
+    /// - `block_offset`: The offset within the piece.
+    /// - `block_length`: The length of the block being requested.
+    ///
+    /// # Returns
+    ///
+    /// A new `RequestMessage` instance.
     #[must_use]
     pub fn new(piece_index: u32, block_offset: u32, block_length: usize) -> RequestMessage {
         RequestMessage {
@@ -163,11 +288,34 @@ impl RequestMessage {
         }
     }
 
-    pub fn parse_bytes(_input: (), bytes: &Bytes) -> IResult<(), io::Result<RequestMessage>> {
-        throwaway_input!(parse_request(bytes.as_ref()))
+    /// Parses a byte slice into a `RequestMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `bytes`: The byte slice to parse.
+    ///
+    /// # Returns
+    ///
+    /// An `io::Result` containing the parsed `RequestMessage` or an error if parsing fails.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the byte slice cannot be parsed into a `RequestMessage`.
+    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<RequestMessage> {
+        match parse_request(bytes) {
+            Ok((_, msg)) => msg,
+            Err(_) => Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to parse RequestMessage",
+            )),
+        }
     }
 
-    /// Write-out current state as bytes.
+    /// Writes the current state of the `RequestMessage` as bytes.
+    ///
+    /// # Parameters
+    ///
+    /// - `writer`: The writer to which the bytes will be written.
     ///
     /// # Errors
     ///
@@ -176,37 +324,74 @@ impl RequestMessage {
     /// # Panics
     ///
     /// This function will panic if the `block_length` is too large.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<usize>
     where
-        W: Write,
+        W: std::io::Write,
     {
-        message::write_length_id_pair(&mut writer, message::REQUEST_MESSAGE_LEN, Some(message::REQUEST_MESSAGE_ID))?;
+        let id_length =
+            message::write_length_id_pair(&mut writer, message::REQUEST_MESSAGE_LEN, Some(message::REQUEST_MESSAGE_ID))?;
 
-        writer.write_u32::<BigEndian>(self.piece_index)?;
-        writer.write_u32::<BigEndian>(self.block_offset)?;
-        writer.write_u32::<BigEndian>(self.block_length.try_into().unwrap())
+        let () = writer.write_u32::<BigEndian>(self.piece_index)?;
+        let () = writer.write_u32::<BigEndian>(self.block_offset)?;
+        {
+            let block_length: u32 = self
+                .block_length()
+                .try_into()
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Unsupported, e))?;
+            let () = writer.write_u32::<BigEndian>(block_length)?;
+        }
+
+        Ok(id_length + 12) // + u32 * 3
     }
 
+    /// Returns the piece index of the `RequestMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The piece index.
     #[must_use]
     pub fn piece_index(&self) -> u32 {
         self.piece_index
     }
 
+    /// Returns the block offset of the `RequestMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The block offset.
     #[must_use]
     pub fn block_offset(&self) -> u32 {
         self.block_offset
     }
 
+    /// Returns the block length of the `RequestMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The block length.
     #[must_use]
     pub fn block_length(&self) -> usize {
         self.block_length
     }
 }
 
-fn parse_request(bytes: &[u8]) -> IResult<&[u8], io::Result<RequestMessage>> {
-    map!(bytes, tuple!(be_u32, be_u32, be_u32), |(index, offset, length)| Ok(
-        RequestMessage::new(index, offset, message::u32_to_usize(length))
-    ))
+/// Parses a byte slice into a `RequestMessage`.
+///
+/// # Parameters
+///
+/// - `bytes`: The byte slice to parse.
+///
+/// # Returns
+///
+/// An `IResult` containing the remaining byte slice and an `io::Result` with the parsed `RequestMessage`.
+///
+/// # Errors
+///
+/// This function will return an error if the byte slice cannot be parsed into a `RequestMessage`.
+fn parse_request(bytes: &[u8]) -> IResult<&[u8], std::io::Result<RequestMessage>> {
+    map(tuple((be_u32, be_u32, be_u32)), |(index, offset, length)| {
+        Ok(RequestMessage::new(index, offset, message::u32_to_usize(length)))
+    })(bytes)
 }
 
 // ----------------------------------------------------------------------------//
@@ -223,6 +408,17 @@ pub struct PieceMessage {
 }
 
 impl PieceMessage {
+    /// Creates a new `PieceMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `piece_index`: The index of the piece.
+    /// - `block_offset`: The offset within the piece.
+    /// - `block`: The block of data.
+    ///
+    /// # Returns
+    ///
+    /// A new `PieceMessage` instance.
     pub fn new(piece_index: u32, block_offset: u32, block: Bytes) -> PieceMessage {
         // TODO: Check that users Bytes wont overflow a u32
         PieceMessage {
@@ -232,11 +428,32 @@ impl PieceMessage {
         }
     }
 
-    pub fn parse_bytes(_input: (), bytes: &Bytes, len: u32) -> IResult<(), io::Result<PieceMessage>> {
-        throwaway_input!(parse_piece(bytes, len))
+    /// Parses a byte slice into a `PieceMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `bytes`: The byte slice to parse.
+    /// - `len`: The length of the piece.
+    ///
+    /// # Returns
+    ///
+    /// An `io::Result` containing the parsed `PieceMessage` or an error if parsing fails.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the byte slice cannot be parsed into a `PieceMessage`.
+    pub fn parse_bytes(bytes: &[u8], len: usize) -> std::io::Result<PieceMessage> {
+        match parse_piece(bytes, len) {
+            Ok((_, msg)) => msg,
+            Err(_) => Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to parse PieceMessage")),
+        }
     }
 
-    /// Write-out current state as bytes.
+    /// Writes the current state of the `PieceMessage` as bytes.
+    ///
+    /// # Parameters
+    ///
+    /// - `writer`: The writer to which the bytes will be written.
     ///
     /// # Errors
     ///
@@ -245,48 +462,91 @@ impl PieceMessage {
     /// # Panics
     ///
     /// This function will panic if the block length is too large.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<usize>
     where
-        W: Write,
+        W: std::io::Write,
     {
-        let actual_length = self.block_length() + 9;
-        message::write_length_id_pair(
+        let block_length: u32 = self
+            .block_length()
+            .try_into()
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Unsupported, e))?;
+
+        let actual_length = self.block_length() + 9; // + Some(message::PIECE_MESSAGE_ID) + 2 * u32
+
+        let length_length = message::write_length_id_pair(
             &mut writer,
             actual_length.try_into().unwrap(),
             Some(message::PIECE_MESSAGE_ID),
         )?;
 
-        writer.write_u32::<BigEndian>(self.piece_index)?;
-        writer.write_u32::<BigEndian>(self.block_offset)?;
+        let () = writer.write_u32::<BigEndian>(self.piece_index)?;
+        let () = writer.write_u32::<BigEndian>(self.block_offset)?;
+        let () = writer.write_all(&self.block[..])?;
 
-        writer.write_all(&self.block[..])
+        Ok(length_length + block_length as usize + 8) // + 2 * u32
     }
 
+    /// Returns the piece index of the `PieceMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The piece index.
+    #[must_use]
     pub fn piece_index(&self) -> u32 {
         self.piece_index
     }
 
+    /// Returns the block offset of the `PieceMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The block offset.
+    #[must_use]
     pub fn block_offset(&self) -> u32 {
         self.block_offset
     }
 
+    /// Returns the block length of the `PieceMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The block length.
+    #[must_use]
     pub fn block_length(&self) -> usize {
         self.block.len()
     }
 
+    /// Returns the block of the `PieceMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The block.
     pub fn block(&self) -> Bytes {
         self.block.clone()
     }
 }
 
-fn parse_piece(bytes: &Bytes, len: u32) -> IResult<&[u8], io::Result<PieceMessage>> {
-    do_parse!(bytes.as_ref(),
-        piece_index:  be_u32                                                    >>
-        block_offset: be_u32                                                    >>
-        block_len:    value!(message::u32_to_usize(len - 8))                    >>
-        block:        map!(take!(block_len), |_| bytes.slice(8, 8 + block_len)) >>
-        (Ok(PieceMessage::new(piece_index, block_offset, block)))
-    )
+/// Parses a byte slice into a `PieceMessage`.
+///
+/// # Parameters
+///
+/// - `bytes`: The byte slice to parse.
+/// - `len`: The length of the piece.
+///
+/// # Returns
+///
+/// An `IResult` containing the remaining byte slice and an `io::Result` with the parsed `PieceMessage`.
+///
+/// # Errors
+///
+/// This function will return an error if the byte slice cannot be parsed into a `PieceMessage`.
+fn parse_piece(bytes: &[u8], len: usize) -> IResult<&[u8], std::io::Result<PieceMessage>> {
+    map(
+        tuple((be_u32, be_u32, take(len - 8))),
+        |(piece_index, block_offset, block): (u32, u32, &[u8])| {
+            Ok(PieceMessage::new(piece_index, block_offset, Bytes::copy_from_slice(block)))
+        },
+    )(bytes)
 }
 
 // ----------------------------------------------------------------------------//
@@ -300,6 +560,17 @@ pub struct CancelMessage {
 }
 
 impl CancelMessage {
+    /// Creates a new `CancelMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `piece_index`: The index of the piece.
+    /// - `block_offset`: The offset within the piece.
+    /// - `block_length`: The length of the block.
+    ///
+    /// # Returns
+    ///
+    /// A new `CancelMessage` instance.
     #[must_use]
     pub fn new(piece_index: u32, block_offset: u32, block_length: usize) -> CancelMessage {
         CancelMessage {
@@ -309,11 +580,34 @@ impl CancelMessage {
         }
     }
 
-    pub fn parse_bytes(_input: (), bytes: &Bytes) -> IResult<(), io::Result<CancelMessage>> {
-        throwaway_input!(parse_cancel(bytes.as_ref()))
+    /// Parses a byte slice into a `CancelMessage`.
+    ///
+    /// # Parameters
+    ///
+    /// - `bytes`: The byte slice to parse.
+    ///
+    /// # Returns
+    ///
+    /// An `io::Result` containing the parsed `CancelMessage` or an error if parsing fails.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the byte slice cannot be parsed into a `CancelMessage`.
+    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<CancelMessage> {
+        match parse_cancel(bytes) {
+            Ok((_, msg)) => msg,
+            Err(_) => Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to parse CancelMessage",
+            )),
+        }
     }
 
-    /// Write-out current state as bytes.
+    /// Writes the current state of the `CancelMessage` as bytes.
+    ///
+    /// # Parameters
+    ///
+    /// - `writer`: The writer to which the bytes will be written.
     ///
     /// # Errors
     ///
@@ -322,37 +616,74 @@ impl CancelMessage {
     /// # Panics
     ///
     /// This function will panic if the block length is too large.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<usize>
     where
-        W: Write,
+        W: std::io::Write,
     {
-        message::write_length_id_pair(&mut writer, message::CANCEL_MESSAGE_LEN, Some(message::CANCEL_MESSAGE_ID))?;
+        let id_length =
+            message::write_length_id_pair(&mut writer, message::CANCEL_MESSAGE_LEN, Some(message::CANCEL_MESSAGE_ID))?;
 
-        writer.write_u32::<BigEndian>(self.piece_index)?;
-        writer.write_u32::<BigEndian>(self.block_offset)?;
-        writer.write_u32::<BigEndian>(self.block_length.try_into().unwrap())
+        let () = writer.write_u32::<BigEndian>(self.piece_index)?;
+        let () = writer.write_u32::<BigEndian>(self.block_offset)?;
+        {
+            let block_length: u32 = self
+                .block_length
+                .try_into()
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Unsupported, e))?;
+            let () = writer.write_u32::<BigEndian>(block_length)?;
+        }
+
+        Ok(id_length + 12) // + 3 * u32
     }
 
+    /// Returns the piece index of the `CancelMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The piece index.
     #[must_use]
     pub fn piece_index(&self) -> u32 {
         self.piece_index
     }
 
+    /// Returns the block offset of the `CancelMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The block offset.
     #[must_use]
     pub fn block_offset(&self) -> u32 {
         self.block_offset
     }
 
+    /// Returns the block length of the `CancelMessage`.
+    ///
+    /// # Returns
+    ///
+    /// The block length.
     #[must_use]
     pub fn block_length(&self) -> usize {
         self.block_length
     }
 }
 
-fn parse_cancel(bytes: &[u8]) -> IResult<&[u8], io::Result<CancelMessage>> {
-    map!(bytes, tuple!(be_u32, be_u32, be_u32), |(index, offset, length)| Ok(
-        CancelMessage::new(index, offset, message::u32_to_usize(length))
-    ))
+/// Parses a byte slice into a `CancelMessage`.
+///
+/// # Parameters
+///
+/// - `bytes`: The byte slice to parse.
+///
+/// # Returns
+///
+/// An `IResult` containing the remaining byte slice and an `io::Result` with the parsed `CancelMessage`.
+///
+/// # Errors
+///
+/// This function will return an error if the byte slice cannot be parsed into a `CancelMessage`.
+fn parse_cancel(bytes: &[u8]) -> IResult<&[u8], std::io::Result<CancelMessage>> {
+    map(tuple((be_u32, be_u32, be_u32)), |(index, offset, length)| {
+        Ok(CancelMessage::new(index, offset, message::u32_to_usize(length)))
+    })(bytes)
 }
 
 #[cfg(test)]
@@ -370,20 +701,14 @@ mod tests {
 
     #[test]
     fn positive_bitfield_iter_no_messages() {
-        let mut bytes = Bytes::new();
-        bytes.extend_from_slice(&[0x00, 0x00, 0x00]);
-
-        let bitfield = BitFieldMessage::new(bytes);
+        let bitfield = BitFieldMessage::new(Bytes::copy_from_slice(&[0x00, 0x00, 0x00]));
 
         assert_eq!(0, bitfield.iter().count());
     }
 
     #[test]
     fn positive_bitfield_iter_single_message_beginning() {
-        let mut bytes = Bytes::new();
-        bytes.extend_from_slice(&[0x80, 0x00, 0x00]);
-
-        let bitfield = BitFieldMessage::new(bytes);
+        let bitfield = BitFieldMessage::new(Bytes::copy_from_slice(&[0x80, 0x00, 0x00]));
 
         assert_eq!(1, bitfield.iter().count());
         assert_eq!(HaveMessage::new(0), bitfield.iter().next().unwrap());
@@ -391,10 +716,7 @@ mod tests {
 
     #[test]
     fn positive_bitfield_iter_single_message_middle() {
-        let mut bytes = Bytes::new();
-        bytes.extend_from_slice(&[0x00, 0x01, 0x00]);
-
-        let bitfield = BitFieldMessage::new(bytes);
+        let bitfield = BitFieldMessage::new(Bytes::copy_from_slice(&[0x00, 0x01, 0x00]));
 
         assert_eq!(1, bitfield.iter().count());
         assert_eq!(HaveMessage::new(15), bitfield.iter().next().unwrap());
@@ -402,10 +724,7 @@ mod tests {
 
     #[test]
     fn positive_bitfield_iter_single_message_ending() {
-        let mut bytes = Bytes::new();
-        bytes.extend_from_slice(&[0x00, 0x00, 0x01]);
-
-        let bitfield = BitFieldMessage::new(bytes);
+        let bitfield = BitFieldMessage::new(Bytes::copy_from_slice(&[0x00, 0x00, 0x01]));
 
         assert_eq!(1, bitfield.iter().count());
         assert_eq!(HaveMessage::new(23), bitfield.iter().next().unwrap());
@@ -413,10 +732,7 @@ mod tests {
 
     #[test]
     fn positive_bitfield_iter_multiple_messages() {
-        let mut bytes = Bytes::new();
-        bytes.extend_from_slice(&[0xAF, 0x00, 0xC1]);
-
-        let bitfield = BitFieldMessage::new(bytes);
+        let bitfield = BitFieldMessage::new(Bytes::copy_from_slice(&[0xAF, 0x00, 0xC1]));
         let messages: Vec<HaveMessage> = bitfield.iter().collect();
 
         assert_eq!(9, messages.len());

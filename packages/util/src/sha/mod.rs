@@ -52,6 +52,17 @@ impl ShaHash {
     }
 }
 
+impl std::fmt::Display for ShaHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0x")?;
+
+        for byte in &self.hash {
+            write!(f, "{byte:02x}")?;
+        }
+        Ok(())
+    }
+}
+
 impl AsRef<[u8]> for ShaHash {
     fn as_ref(&self) -> &[u8] {
         &self.hash

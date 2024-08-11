@@ -1,15 +1,11 @@
 //! Module for uber error types.
 
-use error_chain::error_chain;
+use thiserror::Error;
 
-use crate::discovery::error::{DiscoveryError, DiscoveryErrorKind};
+use crate::discovery::error::DiscoveryError;
 
-error_chain! {
-    types {
-        UberError, UberErrorKind, UberResultExt;
-    }
-
-    links {
-        Discovery(DiscoveryError, DiscoveryErrorKind);
-    }
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error(transparent)]
+    Discovery(#[from] DiscoveryError),
 }

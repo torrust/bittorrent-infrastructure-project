@@ -1,17 +1,17 @@
-use futures::Sink;
+use futures::{Sink, Stream, TryStream};
+use thiserror::Error;
 
-use crate::PeerInfo;
+use crate::manager::peer_info::PeerInfo;
 
-/// Trait for giving `PeerManager` message information it needs.
+/// Trait for providing `PeerManager` with necessary message information.
 ///
-/// For any `PeerProtocol` (or plain `Codec`), that wants to be managed
-/// by `PeerManager`, it must ensure that it's message type implements
-/// this trait so that we have the hooks necessary to manage the peer.
-pub trait ManagedMessage {
-    /// Retrieve a keep alive message variant.
+/// Any `PeerProtocol` (or plain `Codec`) that wants to be managed by `PeerManager`
+/// must ensure that its message type implements this trait to provide the necessary hooks.
+pub trait ManagedMessage: std::fmt::Debug {
+    /// Retrieves a keep-alive message variant.
     fn keep_alive() -> Self;
 
-    /// Whether or not this message is a keep alive message.
+    /// Checks whether this message is a keep-alive message.
     fn is_keep_alive(&self) -> bool;
 }
 
@@ -20,35 +20,55 @@ pub trait ManagedMessage {
 /// Identifier for matching sent messages with received messages.
 pub type MessageId = u64;
 
-/// Message that can be sent to the `PeerManager`.
-pub enum IPeerManagerMessage<P>
+/// Messages that can be sent to the `PeerManager`.
+#[derive(Debug)]
+pub enum PeerManagerInputMessage<Peer, Message>
 where
-    P: Sink,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
 {
-    /// Add a peer to the peer manager.
-    AddPeer(PeerInfo, P),
-    /// Remove a peer from the peer manager.
+    /// Adds a peer to the peer manager.
+    AddPeer(PeerInfo, Peer),
+    /// Removes a peer from the peer manager.
     RemovePeer(PeerInfo),
-    /// Send a message to a peer.
-    SendMessage(PeerInfo, MessageId, P::SinkItem), // TODO: Support querying for statistics
+    /// Sends a message to a peer.
+    SendMessage(PeerInfo, MessageId, Message), // TODO: Support querying for statistics
 }
 
-/// Message that can be received from the `PeerManager`.
-pub enum OPeerManagerMessage<M> {
-    /// Message indicating a peer has been added to the peer manager.
+#[derive(Error, Debug)]
+pub enum PeerManagerOutputError {
+    #[error("Peer Disconnected, but Missing")]
+    PeerDisconnectedAndMissing(PeerInfo),
+
+    #[error("Peer Removed, but Missing")]
+    PeerRemovedAndMissing(PeerInfo),
+
+    #[error("Peer Errored, but Missing")]
+    PeerErrorAndMissing(PeerInfo, Option<Box<Self>>),
+
+    #[error("Error with Peer")]
+    PeerError(PeerInfo, std::io::Error),
+}
+
+/// Messages that can be received from the `PeerManager`.
+#[derive(Debug)]
+pub enum PeerManagerOutputMessage<Message> {
+    /// Indicates a peer has been added to the peer manager.
     PeerAdded(PeerInfo),
-    /// Message indicating a peer has been removed from the peer manager.
+    /// Indicates a peer has been removed from the peer manager.
     PeerRemoved(PeerInfo),
-    /// Message indicating a message has been sent to the given peer.
+    /// Indicates a message has been sent to the given peer.
     SentMessage(PeerInfo, MessageId),
-    /// Message indicating we have received a message from a peer.
-    ReceivedMessage(PeerInfo, M),
-    /// Message indicating a peer has disconnected from us.
+    /// Indicates a message has been received from a peer.
+    ReceivedMessage(PeerInfo, Message),
+    /// Indicates a peer has disconnected.
     ///
     /// Same semantics as `PeerRemoved`, but the peer is not returned.
     PeerDisconnect(PeerInfo),
-    /// Message indicating a peer errored out.
-    ///
-    /// Same semantics as `PeerRemoved`, but the peer is not returned.
-    PeerError(PeerInfo, std::io::Error),
 }

@@ -1,58 +1,41 @@
-use std::io;
 use std::path::PathBuf;
 
-use error_chain::error_chain;
+use thiserror::Error;
 use util::bt::InfoHash;
 
-error_chain! {
-    types {
-        BlockError, BlockErrorKind, BlockResultExt, BlockResult;
-    }
+#[allow(clippy::module_name_repetitions)]
+#[derive(Error, Debug)]
+pub enum BlockError {
+    #[error("IO error")]
+    Io(#[from] std::io::Error),
 
-    foreign_links {
-        Io(io::Error);
-    }
-
-    errors {
-        InfoHashNotFound {
-            hash: InfoHash
-        } {
-            description("Failed To Load/Process Block Because Torrent Is Not Loaded")
-            display("Failed To Load/Process Block Because The InfoHash {:?} It Is Not Currently Added", hash)
-        }
-    }
+    #[error("Failed To Load/Process Block Because The InfoHash {hash:?} Is Not Currently Added")]
+    InfoHashNotFound { hash: InfoHash },
 }
 
-error_chain! {
-    types {
-        TorrentError, TorrentErrorKind, TorrentResultExt, TorrentResult;
-    }
+pub type BlockResult<T> = Result<T, BlockError>;
 
-    foreign_links {
-        Block(BlockError);
-        Io(io::Error);
-    }
+#[allow(clippy::module_name_repetitions)]
+#[derive(Error, Debug)]
+pub enum TorrentError {
+    #[error("Block error")]
+    Block(#[from] BlockError),
 
-    errors {
-        ExistingFileSizeCheck {
-            file_path:     PathBuf,
-            expected_size: u64,
-            actual_size:   u64
-        } {
-            description("Failed To Add Torrent Because Size Checker Failed For A File")
-            display("Failed To Add Torrent Because Size Checker Failed For {:?} Where File Size Was {} But Should Have Been {}", file_path, actual_size, expected_size)
-        }
-        ExistingInfoHash {
-            hash: InfoHash
-        } {
-            description("Failed To Add Torrent Because Another Torrent With The Same InfoHash Is Already Added")
-            display("Failed To Add Torrent Because Another Torrent With The Same InfoHash {:?} Is Already Added", hash)
-        }
-        InfoHashNotFound {
-            hash: InfoHash
-        } {
-            description("Failed To Remove Torrent Because It Is Not Currently Added")
-            display("Failed To Remove Torrent Because The InfoHash {:?} It Is Not Currently Added", hash)
-        }
-    }
+    #[error("IO error")]
+    Io(#[from] std::io::Error),
+
+    #[error("Failed To Add Torrent Because Size Checker Failed For {file_path:?} Where File Size Was {actual_size} But Should Have Been {expected_size}")]
+    ExistingFileSizeCheck {
+        file_path: PathBuf,
+        expected_size: u64,
+        actual_size: u64,
+    },
+
+    #[error("Failed To Add Torrent Because Another Torrent With The Same InfoHash {hash:?} Is Already Added")]
+    ExistingInfoHash { hash: InfoHash },
+
+    #[error("Failed To Remove Torrent Because The InfoHash {hash:?} Is Not Currently Added")]
+    InfoHashNotFound { hash: InfoHash },
 }
+
+pub type TorrentResult<T> = Result<T, TorrentError>;

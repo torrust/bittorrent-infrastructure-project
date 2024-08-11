@@ -1,6 +1,3 @@
-#[macro_use]
-mod macros;
-
 mod codec;
 mod manager;
 mod message;
@@ -9,7 +6,7 @@ mod protocol;
 pub use codec::PeerProtocolCodec;
 
 pub use crate::manager::builder::PeerManagerBuilder;
-pub use crate::manager::messages::{IPeerManagerMessage, ManagedMessage, MessageId, OPeerManagerMessage};
+pub use crate::manager::messages::{ManagedMessage, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage};
 pub use crate::manager::peer_info::PeerInfo;
 pub use crate::manager::sink::PeerManagerSink;
 pub use crate::manager::stream::PeerManagerStream;
@@ -25,15 +22,16 @@ pub mod messages {
 
     pub use crate::message::{
         BitFieldIter, BitFieldMessage, BitsExtensionMessage, CancelMessage, ExtendedMessage, ExtendedType, HaveMessage,
-        NullProtocolMessage, PeerExtensionProtocolMessage, PeerWireProtocolMessage, PieceMessage, PortMessage, RequestMessage,
-        UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
+        NullProtocolMessage, PeerExtensionProtocolMessage, PeerExtensionProtocolMessageError, PeerWireProtocolMessage,
+        PeerWireProtocolMessageError, PieceMessage, PortMessage, RequestMessage, UtMetadataDataMessage, UtMetadataMessage,
+        UtMetadataRejectMessage, UtMetadataRequestMessage,
     };
 }
 
 /// `PeerManager` error types.
 #[allow(clippy::module_name_repetitions)]
 pub mod error {
-    pub use crate::manager::error::{PeerManagerError, PeerManagerErrorKind, PeerManagerResult, PeerManagerResultExt};
+    pub use crate::manager::error::{PeerManagerError, PeerManagerResult};
 }
 
 /// Implementations of `PeerProtocol`.

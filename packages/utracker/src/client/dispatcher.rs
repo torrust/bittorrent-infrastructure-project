@@ -1,19 +1,21 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::io::{self, Cursor};
 use std::net::SocketAddr;
-use std::thread;
 
 use chrono::offset::Utc;
 use chrono::{DateTime, Duration};
-use futures::future::Either;
-use futures::sink::{Sink, Wait};
+use futures::executor::block_on;
+use futures::future::{BoxFuture, Either};
+use futures::sink::Sink;
+use futures::{FutureExt, SinkExt};
 use handshake::{DiscoveryInfo, InitiateMessage, Protocol};
 use nom::IResult;
+use tracing::instrument;
 use umio::external::{self, Timeout};
 use umio::{Dispatcher, ELoopBuilder, Provider};
 use util::bt::PeerId;
 
+use super::HandshakerMessage;
 use crate::announce::{AnnounceRequest, DesiredPeers, SourceIP};
 use crate::client::error::{ClientError, ClientResult};
 use crate::client::{ClientMetadata, ClientRequest, ClientResponse, ClientToken, RequestLimiter};
@@ -28,12 +30,14 @@ const CONNECTION_ID_VALID_DURATION_MILLIS: i64 = 60000;
 const MAXIMUM_REQUEST_RETRANSMIT_ATTEMPTS: u64 = 8;
 
 /// Internal dispatch timeout.
+#[derive(Debug)]
 enum DispatchTimeout {
     Connect(ClientToken),
     CleanUp,
 }
 
 /// Internal dispatch message for clients.
+#[derive(Debug)]
 pub enum DispatchMessage {
     Request(SocketAddr, ClientToken, ClientRequest),
     StartTimer,
@@ -44,16 +48,19 @@ pub enum DispatchMessage {
 ///
 /// Assumes `msg_capacity` is less than `usize::max_value`().
 #[allow(clippy::module_name_repetitions)]
+#[instrument(skip())]
 pub fn create_dispatcher<H>(
     bind: SocketAddr,
     handshaker: H,
     msg_capacity: usize,
     limiter: RequestLimiter,
-) -> io::Result<external::Sender<DispatchMessage>>
+) -> std::io::Result<external::Sender<DispatchMessage>>
 where
-    H: Sink + DiscoveryInfo + 'static + Send,
-    H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>,
+    H: Sink<std::io::Result<HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
+    H::Error: std::fmt::Display,
 {
+    tracing::debug!("creating dispatcher");
+
     // Timer capacity is plus one for the cache cleanup timer
     let builder = ELoopBuilder::new()
         .channel_capacity(msg_capacity)
@@ -66,7 +73,7 @@ where
 
     let dispatch = ClientDispatcher::new(handshaker, bind, limiter);
 
-    thread::spawn(move || {
+    std::thread::spawn(move || {
         eloop.run(dispatch).expect("bip_utracker: ELoop Shutdown Unexpectedly...");
     });
 
@@ -80,8 +87,9 @@ where
 // ----------------------------------------------------------------------------//
 
 /// Dispatcher that executes requests asynchronously.
+#[derive(Debug)]
 struct ClientDispatcher<H> {
-    handshaker: Wait<H>,
+    handshaker: H,
     pid: PeerId,
     port: u16,
     bound_addr: SocketAddr,
@@ -92,16 +100,19 @@ struct ClientDispatcher<H> {
 
 impl<H> ClientDispatcher<H>
 where
-    H: Sink + DiscoveryInfo,
-    H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>,
+    H: Sink<std::io::Result<HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
+    H::Error: std::fmt::Display,
 {
     /// Create a new `ClientDispatcher`.
+    #[instrument(skip(), ret)]
     pub fn new(handshaker: H, bind: SocketAddr, limiter: RequestLimiter) -> ClientDispatcher<H> {
+        tracing::debug!("new client dispatcher");
+
         let peer_id = handshaker.peer_id();
         let port = handshaker.port();
 
         ClientDispatcher {
-            handshaker: handshaker.wait(),
+            handshaker,
             pid: peer_id,
             port,
             bound_addr: bind,
@@ -112,7 +123,10 @@ where
     }
 
     /// Shutdown the current dispatcher, notifying all pending requests.
+    #[instrument(skip(self, provider))]
     pub fn shutdown(&mut self, provider: &mut Provider<'_, ClientDispatcher<H>>) {
+        tracing::debug!("shutting down client dispatcher");
+
         // Notify all active requests with the appropriate error
         for token_index in 0..self.active_requests.len() {
             let next_token = *self.active_requests.keys().nth(token_index).unwrap();
@@ -126,15 +140,20 @@ where
     }
 
     /// Finish a request by sending the result back to the client.
+    #[instrument(skip(self))]
     pub fn notify_client(&mut self, token: ClientToken, result: ClientResult<ClientResponse>) {
-        self.handshaker
-            .send(Either::B(ClientMetadata::new(token, result)).into())
-            .unwrap_or_else(|_| panic!("NEED TO FIX"));
+        tracing::info!("notifying clients");
+
+        match block_on(self.handshaker.send(Ok(ClientMetadata::new(token, result).into()))) {
+            Ok(()) => tracing::debug!("client metadata sent"),
+            Err(e) => tracing::error!("sending client metadata failed with error: {e}"),
+        }
 
         self.limiter.acknowledge();
     }
 
     /// Process a request to be sent to the given address and associated with the given token.
+    #[instrument(skip(self, provider))]
     pub fn send_request(
         &mut self,
         provider: &mut Provider<'_, ClientDispatcher<H>>,
@@ -142,9 +161,15 @@ where
         token: ClientToken,
         request: ClientRequest,
     ) {
+        tracing::debug!("sending request");
+
+        let bound_addr = self.bound_addr;
+
         // Check for IP version mismatch between source addr and dest addr
-        match (self.bound_addr, addr) {
+        match (bound_addr, addr) {
             (SocketAddr::V4(_), SocketAddr::V6(_)) | (SocketAddr::V6(_), SocketAddr::V4(_)) => {
+                tracing::error!(%bound_addr, %addr, "ip version mismatch between bound address and address");
+
                 self.notify_client(token, Err(ClientError::IPVersionMismatch));
 
                 return;
@@ -157,23 +182,30 @@ where
     }
 
     /// Process a response received from some tracker and match it up against our sent requests.
+    #[instrument(skip(self, provider, response))]
     pub fn recv_response(
         &mut self,
         provider: &mut Provider<'_, ClientDispatcher<H>>,
-        addr: SocketAddr,
         response: &TrackerResponse<'_>,
+        addr: SocketAddr,
     ) {
+        tracing::debug!("receiving response");
+
         let token = ClientToken(response.transaction_id());
 
         let conn_timer = if let Some(conn_timer) = self.active_requests.remove(&token) {
             if conn_timer.message_params().0 == addr {
                 conn_timer
             } else {
+                tracing::error!(?conn_timer, %addr, "different message prams");
+
                 return;
-            } // TODO: Add Logging (Server Receive Addr Different Than Send Addr)
+            }
         } else {
+            tracing::error!(?token, "token not in active requests");
+
             return;
-        }; // TODO: Add Logging (Server Gave Us Invalid Transaction Id)
+        };
 
         provider.clear_timeout(
             conn_timer
@@ -193,9 +225,14 @@ where
                 (&ClientRequest::Announce(hash, _), ResponseType::Announce(res)) => {
                     // Forward contact information on to the handshaker
                     for addr in res.peers().iter() {
-                        self.handshaker
-                            .send(Either::A(InitiateMessage::new(Protocol::BitTorrent, hash, addr)).into())
-                            .unwrap_or_else(|_| panic!("NEED TO FIX"));
+                        tracing::info!("sending will block if unable to send!");
+                        match block_on(
+                            self.handshaker
+                                .send(Ok(InitiateMessage::new(Protocol::BitTorrent, hash, addr).into())),
+                        ) {
+                            Ok(()) => tracing::debug!("handshake for: {addr} initiated"),
+                            Err(e) => tracing::warn!("handshake for: {addr} failed with: {e}"),
+                        }
                     }
 
                     self.notify_client(token, Ok(ClientResponse::Announce(res.to_owned())));
@@ -216,14 +253,23 @@ where
     /// Process an existing request, either re requesting a connection id or sending the actual request again.
     ///
     /// If this call is the result of a timeout, that will decide whether to cancel the request or not.
+    #[instrument(skip(self, provider))]
     fn process_request(&mut self, provider: &mut Provider<'_, ClientDispatcher<H>>, token: ClientToken, timed_out: bool) {
+        tracing::debug!("processing request");
+
         let Some(mut conn_timer) = self.active_requests.remove(&token) else {
+            tracing::error!(?token, "token not in active requests");
+
             return;
-        }; // TODO: Add logging
+        };
 
         // Resolve the duration of the current timeout to use
         let Some(next_timeout) = conn_timer.current_timeout(timed_out) else {
-            self.notify_client(token, Err(ClientError::MaxTimeout));
+            let err = ClientError::MaxTimeout;
+
+            tracing::error!("error reached timeout: {err}");
+
+            self.notify_client(token, Err(err));
 
             return;
         };
@@ -267,13 +313,16 @@ where
         // Try to write the request out to the server
         let mut write_success = false;
         provider.outgoing(|bytes| {
-            let mut writer = Cursor::new(bytes);
-            write_success = tracker_request.write_bytes(&mut writer).is_ok();
-
-            if write_success {
-                Some((writer.position().try_into().unwrap(), addr))
-            } else {
-                None
+            let mut writer = std::io::Cursor::new(bytes);
+            match tracker_request.write_bytes(&mut writer) {
+                Ok(()) => {
+                    write_success = true;
+                    Some((writer.position().try_into().unwrap(), addr))
+                }
+                Err(e) => {
+                    tracing::error!("failed to write out the tracker request with error: {e}");
+                    None
+                }
             }
         });
 
@@ -287,28 +336,40 @@ where
 
             self.active_requests.insert(token, conn_timer);
         } else {
-            self.notify_client(token, Err(ClientError::MaxLength));
+            let err = ClientError::MaxLength;
+            tracing::warn!("notifying client with error: {err}");
+
+            self.notify_client(token, Err(err));
         }
     }
 }
 
 impl<H> Dispatcher for ClientDispatcher<H>
 where
-    H: Sink + DiscoveryInfo,
-    H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>,
+    H: Sink<std::io::Result<HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
+    H::Error: std::fmt::Display,
 {
     type Timeout = DispatchTimeout;
     type Message = DispatchMessage;
 
+    #[instrument(skip(self, provider))]
     fn incoming(&mut self, mut provider: Provider<'_, Self>, message: &[u8], addr: SocketAddr) {
-        let IResult::Done(_, response) = TrackerResponse::from_bytes(message) else {
-            return; // TODO: Add Logging
-        };
+        let () = match TrackerResponse::from_bytes(message) {
+            IResult::Ok((_, response)) => {
+                tracing::debug!("received an incoming response: {response:?}");
 
-        self.recv_response(&mut provider, addr, &response);
+                self.recv_response(&mut provider, &response, addr);
+            }
+            Err(e) => {
+                tracing::error!("received an incoming error message: {e}");
+            }
+        };
     }
 
+    #[instrument(skip(self, provider))]
     fn notify(&mut self, mut provider: Provider<'_, Self>, message: DispatchMessage) {
+        tracing::debug!("received notify");
+
         match message {
             DispatchMessage::Request(addr, token, req_type) => {
                 self.send_request(&mut provider, addr, token, req_type);
@@ -318,7 +379,10 @@ where
         }
     }
 
+    #[instrument(skip(self, provider))]
     fn timeout(&mut self, mut provider: Provider<'_, Self>, timeout: DispatchTimeout) {
+        tracing::debug!("received timeout");
+
         match timeout {
             DispatchTimeout::Connect(token) => self.process_request(&mut provider, token, true),
             DispatchTimeout::CleanUp => {
@@ -343,6 +407,22 @@ struct ConnectTimer {
     timeout_id: Option<Timeout>,
 }
 
+impl std::fmt::Debug for ConnectTimer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let timeout_id = match self.timeout_id {
+            Some(_) => "Some(_)",
+            None => "None",
+        };
+
+        f.debug_struct("ConnectTimer")
+            .field("addr", &self.addr)
+            .field("attempt", &self.attempt)
+            .field("request", &self.request)
+            .field("timeout_id", &timeout_id)
+            .finish()
+    }
+}
+
 impl ConnectTimer {
     /// Create a new `ConnectTimer`.
     pub fn new(addr: SocketAddr, request: ClientRequest) -> ConnectTimer {
@@ -355,8 +435,13 @@ impl ConnectTimer {
     }
 
     /// Yields the current timeout value to use or None if the request should time out completely.
+    #[instrument(skip(), ret)]
     pub fn current_timeout(&mut self, timed_out: bool) -> Option<u64> {
+        tracing::debug!("getting current timeout");
+
         if self.attempt == MAXIMUM_REQUEST_RETRANSMIT_ATTEMPTS {
+            tracing::warn!("request has reached maximum timeout attempts: {MAXIMUM_REQUEST_RETRANSMIT_ATTEMPTS}");
+
             None
         } else {
             if timed_out {
@@ -378,21 +463,27 @@ impl ConnectTimer {
     }
 
     /// Yields the message parameters for the current connection.
+    #[instrument(skip(), ret)]
     pub fn message_params(&self) -> (SocketAddr, &ClientRequest) {
+        tracing::debug!("getting message parameters");
+
         (self.addr, &self.request)
     }
 }
 
 /// Calculates the timeout for the request given the attempt count.
+#[instrument(skip(), ret)]
 fn calculate_message_timeout_millis(attempt: u64) -> u64 {
-    #[allow(clippy::cast_possible_truncation)]
-    let attempt = attempt as u32;
+    tracing::debug!("calculation message timeout in milliseconds");
+
+    let attempt = attempt.try_into().unwrap_or(u32::MAX);
     (15 * 2u64.pow(attempt)) * 1000
 }
 
 // ----------------------------------------------------------------------------//
 
 /// Cache for storing connection ids associated with a specific server address.
+#[derive(Debug)]
 struct ConnectIdCache {
     cache: HashMap<SocketAddr, (u64, DateTime<Utc>)>,
 }
@@ -403,16 +494,25 @@ impl ConnectIdCache {
         ConnectIdCache { cache: HashMap::new() }
     }
 
-    /// Get an un expired connection id for the given addr.
+    /// Get an active connection id for the given addr.
+    #[instrument(skip(self), ret)]
     fn get(&mut self, addr: SocketAddr) -> Option<u64> {
+        tracing::debug!("getting connection id");
+
         match self.cache.entry(addr) {
-            Entry::Vacant(_) => None,
+            Entry::Vacant(_) => {
+                tracing::warn!("connection id for {addr} not in cache");
+
+                None
+            }
             Entry::Occupied(occ) => {
                 let curr_time = Utc::now();
                 let prev_time = occ.get().1;
 
                 if is_expired(curr_time, prev_time) {
                     occ.remove();
+
+                    tracing::warn!("connection id was already expired");
 
                     None
                 } else {
@@ -423,14 +523,20 @@ impl ConnectIdCache {
     }
 
     /// Put an un expired connection id into cache for the given addr.
+    #[instrument(skip(self))]
     fn put(&mut self, addr: SocketAddr, connect_id: u64) {
+        tracing::debug!("setting expired connection id");
+
         let curr_time = Utc::now();
 
         self.cache.insert(addr, (connect_id, curr_time));
     }
 
     /// Removes all entries that have expired.
+    #[instrument(skip(self))]
     fn clean_expired(&mut self) {
+        tracing::debug!("cleaning expired connection id(s)");
+
         let curr_time = Utc::now();
         let mut curr_index = 0;
 
@@ -447,7 +553,10 @@ impl ConnectIdCache {
 }
 
 /// Returns true if the connect id received at `prev_time` is now expired.
+#[instrument(skip(), ret)]
 fn is_expired(curr_time: DateTime<Utc>, prev_time: DateTime<Utc>) -> bool {
+    tracing::debug!("checking if a previous time is now expired");
+
     let valid_duration = Duration::milliseconds(CONNECTION_ID_VALID_DURATION_MILLIS);
     let difference = prev_time.signed_duration_since(curr_time);
 

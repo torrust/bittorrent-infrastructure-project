@@ -1,38 +1,43 @@
-use std::net::{SocketAddr, UdpSocket};
-use std::sync::mpsc::{self, SyncSender};
-use std::thread;
+use std::net::SocketAddr;
+use std::sync::Arc;
 
-use log::{info, warn};
-use mio::Sender;
+use futures::channel::mpsc;
+use futures::stream::StreamExt;
+use futures::SinkExt as _;
+use tokio::net::UdpSocket;
+use tokio::task;
 
 use crate::worker::OneshotTask;
 
 const OUTGOING_MESSAGE_CAPACITY: usize = 4096;
 
 #[allow(clippy::module_name_repetitions)]
-pub fn create_outgoing_messenger(socket: UdpSocket) -> SyncSender<(Vec<u8>, SocketAddr)> {
-    let (send, recv) = mpsc::sync_channel::<(Vec<u8>, SocketAddr)>(OUTGOING_MESSAGE_CAPACITY);
+pub fn create_outgoing_messenger(socket: &Arc<UdpSocket>) -> mpsc::Sender<(Vec<u8>, SocketAddr)> {
+    #[allow(clippy::type_complexity)]
+    let (send, mut recv): (mpsc::Sender<(Vec<u8>, SocketAddr)>, mpsc::Receiver<(Vec<u8>, SocketAddr)>) =
+        mpsc::channel(OUTGOING_MESSAGE_CAPACITY);
 
-    thread::spawn(move || {
-        for (message, addr) in recv {
-            send_bytes(&socket, &message[..], addr);
+    let socket = socket.clone();
+    task::spawn(async move {
+        while let Some((message, addr)) = recv.next().await {
+            send_bytes(&socket, &message[..], addr).await;
         }
 
-        info!("bip_dht: Outgoing messenger received a channel hangup, exiting thread...");
+        tracing::info!("bip_dht: Outgoing messenger received a channel hangup, exiting thread...");
     });
 
     send
 }
 
-fn send_bytes(socket: &UdpSocket, bytes: &[u8], addr: SocketAddr) {
+async fn send_bytes(socket: &UdpSocket, bytes: &[u8], addr: SocketAddr) {
     let mut bytes_sent = 0;
 
     while bytes_sent != bytes.len() {
-        if let Ok(num_sent) = socket.send_to(&bytes[bytes_sent..], addr) {
+        if let Ok(num_sent) = socket.send_to(&bytes[bytes_sent..], &addr).await {
             bytes_sent += num_sent;
         } else {
             // TODO: Maybe shut down in this case, will fail on every write...
-            warn!(
+            tracing::warn!(
                 "bip_dht: Outgoing messenger failed to write {} bytes to {}; {} bytes written \
                    before error...",
                 bytes.len(),
@@ -45,25 +50,28 @@ fn send_bytes(socket: &UdpSocket, bytes: &[u8], addr: SocketAddr) {
 }
 
 #[allow(clippy::module_name_repetitions)]
-pub fn create_incoming_messenger(socket: UdpSocket, send: Sender<OneshotTask>) {
-    thread::spawn(move || {
-        let mut channel_is_open = true;
+pub fn create_incoming_messenger(socket: Arc<UdpSocket>, send: mpsc::Sender<OneshotTask>) {
+    task::spawn(async move {
+        let mut buffer = vec![0u8; 1500];
 
-        while channel_is_open {
-            let mut buffer = vec![0u8; 1500];
-
-            if let Ok((size, addr)) = socket.recv_from(&mut buffer) {
-                buffer.truncate(size);
-                channel_is_open = send_message(&send, buffer, addr);
-            } else {
-                warn!("bip_dht: Incoming messenger failed to receive bytes...");
-            };
+        loop {
+            match socket.recv_from(&mut buffer).await {
+                Ok((size, addr)) => {
+                    let message = buffer[..size].to_vec();
+                    if !send_message(&send, message, addr).await {
+                        break;
+                    }
+                }
+                Err(_) => {
+                    tracing::warn!("bip_dht: Incoming messenger failed to receive bytes...");
+                }
+            }
         }
 
-        info!("bip_dht: Incoming messenger received a channel hangup, exiting thread...");
+        tracing::info!("bip_dht: Incoming messenger received a channel hangup, exiting thread...");
     });
 }
 
-fn send_message(send: &Sender<OneshotTask>, bytes: Vec<u8>, addr: SocketAddr) -> bool {
-    send.send(OneshotTask::Incoming(bytes, addr)).is_ok()
+async fn send_message(send: &mpsc::Sender<OneshotTask>, bytes: Vec<u8>, addr: SocketAddr) -> bool {
+    send.clone().send(OneshotTask::Incoming(bytes, addr)).await.is_ok()
 }

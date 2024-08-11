@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use futures::future::BoxFuture;
 use util::bt::{InfoHash, PeerId};
 
 /// Trait for peer discovery services to forward peer contact information and metadata.
@@ -17,7 +18,7 @@ pub trait HandshakerTrait: Send {
     fn port(&self) -> u16;
 
     /// Connect to the given address with the `InfoHash` and expecting the `PeerId`.
-    fn connect(&mut self, expected: Option<PeerId>, hash: InfoHash, addr: SocketAddr);
+    fn connect(&mut self, expected: Option<PeerId>, hash: InfoHash, addr: SocketAddr) -> BoxFuture<'_, ()>;
 
     /// Send the given Metadata back to the client.
     fn metadata(&mut self, data: Self::MetadataEnvelope);

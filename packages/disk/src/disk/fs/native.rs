@@ -1,6 +1,5 @@
 use std::borrow::Cow;
-use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::io::{Read as _, Seek as _, Write as _};
 use std::path::{Path, PathBuf};
 
 use crate::disk::fs::FileSystem;
@@ -10,12 +9,12 @@ use crate::disk::fs::FileSystem;
 /// File that exists on disk.
 #[allow(clippy::module_name_repetitions)]
 pub struct NativeFile {
-    file: File,
+    file: std::fs::File,
 }
 
 impl NativeFile {
     /// Create a new `NativeFile`.
-    fn new(file: File) -> NativeFile {
+    fn new(file: std::fs::File) -> NativeFile {
         NativeFile { file }
     }
 }
@@ -41,7 +40,7 @@ impl NativeFileSystem {
 impl FileSystem for NativeFileSystem {
     type File = NativeFile;
 
-    fn open_file<P>(&self, path: P) -> io::Result<Self::File>
+    fn open_file<P>(&self, path: P) -> std::io::Result<Self::File>
     where
         P: AsRef<Path> + Send + 'static,
     {
@@ -51,25 +50,25 @@ impl FileSystem for NativeFileSystem {
         Ok(NativeFile::new(file))
     }
 
-    fn sync_file<P>(&self, _path: P) -> io::Result<()>
+    fn sync_file<P>(&self, _path: P) -> std::io::Result<()>
     where
         P: AsRef<Path> + Send + 'static,
     {
         Ok(())
     }
 
-    fn file_size(&self, file: &NativeFile) -> io::Result<u64> {
+    fn file_size(&self, file: &NativeFile) -> std::io::Result<u64> {
         file.file.metadata().map(|metadata| metadata.len())
     }
 
-    fn read_file(&self, file: &mut NativeFile, offset: u64, buffer: &mut [u8]) -> io::Result<usize> {
-        file.file.seek(SeekFrom::Start(offset))?;
+    fn read_file(&self, file: &mut NativeFile, offset: u64, buffer: &mut [u8]) -> std::io::Result<usize> {
+        file.file.seek(std::io::SeekFrom::Start(offset))?;
 
         file.file.read(buffer)
     }
 
-    fn write_file(&self, file: &mut NativeFile, offset: u64, buffer: &[u8]) -> io::Result<usize> {
-        file.file.seek(SeekFrom::Start(offset))?;
+    fn write_file(&self, file: &mut NativeFile, offset: u64, buffer: &[u8]) -> std::io::Result<usize> {
+        file.file.seek(std::io::SeekFrom::Start(offset))?;
 
         file.file.write(buffer)
     }
@@ -78,22 +77,25 @@ impl FileSystem for NativeFileSystem {
 /// Create a new file with read and write options.
 ///
 /// Intermediate directories will be created if they do not exist.
-fn create_new_file<P>(path: P) -> io::Result<File>
+fn create_new_file<P>(path: P) -> std::io::Result<std::fs::File>
 where
     P: AsRef<Path>,
 {
     match path.as_ref().parent() {
         Some(parent_dir) => {
-            fs::create_dir_all(parent_dir)?;
+            std::fs::create_dir_all(parent_dir)?;
 
-            OpenOptions::new()
+            std::fs::OpenOptions::new()
                 .read(true)
                 .write(true)
                 .create(true)
                 .truncate(false)
                 .open(&path)
         }
-        None => Err(io::Error::new(io::ErrorKind::InvalidInput, "File Path Has No Paren't")),
+        None => Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "File Path Has No Paren't",
+        )),
     }
 }
 
