@@ -8,8 +8,11 @@ mod transport;
 
 pub use crate::discovery::DiscoveryInfo;
 pub use crate::filter::{FilterDecision, HandshakeFilter, HandshakeFilters};
+pub use crate::handshake::builder::HandshakerBuilder;
 pub use crate::handshake::config::HandshakerConfig;
-pub use crate::handshake::handshaker::{Handshaker, HandshakerBuilder, HandshakerSink, HandshakerStream};
+pub use crate::handshake::sink::HandshakerSink;
+pub use crate::handshake::stream::HandshakerStream;
+pub use crate::handshake::Handshaker;
 pub use crate::local_addr::LocalAddr;
 pub use crate::message::complete::CompleteMessage;
 pub use crate::message::extensions::{Extension, Extensions};

@@ -1,3 +1,5 @@
+[env]
+
 [build]
 rustflags = [
     "-D",
@@ -17,3 +19,7 @@ rustflags = [
     "-D",
     "unused",
 ]
+
+[term]
+quiet = false
+verbose = true

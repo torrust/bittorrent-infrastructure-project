@@ -10,7 +10,7 @@ use byteorder::{BigEndian, WriteBytesExt};
 use bytes::Bytes;
 use nom::{alt, be_u32, be_u8, call, error_node_position, error_position, map, opt, switch, tuple, tuple_parser, value, IResult};
 
-use crate::manager::ManagedMessage;
+use crate::manager::messages::ManagedMessage;
 use crate::protocol::PeerProtocol;
 
 // TODO: Propagate failures to cast values to/from usize

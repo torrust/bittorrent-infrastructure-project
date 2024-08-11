@@ -1,7 +1,7 @@
 [package]
-name = "htracker"
 description = "Communication with bittorrent HTTP trackers"
-keywords = ["tracker", "bittorrent", "http"]
+keywords = ["bittorrent", "http", "tracker"]
+name = "htracker"
 readme = "README.md"
 
 authors.workspace = true

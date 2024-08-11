@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "examples/get_metadata",
+    "examples/simple_torrent",
     "packages/bencode",
     "packages/dht",
     "packages/disk",
@@ -13,16 +15,12 @@ members = [
     "packages/util",
     "packages/utp",
     "packages/utracker",
-    "examples/get_metadata",
-    "examples/simple_torrent",
 ]
 
 resolver = "2"
 
 [workspace.package]
-authors = [
-    "Nautilus Cyberneering <info@nautilus-cyberneering.de>, Andrew <amiller4421@gmail.com>",
-]
+authors = ["Nautilus Cyberneering <info@nautilus-cyberneering.de>, Andrew <amiller4421@gmail.com>"]
 categories = ["network-programming", "web-programming"]
 description = "A collection of crates for building applications using bittorrent technologies."
 documentation = "https://github.com/torrust/bittorrent-infrastructure-project"
@@ -30,16 +28,16 @@ edition = "2021"
 homepage = "https://github.com/torrust/bittorrent-infrastructure-project"
 keywords = ["bittorrent"]
 license = "Apache-2.0"
-publish = false # until we decide where to publish.
+publish = false                                                                                     # until we decide where to publish.
 repository = "https://github.com/torrust/bittorrent-infrastructure-project"
 rust-version = "1.71"
 version = "1.0.0-alpha.1"
 
 [profile.bench]
-opt-level = 3
-debug = false
-rpath = false
-lto = false
-debug-assertions = false
 codegen-units = 1
+debug = false
+debug-assertions = false
+lto = false
+opt-level = 3
 panic = 'unwind'
+rpath = false

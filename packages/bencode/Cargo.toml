@@ -1,7 +1,7 @@
 [package]
-name = "bencode"
 description = "Efficient decoding and encoding for bencode."
 keywords = ["bencode"]
+name = "bencode"
 readme = "README.md"
 
 authors.workspace = true
@@ -21,10 +21,6 @@ error-chain = "0.12"
 [dev-dependencies]
 criterion = "0.5"
 
-[[test]]
-name = "test"
-path = "test/mod.rs"
-
 [[bench]]
-name = "bencode_benchmark"
 harness = false
+name = "bencode_benchmark"
