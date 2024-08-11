@@ -4,7 +4,6 @@ use util::bt::InfoHash;
 use crate::error::{BlockError, TorrentError};
 use crate::memory::block::{Block, BlockMut};
 
-pub mod builder;
 pub mod fs;
 pub mod manager;
 mod tasks;
