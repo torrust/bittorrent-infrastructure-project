@@ -10,7 +10,7 @@ use tokio_core::reactor::Handle;
 use tokio_timer::Timer;
 
 use crate::manager::builder::PeerManagerBuilder;
-use crate::manager::future::{PersistentError, PersistentStream, RecurringTimeoutError, RecurringTimeoutStream};
+use crate::manager::fused::{PersistentError, PersistentStream, RecurringTimeoutError, RecurringTimeoutStream};
 use crate::manager::peer_info::PeerInfo;
 use crate::manager::{IPeerManagerMessage, ManagedMessage, OPeerManagerMessage};
 
