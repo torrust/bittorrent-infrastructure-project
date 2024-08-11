@@ -1,6 +1,6 @@
 [package]
-name = "get_metadata"
 description = "Examples For bip-rs"
+name = "get_metadata"
 readme = "README.md"
 
 authors.workspace = true
@@ -21,7 +21,7 @@ select = { path = "../../packages/select" }
 
 clap = "3"
 futures = "0.1"
-tokio-core = "0.1"
-tokio-codec = "0.1"
-pendulum = "0.3"
 hex = "0.4"
+pendulum = "0.3"
+tokio-codec = "0.1"
+tokio-core = "0.1"

@@ -1,7 +1,7 @@
 [package]
-name = "peer"
 description = "Communication with bittorrent peers via peer wire protocol"
-keywords = ["peer", "wire", "protocol", "pwp", "bittorrent"]
+keywords = ["bittorrent", "peer", "protocol", "pwp", "wire"]
+name = "peer"
 readme = "README.md"
 
 authors.workspace = true
@@ -15,22 +15,17 @@ publish.workspace = true
 repository.workspace = true
 version.workspace = true
 
-
 [dependencies]
 bencode = { path = "../bencode" }
 handshake = { path = "../handshake" }
 util = { path = "../util" }
 
-bytes = "0.4"
 byteorder = "1"
+bytes = "0.4"
 crossbeam = "0.8"
 error-chain = "0.12"
 futures = "0.1"
+nom = "3"
 tokio-core = "0.1"
 tokio-io = "0.1"
 tokio-timer = "0.1"
-nom = "3"
-
-[[test]]
-name = "test"
-path = "test/mod.rs"

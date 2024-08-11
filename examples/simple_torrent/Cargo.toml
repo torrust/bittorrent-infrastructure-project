@@ -1,6 +1,6 @@
 [package]
-name = "simple_torrent"
 description = "Examples For bip-rs"
+name = "simple_torrent"
 readme = "README.md"
 
 authors.workspace = true
@@ -22,5 +22,5 @@ peer = { path = "../../packages/peer" }
 
 clap = "3"
 futures = "0.1"
-tokio-core = "0.1"
 tokio-codec = "0.1"
+tokio-core = "0.1"
