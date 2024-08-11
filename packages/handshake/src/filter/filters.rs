@@ -21,11 +21,8 @@ impl Filters {
         self.write_filters(|mut_filters| {
             let opt_found = check_index(&mut_filters[..], &filter);
 
-            match opt_found {
-                Some(_) => (),
-                None => {
-                    mut_filters.push(Box::new(filter));
-                }
+            if opt_found.is_none() {
+                mut_filters.push(Box::new(filter));
             }
         });
     }
@@ -93,9 +90,8 @@ where
             .downcast_ref::<F>()
             .map(|downcast_filter| downcast_filter == filter);
 
-        match opt_match {
-            Some(true) => return Some(index),
-            Some(false) | None => (),
+        if let Some(true) = opt_match {
+            return Some(index);
         }
     }
 
