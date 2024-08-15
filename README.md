@@ -13,12 +13,14 @@ In this fork we have:
 - [x] Implemented continuous integration using github workflows. ([#8])
 - [x] Update some of the project dependencies. ([#9], [#17], [#26], [#27])
 - [x] Preformed a general cleanup of the codebase. ([#10], [#16], [#18], [#29], [#31])
+- [x] Updated all dependencies to modern versions. ( [#19], [#20], [#21], [#22], [#23], [#25])
+
 
 The future goals are:
-
-- [ ] Update the other dependencies (__Significant Work Required__). ( [#19], [#20], [#21], [#22], [#23], [#25])
 - [ ] Publish updated versions of the crates. ([#37])
 - [ ] Increase coverage of unit tests. ([#38])
+- [ ] Remove dependency on umio in `utracker` package. Instead use Tokio. ([#53])
+- [ ] Overhaul the old `mio` architecture in the `dht` package. Making better use of Tokio. ([#54])
 
 __We would like to make a special thanks to all the developers who had contributed to and created this great project.__
 
@@ -94,6 +96,9 @@ additional terms or conditions.
 [#25]: https://github.com/torrust/bittorrent-infrastructure-project/issues/25
 [#37]: https://github.com/torrust/bittorrent-infrastructure-project/issues/37
 [#38]: https://github.com/torrust/bittorrent-infrastructure-project/issues/38
+[#53]: https://github.com/torrust/bittorrent-infrastructure-project/issues/53
+[#54]: https://github.com/torrust/bittorrent-infrastructure-project/issues/54
+
 
 [t_i37]: https://img.shields.io/github/issues/detail/title/torrust/bittorrent-infrastructure-project/37?style=for-the-badge&
 [s_i37]: https://img.shields.io/github/issues/detail/state/torrust/bittorrent-infrastructure-project/37?style=for-the-badge&label=%E3%80%80
