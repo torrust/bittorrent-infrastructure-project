@@ -1,0 +1,19 @@
+[package]
+authors = ["Andrew <amiller4421@gmail.com>"]
+description = "Message Based Readiness API In Rust"
+keywords = ["message", "mio", "readyness"]
+name = "umio"
+readme = "README.md"
+
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+mio = "0.5"
