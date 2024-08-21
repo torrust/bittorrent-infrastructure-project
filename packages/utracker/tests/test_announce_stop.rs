@@ -1,6 +1,4 @@
-use std::time::Duration;
-
-use common::{handshaker, tracing_stderr_init, MockTrackerHandler, DEFAULT_TIMEOUT, INIT};
+use common::{handshaker, tracing_stderr_init, MockTrackerHandler, DEFAULT_TIMEOUT, INIT, LOOPBACK_IPV4};
 use futures::StreamExt as _;
 use tracing::level_filters::LevelFilter;
 use util::bt::{self};
@@ -17,13 +15,10 @@ async fn positive_announce_stopped() {
 
     let (sink, mut stream) = handshaker();
 
-    let server_addr = "127.0.0.1:3502".parse().unwrap();
     let mock_handler = MockTrackerHandler::new();
-    let _server = TrackerServer::run(server_addr, mock_handler).unwrap();
+    let server = TrackerServer::run(LOOPBACK_IPV4, mock_handler).unwrap();
 
-    std::thread::sleep(Duration::from_millis(100));
-
-    let mut client = TrackerClient::new("127.0.0.1:4502".parse().unwrap(), sink, None).unwrap();
+    let mut client = TrackerClient::run(LOOPBACK_IPV4, sink, None).unwrap();
 
     let info_hash = [0u8; bt::INFO_HASH_LEN].into();
 
@@ -31,7 +26,7 @@ async fn positive_announce_stopped() {
     {
         let _send_token = client
             .request(
-                server_addr,
+                server.local_addr(),
                 ClientRequest::Announce(info_hash, ClientState::new(0, 0, 0, AnnounceEvent::Started)),
             )
             .unwrap();
@@ -66,7 +61,7 @@ async fn positive_announce_stopped() {
     {
         let _send_token = client
             .request(
-                server_addr,
+                server.local_addr(),
                 ClientRequest::Announce(info_hash, ClientState::new(0, 0, 0, AnnounceEvent::Stopped)),
             )
             .unwrap();

@@ -1,135 +1,195 @@
 use std::collections::VecDeque;
 use std::net::SocketAddr;
+use std::sync::mpsc;
 
-use mio::udp::UdpSocket;
-use mio::{EventLoop, EventSet, Handler, PollOpt, Token};
+use mio::net::UdpSocket;
+use mio::{Interest, Poll, Waker};
+use tracing::{instrument, Level};
 
 use crate::buffer::{Buffer, BufferPool};
-use crate::{provider, Provider};
+use crate::eloop::ShutdownHandle;
+use crate::provider::TimeoutAction;
+use crate::{Provider, UDP_SOCKET_TOKEN};
 
-/// Handles events occurring within the event loop.
-pub trait Dispatcher: Sized {
-    type Timeout;
-    type Message: Send;
+pub trait Dispatcher: Sized + std::fmt::Debug {
+    type TimeoutToken: std::fmt::Debug;
+    type Message: std::fmt::Debug;
 
-    /// Process an incoming message from the given address.
-    #[allow(unused)]
-    fn incoming(&mut self, provider: Provider<'_, Self>, message: &[u8], addr: SocketAddr) {}
-
-    /// Process a message sent via the event loop channel.
-    #[allow(unused)]
-    fn notify(&mut self, provider: Provider<'_, Self>, message: Self::Message) {}
-
-    /// Process a timeout that has been triggered.
-    #[allow(unused)]
-    fn timeout(&mut self, provider: Provider<'_, Self>, timeout: Self::Timeout) {}
+    fn incoming(&mut self, _provider: Provider<'_, Self>, _message: &[u8], _addr: SocketAddr) {}
+    fn notify(&mut self, _provider: Provider<'_, Self>, _message: Self::Message) {}
+    fn timeout(&mut self, _provider: Provider<'_, Self>, _timeout: Self::TimeoutToken) {}
 }
 
-//----------------------------------------------------------------------------//
-
-const UDP_SOCKET_TOKEN: Token = Token(2);
-
-pub struct DispatchHandler<D: Dispatcher> {
-    dispatch: D,
-    out_queue: VecDeque<(Buffer, SocketAddr)>,
-    udp_socket: UdpSocket,
-    buffer_pool: BufferPool,
-    current_set: EventSet,
+pub struct DispatchHandler<D: Dispatcher>
+where
+    D: std::fmt::Debug,
+{
+    pub dispatch: D,
+    pub out_queue: VecDeque<(Buffer, SocketAddr)>,
+    socket: UdpSocket,
+    pub buffer_pool: BufferPool,
+    current_interest: Interest,
+    pub timer_sender: mpsc::Sender<TimeoutAction<D::TimeoutToken>>,
 }
 
-impl<D: Dispatcher> DispatchHandler<D> {
+impl<D: Dispatcher + std::fmt::Debug> std::fmt::Debug for DispatchHandler<D>
+where
+    D: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DispatchHandler")
+            .field("dispatch", &self.dispatch)
+            .field("out_queue_len", &self.out_queue.len())
+            .field("socket", &self.socket)
+            .field("buffer_pool", &self.buffer_pool)
+            .field("current_interest", &self.current_interest)
+            .field("timer_sender", &self.timer_sender)
+            .finish()
+    }
+}
+
+impl<D> DispatchHandler<D>
+where
+    D: Dispatcher + std::fmt::Debug,
+{
+    #[instrument(skip(), ret(level = Level::TRACE))]
     pub fn new(
-        udp_socket: UdpSocket,
+        mut socket: UdpSocket,
         buffer_size: usize,
         dispatch: D,
-        event_loop: &mut EventLoop<DispatchHandler<D>>,
-    ) -> DispatchHandler<D> {
+        poll: &mut Poll,
+        timer_sender: mpsc::Sender<TimeoutAction<D::TimeoutToken>>,
+    ) -> DispatchHandler<D>
+    where
+        D: std::fmt::Debug,
+        <D as Dispatcher>::TimeoutToken: std::fmt::Debug,
+        <D as Dispatcher>::Message: std::fmt::Debug,
+    {
         let buffer_pool = BufferPool::new(buffer_size);
         let out_queue = VecDeque::new();
 
-        event_loop
-            .register(&udp_socket, UDP_SOCKET_TOKEN, EventSet::readable(), PollOpt::edge())
+        poll.registry()
+            .register(&mut socket, UDP_SOCKET_TOKEN, Interest::READABLE)
             .unwrap();
 
         DispatchHandler {
             dispatch,
             out_queue,
-            udp_socket,
+            socket,
             buffer_pool,
-            current_set: EventSet::readable(),
+            current_interest: Interest::READABLE,
+            timer_sender,
         }
     }
 
-    pub fn handle_write(&mut self) {
-        if let Some((buffer, addr)) = self.out_queue.pop_front() {
-            self.udp_socket.send_to(buffer.as_ref(), &addr).unwrap();
+    #[instrument(skip(self, waker, shutdown_handle))]
+    pub fn handle_message(&mut self, waker: &Waker, shutdown_handle: &mut ShutdownHandle, message: D::Message) {
+        tracing::trace!("message received");
+        let provider = Provider::new(
+            &mut self.buffer_pool,
+            &mut self.out_queue,
+            waker,
+            shutdown_handle,
+            &self.timer_sender,
+        );
 
-            self.buffer_pool.push(buffer);
-        };
+        self.dispatch.notify(provider, message);
     }
 
+    #[instrument(skip(self, waker, shutdown_handle))]
+    pub fn handle_timeout(&mut self, waker: &Waker, shutdown_handle: &mut ShutdownHandle, token: D::TimeoutToken) {
+        tracing::trace!("timeout expired");
+        let provider = Provider::new(
+            &mut self.buffer_pool,
+            &mut self.out_queue,
+            waker,
+            shutdown_handle,
+            &self.timer_sender,
+        );
+
+        self.dispatch.timeout(provider, token);
+    }
+
+    #[instrument(skip(self))]
+    pub fn handle_write(&mut self) {
+        tracing::trace!("handle write");
+
+        if let Some((buffer, addr)) = self.out_queue.pop_front() {
+            let bytes = self.socket.send_to(buffer.as_ref(), addr).unwrap();
+
+            tracing::debug!(?buffer, ?bytes, ?addr, "sent");
+
+            self.buffer_pool.push(buffer);
+        }
+    }
+
+    #[instrument(skip(self))]
     pub fn handle_read(&mut self) -> Option<(Buffer, SocketAddr)> {
+        tracing::trace!("handle read");
+
         let mut buffer = self.buffer_pool.pop();
 
-        if let Ok(Some((bytes, addr))) = self.udp_socket.recv_from(buffer.as_mut()) {
-            buffer.set_written(bytes);
+        match self.socket.recv_from(buffer.as_mut()) {
+            Ok((bytes, addr)) => {
+                buffer.set_position(bytes.try_into().unwrap());
+                tracing::trace!(?buffer, "DispatchHandler: Read {bytes} bytes from {addr}");
 
-            Some((buffer, addr))
-        } else {
-            None
+                Some((buffer, addr))
+            }
+            Err(e) => {
+                tracing::error!("DispatchHandler: Failed to read from UDP socket: {e}");
+                None
+            }
         }
     }
-}
 
-impl<D: Dispatcher> Handler for DispatchHandler<D> {
-    type Timeout = D::Timeout;
-    type Message = D::Message;
+    #[instrument(skip(self, waker, shutdown_handle, event, poll))]
+    pub fn handle_event<T>(
+        &mut self,
+        waker: &Waker,
+        shutdown_handle: &mut ShutdownHandle,
+        event: &mio::event::Event,
+        poll: &mut Poll,
+    ) where
+        T: std::fmt::Debug,
+    {
+        tracing::trace!(?event, "handle event");
 
-    fn ready(&mut self, event_loop: &mut EventLoop<Self>, token: Token, events: EventSet) {
-        if token != UDP_SOCKET_TOKEN {
-            return;
-        }
-
-        if events.is_writable() {
-            self.handle_write();
-        }
-
-        if events.is_readable() {
-            let Some((buffer, addr)) = self.handle_read() else {
-                return;
-            };
-
-            {
-                let provider = provider::new(&mut self.buffer_pool, &mut self.out_queue, event_loop);
-
-                self.dispatch.incoming(provider, buffer.as_ref(), addr);
+        if event.token() == UDP_SOCKET_TOKEN {
+            if event.is_writable() {
+                self.handle_write();
             }
 
-            self.buffer_pool.push(buffer);
+            if event.is_readable() {
+                if let Some((buffer, addr)) = self.handle_read() {
+                    let provider = Provider::new(
+                        &mut self.buffer_pool,
+                        &mut self.out_queue,
+                        waker,
+                        shutdown_handle,
+                        &self.timer_sender,
+                    );
+                    self.dispatch.incoming(provider, buffer.as_ref(), addr);
+                    self.buffer_pool.push(buffer);
+                }
+            }
         }
+
+        self.update_interest(poll);
     }
 
-    fn notify(&mut self, event_loop: &mut EventLoop<Self>, msg: Self::Message) {
-        let provider = provider::new(&mut self.buffer_pool, &mut self.out_queue, event_loop);
+    #[instrument(skip(self, poll))]
+    fn update_interest(&mut self, poll: &mut Poll) {
+        tracing::trace!("update interest");
 
-        self.dispatch.notify(provider, msg);
-    }
-
-    fn timeout(&mut self, event_loop: &mut EventLoop<Self>, timeout: Self::Timeout) {
-        let provider = provider::new(&mut self.buffer_pool, &mut self.out_queue, event_loop);
-
-        self.dispatch.timeout(provider, timeout);
-    }
-
-    fn tick(&mut self, event_loop: &mut EventLoop<Self>) {
-        self.current_set = if self.out_queue.is_empty() {
-            EventSet::readable()
+        self.current_interest = if self.out_queue.is_empty() {
+            Interest::READABLE
         } else {
-            EventSet::readable() | EventSet::writable()
+            Interest::READABLE | Interest::WRITABLE
         };
 
-        event_loop
-            .reregister(&self.udp_socket, UDP_SOCKET_TOKEN, self.current_set, PollOpt::edge())
+        poll.registry()
+            .reregister(&mut self.socket, UDP_SOCKET_TOKEN, self.current_interest)
             .unwrap();
     }
 }

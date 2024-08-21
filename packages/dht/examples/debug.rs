@@ -43,7 +43,7 @@ impl HandshakerTrait for SimpleHandshaker {
 
         self.filter.insert(addr);
         self.count += 1;
-        println!("Received new peer {:?}, total unique peers {}", addr, self.count);
+        tracing::trace!("Received new peer {:?}, total unique peers {}", addr, self.count);
 
         Box::pin(std::future::ready(()))
     }
@@ -85,7 +85,7 @@ async fn main() {
     let mut events = dht.events().await;
     tasks.spawn(async move {
         while let Some(event) = events.next().await {
-            println!("\nReceived Dht Event {event:?}");
+            tracing::trace!("\nReceived Dht Event {event:?}");
         }
     });
 

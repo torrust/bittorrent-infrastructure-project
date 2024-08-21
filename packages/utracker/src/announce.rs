@@ -96,10 +96,14 @@ impl<'a> AnnounceRequest<'a> {
     /// # Errors
     ///
     /// It would return an IO error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
+    #[allow(clippy::needless_borrows_for_generic_args)]
+    #[instrument(skip(self, writer), err)]
+    pub fn write_bytes<W>(&self, mut writer: &mut W) -> std::io::Result<()>
     where
         W: std::io::Write,
     {
+        tracing::trace!("write_bytes");
+
         writer.write_all(self.info_hash.as_ref())?;
         writer.write_all(self.peer_id.as_ref())?;
 
@@ -316,7 +320,7 @@ fn parse_response<'a>(
 // ----------------------------------------------------------------------------//
 
 /// Announce state of a client reported to the server.
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ClientState {
     downloaded: i64,
     left: i64,
@@ -400,7 +404,7 @@ fn parse_state(bytes: &[u8]) -> IResult<&[u8], ClientState> {
 
 /// Announce event of a client reported to the server.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AnnounceEvent {
     /// No event is reported.
     None,
@@ -591,6 +595,7 @@ impl DesiredPeers {
     /// # Errors
     ///
     /// It would return an IO Error if unable to write the bytes.
+    #[instrument(skip(self, writer), err)]
     pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
         W: std::io::Write,

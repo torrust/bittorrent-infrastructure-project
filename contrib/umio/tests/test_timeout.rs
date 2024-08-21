@@ -1,34 +1,51 @@
+use std::sync::mpsc;
 use std::thread::{self};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use common::{MockDispatcher, MockMessage};
+use common::{tracing_stderr_init, MockDispatcher, MockMessage, INIT, LOOPBACK_IPV4};
+use tracing::level_filters::LevelFilter;
 use umio::ELoopBuilder;
 
 mod common;
 
 #[test]
 fn positive_send_notify() {
-    let eloop_addr = "127.0.0.1:0".parse().unwrap();
-    let mut eloop = ELoopBuilder::new().bind_address(eloop_addr).build().unwrap();
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::ERROR);
+    });
+
+    let (mut eloop, _eloop_socket, _shutdown_handle) = ELoopBuilder::new().bind_address(LOOPBACK_IPV4).build().unwrap();
 
     let (dispatcher, dispatch_recv) = MockDispatcher::new();
     let dispatch_send = eloop.channel();
 
-    thread::spawn(move || {
-        eloop.run(dispatcher).unwrap();
-    });
-    thread::sleep(Duration::from_millis(50));
+    let handle = {
+        let (started_eloop_sender, started_eloop_receiver) = mpsc::sync_channel(0);
+
+        let handle = std::thread::spawn(move || {
+            eloop.run(dispatcher, started_eloop_sender).unwrap();
+        });
+
+        let () = started_eloop_receiver.recv().unwrap().unwrap();
+
+        handle
+    };
 
     let token = 5;
-    dispatch_send.send(MockMessage::SendTimeout(token, 50)).unwrap();
+    let timeout_at = Instant::now() + Duration::from_millis(50);
+    dispatch_send.send(MockMessage::SendTimeout(token, timeout_at)).unwrap();
     thread::sleep(Duration::from_millis(300));
 
-    match dispatch_recv.try_recv() {
+    let res = dispatch_recv.try_recv();
+
+    dispatch_send.send(MockMessage::Shutdown).unwrap();
+    handle.join().unwrap();
+
+    match res {
         Ok(MockMessage::TimeoutReceived(tkn)) => {
             assert_eq!(tkn, token);
         }
-        _ => panic!("ELoop Failed To Receive Timeout"),
+        Ok(other) => panic!("Received Other: {other:?}"),
+        Err(e) => panic!("Received Error: {e}"),
     }
-
-    dispatch_send.send(MockMessage::Shutdown).unwrap();
 }

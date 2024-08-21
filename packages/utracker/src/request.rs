@@ -8,6 +8,7 @@ use nom::combinator::{map, map_res};
 use nom::number::complete::{be_u32, be_u64};
 use nom::sequence::tuple;
 use nom::IResult;
+use tracing::instrument;
 
 use crate::announce::AnnounceRequest;
 use crate::scrape::ScrapeRequest;
@@ -76,35 +77,40 @@ impl<'a> TrackerRequest<'a> {
     /// # Errors
     ///
     /// It would return an IO Error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
+    #[allow(clippy::needless_borrows_for_generic_args)]
+    #[instrument(skip(self, writer), err)]
+    pub fn write_bytes<W>(&self, mut writer: &mut W) -> std::io::Result<()>
     where
         W: std::io::Write,
     {
         writer.write_u64::<BigEndian>(self.connection_id())?;
 
-        match self.request_type() {
-            &RequestType::Connect => {
-                writer.write_u32::<BigEndian>(crate::CONNECT_ACTION_ID)?;
-                writer.write_u32::<BigEndian>(self.transaction_id())?;
-            }
-            RequestType::Announce(req) => {
-                let action_id = if req.source_ip().is_ipv4() {
-                    crate::ANNOUNCE_IPV4_ACTION_ID
-                } else {
-                    crate::ANNOUNCE_IPV6_ACTION_ID
-                };
-                writer.write_u32::<BigEndian>(action_id)?;
-                writer.write_u32::<BigEndian>(self.transaction_id())?;
+        {
+            match self.request_type() {
+                &RequestType::Connect => {
+                    writer.write_u32::<BigEndian>(crate::CONNECT_ACTION_ID)?;
+                    writer.write_u32::<BigEndian>(self.transaction_id())?;
+                }
+                RequestType::Announce(req) => {
+                    let action_id = if req.source_ip().is_ipv4() {
+                        crate::ANNOUNCE_IPV4_ACTION_ID
+                    } else {
+                        crate::ANNOUNCE_IPV6_ACTION_ID
+                    };
+                    writer.write_u32::<BigEndian>(action_id)?;
+                    writer.write_u32::<BigEndian>(self.transaction_id())?;
 
-                req.write_bytes(writer)?;
-            }
-            RequestType::Scrape(req) => {
-                writer.write_u32::<BigEndian>(crate::SCRAPE_ACTION_ID)?;
-                writer.write_u32::<BigEndian>(self.transaction_id())?;
+                    req.write_bytes(&mut writer)?;
+                }
+                RequestType::Scrape(req) => {
+                    writer.write_u32::<BigEndian>(crate::SCRAPE_ACTION_ID)?;
+                    writer.write_u32::<BigEndian>(self.transaction_id())?;
 
-                req.write_bytes(writer)?;
-            }
-        };
+                    req.write_bytes(&mut writer)?;
+                }
+            };
+        }
+        writer.flush()?;
 
         Ok(())
     }

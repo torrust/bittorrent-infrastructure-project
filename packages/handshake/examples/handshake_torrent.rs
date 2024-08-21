@@ -36,7 +36,7 @@ async fn main() -> std::io::Result<()> {
         .await
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-    println!("\nConnection With Peer Established...Closing In 10 Seconds");
+    tracing::trace!("\nConnection With Peer Established...Closing In 10 Seconds");
 
     sleep(Duration::from_secs(10)).await;
 

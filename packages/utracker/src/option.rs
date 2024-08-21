@@ -73,7 +73,7 @@ impl<'a> AnnounceOptions<'a> {
     /// # Panics
     ///
     /// It would panic if the chunk length is too large.
-    #[instrument(skip(self, writer))]
+    #[instrument(skip(self, writer), err)]
     pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
         W: std::io::Write,

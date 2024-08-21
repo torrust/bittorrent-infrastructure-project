@@ -1,9 +1,9 @@
 use std::net::SocketAddr;
+use std::sync::mpsc;
 
 use nom::IResult;
-use tracing::instrument;
-use umio::external::Sender;
-use umio::{Dispatcher, ELoopBuilder, Provider};
+use tracing::{instrument, Level};
+use umio::{Dispatcher, ELoopBuilder, MessageSender, Provider, ShutdownHandle};
 
 use crate::announce::AnnounceRequest;
 use crate::error::ErrorResponse;
@@ -17,17 +17,20 @@ const EXPECTED_PACKET_LENGTH: usize = 1500;
 /// Internal dispatch message for servers.
 #[derive(Debug)]
 pub enum DispatchMessage {
-    Shutdown,
+    Shutdown(mpsc::SyncSender<std::io::Result<()>>),
 }
 
 /// Create a new background dispatcher to service requests.
 #[allow(clippy::module_name_repetitions)]
 #[instrument(skip())]
-pub fn create_dispatcher<H>(bind: SocketAddr, handler: H) -> std::io::Result<Sender<DispatchMessage>>
+pub fn create_dispatcher<H>(
+    bind: SocketAddr,
+    handler: H,
+) -> std::io::Result<(MessageSender<DispatchMessage>, SocketAddr, ShutdownHandle)>
 where
     H: ServerHandler + std::fmt::Debug + 'static,
 {
-    tracing::debug!("create dispatcher");
+    tracing::trace!("create dispatcher");
 
     let builder = ELoopBuilder::new()
         .channel_capacity(1)
@@ -35,16 +38,26 @@ where
         .bind_address(bind)
         .buffer_length(EXPECTED_PACKET_LENGTH);
 
-    let mut eloop = builder.build()?;
+    let (mut eloop, socket, shutdown) = builder.build()?;
     let channel = eloop.channel();
 
-    let dispatch = ServerDispatcher::new(handler);
+    let dispatcher = ServerDispatcher::new(handler);
 
-    std::thread::spawn(move || {
-        eloop.run(dispatch).expect("bip_utracker: ELoop Shutdown Unexpectedly...");
-    });
+    let handle = {
+        let (started_eloop_sender, started_eloop_receiver) = mpsc::sync_channel(0);
 
-    Ok(channel)
+        let handle = std::thread::spawn(move || {
+            eloop.run(dispatcher, started_eloop_sender).unwrap();
+        });
+
+        let () = started_eloop_receiver
+            .recv()
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e))??;
+
+        handle
+    };
+
+    Ok((channel, socket, shutdown))
 }
 
 // ----------------------------------------------------------------------------//
@@ -63,10 +76,8 @@ where
     H: ServerHandler + std::fmt::Debug,
 {
     /// Create a new `ServerDispatcher`.
-    #[instrument(skip(), ret)]
+    #[instrument(skip(), ret(level = Level::TRACE))]
     fn new(handler: H) -> ServerDispatcher<H> {
-        tracing::debug!("new");
-
         ServerDispatcher { handler }
     }
 
@@ -78,7 +89,7 @@ where
         request: &TrackerRequest<'_>,
         addr: SocketAddr,
     ) {
-        tracing::debug!("process request");
+        tracing::trace!("process request");
 
         let conn_id = request.connection_id();
         let trans_id = request.transaction_id();
@@ -106,8 +117,6 @@ where
     /// Forward a connect request on to the appropriate handler method.
     #[instrument(skip(self, provider))]
     fn forward_connect(&mut self, provider: &mut Provider<'_, ServerDispatcher<H>>, trans_id: u32, addr: SocketAddr) {
-        tracing::debug!("forward connect");
-
         let Some(attempt) = self.handler.connect(addr) else {
             tracing::warn!("connect attempt canceled");
 
@@ -120,6 +129,8 @@ where
         };
 
         let response = TrackerResponse::new(trans_id, response_type);
+
+        tracing::trace!(?response, "forward connect");
 
         write_response(provider, &response, addr);
     }
@@ -134,8 +145,6 @@ where
         request: &AnnounceRequest<'_>,
         addr: SocketAddr,
     ) {
-        tracing::debug!("forward announce");
-
         let Some(attempt) = self.handler.announce(addr, conn_id, request) else {
             tracing::warn!("announce attempt canceled");
 
@@ -147,6 +156,8 @@ where
             Err(err_msg) => ResponseType::Error(ErrorResponse::new(err_msg)),
         };
         let response = TrackerResponse::new(trans_id, response_type);
+
+        tracing::trace!(?response, "forward announce");
 
         write_response(provider, &response, addr);
     }
@@ -188,24 +199,21 @@ where
 {
     tracing::debug!("write response");
 
-    provider.outgoing(|buffer| {
-        let mut cursor = std::io::Cursor::new(buffer);
+    provider.set_dest(addr);
 
-        match response.write_bytes(&mut cursor) {
-            Ok(()) => Some((cursor.position().try_into().unwrap(), addr)),
-            Err(e) => {
-                tracing::error!("error writing response to cursor: {e}");
-                None
-            }
+    match response.write_bytes(provider) {
+        Ok(()) => (),
+        Err(e) => {
+            tracing::error!(%e, "error writing response to cursor");
         }
-    });
+    }
 }
 
 impl<H> Dispatcher for ServerDispatcher<H>
 where
     H: ServerHandler + std::fmt::Debug,
 {
-    type Timeout = ();
+    type TimeoutToken = ();
     type Message = DispatchMessage;
 
     #[instrument(skip(self, provider))]
@@ -217,7 +225,7 @@ where
                 self.process_request(&mut provider, &request, addr);
             }
             Err(e) => {
-                tracing::error!("received an incoming error message: {e}");
+                tracing::error!(%e, "received an incoming error message");
             }
         };
     }
@@ -225,10 +233,12 @@ where
     #[instrument(skip(self, provider))]
     fn notify(&mut self, mut provider: Provider<'_, Self>, message: DispatchMessage) {
         let () = match message {
-            DispatchMessage::Shutdown => {
+            DispatchMessage::Shutdown(shutdown_finished_sender) => {
                 tracing::debug!("received a shutdown notification");
 
                 provider.shutdown();
+
+                let () = shutdown_finished_sender.send(Ok(())).unwrap();
             }
         };
     }

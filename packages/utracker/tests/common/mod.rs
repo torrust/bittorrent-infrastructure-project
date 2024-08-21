@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::sync::{Arc, Mutex, Once};
 use std::time::Duration;
 
@@ -8,8 +8,8 @@ use futures::sink::SinkExt;
 use futures::stream::StreamExt;
 use futures::{Sink, Stream};
 use handshake::DiscoveryInfo;
-use tracing::instrument;
 use tracing::level_filters::LevelFilter;
+use tracing::{instrument, Level};
 use util::bt::{InfoHash, PeerId};
 use util::trans::{LocallyShuffledIds, TransactionIds};
 use utracker::announce::{AnnounceEvent, AnnounceRequest, AnnounceResponse};
@@ -19,6 +19,9 @@ use utracker::{HandshakerMessage, ServerHandler, ServerResult};
 
 #[allow(dead_code)]
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1000);
+
+#[allow(dead_code)]
+pub const LOOPBACK_IPV4: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0));
 
 const NUM_PEERS_RETURNED: usize = 20;
 
@@ -58,7 +61,7 @@ pub struct InnerMockTrackerHandler {
 
 #[allow(dead_code)]
 impl MockTrackerHandler {
-    #[instrument(skip(), ret)]
+    #[instrument(skip(), ret(level = Level::TRACE))]
     pub fn new() -> MockTrackerHandler {
         tracing::debug!("new mock handler");
 
@@ -77,7 +80,7 @@ impl MockTrackerHandler {
 }
 
 impl ServerHandler for MockTrackerHandler {
-    #[instrument(skip(self), ret)]
+    #[instrument(skip(self), ret(level = Level::TRACE))]
     fn connect(&mut self, addr: SocketAddr) -> Option<ServerResult<'_, u64>> {
         tracing::debug!("mock connect");
 
@@ -89,7 +92,7 @@ impl ServerHandler for MockTrackerHandler {
         Some(Ok(cid))
     }
 
-    #[instrument(skip(self), ret)]
+    #[instrument(skip(self), ret(level = Level::TRACE))]
     fn announce(
         &mut self,
         addr: SocketAddr,
@@ -158,7 +161,7 @@ impl ServerHandler for MockTrackerHandler {
         }
     }
 
-    #[instrument(skip(self), ret)]
+    #[instrument(skip(self), ret(level = Level::TRACE))]
     fn scrape(&mut self, _: SocketAddr, id: u64, req: &ScrapeRequest<'_>) -> Option<ServerResult<'_, ScrapeResponse<'_>>> {
         tracing::debug!("mock scrape");
 
@@ -211,16 +214,16 @@ impl DiscoveryInfo for MockHandshakerSink {
 impl Sink<std::io::Result<HandshakerMessage>> for MockHandshakerSink {
     type Error = std::io::Error;
 
-    #[instrument(skip(self, cx), ret)]
+    #[instrument(skip(self, cx), ret(level = Level::TRACE))]
     fn poll_ready(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
-        tracing::debug!("polling ready");
+        tracing::trace!("polling ready");
 
         self.send
             .poll_ready(cx)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
     }
 
-    #[instrument(skip(self), ret)]
+    #[instrument(skip(self), ret(level = Level::TRACE))]
     fn start_send(mut self: std::pin::Pin<&mut Self>, item: std::io::Result<HandshakerMessage>) -> Result<(), Self::Error> {
         tracing::debug!("starting send");
 
@@ -229,19 +232,19 @@ impl Sink<std::io::Result<HandshakerMessage>> for MockHandshakerSink {
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
     }
 
-    #[instrument(skip(self, cx), ret)]
+    #[instrument(skip(self, cx), ret(level = Level::TRACE))]
     fn poll_flush(
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Result<(), Self::Error>> {
-        tracing::debug!("polling flush");
+        tracing::trace!("polling flush");
 
         self.send
             .poll_flush_unpin(cx)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
     }
 
-    #[instrument(skip(self, cx), ret)]
+    #[instrument(skip(self, cx), ret(level = Level::TRACE))]
     fn poll_close(
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
@@ -261,9 +264,9 @@ pub struct MockHandshakerStream {
 impl Stream for MockHandshakerStream {
     type Item = std::io::Result<HandshakerMessage>;
 
-    #[instrument(skip(self, cx), ret)]
+    #[instrument(skip(self, cx), ret(level = Level::TRACE))]
     fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Option<Self::Item>> {
-        tracing::debug!("polling next");
+        tracing::trace!("polling next");
 
         self.recv.poll_next_unpin(cx).map(|maybe| maybe.map(Ok))
     }

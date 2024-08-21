@@ -22,7 +22,6 @@ util = { path = "../util" }
 umio = { path = "../../contrib/umio" }
 
 byteorder = "1"
-chrono = "0"
 futures = "0"
 nom = "7"
 rand = "0"

@@ -1,7 +1,7 @@
 use std::net::UdpSocket;
 use std::time::Duration;
 
-use common::{tracing_stderr_init, MockTrackerHandler, INIT};
+use common::{tracing_stderr_init, MockTrackerHandler, INIT, LOOPBACK_IPV4};
 use tracing::level_filters::LevelFilter;
 use utracker::request::{self, RequestType, TrackerRequest};
 use utracker::TrackerServer;
@@ -15,12 +15,12 @@ fn positive_server_dropped() {
         tracing_stderr_init(LevelFilter::ERROR);
     });
 
-    let server_addr = "127.0.0.1:3508".parse().unwrap();
     let mock_handler = MockTrackerHandler::new();
 
-    {
-        let server = TrackerServer::run(server_addr, mock_handler).unwrap();
-    }
+    let old_server_socket = {
+        let server = TrackerServer::run(LOOPBACK_IPV4, mock_handler).unwrap();
+        server.local_addr()
+    };
     // Server is now shut down
 
     let mut send_message = Vec::new();
@@ -28,8 +28,8 @@ fn positive_server_dropped() {
     let request = TrackerRequest::new(request::CONNECT_ID_PROTOCOL_ID, 0, RequestType::Connect);
     request.write_bytes(&mut send_message).unwrap();
 
-    let socket = UdpSocket::bind("127.0.0.1:4508").unwrap();
-    socket.send_to(&send_message, server_addr);
+    let socket = UdpSocket::bind(LOOPBACK_IPV4).unwrap();
+    socket.send_to(&send_message, old_server_socket);
 
     let mut receive_message = vec![0u8; 1500];
     socket.set_read_timeout(Some(Duration::from_millis(200)));

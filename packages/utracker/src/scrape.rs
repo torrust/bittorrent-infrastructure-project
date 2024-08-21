@@ -9,6 +9,7 @@ use nom::combinator::map_res;
 use nom::number::complete::be_i32;
 use nom::sequence::tuple;
 use nom::{IResult, Needed};
+use tracing::instrument;
 use util::bt::{self, InfoHash};
 use util::convert;
 
@@ -97,6 +98,7 @@ impl<'a> ScrapeRequest<'a> {
     /// # Errors
     ///
     /// It would return an IO Error if unable to write the bytes.
+    #[instrument(skip(self, writer), err)]
     pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
         W: std::io::Write,

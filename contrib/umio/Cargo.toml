@@ -16,4 +16,8 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-mio = "0.5"
+mio = { version = "1", features = ["net", "os-poll"] }
+tracing = "0"
+
+[dev-dependencies]
+tracing-subscriber = "0"

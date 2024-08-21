@@ -91,21 +91,23 @@ impl<'a> TrackerResponse<'a> {
                 writer.write_u32::<BigEndian>(action_id)?;
                 writer.write_u32::<BigEndian>(self.transaction_id())?;
 
-                req.write_bytes(writer)?;
+                req.write_bytes(&mut writer)?;
             }
             ResponseType::Scrape(req) => {
                 writer.write_u32::<BigEndian>(crate::SCRAPE_ACTION_ID)?;
                 writer.write_u32::<BigEndian>(self.transaction_id())?;
 
-                req.write_bytes(writer)?;
+                req.write_bytes(&mut writer)?;
             }
             ResponseType::Error(err) => {
                 writer.write_u32::<BigEndian>(ERROR_ACTION_ID)?;
                 writer.write_u32::<BigEndian>(self.transaction_id())?;
 
-                err.write_bytes(writer)?;
+                err.write_bytes(&mut writer)?;
             }
         };
+
+        writer.flush();
 
         Ok(())
     }

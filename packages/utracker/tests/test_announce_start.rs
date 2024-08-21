@@ -1,7 +1,6 @@
 use std::net::SocketAddr;
-use std::time::Duration;
 
-use common::{handshaker, tracing_stderr_init, MockTrackerHandler, DEFAULT_TIMEOUT, INIT};
+use common::{handshaker, tracing_stderr_init, MockTrackerHandler, DEFAULT_TIMEOUT, INIT, LOOPBACK_IPV4};
 use futures::StreamExt as _;
 use handshake::Protocol;
 use tracing::level_filters::LevelFilter;
@@ -19,25 +18,22 @@ async fn positive_announce_started() {
 
     let (handshaker_sender, mut handshaker_receiver) = handshaker();
 
-    let server_addr = "127.0.0.1:3501".parse().unwrap();
     let mock_handler = MockTrackerHandler::new();
-    let _server = TrackerServer::run(server_addr, mock_handler).unwrap();
+    let server = TrackerServer::run(LOOPBACK_IPV4, mock_handler).unwrap();
 
-    std::thread::sleep(Duration::from_millis(100));
-
-    let mut client = TrackerClient::new("127.0.0.1:4501".parse().unwrap(), handshaker_sender, None).unwrap();
+    let mut client = TrackerClient::run(LOOPBACK_IPV4, handshaker_sender, None).unwrap();
 
     let hash = [0u8; bt::INFO_HASH_LEN].into();
 
-    tracing::warn!("sending announce");
+    tracing::debug!("sending announce");
     let _send_token = client
         .request(
-            server_addr,
+            server.local_addr(),
             ClientRequest::Announce(hash, ClientState::new(0, 0, 0, AnnounceEvent::Started)),
         )
         .unwrap();
 
-    tracing::warn!("receiving initiate message");
+    tracing::debug!("receiving initiate message");
     let init_msg = match tokio::time::timeout(DEFAULT_TIMEOUT, handshaker_receiver.next())
         .await
         .unwrap()
@@ -54,7 +50,7 @@ async fn positive_announce_started() {
     assert_eq!(&exp_peer_addr, init_msg.address());
     assert_eq!(&hash, init_msg.hash());
 
-    tracing::warn!("receiving client metadata");
+    tracing::debug!("receiving client metadata");
     let metadata = match tokio::time::timeout(DEFAULT_TIMEOUT, handshaker_receiver.next())
         .await
         .unwrap()

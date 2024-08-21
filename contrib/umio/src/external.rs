@@ -1,1 +1,1 @@
-pub use mio::{Sender, Timeout, TimerError, TimerResult};
+pub use mio::{Events, Interest, Token, Waker};
