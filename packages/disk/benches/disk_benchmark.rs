@@ -1,22 +1,23 @@
-use std::fs;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use bytes::BytesMut;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use disk::error::TorrentError;
 use disk::fs::NativeFileSystem;
 use disk::fs_cache::FileHandleCache;
 use disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, InfoHash, ODiskMessage};
-use futures::sink::{self, Sink};
-use futures::stream::{self, Stream};
+use futures::{SinkExt, StreamExt};
 use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
+use rand::Rng;
+use tokio::sync::Mutex;
 
 /// Set to true if you are playing around with anything that could affect file
 /// sizes for an existing or new benchmarks. As a precaution, if the disk manager
 /// sees an existing file with a different size but same name as one of the files
-/// in the torrent, it wont touch it and a `TorrentError` will be generated.
+/// in the torrent, it won't touch it and a `TorrentError` will be generated.
 const WIPE_DATA_DIR: bool = false;
 
-// TODO: Benchmark multi file torrents!!!
+// TODO: Benchmark multi-file torrents!!!
 
 /// Generates a torrent with a single file of the given length.
 ///
@@ -24,7 +25,7 @@ const WIPE_DATA_DIR: bool = false;
 fn generate_single_file_torrent(piece_len: usize, file_len: usize) -> (Metainfo, Vec<u8>) {
     let mut buffer = vec![0u8; file_len];
 
-    rand::Rng::fill(&mut rand::thread_rng(), buffer.as_mut_slice());
+    rand::thread_rng().fill(buffer.as_mut_slice());
 
     let metainfo_bytes = {
         let accessor = DirectAccessor::new("benchmark_file", &buffer[..]);
@@ -40,43 +41,59 @@ fn generate_single_file_torrent(piece_len: usize, file_len: usize) -> (Metainfo,
 }
 
 /// Adds the given metainfo file to the given sender, and waits for the added notification.
-fn add_metainfo_file<S, R>(metainfo: Metainfo, block_send: &mut sink::Wait<S>, block_recv: &mut stream::Wait<R>)
+async fn add_metainfo_file<S, R>(metainfo: Metainfo, block_send: Arc<Mutex<S>>, block_recv: Arc<Mutex<R>>)
 where
-    S: Sink<SinkItem = IDiskMessage, SinkError = ()>,
-    R: Stream<Item = ODiskMessage, Error = ()>,
+    S: futures::Sink<IDiskMessage> + Unpin,
+    S::Error: std::fmt::Debug,
+    R: futures::Stream<Item = Result<ODiskMessage, ()>> + Unpin,
 {
-    block_send.send(IDiskMessage::AddTorrent(metainfo)).unwrap();
+    {
+        let mut block_send_guard = block_send.lock().await;
+        block_send_guard.send(IDiskMessage::AddTorrent(metainfo)).await.unwrap();
+    }
 
-    for res_message in block_recv {
-        match res_message.unwrap() {
+    while let Some(res_message) = {
+        let mut block_recv_guard = block_recv.lock().await;
+        block_recv_guard.next().await
+    } {
+        let error = match res_message.unwrap() {
             ODiskMessage::TorrentAdded(_) => {
                 break;
             }
-            ODiskMessage::FoundGoodPiece(_, _) => (),
-            _ => panic!("Didn't Receive TorrentAdded"),
+            ODiskMessage::FoundGoodPiece(_, _) => continue,
+            ODiskMessage::TorrentError(_, error) => error,
+
+            other => panic!("should receive `TorrentAdded` or `FoundGoodPiece`, but got: {other:?}"),
+        };
+
+        match error {
+            TorrentError::ExistingInfoHash { .. } => break,
+            other => panic!("should receive `TorrentAdded` or `FoundGoodPiece`, but got: {other:?}"),
         }
     }
 }
 
 struct ProcessBlockData<S, R>
 where
-    S: Sink<SinkItem = IDiskMessage, SinkError = ()>,
-    R: Stream<Item = ODiskMessage, Error = ()>,
+    S: futures::Sink<IDiskMessage> + Unpin,
+    S::Error: std::fmt::Debug,
+    R: futures::Stream<Item = Result<ODiskMessage, ()>> + Unpin,
 {
     piece_length: usize,
     block_length: usize,
     info_hash: InfoHash,
     bytes: Vec<u8>,
-    block_send: Arc<Mutex<sink::Wait<S>>>,
-    block_recv: Arc<Mutex<stream::Wait<R>>>,
+    block_send: Arc<Mutex<S>>,
+    block_recv: Arc<Mutex<R>>,
 }
 
 /// Pushes the given bytes as piece blocks to the given sender, and blocks until all notifications
 /// of the blocks being processed have been received (does not check piece messages).
-fn process_blocks<S, R>(data: &ProcessBlockData<S, R>)
+async fn process_blocks<S, R>(data: Arc<ProcessBlockData<S, R>>)
 where
-    S: Sink<SinkItem = IDiskMessage, SinkError = ()>,
-    R: Stream<Item = ODiskMessage, Error = ()>,
+    S: futures::Sink<IDiskMessage> + Unpin,
+    S::Error: std::fmt::Debug,
+    R: futures::Stream<Item = Result<ODiskMessage, ()>> + Unpin,
 {
     let piece_length = data.piece_length;
     let block_length = data.block_length;
@@ -98,16 +115,23 @@ where
                 bytes.freeze(),
             );
 
-            block_send.lock().unwrap().send(IDiskMessage::ProcessBlock(block)).unwrap();
+            {
+                let mut block_send_guard = block_send.lock().await;
+                block_send_guard.send(IDiskMessage::ProcessBlock(block)).await.unwrap();
+            } // MutexGuard is dropped here
+
             blocks_sent += 1;
         }
     }
 
-    for res_message in &mut *block_recv.lock().unwrap() {
+    while let Some(res_message) = {
+        let mut block_recv_guard = block_recv.lock().await;
+        block_recv_guard.next().await
+    } {
         match res_message.unwrap() {
             ODiskMessage::BlockProcessed(_) => blocks_sent -= 1,
             ODiskMessage::FoundGoodPiece(_, _) | ODiskMessage::FoundBadPiece(_, _) => (),
-            _ => panic!("Unexpected Message Received In process_blocks"),
+            other => panic!("should receive `BlockProcessed`, `FoundGoodPiece` or `FoundBadPiece`, but got: {other:?}"),
         }
 
         if blocks_sent == 0 {
@@ -123,9 +147,10 @@ fn bench_process_file_with_fs<F>(
     piece_length: usize,
     block_length: usize,
     file_length: usize,
-    fs: F,
+    fs: Arc<F>,
 ) where
-    F: FileSystem + Send + Sync + 'static,
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
 {
     let (metainfo, bytes) = generate_single_file_torrent(piece_length, file_length);
     let info_hash = metainfo.info().info_hash();
@@ -135,23 +160,33 @@ fn bench_process_file_with_fs<F>(
         .with_stream_buffer_capacity(1_000_000)
         .build(fs);
 
-    let (d_send, d_recv) = disk_manager.split();
+    let (d_send, d_recv) = disk_manager.into_parts();
 
-    let block_send = Arc::new(Mutex::new(d_send.wait()));
-    let block_recv = Arc::new(Mutex::new(d_recv.wait()));
-
-    add_metainfo_file(metainfo, &mut block_send.lock().unwrap(), &mut block_recv.lock().unwrap());
+    let block_send = Arc::new(Mutex::new(d_send));
+    let block_recv = Arc::new(Mutex::new(d_recv));
 
     let data = ProcessBlockData {
         piece_length,
         block_length,
         info_hash,
         bytes,
-        block_send,
-        block_recv,
+        block_send: block_send.clone(),
+        block_recv: block_recv.clone(),
     };
 
-    c.bench_with_input(id, &data, |b, i| b.iter(|| process_blocks(i)));
+    let runner = &tokio::runtime::Runtime::new().unwrap();
+
+    c.bench_with_input(id, &Arc::new(data), |b, i| {
+        let metainfo_clone = metainfo.clone();
+        b.to_async(runner).iter(move || {
+            let data = i.clone();
+            let metainfo = metainfo_clone.clone();
+            async move {
+                add_metainfo_file(metainfo, data.block_send.clone(), data.block_recv.clone()).await;
+                process_blocks(data).await;
+            }
+        });
+    });
 }
 
 fn bench_native_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
@@ -161,13 +196,13 @@ fn bench_native_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_128_kb_blocks";
 
     if WIPE_DATA_DIR {
-        drop(fs::remove_dir_all(data_directory));
+        drop(std::fs::remove_dir_all(data_directory));
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
     let id = BenchmarkId::new("bench_native_fs", "1_mb_pieces_128_kb_blocks");
 
-    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, Arc::new(filesystem));
 }
 
 fn bench_native_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
@@ -177,13 +212,13 @@ fn bench_native_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_16_kb_blocks";
 
     if WIPE_DATA_DIR {
-        drop(fs::remove_dir_all(data_directory));
+        drop(std::fs::remove_dir_all(data_directory));
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
     let id = BenchmarkId::new("bench_native_fs", "1_mb_pieces_16_kb_blocks");
 
-    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, Arc::new(filesystem));
 }
 
 fn bench_native_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
@@ -193,13 +228,13 @@ fn bench_native_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_2_kb_blocks";
 
     if WIPE_DATA_DIR {
-        drop(fs::remove_dir_all(data_directory));
+        drop(std::fs::remove_dir_all(data_directory));
     }
     let filesystem = NativeFileSystem::with_directory(data_directory);
 
     let id = BenchmarkId::new("bench_native_fs", "1_mb_pieces_2_kb_blocks");
 
-    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, Arc::new(filesystem));
 }
 
 fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
@@ -209,13 +244,13 @@ fn bench_file_handle_cache_fs_1_mb_pieces_128_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_128_kb_blocks";
 
     if WIPE_DATA_DIR {
-        drop(fs::remove_dir_all(data_directory));
+        drop(std::fs::remove_dir_all(data_directory));
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
     let id = BenchmarkId::new("bench_file_handle_cache_fs", "1_mb_pieces_128_kb_blocks");
 
-    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, Arc::new(filesystem));
 }
 
 fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
@@ -225,13 +260,13 @@ fn bench_file_handle_cache_fs_1_mb_pieces_16_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_16_kb_blocks";
 
     if WIPE_DATA_DIR {
-        drop(fs::remove_dir_all(data_directory));
+        drop(std::fs::remove_dir_all(data_directory));
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
     let id = BenchmarkId::new("bench_file_handle_cache_fs", "1_mb_pieces_16_kb_blocks");
 
-    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, Arc::new(filesystem));
 }
 
 fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
@@ -241,13 +276,13 @@ fn bench_file_handle_cache_fs_1_mb_pieces_2_kb_blocks(c: &mut Criterion) {
     let data_directory = "target/bench_data/bench_native_fs_1_mb_pieces_2_kb_blocks";
 
     if WIPE_DATA_DIR {
-        drop(fs::remove_dir_all(data_directory));
+        drop(std::fs::remove_dir_all(data_directory));
     }
     let filesystem = FileHandleCache::new(NativeFileSystem::with_directory(data_directory), 1);
 
     let id = BenchmarkId::new("bench_file_handle_cache_fs", "1_mb_pieces_2_kb_blocks");
 
-    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, filesystem);
+    bench_process_file_with_fs(c, id, piece_length, block_length, file_length, Arc::new(filesystem));
 }
 
 criterion_group!(

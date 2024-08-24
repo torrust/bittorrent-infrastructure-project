@@ -19,18 +19,19 @@ version.workspace = true
 metainfo = { path = "../metainfo" }
 util = { path = "../util" }
 
-bytes = "0.4"
-crossbeam = "0.8"
-error-chain = "0.12"
-futures = "0.1"
-futures-cpupool = "0.1"
-log = "0.4"
-lru-cache = "0.1"
+bytes = "1"
+crossbeam = "0"
+futures = "0"
+lru-cache = "0"
+pin-project = "1"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0"
 
 [dev-dependencies]
-criterion = "0.5"
-rand = "0.8"
-tokio-core = "0.1"
+criterion = { version = "0", features = ["async_tokio"] }
+rand = "0"
+tracing-subscriber = "0"
 
 [[bench]]
 harness = false

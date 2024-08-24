@@ -16,10 +16,10 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-error-chain = "0.12"
+thiserror = "1"
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = "0"
 
 [[bench]]
 harness = false

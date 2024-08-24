@@ -1,36 +1,70 @@
 use std::collections::{HashMap, HashSet};
-use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
-use std::sync::{Arc, Mutex};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::sync::{Arc, Mutex, Once};
+use std::time::Duration;
 
-use futures::future::Either;
-use futures::sink::Sink;
-use futures::stream::Stream;
-use futures::sync::mpsc::{self, SendError, UnboundedReceiver, UnboundedSender};
-use futures::{Poll, StartSend};
-use handshake::{DiscoveryInfo, InitiateMessage};
+use futures::channel::mpsc;
+use futures::sink::SinkExt;
+use futures::stream::StreamExt;
+use futures::{Sink, Stream};
+use handshake::DiscoveryInfo;
+use tracing::level_filters::LevelFilter;
+use tracing::{instrument, Level};
 use util::bt::{InfoHash, PeerId};
 use util::trans::{LocallyShuffledIds, TransactionIds};
 use utracker::announce::{AnnounceEvent, AnnounceRequest, AnnounceResponse};
 use utracker::contact::{CompactPeers, CompactPeersV4, CompactPeersV6};
 use utracker::scrape::{ScrapeRequest, ScrapeResponse, ScrapeStats};
-use utracker::{ClientMetadata, ServerHandler, ServerResult};
+use utracker::{HandshakerMessage, ServerHandler, ServerResult};
+
+#[allow(dead_code)]
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1000);
+
+#[allow(dead_code)]
+pub const LOOPBACK_IPV4: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0));
 
 const NUM_PEERS_RETURNED: usize = 20;
 
-#[derive(Clone)]
+#[allow(dead_code)]
+pub static INIT: Once = Once::new();
+
+#[allow(dead_code)]
+#[derive(PartialEq, Eq, Debug)]
+pub enum TimeoutResult {
+    TimedOut,
+    GotResult,
+}
+
+#[allow(dead_code)]
+pub fn tracing_stderr_init(filter: LevelFilter) {
+    let builder = tracing_subscriber::fmt()
+        .with_max_level(filter)
+        .with_ansi(true)
+        .with_writer(std::io::stderr);
+
+    builder.pretty().with_file(true).init();
+
+    tracing::info!("Logging initialized");
+}
+
+#[derive(Debug, Clone)]
 pub struct MockTrackerHandler {
     inner: Arc<Mutex<InnerMockTrackerHandler>>,
 }
 
-struct InnerMockTrackerHandler {
+#[derive(Debug)]
+pub struct InnerMockTrackerHandler {
     cids: HashSet<u64>,
     cid_generator: LocallyShuffledIds<u64>,
     peers_map: HashMap<InfoHash, HashSet<SocketAddr>>,
 }
 
+#[allow(dead_code)]
 impl MockTrackerHandler {
-    #[allow(dead_code)]
+    #[instrument(skip(), ret(level = Level::TRACE))]
     pub fn new() -> MockTrackerHandler {
+        tracing::debug!("new mock handler");
+
         MockTrackerHandler {
             inner: Arc::new(Mutex::new(InnerMockTrackerHandler {
                 cids: HashSet::new(),
@@ -40,29 +74,33 @@ impl MockTrackerHandler {
         }
     }
 
-    #[allow(dead_code)]
     pub fn num_active_connect_ids(&self) -> usize {
         self.inner.lock().unwrap().cids.len()
     }
 }
 
 impl ServerHandler for MockTrackerHandler {
-    fn connect<R>(&mut self, _: SocketAddr, result: R)
-    where
-        R: for<'a> FnOnce(ServerResult<'a, u64>),
-    {
+    #[instrument(skip(self), ret(level = Level::TRACE))]
+    fn connect(&mut self, addr: SocketAddr) -> Option<ServerResult<'_, u64>> {
+        tracing::debug!("mock connect");
+
         let mut inner_lock = self.inner.lock().unwrap();
 
         let cid = inner_lock.cid_generator.generate();
         inner_lock.cids.insert(cid);
 
-        result(Ok(cid));
+        Some(Ok(cid))
     }
 
-    fn announce<'b, R>(&mut self, addr: SocketAddr, id: u64, req: &AnnounceRequest<'b>, result: R)
-    where
-        R: for<'a> FnOnce(ServerResult<'a, AnnounceResponse<'a>>),
-    {
+    #[instrument(skip(self), ret(level = Level::TRACE))]
+    fn announce(
+        &mut self,
+        addr: SocketAddr,
+        id: u64,
+        req: &AnnounceRequest<'_>,
+    ) -> Option<ServerResult<'_, AnnounceResponse<'_>>> {
+        tracing::debug!("mock announce");
+
         let mut inner_lock = self.inner.lock().unwrap();
 
         if inner_lock.cids.contains(&id) {
@@ -112,21 +150,21 @@ impl ServerHandler for MockTrackerHandler {
                 CompactPeers::V6(v6_peers)
             };
 
-            result(Ok(AnnounceResponse::new(
+            Some(Ok(AnnounceResponse::new(
                 1800,
                 peers.len().try_into().unwrap(),
                 peers.len().try_into().unwrap(),
                 compact_peers,
-            )));
+            )))
         } else {
-            result(Err("Connection ID Is Invalid"));
+            Some(Err("Connection ID Is Invalid"))
         }
     }
 
-    fn scrape<'b, R>(&mut self, _: SocketAddr, id: u64, req: &ScrapeRequest<'b>, result: R)
-    where
-        R: for<'a> FnOnce(ServerResult<'a, ScrapeResponse<'a>>),
-    {
+    #[instrument(skip(self), ret(level = Level::TRACE))]
+    fn scrape(&mut self, _: SocketAddr, id: u64, req: &ScrapeRequest<'_>) -> Option<ServerResult<'_, ScrapeResponse<'_>>> {
+        tracing::debug!("mock scrape");
+
         let mut inner_lock = self.inner.lock().unwrap();
 
         if inner_lock.cids.contains(&id) {
@@ -142,9 +180,9 @@ impl ServerHandler for MockTrackerHandler {
                 ));
             }
 
-            result(Ok(response));
+            Some(Ok(response))
         } else {
-            result(Err("Connection ID Is Invalid"));
+            Some(Err("Connection ID Is Invalid"))
         }
     }
 }
@@ -158,13 +196,9 @@ pub fn handshaker() -> (MockHandshakerSink, MockHandshakerStream) {
     (MockHandshakerSink { send }, MockHandshakerStream { recv })
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct MockHandshakerSink {
-    send: UnboundedSender<Either<InitiateMessage, ClientMetadata>>,
-}
-
-pub struct MockHandshakerStream {
-    recv: UnboundedReceiver<Either<InitiateMessage, ClientMetadata>>,
+    send: mpsc::UnboundedSender<HandshakerMessage>,
 }
 
 impl DiscoveryInfo for MockHandshakerSink {
@@ -177,24 +211,63 @@ impl DiscoveryInfo for MockHandshakerSink {
     }
 }
 
-impl Sink for MockHandshakerSink {
-    type SinkItem = Either<InitiateMessage, ClientMetadata>;
-    type SinkError = SendError<Self::SinkItem>;
+impl Sink<std::io::Result<HandshakerMessage>> for MockHandshakerSink {
+    type Error = std::io::Error;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
-        self.send.start_send(item)
+    #[instrument(skip(self, cx), ret(level = Level::TRACE))]
+    fn poll_ready(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+        tracing::trace!("polling ready");
+
+        self.send
+            .poll_ready(cx)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        self.send.poll_complete()
+    #[instrument(skip(self), ret(level = Level::TRACE))]
+    fn start_send(mut self: std::pin::Pin<&mut Self>, item: std::io::Result<HandshakerMessage>) -> Result<(), Self::Error> {
+        tracing::debug!("starting send");
+
+        self.send
+            .start_send(item?)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+    }
+
+    #[instrument(skip(self, cx), ret(level = Level::TRACE))]
+    fn poll_flush(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
+        tracing::trace!("polling flush");
+
+        self.send
+            .poll_flush_unpin(cx)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+    }
+
+    #[instrument(skip(self, cx), ret(level = Level::TRACE))]
+    fn poll_close(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
+        tracing::debug!("polling close");
+
+        self.send
+            .poll_close_unpin(cx)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
     }
 }
 
-impl Stream for MockHandshakerStream {
-    type Item = Either<InitiateMessage, ClientMetadata>;
-    type Error = ();
+pub struct MockHandshakerStream {
+    recv: mpsc::UnboundedReceiver<HandshakerMessage>,
+}
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        self.recv.poll()
+impl Stream for MockHandshakerStream {
+    type Item = std::io::Result<HandshakerMessage>;
+
+    #[instrument(skip(self, cx), ret(level = Level::TRACE))]
+    fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Option<Self::Item>> {
+        tracing::trace!("polling next");
+
+        self.recv.poll_next_unpin(cx).map(|maybe| maybe.map(Ok))
     }
 }

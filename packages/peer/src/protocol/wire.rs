@@ -1,16 +1,19 @@
-use std::io::{self, Write};
-
-use bytes::Bytes;
-
-use crate::message::{BitsExtensionMessage, ExtendedMessage, PeerWireProtocolMessage};
+use crate::message::{BitsExtensionMessage, ExtendedMessage, PeerWireProtocolMessage, PeerWireProtocolMessageError};
 use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Protocol for peer wire messages.
-pub struct PeerWireProtocol<P> {
+#[derive(Debug, Clone)]
+pub struct PeerWireProtocol<P>
+where
+    P: Clone,
+{
     ext_protocol: P,
 }
 
-impl<P> PeerWireProtocol<P> {
+impl<P> PeerWireProtocol<P>
+where
+    P: Clone,
+{
     /// Create a new `PeerWireProtocol` with the given extension protocol.
     ///
     /// Important to note that nested protocol should follow the same message length format
@@ -23,40 +26,59 @@ impl<P> PeerWireProtocol<P> {
 
 impl<P> PeerProtocol for PeerWireProtocol<P>
 where
-    P: PeerProtocol + NestedPeerProtocol<ExtendedMessage>,
+    P: PeerProtocol + NestedPeerProtocol<ExtendedMessage> + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     type ProtocolMessage = PeerWireProtocolMessage<P>;
 
-    fn bytes_needed(&mut self, bytes: &[u8]) -> io::Result<Option<usize>> {
+    type ProtocolMessageError = PeerWireProtocolMessageError;
+
+    fn bytes_needed(&mut self, bytes: &[u8]) -> std::io::Result<Option<usize>> {
         PeerWireProtocolMessage::<P>::bytes_needed(bytes)
     }
 
-    fn parse_bytes(&mut self, bytes: Bytes) -> io::Result<Self::ProtocolMessage> {
-        match PeerWireProtocolMessage::parse_bytes(bytes, &mut self.ext_protocol) {
-            Ok(PeerWireProtocolMessage::BitsExtension(BitsExtensionMessage::Extended(msg))) => {
+    fn parse_bytes(&mut self, bytes: &[u8]) -> std::io::Result<Result<Self::ProtocolMessage, Self::ProtocolMessageError>> {
+        match PeerWireProtocolMessage::parse_bytes(bytes, &mut self.ext_protocol)? {
+            PeerWireProtocolMessage::BitsExtension(BitsExtensionMessage::Extended(msg)) => {
                 self.ext_protocol.received_message(&msg);
 
-                Ok(PeerWireProtocolMessage::BitsExtension(BitsExtensionMessage::Extended(msg)))
+                Ok(Ok(PeerWireProtocolMessage::BitsExtension(BitsExtensionMessage::Extended(
+                    msg,
+                ))))
             }
-            other => other,
+            other => Ok(Ok(other)),
         }
     }
 
-    fn write_bytes<W>(&mut self, message: &Self::ProtocolMessage, writer: W) -> io::Result<()>
+    fn write_bytes<W>(
+        &mut self,
+        item: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>,
+        writer: W,
+    ) -> std::io::Result<usize>
     where
-        W: Write,
+        W: std::io::Write,
     {
-        match (message.write_bytes(writer, &mut self.ext_protocol), message) {
-            (Ok(()), &PeerWireProtocolMessage::BitsExtension(BitsExtensionMessage::Extended(ref msg))) => {
-                self.ext_protocol.sent_message(msg);
+        let message = match item {
+            Ok(message) => message,
+            Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, err.clone())),
+        };
 
-                Ok(())
-            }
-            (other, _) => other,
-        }
+        let message_bytes_written = message.write_bytes(writer, &mut self.ext_protocol)?;
+
+        let PeerWireProtocolMessage::BitsExtension(BitsExtensionMessage::Extended(extended_message)) = message else {
+            return Ok(message_bytes_written);
+        };
+
+        Ok(self.ext_protocol.sent_message(extended_message))
     }
 
-    fn message_size(&mut self, message: &Self::ProtocolMessage) -> usize {
+    fn message_size(&mut self, item: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>) -> std::io::Result<usize> {
+        let message = match item {
+            Ok(message) => message,
+            Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, err.clone())),
+        };
+
         message.message_size(&mut self.ext_protocol)
     }
 }

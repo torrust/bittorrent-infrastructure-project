@@ -1,9 +1,13 @@
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
-use std::sync::mpsc::SyncSender;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, RwLock};
 
-use log::{error, info, warn};
-use mio::{EventLoop, Timeout};
+use futures::channel::mpsc::{self, SendError};
+use futures::future::BoxFuture;
+use futures::{FutureExt as _, SinkExt as _};
+use tokio::task::JoinSet;
+use tokio::time::{sleep, Duration};
 use util::bt::{self, NodeId};
 
 use crate::handshaker_trait::HandshakerTrait;
@@ -12,7 +16,6 @@ use crate::routing::bucket::Bucket;
 use crate::routing::node::{Node, NodeStatus};
 use crate::routing::table::{self, BucketContents, RoutingTable};
 use crate::transaction::{MIDGenerator, TransactionID};
-use crate::worker::handler::DhtHandler;
 use crate::worker::ScheduledTaskCheck;
 
 const BOOTSTRAP_INITIAL_TIMEOUT: u64 = 2500;
@@ -36,11 +39,12 @@ pub enum BootstrapStatus {
 #[allow(clippy::module_name_repetitions)]
 pub struct TableBootstrap {
     table_id: NodeId,
-    id_generator: MIDGenerator,
+    id_generator: Mutex<MIDGenerator>,
     starting_nodes: Vec<SocketAddr>,
-    active_messages: HashMap<TransactionID, Timeout>,
+    active_messages: Mutex<HashMap<TransactionID, tokio::time::Instant>>,
     starting_routers: HashSet<SocketAddr>,
-    curr_bootstrap_bucket: usize,
+    curr_bootstrap_bucket: AtomicUsize,
+    tasks: Arc<Mutex<JoinSet<Result<(), SendError>>>>,
 }
 
 impl TableBootstrap {
@@ -52,73 +56,84 @@ impl TableBootstrap {
 
         TableBootstrap {
             table_id,
-            id_generator,
+            id_generator: Mutex::new(id_generator),
             starting_nodes: nodes,
             starting_routers: router_filter,
-            active_messages: HashMap::new(),
-            curr_bootstrap_bucket: 0,
+            active_messages: Mutex::default(),
+            curr_bootstrap_bucket: AtomicUsize::default(),
+            tasks: Arc::default(),
         }
     }
 
-    pub fn start_bootstrap<H>(
-        &mut self,
-        out: &SyncSender<(Vec<u8>, SocketAddr)>,
-        event_loop: &mut EventLoop<DhtHandler<H>>,
-    ) -> BootstrapStatus
-    where
-        H: HandshakerTrait,
-    {
+    pub async fn start_bootstrap(
+        &self,
+        mut out: mpsc::Sender<(Vec<u8>, SocketAddr)>,
+        mut scheduled_task_sender: mpsc::Sender<ScheduledTaskCheck>,
+    ) -> Result<BootstrapStatus, BootstrapStatus> {
         // Reset the bootstrap state
-        self.active_messages.clear();
-        self.curr_bootstrap_bucket = 0;
+        self.active_messages.lock().unwrap().clear();
+        self.curr_bootstrap_bucket.store(0, Ordering::Relaxed);
 
         // Generate transaction id for the initial bootstrap messages
-        let trans_id = self.id_generator.generate();
+        let trans_id = self.id_generator.lock().unwrap().generate();
 
         // Set a timer to begin the actual bootstrap
-        let res_timeout = event_loop.timeout_ms(
-            (BOOTSTRAP_INITIAL_TIMEOUT, ScheduledTaskCheck::BootstrapTimeout(trans_id)),
-            BOOTSTRAP_INITIAL_TIMEOUT,
-        );
-        let Ok(timeout) = res_timeout else {
-            error!("bip_dht: Failed to set a timeout for the start of a table bootstrap...");
-            return BootstrapStatus::Failed;
-        };
+        let abort = self.tasks.lock().unwrap().spawn(async move {
+            sleep(Duration::from_millis(BOOTSTRAP_INITIAL_TIMEOUT)).await;
+
+            match scheduled_task_sender
+                .send(ScheduledTaskCheck::BootstrapTimeout(trans_id))
+                .await
+            {
+                Ok(()) => {
+                    tracing::debug!("sent scheduled bootstrap timeout");
+                    Ok(())
+                }
+                Err(e) => {
+                    tracing::debug!("error sending scheduled bootstrap timeout: {e}");
+                    Err(e)
+                }
+            }
+        });
 
         // Insert the timeout into the active bootstraps just so we can check if a response was valid (and begin the bucket bootstraps)
-        self.active_messages.insert(trans_id, timeout);
+        self.active_messages.lock().unwrap().insert(
+            trans_id,
+            tokio::time::Instant::now() + Duration::from_millis(BOOTSTRAP_INITIAL_TIMEOUT),
+        );
 
         let find_node_msg = FindNodeRequest::new(trans_id.as_ref(), self.table_id, self.table_id).encode();
         // Ping all initial routers and nodes
         for addr in self.starting_routers.iter().chain(self.starting_nodes.iter()) {
-            if out.send((find_node_msg.clone(), *addr)).is_err() {
-                error!("bip_dht: Failed to send bootstrap message to router through channel...");
-                return BootstrapStatus::Failed;
+            if out.send((find_node_msg.clone(), *addr)).await.is_err() {
+                tracing::error!("bip_dht: Failed to send bootstrap message to router through channel...");
+                abort.abort();
+                return Err(BootstrapStatus::Failed);
             }
         }
 
-        self.current_bootstrap_status()
+        Ok(self.current_bootstrap_status())
     }
 
     pub fn is_router(&self, addr: &SocketAddr) -> bool {
         self.starting_routers.contains(addr)
     }
 
-    pub fn recv_response<H>(
-        &mut self,
-        trans_id: &TransactionID,
-        table: &RoutingTable,
-        out: &SyncSender<(Vec<u8>, SocketAddr)>,
-        event_loop: &mut EventLoop<DhtHandler<H>>,
+    pub async fn recv_response<H>(
+        &self,
+        trans_id: TransactionID,
+        table: Arc<RwLock<RoutingTable>>,
+        out: mpsc::Sender<(Vec<u8>, SocketAddr)>,
+        scheduled_task_sender: mpsc::Sender<ScheduledTaskCheck>,
     ) -> BootstrapStatus
     where
-        H: HandshakerTrait,
+        H: HandshakerTrait + 'static,
     {
         // Process the message transaction id
-        let timeout = if let Some(t) = self.active_messages.get(trans_id) {
+        let _timeout = if let Some(t) = self.active_messages.lock().unwrap().get(&trans_id) {
             *t
         } else {
-            warn!(
+            tracing::warn!(
                 "bip_dht: Received expired/unsolicited node response for an active table \
                    bootstrap..."
             );
@@ -127,35 +142,32 @@ impl TableBootstrap {
 
         // If this response was from the initial bootstrap, we don't want to clear the timeout or remove
         // the token from the map as we want to wait until the proper timeout has been triggered before starting
-        if self.curr_bootstrap_bucket != 0 {
+        if self.curr_bootstrap_bucket.load(Ordering::Acquire) != 0 {
             // Message was not from the initial ping
-            // Remove the timeout from the event loop
-            event_loop.clear_timeout(timeout);
-
             // Remove the token from the mapping
-            self.active_messages.remove(trans_id);
+            self.active_messages.lock().unwrap().remove(&trans_id);
         }
 
         // Check if we need to bootstrap on the next bucket
-        if self.active_messages.is_empty() {
-            return self.bootstrap_next_bucket(table, out, event_loop);
+        if self.active_messages.lock().unwrap().is_empty() {
+            return self.bootstrap_next_bucket::<H>(table, out, scheduled_task_sender).await;
         }
 
         self.current_bootstrap_status()
     }
 
-    pub fn recv_timeout<H>(
-        &mut self,
-        trans_id: &TransactionID,
-        table: &RoutingTable,
-        out: &SyncSender<(Vec<u8>, SocketAddr)>,
-        event_loop: &mut EventLoop<DhtHandler<H>>,
+    pub async fn recv_timeout<H>(
+        &self,
+        trans_id: TransactionID,
+        table: Arc<RwLock<RoutingTable>>,
+        out: mpsc::Sender<(Vec<u8>, SocketAddr)>,
+        scheduled_task_sender: mpsc::Sender<ScheduledTaskCheck>,
     ) -> BootstrapStatus
     where
-        H: HandshakerTrait,
+        H: HandshakerTrait + 'static,
     {
-        if self.active_messages.remove(trans_id).is_none() {
-            warn!(
+        if self.active_messages.lock().unwrap().remove(&trans_id).is_none() {
+            tracing::warn!(
                 "bip_dht: Received expired/unsolicited node timeout for an active table \
                    bootstrap..."
             );
@@ -163,8 +175,8 @@ impl TableBootstrap {
         }
 
         // Check if we need to bootstrap on the next bucket
-        if self.active_messages.is_empty() {
-            return self.bootstrap_next_bucket(table, out, event_loop);
+        if self.active_messages.lock().unwrap().is_empty() {
+            return self.bootstrap_next_bucket::<H>(table, out, scheduled_task_sender).await;
         }
 
         self.current_bootstrap_status()
@@ -172,100 +184,123 @@ impl TableBootstrap {
 
     // Returns true if there are more buckets to bootstrap, false otherwise
     fn bootstrap_next_bucket<H>(
-        &mut self,
-        table: &RoutingTable,
-        out: &SyncSender<(Vec<u8>, SocketAddr)>,
-        event_loop: &mut EventLoop<DhtHandler<H>>,
-    ) -> BootstrapStatus
+        &self,
+        table: Arc<RwLock<RoutingTable>>,
+        out: mpsc::Sender<(Vec<u8>, SocketAddr)>,
+        scheduled_task_sender: mpsc::Sender<ScheduledTaskCheck>,
+    ) -> BoxFuture<'_, BootstrapStatus>
     where
-        H: HandshakerTrait,
+        H: HandshakerTrait + 'static,
     {
-        let target_id = flip_id_bit_at_index(self.table_id, self.curr_bootstrap_bucket);
+        async move {
+            let bootstrap_bucket = self.curr_bootstrap_bucket.load(Ordering::Relaxed);
 
-        // Get the optimal iterator to bootstrap the current bucket
-        if self.curr_bootstrap_bucket == 0 || self.curr_bootstrap_bucket == 1 {
-            let iter = table
-                .closest_nodes(target_id)
-                .filter(|n| n.status() == NodeStatus::Questionable);
+            let target_id = flip_id_bit_at_index(self.table_id, bootstrap_bucket);
 
-            self.send_bootstrap_requests(iter, target_id, table, out, event_loop)
-        } else {
-            let mut buckets = table.buckets().skip(self.curr_bootstrap_bucket - 2);
-            let dummy_bucket = Bucket::new();
+            // Get the optimal iterator to bootstrap the current bucket
+            if bootstrap_bucket == 0 || bootstrap_bucket == 1 {
+                let questionable_nodes: Vec<Node> = table
+                    .read()
+                    .unwrap()
+                    .closest_nodes(target_id)
+                    .filter(|n| n.status() == NodeStatus::Questionable)
+                    .cloned()
+                    .collect();
 
-            // Sloppy probabilities of our target node residing at the node
-            let percent_25_bucket = if let Some(bucket) = buckets.next() {
-                match bucket {
-                    BucketContents::Empty => dummy_bucket.iter(),
-                    BucketContents::Sorted(b) | BucketContents::Assorted(b) => b.iter(),
-                }
+                self.send_bootstrap_requests::<H, _>(
+                    questionable_nodes.iter(),
+                    target_id,
+                    table.clone(),
+                    out.clone(),
+                    scheduled_task_sender,
+                )
+                .await
             } else {
-                dummy_bucket.iter()
-            };
-            let percent_50_bucket = if let Some(bucket) = buckets.next() {
-                match bucket {
-                    BucketContents::Empty => dummy_bucket.iter(),
-                    BucketContents::Sorted(b) | BucketContents::Assorted(b) => b.iter(),
-                }
-            } else {
-                dummy_bucket.iter()
-            };
-            let percent_100_bucket = if let Some(bucket) = buckets.next() {
-                match bucket {
-                    BucketContents::Empty => dummy_bucket.iter(),
-                    BucketContents::Sorted(b) | BucketContents::Assorted(b) => b.iter(),
-                }
-            } else {
-                dummy_bucket.iter()
-            };
+                let questionable_nodes: Vec<Node> = {
+                    let routing_table = table.read().unwrap();
+                    let mut buckets = routing_table.buckets().skip(bootstrap_bucket - 2);
+                    let dummy_bucket = Bucket::new();
 
-            // TODO: Figure out why chaining them in reverse gives us more total nodes on average, perhaps it allows us to fill up the lower
-            // buckets faster at the cost of less nodes in the higher buckets (since lower buckets are very easy to fill)...Although it should
-            // even out since we are stagnating buckets, so doing it in reverse may make sense since on the 3rd iteration, it allows us to ping
-            // questionable nodes in our first buckets right off the bat.
-            let iter = percent_25_bucket
-                .chain(percent_50_bucket)
-                .chain(percent_100_bucket)
-                .filter(|n| n.status() == NodeStatus::Questionable);
+                    // Sloppy probabilities of our target node residing at the node
+                    let percent_25_bucket = if let Some(bucket) = buckets.next() {
+                        match bucket {
+                            BucketContents::Empty => dummy_bucket.iter(),
+                            BucketContents::Sorted(b) | BucketContents::Assorted(b) => b.iter(),
+                        }
+                    } else {
+                        dummy_bucket.iter()
+                    };
+                    let percent_50_bucket = if let Some(bucket) = buckets.next() {
+                        match bucket {
+                            BucketContents::Empty => dummy_bucket.iter(),
+                            BucketContents::Sorted(b) | BucketContents::Assorted(b) => b.iter(),
+                        }
+                    } else {
+                        dummy_bucket.iter()
+                    };
+                    let percent_100_bucket = if let Some(bucket) = buckets.next() {
+                        match bucket {
+                            BucketContents::Empty => dummy_bucket.iter(),
+                            BucketContents::Sorted(b) | BucketContents::Assorted(b) => b.iter(),
+                        }
+                    } else {
+                        dummy_bucket.iter()
+                    };
 
-            self.send_bootstrap_requests(iter, target_id, table, out, event_loop)
+                    // TODO: Figure out why chaining them in reverse gives us more total nodes on average, perhaps it allows us to fill up the lower
+                    // buckets faster at the cost of less nodes in the higher buckets (since lower buckets are very easy to fill)...Although it should
+                    // even out since we are stagnating buckets, so doing it in reverse may make sense since on the 3rd iteration, it allows us to ping
+                    // questionable nodes in our first buckets right off the bat.
+                    percent_25_bucket
+                        .chain(percent_50_bucket)
+                        .chain(percent_100_bucket)
+                        .filter(|n| n.status() == NodeStatus::Questionable)
+                        .cloned()
+                        .collect()
+                };
+
+                self.send_bootstrap_requests::<H, _>(
+                    questionable_nodes.iter(),
+                    target_id,
+                    table.clone(),
+                    out.clone(),
+                    scheduled_task_sender,
+                )
+                .await
+            }
         }
+        .boxed()
     }
 
-    fn send_bootstrap_requests<'a, H, I>(
-        &mut self,
+    async fn send_bootstrap_requests<'a, H, I>(
+        &self,
         nodes: I,
         target_id: NodeId,
-        table: &RoutingTable,
-        out: &SyncSender<(Vec<u8>, SocketAddr)>,
-        event_loop: &mut EventLoop<DhtHandler<H>>,
+        table: Arc<RwLock<RoutingTable>>,
+        mut out: mpsc::Sender<(Vec<u8>, SocketAddr)>,
+        scheduled_task_sender: mpsc::Sender<ScheduledTaskCheck>,
     ) -> BootstrapStatus
     where
         I: Iterator<Item = &'a Node>,
-        H: HandshakerTrait,
+        H: HandshakerTrait + 'static,
     {
-        info!("bip_dht: bootstrap::send_bootstrap_requests {}", self.curr_bootstrap_bucket);
+        let bootstrap_bucket = self.curr_bootstrap_bucket.load(Ordering::Relaxed);
+
+        tracing::info!("bip_dht: bootstrap::send_bootstrap_requests {}", bootstrap_bucket);
 
         let mut messages_sent = 0;
 
         for node in nodes.take(BOOTSTRAP_PINGS_PER_BUCKET) {
             // Generate a transaction id
-            let trans_id = self.id_generator.generate();
+            let trans_id = self.id_generator.lock().unwrap().generate();
             let find_node_msg = FindNodeRequest::new(trans_id.as_ref(), self.table_id, target_id).encode();
 
             // Add a timeout for the node
-            let res_timeout = event_loop.timeout_ms(
-                (BOOTSTRAP_NODE_TIMEOUT, ScheduledTaskCheck::BootstrapTimeout(trans_id)),
-                BOOTSTRAP_NODE_TIMEOUT,
-            );
-            let Ok(timeout) = res_timeout else {
-                error!("bip_dht: Failed to set a timeout for the start of a table bootstrap...");
-                return BootstrapStatus::Failed;
-            };
+            let timeout = tokio::time::Instant::now() + Duration::from_millis(BOOTSTRAP_NODE_TIMEOUT);
 
             // Send the message to the node
-            if out.send((find_node_msg, node.addr())).is_err() {
-                error!("bip_dht: Could not send a bootstrap message through the channel...");
+            if out.send((find_node_msg, node.addr())).await.is_err() {
+                tracing::error!("bip_dht: Could not send a bootstrap message through the channel...");
                 return BootstrapStatus::Failed;
             }
 
@@ -273,23 +308,46 @@ impl TableBootstrap {
             node.local_request();
 
             // Create an entry for the timeout in the map
-            self.active_messages.insert(trans_id, timeout);
+            self.active_messages.lock().unwrap().insert(trans_id, timeout);
 
             messages_sent += 1;
+
+            // Schedule a timeout check
+            let mut this_scheduled_task_sender = scheduled_task_sender.clone();
+            self.tasks.lock().unwrap().spawn(async move {
+                sleep(Duration::from_millis(BOOTSTRAP_INITIAL_TIMEOUT)).await;
+
+                match this_scheduled_task_sender
+                    .send(ScheduledTaskCheck::BootstrapTimeout(trans_id))
+                    .await
+                {
+                    Ok(()) => {
+                        tracing::debug!("sent scheduled bootstrap timeout");
+                        Ok(())
+                    }
+                    Err(e) => {
+                        tracing::debug!("error sending scheduled bootstrap timeout: {e}");
+                        Err(e)
+                    }
+                }
+            });
         }
 
-        self.curr_bootstrap_bucket += 1;
-        if self.curr_bootstrap_bucket == table::MAX_BUCKETS {
+        let bootstrap_bucket = self.curr_bootstrap_bucket.fetch_add(1, Ordering::AcqRel) + 1;
+
+        if (bootstrap_bucket) == table::MAX_BUCKETS {
             BootstrapStatus::Completed
         } else if messages_sent == 0 {
-            self.bootstrap_next_bucket(table, out, event_loop)
+            self.bootstrap_next_bucket::<H>(table, out, scheduled_task_sender).await
         } else {
-            return BootstrapStatus::Bootstrapping;
+            BootstrapStatus::Bootstrapping
         }
     }
 
     fn current_bootstrap_status(&self) -> BootstrapStatus {
-        if self.curr_bootstrap_bucket == table::MAX_BUCKETS || self.active_messages.is_empty() {
+        let bootstrap_bucket = self.curr_bootstrap_bucket.load(Ordering::Relaxed);
+
+        if bootstrap_bucket == table::MAX_BUCKETS || self.active_messages.lock().unwrap().is_empty() {
             BootstrapStatus::Idle
         } else {
             BootstrapStatus::Bootstrapping

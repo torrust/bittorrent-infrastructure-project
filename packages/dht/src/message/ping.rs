@@ -4,7 +4,7 @@
 use bencode::{ben_bytes, ben_map, BConvert, BDictAccess, BRefAccess};
 use util::bt::NodeId;
 
-use crate::error::DhtResult;
+use crate::error::DhtError;
 use crate::message;
 use crate::message::request::{self, RequestValidate};
 
@@ -26,7 +26,7 @@ impl<'a> PingRequest<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup, convert, and validate nodes.
-    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<PingRequest<'a>>
+    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<PingRequest<'a>, DhtError>
     where
         B: BRefAccess,
     {
@@ -82,7 +82,7 @@ impl<'a> PingResponse<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to generate the ping request from the root.
-    pub fn from_parts<B>(rsp_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<PingResponse<'a>>
+    pub fn from_parts<B>(rsp_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<PingResponse<'a>, DhtError>
     where
         B: BRefAccess,
     {

@@ -1,42 +1,50 @@
-use std::thread::{self};
-use std::time::Duration;
-
-use common::{handshaker, MockTrackerHandler};
-use futures::stream::Stream;
+use common::{tracing_stderr_init, MockTrackerHandler, DEFAULT_TIMEOUT, INIT, LOOPBACK_IPV4};
+use futures::StreamExt as _;
+use tracing::level_filters::LevelFilter;
 use util::bt::{self};
 use utracker::{ClientRequest, TrackerClient, TrackerServer};
 
 mod common;
 
-#[test]
-#[allow(unused)]
-fn positive_connection_id_cache() {
-    let (sink, mut stream) = handshaker();
+#[tokio::test]
+async fn positive_connection_id_cache() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::ERROR);
+    });
 
-    let server_addr = "127.0.0.1:3506".parse().unwrap();
+    let (sink, mut stream) = common::handshaker();
+
     let mock_handler = MockTrackerHandler::new();
-    let server = TrackerServer::run(server_addr, mock_handler.clone()).unwrap();
+    let server = TrackerServer::run(LOOPBACK_IPV4, mock_handler.clone()).unwrap();
 
-    thread::sleep(Duration::from_millis(100));
-
-    let mut client = TrackerClient::new("127.0.0.1:4506".parse().unwrap(), sink).unwrap();
+    let mut client = TrackerClient::run(LOOPBACK_IPV4, sink, None).unwrap();
 
     let first_hash = [0u8; bt::INFO_HASH_LEN].into();
     let second_hash = [1u8; bt::INFO_HASH_LEN].into();
 
-    let mut blocking_stream = stream.wait();
-
-    client.request(server_addr, ClientRequest::Scrape(first_hash)).unwrap();
-    blocking_stream.next().unwrap();
+    client
+        .request(server.local_addr(), ClientRequest::Scrape(first_hash))
+        .unwrap();
+    tokio::time::timeout(DEFAULT_TIMEOUT, stream.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
 
     assert_eq!(mock_handler.num_active_connect_ids(), 1);
 
     for _ in 0..10 {
-        client.request(server_addr, ClientRequest::Scrape(second_hash)).unwrap();
+        client
+            .request(server.local_addr(), ClientRequest::Scrape(second_hash))
+            .unwrap();
     }
 
     for _ in 0..10 {
-        blocking_stream.next().unwrap();
+        tokio::time::timeout(DEFAULT_TIMEOUT, stream.next())
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
     }
 
     assert_eq!(mock_handler.num_active_connect_ids(), 1);

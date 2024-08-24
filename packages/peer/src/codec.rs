@@ -1,14 +1,13 @@
 //! Codecs operating over `PeerProtocol`s.
 
-use std::io;
-
 use bytes::{BufMut, BytesMut};
-use tokio_io::codec::{Decoder, Encoder};
+use tokio_util::codec::{Decoder, Encoder};
 
 use crate::protocol::PeerProtocol;
 
 /// Codec operating over some `PeerProtocol`.
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug)]
 pub struct PeerProtocolCodec<P> {
     protocol: P,
     max_payload: Option<usize>,
@@ -40,48 +39,64 @@ impl<P> PeerProtocolCodec<P> {
 impl<P> Decoder for PeerProtocolCodec<P>
 where
     P: PeerProtocol,
+    <P as PeerProtocol>::ProtocolMessageError: std::error::Error + Send + Sync + 'static,
 {
     type Item = P::ProtocolMessage;
-    type Error = io::Error;
+    type Error = std::io::Error;
 
-    fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<Self::Item>> {
-        let src_len = src.len();
+    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+        let bytes_needed = self.protocol.bytes_needed(src)?;
 
-        let bytes = match self.protocol.bytes_needed(src.as_ref())? {
-            Some(needed) if self.max_payload.is_some_and(|max_payload| needed > max_payload) => {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "PeerProtocolCodec Enforced Maximum Payload Check For Peer",
-                ))
-            }
-            Some(needed) if needed <= src_len => src.split_to(needed).freeze(),
-            Some(_) | None => return Ok(None),
+        let Some(bytes_needed) = bytes_needed else {
+            return Ok(None);
         };
 
-        self.protocol.parse_bytes(bytes).map(Some)
+        if let Some(max_payload) = self.max_payload {
+            if bytes_needed > max_payload {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "PeerProtocolCodec Enforced Maximum Payload Check For Peer",
+                ));
+            }
+        };
+
+        let bytes = if bytes_needed <= src.len() {
+            src.split_to(bytes_needed).freeze()
+        } else {
+            return Ok(None);
+        };
+
+        match self.protocol.parse_bytes(&bytes) {
+            Ok(item) => item.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e)),
+            Err(err) => Err(err),
+        }
+        .map(Some)
     }
 }
 
-impl<P> Encoder for PeerProtocolCodec<P>
+impl<P> Encoder<std::io::Result<P::ProtocolMessage>> for PeerProtocolCodec<P>
 where
     P: PeerProtocol,
 {
-    type Item = P::ProtocolMessage;
-    type Error = io::Error;
+    type Error = std::io::Error;
 
-    fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> io::Result<()> {
-        dst.reserve(self.protocol.message_size(&item));
+    fn encode(&mut self, item: std::io::Result<P::ProtocolMessage>, dst: &mut BytesMut) -> Result<(), Self::Error> {
+        let message = Ok(item?);
 
-        self.protocol.write_bytes(&item, dst.writer())
+        let size = self.protocol.message_size(&message)?;
+
+        dst.reserve(size);
+
+        let _ = self.protocol.write_bytes(&message, dst.writer())?;
+
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::{self, Write};
-
-    use bytes::{Bytes, BytesMut};
-    use tokio_io::codec::Decoder;
+    use bytes::BytesMut;
+    use tokio_util::codec::Decoder as _;
 
     use super::PeerProtocolCodec;
     use crate::protocol::PeerProtocol;
@@ -90,24 +105,29 @@ mod tests {
 
     impl PeerProtocol for ConsumeProtocol {
         type ProtocolMessage = ();
+        type ProtocolMessageError = std::io::Error;
 
-        fn bytes_needed(&mut self, bytes: &[u8]) -> io::Result<Option<usize>> {
+        fn bytes_needed(&mut self, bytes: &[u8]) -> std::io::Result<Option<usize>> {
             Ok(Some(bytes.len()))
         }
 
-        fn parse_bytes(&mut self, _bytes: Bytes) -> io::Result<Self::ProtocolMessage> {
-            Ok(())
+        fn parse_bytes(&mut self, _: &[u8]) -> std::io::Result<Result<Self::ProtocolMessage, Self::ProtocolMessageError>> {
+            Ok(Ok(()))
         }
 
-        fn write_bytes<W>(&mut self, _message: &Self::ProtocolMessage, _writer: W) -> io::Result<()>
+        fn write_bytes<W>(
+            &mut self,
+            _: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>,
+            _: W,
+        ) -> std::io::Result<usize>
         where
-            W: Write,
+            W: std::io::Write,
         {
-            Ok(())
+            Ok(0)
         }
 
-        fn message_size(&mut self, _message: &Self::ProtocolMessage) -> usize {
-            0
+        fn message_size(&mut self, _: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>) -> std::io::Result<usize> {
+            Ok(0)
         }
     }
 
@@ -118,7 +138,8 @@ mod tests {
 
         bytes.extend_from_slice(&[0u8; 100]);
 
-        assert_eq!(Some(()), codec.decode(&mut bytes).unwrap());
+        let () = codec.decode(&mut bytes).unwrap().unwrap();
+
         assert_eq!(bytes.len(), 0);
     }
 

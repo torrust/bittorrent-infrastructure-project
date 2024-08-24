@@ -1,18 +1,17 @@
-use std::fs::File;
-use std::io::{self, BufRead, Write};
+use std::io::{BufRead as _, Write as _};
 use std::path::Path;
 
 use chrono::offset::{TimeZone, Utc};
-use metainfo::error::ParseResult;
+use metainfo::error::ParseError;
 use metainfo::{Metainfo, MetainfoBuilder};
 use pbr::ProgressBar;
 
 fn main() {
     println!("\nIMPORTANT: Remember to run in release mode for real world performance...\n");
 
-    let input = io::stdin();
+    let input = std::io::stdin();
     let mut input_lines = input.lock().lines();
-    let mut output = io::stdout();
+    let mut output = std::io::stdout();
 
     output.write_all(b"Enter A Source Folder/File: ").unwrap();
     output.flush().unwrap();
@@ -24,7 +23,7 @@ fn main() {
 
     match create_torrent(src_path) {
         Ok(bytes) => {
-            let mut output_file = File::create(dst_path).unwrap();
+            let mut output_file = std::fs::File::create(dst_path).unwrap();
             output_file.write_all(&bytes).unwrap();
 
             print_metainfo_overview(&bytes);
@@ -34,7 +33,7 @@ fn main() {
 }
 
 /// Create a torrent from the given source path.
-fn create_torrent<S>(src_path: S) -> ParseResult<Vec<u8>>
+fn create_torrent<S>(src_path: S) -> Result<Vec<u8>, ParseError>
 where
     S: AsRef<Path>,
 {

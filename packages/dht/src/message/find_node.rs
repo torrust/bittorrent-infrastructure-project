@@ -1,7 +1,7 @@
 use bencode::{ben_bytes, ben_map, BConvert, BDictAccess, BRefAccess};
 use util::bt::NodeId;
 
-use crate::error::DhtResult;
+use crate::error::DhtError;
 use crate::message;
 use crate::message::compact_info::CompactNodeInfo;
 use crate::message::request::{self, RequestValidate};
@@ -37,7 +37,7 @@ impl<'a> FindNodeRequest<'a> {
         rqst_root: &dyn BDictAccess<B::BKey, B>,
         trans_id: &'a [u8],
         target_key: &str,
-    ) -> DhtResult<FindNodeRequest<'a>>
+    ) -> Result<FindNodeRequest<'a>, DhtError>
     where
         B: BRefAccess,
     {
@@ -97,7 +97,7 @@ impl<'a> FindNodeResponse<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to validate the nodes.
-    pub fn new(trans_id: &'a [u8], node_id: NodeId, nodes: &'a [u8]) -> DhtResult<FindNodeResponse<'a>> {
+    pub fn new(trans_id: &'a [u8], node_id: NodeId, nodes: &'a [u8]) -> Result<FindNodeResponse<'a>, DhtError> {
         let validate = ResponseValidate::new(trans_id);
         let compact_nodes = validate.validate_nodes(nodes)?;
 
@@ -113,7 +113,7 @@ impl<'a> FindNodeResponse<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup and and validate node.
-    pub fn from_parts<B>(rsp_root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<FindNodeResponse<'a>>
+    pub fn from_parts<B>(rsp_root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<FindNodeResponse<'a>, DhtError>
     where
         B: BRefAccess,
     {

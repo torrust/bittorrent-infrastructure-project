@@ -1,259 +1,182 @@
-#![allow(deprecated)]
+use futures::channel::mpsc::{self, SendError};
+use futures::stream::SplitSink;
+use futures::{Sink, SinkExt, Stream, StreamExt, TryStream, TryStreamExt};
+use thiserror::Error;
+use tokio::task::{self, JoinHandle};
 
-use std::io;
-
-use futures::future::{self, Future, Loop};
-use futures::sink::Sink;
-use futures::stream::{MergedItem, Stream};
-use futures::sync::mpsc::{self, Sender};
-use tokio_core::reactor::Handle;
-use tokio_timer::Timer;
-
+use super::fused::{PersistentError, PersistentStream, RecurringTimeoutError, RecurringTimeoutStream};
+use super::messages::{PeerManagerInputMessage, PeerManagerOutputMessage};
 use crate::manager::builder::PeerManagerBuilder;
-use crate::manager::fused::{PersistentError, PersistentStream, RecurringTimeoutError, RecurringTimeoutStream};
 use crate::manager::peer_info::PeerInfo;
-use crate::manager::{IPeerManagerMessage, ManagedMessage, OPeerManagerMessage};
+use crate::manager::ManagedMessage;
+use crate::PeerManagerOutputError;
 
-// Separated from MergedError to
-enum PeerError {
-    // We need to send a heartbeat (no messages sent from manager for a while)
-    ManagerHeartbeatInterval,
-    // Manager error (or expected shutdown)
-    ManagerDisconnect,
-    // Peer errors
-    PeerDisconnect,
-    Peer(io::Error),
-    PeerNoHeartbeat,
+#[derive(Error, Debug)]
+enum PeerError<PeerSendErr, ManagerSendErr> {
+    #[error("Manager Error")]
+    ManagerDisconnect(ManagerSendErr),
+    #[error("Stream Finished")]
+    Disconnected,
+    #[error("Peer Error")]
+    PeerDisconnect(PeerSendErr),
+    #[error("Peer Removed")]
+    PeerRemoved(PeerInfo),
 }
 
-#[allow(dead_code)]
-enum MergedError<A, B, C> {
-    Peer(PeerError),
-    // Fake error types (used to stash future "futures" into an error type to be
-    // executed in a different future transformation, so we don't have to box them)
-    StageOne(A),
-    StageTwo(B),
-    StageThree(C),
+enum UnifiedError<Err> {
+    Peer(PersistentError<Err>),
+    Manager(RecurringTimeoutError<Err>),
 }
 
-//----------------------------------------------------------------------------//
+enum MergedError<Err> {
+    Disconnect,
+    StreamError(Err),
+    Timeout,
+}
 
-#[allow(clippy::too_many_lines)]
-pub fn run_peer<P>(
-    peer: P,
-    info: PeerInfo,
-    o_send: Sender<OPeerManagerMessage<P::Item>>,
-    timer: Timer,
-    builder: &PeerManagerBuilder,
-    handle: &Handle,
-) -> Sender<IPeerManagerMessage<P>>
+impl<Err> From<UnifiedError<Err>> for MergedError<Err> {
+    fn from(err: UnifiedError<Err>) -> Self {
+        match err {
+            UnifiedError::Peer(PersistentError::Disconnect) | UnifiedError::Manager(RecurringTimeoutError::Disconnect) => {
+                Self::Disconnect
+            }
+            UnifiedError::Peer(PersistentError::StreamError(err))
+            | UnifiedError::Manager(RecurringTimeoutError::StreamError(err)) => Self::StreamError(err),
+            UnifiedError::Manager(RecurringTimeoutError::Timeout) => Self::Timeout,
+        }
+    }
+}
+
+enum UnifiedItem<Peer, Message>
 where
-    P: Stream<Error = io::Error> + Sink<SinkError = io::Error> + 'static,
-    P::SinkItem: ManagedMessage,
-    P::Item: ManagedMessage,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
 {
-    let (m_send, m_recv) = mpsc::channel(builder.sink_buffer_capacity());
-    let (p_send, p_recv) = peer.split();
+    Peer(Message),
+    Manager(PeerManagerInputMessage<Peer, Message>),
+}
 
-    // Build a stream that will timeout if no message is sent for heartbeat_timeout and teardown (don't preserve) the underlying stream
-    let p_stream = timer
-        .timeout_stream(PersistentStream::new(p_recv), builder.heartbeat_timeout())
-        .map_err(|error| match error {
-            PersistentError::Disconnect => PeerError::PeerDisconnect,
-            PersistentError::Timeout => PeerError::PeerNoHeartbeat,
-            PersistentError::IoError(err) => PeerError::Peer(err),
-        });
-    // Build a stream that will notify us of no message is sent for heartbeat_interval and done teardown (preserve) the underlying stream
-    let m_stream = RecurringTimeoutStream::new(m_recv, timer, builder.heartbeat_interval()).map_err(|error| match error {
-        RecurringTimeoutError::Disconnect => PeerError::ManagerDisconnect,
-        RecurringTimeoutError::Timeout => PeerError::ManagerHeartbeatInterval,
-    });
+pub fn run_peer<Peer, Message>(
+    peer: Peer,
+    info: PeerInfo,
+    mut send: mpsc::Sender<Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>>,
+    builder: &PeerManagerBuilder,
+) -> (mpsc::Sender<PeerManagerInputMessage<Peer, Message>>, JoinHandle<()>)
+where
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + StreamExt
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
+{
+    let (manager_send, manager_recv) = mpsc::channel(builder.sink_buffer_capacity());
+    let (mut peer_send, peer_recv) = peer.split();
 
-    let merged_stream = m_stream.merge(p_stream);
+    let heartbeat_interval = builder.heartbeat_interval();
 
-    handle.spawn(
-        o_send
-            .send(OPeerManagerMessage::PeerAdded(info))
-            .map_err(|_| ())
-            .and_then(move |o_send| {
-                future::loop_fn(
-                    (merged_stream, o_send, p_send, info),
-                    |(merged_stream, o_send, p_send, info)| {
-                        // Our return tuple takes the form (merged_stream, Option<Send Message>, Option<Recv Message>, Option<Send To Manager Message>, is_good) where each stage (A, B, C),
-                        // will execute one of those options (if present), since each future transform can only execute a single future and we have 2^3 possible combinations
-                        // (Some or None = 2)^(3 Options = 3)
-                        merged_stream
-                            .into_future()
-                            .then(move |result| {
-                                let result = match result {
-                                    Ok((
-                                        Some(MergedItem::First(IPeerManagerMessage::SendMessage(p_info, mid, p_message))),
-                                        merged_stream,
-                                    )) => Ok((
-                                        merged_stream,
-                                        Some(p_message),
-                                        None,
-                                        Some(OPeerManagerMessage::SentMessage(p_info, mid)),
-                                        true,
-                                    )),
-                                    Ok((Some(MergedItem::First(IPeerManagerMessage::RemovePeer(p_info))), merged_stream)) => {
-                                        Ok((
-                                            merged_stream,
-                                            None,
-                                            None,
-                                            Some(OPeerManagerMessage::PeerRemoved(p_info)),
-                                            false,
-                                        ))
-                                    }
-                                    Ok((Some(MergedItem::Second(peer_message)), merged_stream)) => {
-                                        Ok((merged_stream, None, Some(peer_message), None, true))
-                                    }
-                                    Ok((
-                                        Some(MergedItem::Both(
-                                            IPeerManagerMessage::SendMessage(p_info, mid, p_message),
-                                            peer_message,
-                                        )),
-                                        merged_stream,
-                                    )) => Ok((
-                                        merged_stream,
-                                        Some(p_message),
-                                        Some(peer_message),
-                                        Some(OPeerManagerMessage::SentMessage(p_info, mid)),
-                                        true,
-                                    )),
-                                    Ok((
-                                        Some(MergedItem::Both(IPeerManagerMessage::RemovePeer(p_info), peer_message)),
-                                        merged_stream,
-                                    )) => Ok((
-                                        merged_stream,
-                                        None,
-                                        Some(peer_message),
-                                        Some(OPeerManagerMessage::PeerRemoved(p_info)),
-                                        false,
-                                    )),
-                                    Ok((Some(_), _)) => {
-                                        panic!("bip_peer: Peer Future Received Invalid Message From Peer Manager")
-                                    }
-                                    Err((PeerError::ManagerHeartbeatInterval, merged_stream)) => {
-                                        Ok((merged_stream, Some(P::SinkItem::keep_alive()), None, None, true))
-                                    }
-                                    // In this case, the manager and peer probably both disconnected at the same time? Treat as a manager disconnect.
-                                    Ok((None, _)) => Err(MergedError::Peer(PeerError::ManagerDisconnect)),
-                                    Err((PeerError::ManagerDisconnect, _)) => {
-                                        Err(MergedError::Peer(PeerError::ManagerDisconnect))
-                                    }
-                                    Err((PeerError::PeerDisconnect | PeerError::PeerNoHeartbeat, merged_stream)) => Ok((
-                                        merged_stream,
-                                        None,
-                                        None,
-                                        Some(OPeerManagerMessage::PeerDisconnect(info)),
-                                        false,
-                                    )),
-                                    Err((PeerError::Peer(err), merged_stream)) => Ok((
-                                        merged_stream,
-                                        None,
-                                        None,
-                                        Some(OPeerManagerMessage::PeerError(info, err)),
-                                        false,
-                                    )),
-                                };
-
-                                match result {
-                                    Ok((merged_stream, opt_send, opt_recv, opt_ack, is_good)) => {
-                                        if let Some(send) = opt_send {
-                                            Ok(p_send
-                                                .send(send)
-                                                .map_err(|_| MergedError::Peer(PeerError::PeerDisconnect))
-                                                .and_then(move |p_send| {
-                                                    Err(MergedError::StageOne((
-                                                        merged_stream,
-                                                        o_send,
-                                                        p_send,
-                                                        info,
-                                                        opt_recv,
-                                                        opt_ack,
-                                                        is_good,
-                                                    )))
-                                                }))
-                                        } else {
-                                            Err(MergedError::StageOne((
-                                                merged_stream,
-                                                o_send,
-                                                p_send,
-                                                info,
-                                                opt_recv,
-                                                opt_ack,
-                                                is_good,
-                                            )))
-                                        }
-                                    }
-                                    Err(err) => Err(err),
-                                }
-                            })
-                            .flatten()
-                            .or_else(|error| {
-                                match error {
-                                    MergedError::StageOne((merged_stream, o_send, p_send, info, opt_recv, opt_ack, is_good)) => {
-                                        if let Some(recv) = opt_recv {
-                                            if !recv.is_keep_alive() {
-                                                return Ok(o_send
-                                                    .send(OPeerManagerMessage::ReceivedMessage(info, recv))
-                                                    .map_err(|_| MergedError::Peer(PeerError::ManagerDisconnect))
-                                                    .and_then(move |o_send| {
-                                                        Err(MergedError::StageTwo((
-                                                            merged_stream,
-                                                            o_send,
-                                                            p_send,
-                                                            info,
-                                                            opt_ack,
-                                                            is_good,
-                                                        )))
-                                                    }));
-                                            }
-                                        }
-
-                                        // Either we had no recv message (from remote), or it was a keep alive message, which we don't propagate
-                                        Err(MergedError::StageTwo((merged_stream, o_send, p_send, info, opt_ack, is_good)))
-                                    }
-                                    err => Err(err),
-                                }
-                            })
-                            .flatten()
-                            .or_else(|error| match error {
-                                MergedError::StageTwo((merged_stream, o_send, p_send, info, opt_ack, is_good)) => {
-                                    if let Some(ack) = opt_ack {
-                                        Ok(o_send
-                                            .send(ack)
-                                            .map_err(|_| MergedError::Peer(PeerError::ManagerDisconnect))
-                                            .and_then(move |o_send| {
-                                                Err(MergedError::StageThree((merged_stream, o_send, p_send, info, is_good)))
-                                            }))
-                                    } else {
-                                        Err(MergedError::StageThree((merged_stream, o_send, p_send, info, is_good)))
-                                    }
-                                }
-                                err => Err(err),
-                            })
-                            .flatten()
-                            .or_else(|error| {
-                                match error {
-                                    MergedError::StageThree((merged_stream, o_send, p_send, info, is_good)) => {
-                                        // Connection is good if no errors occurred (we do this so we can use the same plumbing)
-                                        // for sending "acks" back to our manager when an error occurs, we just have None, None,
-                                        // Some, false when we want to send an error message to the manager, but terminate the connection.
-                                        if is_good {
-                                            Ok(Loop::Continue((merged_stream, o_send, p_send, info)))
-                                        } else {
-                                            Ok(Loop::Break(()))
-                                        }
-                                    }
-                                    _ => Ok(Loop::Break(())),
-                                }
-                            })
-                    },
-                )
-            }),
+    let peer_stream = Box::pin(
+        PersistentStream::new(peer_recv)
+            .map_err(UnifiedError::Peer)
+            .map_ok(|i| UnifiedItem::Peer(i)),
     );
 
-    m_send
+    let manager_stream = Box::pin(
+        RecurringTimeoutStream::new(manager_recv.map(Ok), heartbeat_interval)
+            .map_err(UnifiedError::Manager)
+            .map_ok(|i| UnifiedItem::Manager(i)),
+    );
+
+    let mut merged_stream = Box::pin(futures::stream::select(peer_stream, manager_stream).map_err(MergedError::from));
+
+    let task = task::spawn(async move {
+        if send.send(Ok(PeerManagerOutputMessage::PeerAdded(info))).await.is_err() {
+            return;
+        }
+
+        while let Some(result) = merged_stream.as_mut().next().await {
+            if handle_stream_result::<Peer, Message>(result, &mut peer_send, &mut send, &info)
+                .await
+                .is_err()
+            {
+                break;
+            }
+        }
+    });
+
+    (manager_send, task)
+}
+
+async fn handle_stream_result<Peer, Message>(
+    result: Result<UnifiedItem<Peer, Message>, MergedError<std::io::Error>>,
+    peer_send: &mut SplitSink<Peer, std::io::Result<Message>>,
+    manager_send: &mut mpsc::Sender<Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>>,
+    info: &PeerInfo,
+) -> Result<(), PeerError<<Peer as Sink<std::io::Result<Message>>>::Error, SendError>>
+where
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
+{
+    match result {
+        Ok(UnifiedItem::Peer(message)) => {
+            // Handle peer message
+            manager_send
+                .send(Ok(PeerManagerOutputMessage::ReceivedMessage(*info, message)))
+                .await
+                .map_err(PeerError::ManagerDisconnect)?;
+
+            Ok(())
+        }
+        Ok(UnifiedItem::Manager(PeerManagerInputMessage::AddPeer(_, _))) => panic!("invalid message"),
+        Ok(UnifiedItem::Manager(PeerManagerInputMessage::RemovePeer(info))) => {
+            manager_send
+                .send(Ok(PeerManagerOutputMessage::PeerRemoved(info)))
+                .await
+                .map_err(PeerError::ManagerDisconnect)?;
+
+            Err(PeerError::PeerRemoved(info))
+        }
+        Ok(UnifiedItem::Manager(PeerManagerInputMessage::SendMessage(info, id, message))) => {
+            peer_send.send(Ok(message)).await.map_err(PeerError::PeerDisconnect)?;
+            manager_send
+                .send(Ok(PeerManagerOutputMessage::SentMessage(info, id)))
+                .await
+                .map_err(PeerError::ManagerDisconnect)?;
+
+            Ok(())
+        }
+        Err(MergedError::Disconnect) => Err(PeerError::Disconnected),
+        Err(MergedError::StreamError(e)) => {
+            // Handle stream error
+            manager_send
+                .send(Err(PeerManagerOutputError::PeerError(*info, e)))
+                .await
+                .map_err(PeerError::ManagerDisconnect)?;
+
+            Err(PeerError::PeerRemoved(*info))
+        }
+        Err(MergedError::Timeout) => {
+            peer_send
+                .send(Ok(Message::keep_alive()))
+                .await
+                .map_err(PeerError::PeerDisconnect)?;
+
+            Ok(())
+        }
+    }
 }

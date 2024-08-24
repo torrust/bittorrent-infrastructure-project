@@ -12,9 +12,6 @@ pub mod convert;
 /// Networking primitives and helpers.
 pub mod net;
 
-/// Generic sender utilities.
-pub mod send;
-
 /// Hash primitives and helpers.
 pub mod sha;
 

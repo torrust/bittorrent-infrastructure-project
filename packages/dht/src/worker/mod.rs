@@ -1,7 +1,9 @@
-use std::io;
-use std::net::{SocketAddr, UdpSocket};
-use std::sync::mpsc;
+use std::net::SocketAddr;
+use std::sync::Arc;
 
+use futures::channel::mpsc;
+use tokio::net::UdpSocket;
+use tokio::task::JoinSet;
 use util::bt::InfoHash;
 
 use crate::handshaker_trait::HandshakerTrait;
@@ -40,6 +42,7 @@ pub enum ScheduledTaskCheck {
     /// Check the progress of a current lookup.
     LookupTimeout(TransactionID),
     /// Check the progress of the lookup endgame.
+    #[allow(dead_code)]
     LookupEndGame(TransactionID),
 }
 
@@ -68,14 +71,14 @@ pub enum ShutdownCause {
 /// Spawns the necessary workers that make up our local DHT node and connects them via channels
 /// so that they can send and receive DHT messages.
 pub fn start_mainline_dht<H>(
-    send_socket: UdpSocket,
-    recv_socket: UdpSocket,
+    send_socket: &Arc<UdpSocket>,
+    recv_socket: Arc<UdpSocket>,
     read_only: bool,
     _: Option<SocketAddr>,
     handshaker: H,
-    kill_sock: UdpSocket,
+    kill_sock: Arc<UdpSocket>,
     kill_addr: SocketAddr,
-) -> io::Result<mio::Sender<OneshotTask>>
+) -> (mpsc::Sender<OneshotTask>, JoinSet<()>)
 where
     H: HandshakerTrait + 'static,
 {
@@ -83,9 +86,9 @@ where
 
     // TODO: Utilize the security extension.
     let routing_table = RoutingTable::new(table::random_node_id());
-    let message_sender = handler::create_dht_handler(routing_table, outgoing, read_only, handshaker, kill_sock, kill_addr)?;
+    let message_sender = handler::create_dht_handler(routing_table, outgoing, read_only, handshaker, kill_sock, kill_addr);
 
-    messenger::create_incoming_messenger(recv_socket, message_sender.clone());
+    messenger::create_incoming_messenger(recv_socket, message_sender.0.clone());
 
-    Ok(message_sender)
+    message_sender
 }

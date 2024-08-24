@@ -1,22 +1,24 @@
-use futures_cpupool::Builder;
+use std::sync::Arc;
 
 use crate::disk::fs::FileSystem;
 use crate::disk::manager::DiskManager;
 
 const DEFAULT_PENDING_SIZE: usize = 10;
 const DEFAULT_COMPLETED_SIZE: usize = 10;
+const DEFAULT_THREAD_POOL_SIZE: usize = 4;
 
 /// `DiskManagerBuilder` for building `DiskManager`s with different settings.
 #[allow(clippy::module_name_repetitions)]
 pub struct DiskManagerBuilder {
-    builder: Builder,
+    thread_pool_size: usize,
     pending_size: usize,
     completed_size: usize,
 }
+
 impl Default for DiskManagerBuilder {
     fn default() -> Self {
         Self {
-            builder: Builder::new(),
+            thread_pool_size: DEFAULT_THREAD_POOL_SIZE,
             pending_size: DEFAULT_PENDING_SIZE,
             completed_size: DEFAULT_COMPLETED_SIZE,
         }
@@ -30,10 +32,10 @@ impl DiskManagerBuilder {
         DiskManagerBuilder::default()
     }
 
-    /// Use a custom `Builder` for the `CpuPool`.
+    /// Specify the number of threads for the `ThreadPool`.
     #[must_use]
-    pub fn with_worker_config(mut self, config: Builder) -> DiskManagerBuilder {
-        self.builder = config;
+    pub fn with_thread_pool_size(mut self, size: usize) -> DiskManagerBuilder {
+        self.thread_pool_size = size;
         self
     }
 
@@ -51,9 +53,10 @@ impl DiskManagerBuilder {
         self
     }
 
-    /// Retrieve the `CpuPool` builder.
-    pub fn worker_config(&mut self) -> &mut Builder {
-        &mut self.builder
+    /// Retrieve the `ThreadPool` size.
+    #[must_use]
+    pub fn thread_pool_size(&self) -> usize {
+        self.thread_pool_size
     }
 
     /// Retrieve the sink buffer capacity.
@@ -69,10 +72,11 @@ impl DiskManagerBuilder {
     }
 
     /// Build a `DiskManager` with the given `FileSystem`.
-    pub fn build<F>(self, fs: F) -> DiskManager<F>
+    pub fn build<F>(self, fs: Arc<F>) -> DiskManager<F>
     where
-        F: FileSystem + Send + Sync + 'static,
+        F: FileSystem + Sync + 'static,
+        Arc<F>: Send + Sync,
     {
-        DiskManager::from_builder(self, fs)
+        DiskManager::from_builder(&self, fs)
     }
 }

@@ -2,9 +2,10 @@
 #![allow(unused)]
 
 use std::cell::Cell;
-use std::fmt::{self, Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Duration, Utc};
 use util::bt::NodeId;
@@ -41,9 +42,9 @@ pub enum NodeStatus {
 pub struct Node {
     id: NodeId,
     addr: SocketAddr,
-    last_request: Cell<Option<DateTime<Utc>>>,
-    last_response: Cell<Option<DateTime<Utc>>>,
-    refresh_requests: Cell<usize>,
+    last_request: Arc<Mutex<Option<DateTime<Utc>>>>,
+    last_response: Arc<Mutex<Option<DateTime<Utc>>>>,
+    refresh_requests: Arc<AtomicUsize>,
 }
 
 impl Node {
@@ -52,9 +53,9 @@ impl Node {
         Node {
             id,
             addr,
-            last_response: Cell::new(Some(Utc::now())),
-            last_request: Cell::new(None),
-            refresh_requests: Cell::new(0),
+            last_response: Arc::new(Mutex::new(Some(Utc::now()))),
+            last_request: Arc::default(),
+            refresh_requests: Arc::default(),
         }
     }
 
@@ -67,9 +68,9 @@ impl Node {
         Node {
             id,
             addr,
-            last_response: Cell::new(Some(last_response)),
-            last_request: Cell::new(None),
-            refresh_requests: Cell::new(0),
+            last_response: Arc::new(Mutex::new(Some(last_response))),
+            last_request: Arc::default(),
+            refresh_requests: Arc::default(),
         }
     }
 
@@ -78,31 +79,29 @@ impl Node {
         Node {
             id,
             addr,
-            last_response: Cell::new(None),
-            last_request: Cell::new(None),
-            refresh_requests: Cell::new(0),
+            last_response: Arc::default(),
+            last_request: Arc::default(),
+            refresh_requests: Arc::default(),
         }
     }
 
     /// Record that we sent the node a request.
     pub fn local_request(&self) {
         if self.status() != NodeStatus::Good {
-            let num_requests = self.refresh_requests.get() + 1;
-
-            self.refresh_requests.set(num_requests);
+            let num_requests = self.refresh_requests.fetch_add(1, Ordering::SeqCst) + 1;
         }
     }
 
     /// Record that the node sent us a request.
     pub fn remote_request(&self) {
-        self.last_request.set(Some(Utc::now()));
+        *self.last_request.lock().unwrap() = Some(Utc::now());
     }
 
     /// Record that the node sent us a response.
     pub fn remote_response(&self) {
-        self.last_response.set(Some(Utc::now()));
+        *self.last_response.lock().unwrap() = Some(Utc::now());
 
-        self.refresh_requests.set(0);
+        self.refresh_requests.store(0, Ordering::Relaxed);
     }
 
     pub fn id(&self) -> NodeId {
@@ -190,16 +189,16 @@ impl Clone for Node {
     }
 }
 
-impl Debug for Node {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+impl std::fmt::Debug for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.write_fmt(format_args!(
             "Node{{ id: {:?}, addr: {:?}, last_request: {:?}, \
                                   last_response: {:?}, refresh_requests: {:?} }}",
             self.id,
             self.addr,
-            self.last_request.get(),
-            self.last_response.get(),
-            self.refresh_requests.get()
+            self.last_request.lock().unwrap(),
+            self.last_response.lock().unwrap(),
+            self.refresh_requests.load(Ordering::Relaxed)
         ))
     }
 }
@@ -215,7 +214,7 @@ impl Debug for Node {
 /// to us before, but not recently.
 fn recently_responded(node: &Node, curr_time: DateTime<Utc>) -> NodeStatus {
     // Check if node has ever responded to us
-    let since_response = match node.last_response.get() {
+    let since_response = match *node.last_response.lock().unwrap() {
         Some(response_time) => curr_time - response_time,
         None => return NodeStatus::Bad,
     };
@@ -238,7 +237,7 @@ fn recently_requested(node: &Node, curr_time: DateTime<Utc>) -> NodeStatus {
     let max_last_request = Duration::minutes(MAX_LAST_SEEN_MINS);
 
     // Check if the node has recently request from us
-    if let Some(request_time) = node.last_request.get() {
+    if let Some(request_time) = *node.last_request.lock().unwrap() {
         let since_request = curr_time - request_time;
 
         if since_request < max_last_request {
@@ -247,7 +246,7 @@ fn recently_requested(node: &Node, curr_time: DateTime<Utc>) -> NodeStatus {
     }
 
     // Check if we have request from node multiple times already without response
-    if node.refresh_requests.get() < MAX_REFRESH_REQUESTS {
+    if node.refresh_requests.load(Ordering::Relaxed) < MAX_REFRESH_REQUESTS {
         NodeStatus::Questionable
     } else {
         NodeStatus::Bad
@@ -256,7 +255,6 @@ fn recently_requested(node: &Node, curr_time: DateTime<Utc>) -> NodeStatus {
 
 #[cfg(test)]
 mod tests {
-    use std::iter;
     use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
     use chrono::Duration;
@@ -336,7 +334,7 @@ mod tests {
         let time_offset = Duration::minutes(super::MAX_LAST_SEEN_MINS);
         let idle_time = bip_test::travel_into_past(time_offset);
 
-        node.last_response.set(Some(idle_time));
+        *node.last_response.lock().unwrap() = (Some(idle_time));
 
         assert_eq!(node.status(), NodeStatus::Questionable);
     }

@@ -1,16 +1,17 @@
 use std::net::SocketAddr;
-use std::sync::mpsc::SyncSender;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, RwLock};
 
-use log::{error, info};
-use mio::EventLoop;
+use futures::channel::mpsc::{self, SendError};
+use futures::SinkExt as _;
+use tokio::task::JoinSet;
+use tokio::time::{sleep, Duration};
 use util::bt::{self, NodeId};
 
-use crate::handshaker_trait::HandshakerTrait;
 use crate::message::find_node::FindNodeRequest;
 use crate::routing::node::NodeStatus;
 use crate::routing::table::{self, RoutingTable};
 use crate::transaction::MIDGenerator;
-use crate::worker::handler::DhtHandler;
 use crate::worker::ScheduledTaskCheck;
 
 const REFRESH_INTERVAL_TIMEOUT: u64 = 6000;
@@ -25,49 +26,60 @@ pub enum RefreshStatus {
 
 #[allow(clippy::module_name_repetitions)]
 pub struct TableRefresh {
-    id_generator: MIDGenerator,
-    curr_refresh_bucket: usize,
+    id_generator: Mutex<MIDGenerator>,
+    curr_refresh_bucket: AtomicUsize,
+    tasks: Arc<Mutex<JoinSet<Result<(), SendError>>>>,
 }
 
 impl TableRefresh {
     pub fn new(id_generator: MIDGenerator) -> TableRefresh {
         TableRefresh {
-            id_generator,
-            curr_refresh_bucket: 0,
+            id_generator: Mutex::new(id_generator),
+            curr_refresh_bucket: AtomicUsize::default(),
+            tasks: Arc::default(),
         }
     }
 
-    pub fn continue_refresh<H>(
-        &mut self,
-        table: &RoutingTable,
-        out: &SyncSender<(Vec<u8>, SocketAddr)>,
-        event_loop: &mut EventLoop<DhtHandler<H>>,
-    ) -> RefreshStatus
-    where
-        H: HandshakerTrait,
-    {
-        if self.curr_refresh_bucket == table::MAX_BUCKETS {
-            self.curr_refresh_bucket = 0;
-        }
-        let target_id = flip_id_bit_at_index(table.node_id(), self.curr_refresh_bucket);
+    pub async fn continue_refresh(
+        &self,
+        table: Arc<RwLock<RoutingTable>>,
+        mut out: mpsc::Sender<(Vec<u8>, SocketAddr)>,
+        mut scheduled_task_sender: mpsc::Sender<ScheduledTaskCheck>,
+    ) -> RefreshStatus {
+        let refresh_bucket = match self.curr_refresh_bucket.load(Ordering::Relaxed) {
+            table::MAX_BUCKETS => {
+                self.curr_refresh_bucket.store(0, Ordering::Relaxed);
+                0
+            }
+            refresh_bucket => refresh_bucket,
+        };
 
-        info!("bip_dht: Performing a refresh for bucket {}", self.curr_refresh_bucket);
+        let (node, target_id, node_id) = {
+            let routing_table = table.read().unwrap();
+            let node_id = routing_table.node_id();
+            let target_id = flip_id_bit_at_index(node_id, refresh_bucket);
+            let node = routing_table
+                .closest_nodes(target_id)
+                .find(|n| n.status() == NodeStatus::Questionable)
+                .cloned();
+
+            tracing::info!("bip_dht: Performing a refresh for bucket {}", refresh_bucket);
+
+            (node, target_id, node_id)
+        };
+
         // Ping the closest questionable node
-        for node in table
-            .closest_nodes(target_id)
-            .filter(|n| n.status() == NodeStatus::Questionable)
-            .take(1)
-        {
+        if let Some(node) = node {
             // Generate a transaction id for the request
-            let trans_id = self.id_generator.generate();
+            let trans_id = self.id_generator.lock().unwrap().generate();
 
             // Construct the message
-            let find_node_req = FindNodeRequest::new(trans_id.as_ref(), table.node_id(), target_id);
+            let find_node_req = FindNodeRequest::new(trans_id.as_ref(), node_id, target_id);
             let find_node_msg = find_node_req.encode();
 
             // Send the message
-            if out.send((find_node_msg, node.addr())).is_err() {
-                error!(
+            if out.send((find_node_msg, node.addr())).await.is_err() {
+                tracing::error!(
                     "bip_dht: TableRefresh failed to send a refresh message to the out \
                         channel..."
                 );
@@ -79,18 +91,25 @@ impl TableRefresh {
         }
 
         // Generate a dummy transaction id (only the action id will be used)
-        let trans_id = self.id_generator.generate();
+        let trans_id = self.id_generator.lock().unwrap().generate();
 
         // Start a timer for the next refresh
-        if event_loop
-            .timeout_ms((0, ScheduledTaskCheck::TableRefresh(trans_id)), REFRESH_INTERVAL_TIMEOUT)
-            .is_err()
-        {
-            error!("bip_dht: TableRefresh failed to set a timeout for the next refresh...");
-            return RefreshStatus::Failed;
-        }
+        self.tasks.lock().unwrap().spawn(async move {
+            sleep(Duration::from_millis(REFRESH_INTERVAL_TIMEOUT)).await;
 
-        self.curr_refresh_bucket += 1;
+            match scheduled_task_sender.send(ScheduledTaskCheck::TableRefresh(trans_id)).await {
+                Ok(()) => {
+                    tracing::debug!("sent scheduled refresh timeout");
+                    Ok(())
+                }
+                Err(e) => {
+                    tracing::debug!("error sending scheduled refresh timeout: {e}");
+                    Err(e)
+                }
+            }
+        });
+
+        self.curr_refresh_bucket.fetch_add(1, Ordering::SeqCst);
 
         RefreshStatus::Refreshing
     }

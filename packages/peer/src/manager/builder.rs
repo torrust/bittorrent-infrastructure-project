@@ -1,11 +1,9 @@
-use std::io;
 use std::time::Duration;
 
 use futures::sink::Sink;
-use futures::stream::Stream;
-use tokio_core::reactor::Handle;
+use futures::{Stream, TryStream};
 
-use crate::manager::{ManagedMessage, PeerManager};
+use super::{ManagedMessage, PeerManager};
 
 const DEFAULT_PEER_CAPACITY: usize = 1000;
 const DEFAULT_SINK_BUFFER_CAPACITY: usize = 100;
@@ -17,99 +15,104 @@ const DEFAULT_HEARTBEAT_TIMEOUT_MILLIS: u64 = 2 * 60 * 1000;
 #[allow(clippy::module_name_repetitions)]
 #[derive(Default, Copy, Clone)]
 pub struct PeerManagerBuilder {
-    peer: usize,
-    sink_buffer: usize,
-    stream_buffer: usize,
+    peer_capacity: usize,
+    sink_buffer_capacity: usize,
+    stream_buffer_capacity: usize,
     heartbeat_interval: Duration,
     heartbeat_timeout: Duration,
 }
 
 impl PeerManagerBuilder {
-    /// Create a new `PeerManagerBuilder`.
+    /// Creates a new `PeerManagerBuilder` with default values.
     #[must_use]
     pub fn new() -> PeerManagerBuilder {
         PeerManagerBuilder {
-            peer: DEFAULT_PEER_CAPACITY,
-            sink_buffer: DEFAULT_SINK_BUFFER_CAPACITY,
-            stream_buffer: DEFAULT_STREAM_BUFFER_CAPACITY,
+            peer_capacity: DEFAULT_PEER_CAPACITY,
+            sink_buffer_capacity: DEFAULT_SINK_BUFFER_CAPACITY,
+            stream_buffer_capacity: DEFAULT_STREAM_BUFFER_CAPACITY,
             heartbeat_interval: Duration::from_millis(DEFAULT_HEARTBEAT_INTERVAL_MILLIS),
             heartbeat_timeout: Duration::from_millis(DEFAULT_HEARTBEAT_TIMEOUT_MILLIS),
         }
     }
 
-    /// Max number of peers we can manage.
+    /// Sets the maximum number of peers that can be managed.
     #[must_use]
     pub fn with_peer_capacity(mut self, capacity: usize) -> PeerManagerBuilder {
-        self.peer = capacity;
+        self.peer_capacity = capacity;
         self
     }
 
-    /// Capacity of pending sent messages.
+    /// Sets the capacity of the sink buffer for pending sent messages.
     #[must_use]
     pub fn with_sink_buffer_capacity(mut self, capacity: usize) -> PeerManagerBuilder {
-        self.sink_buffer = capacity;
+        self.sink_buffer_capacity = capacity;
         self
     }
 
-    /// Capacity of pending received messages.
+    /// Sets the capacity of the stream buffer for pending received messages.
     #[must_use]
     pub fn with_stream_buffer_capacity(mut self, capacity: usize) -> PeerManagerBuilder {
-        self.stream_buffer = capacity;
+        self.stream_buffer_capacity = capacity;
         self
     }
 
-    /// Interval at which we send keep-alive messages.
+    /// Sets the interval at which keep-alive messages are sent.
     #[must_use]
     pub fn with_heartbeat_interval(mut self, interval: Duration) -> PeerManagerBuilder {
         self.heartbeat_interval = interval;
         self
     }
 
-    /// Timeout at which we disconnect from the peer without seeing a keep-alive message.
+    /// Sets the timeout duration after which a peer is disconnected if no keep-alive message is received.
     #[must_use]
     pub fn with_heartbeat_timeout(mut self, timeout: Duration) -> PeerManagerBuilder {
         self.heartbeat_timeout = timeout;
         self
     }
 
-    /// Retrieve the peer capacity.
+    /// Retrieves the peer capacity.
     #[must_use]
     pub fn peer_capacity(&self) -> usize {
-        self.peer
+        self.peer_capacity
     }
 
-    /// Retrieve the sink buffer capacity.
+    /// Retrieves the sink buffer capacity.
     #[must_use]
     pub fn sink_buffer_capacity(&self) -> usize {
-        self.sink_buffer
+        self.sink_buffer_capacity
     }
 
-    /// Retrieve the stream buffer capacity.
+    /// Retrieves the stream buffer capacity.
     #[must_use]
     pub fn stream_buffer_capacity(&self) -> usize {
-        self.stream_buffer
+        self.stream_buffer_capacity
     }
 
-    /// Retrieve the heartbeat interval `Duration`.
+    /// Retrieves the heartbeat interval `Duration`.
     #[must_use]
     pub fn heartbeat_interval(&self) -> Duration {
         self.heartbeat_interval
     }
 
-    /// Retrieve the heartbeat timeout `Duration`.
+    /// Retrieves the heartbeat timeout `Duration`.
     #[must_use]
     pub fn heartbeat_timeout(&self) -> Duration {
         self.heartbeat_timeout
     }
 
-    /// Build a `PeerManager` from the current `PeerManagerBuilder`.
+    /// Builds a `PeerManager` from the current `PeerManagerBuilder` configuration.
     #[must_use]
-    pub fn build<P>(self, handle: Handle) -> PeerManager<P>
+    pub fn build<Peer, Message>(self) -> PeerManager<Peer, Message>
     where
-        P: Sink<SinkError = io::Error> + Stream<Error = io::Error>,
-        P::SinkItem: ManagedMessage,
-        P::Item: ManagedMessage,
+        Peer: Sink<std::io::Result<Message>>
+            + Stream<Item = std::io::Result<Message>>
+            + TryStream<Ok = Message, Error = std::io::Error>
+            + std::fmt::Debug
+            + Send
+            + Unpin
+            + 'static,
+        Message: ManagedMessage + Send + 'static,
     {
-        PeerManager::from_builder(self, handle)
+        PeerManager::from_builder(self)
     }
 }

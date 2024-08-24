@@ -4,7 +4,7 @@
 use bencode::{ben_bytes, ben_int, ben_map, BConvert, BDictAccess, BRefAccess};
 use util::bt::{InfoHash, NodeId};
 
-use crate::error::DhtResult;
+use crate::error::DhtError;
 use crate::message;
 use crate::message::request::{self, RequestValidate};
 
@@ -52,7 +52,10 @@ impl<'a> AnnouncePeerRequest<'a> {
     /// # Errors
     ///
     /// This function will return an error unable to get bytes unable do lookup.
-    pub fn from_parts<B>(rqst_root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerRequest<'a>>
+    pub fn from_parts<B>(
+        rqst_root: &'a dyn BDictAccess<B::BKey, B>,
+        trans_id: &'a [u8],
+    ) -> Result<AnnouncePeerRequest<'a>, DhtError>
     where
         B: BRefAccess,
     {
@@ -151,7 +154,10 @@ impl<'a> AnnouncePeerResponse<'a> {
     /// # Errors
     ///
     /// This function will return an error unable to get bytes or unable to validate the node id.
-    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<AnnouncePeerResponse<'a>>
+    pub fn from_parts<B>(
+        rqst_root: &dyn BDictAccess<B::BKey, B>,
+        trans_id: &'a [u8],
+    ) -> Result<AnnouncePeerResponse<'a>, DhtError>
     where
         B: BRefAccess,
     {

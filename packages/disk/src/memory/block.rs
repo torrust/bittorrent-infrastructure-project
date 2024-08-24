@@ -61,7 +61,7 @@ impl Default for BlockMetadata {
 //----------------------------------------------------------------------------//
 
 /// `Block` of immutable memory.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Block {
     metadata: BlockMetadata,
     block_data: Bytes,
@@ -101,7 +101,7 @@ impl Deref for Block {
 
 /// `BlockMut` of mutable memory.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockMut {
     metadata: BlockMetadata,
     block_data: BytesMut,
@@ -109,15 +109,18 @@ pub struct BlockMut {
 
 impl BlockMut {
     /// Create a new `BlockMut`.
+    #[must_use]
     pub fn new(metadata: BlockMetadata, block_data: BytesMut) -> BlockMut {
         BlockMut { metadata, block_data }
     }
 
     /// Access the metadata for the block.
+    #[must_use]
     pub fn metadata(&self) -> BlockMetadata {
         self.metadata
     }
 
+    #[must_use]
     pub fn into_parts(self) -> (BlockMetadata, BytesMut) {
         (self.metadata, self.block_data)
     }

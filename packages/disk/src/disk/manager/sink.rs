@@ -1,13 +1,11 @@
 //! `DiskManagerSink` which is the sink portion of a `DiskManager`.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::task::{Context, Poll, Waker};
 
 use crossbeam::queue::SegQueue;
-use futures::task::{self, Task};
-use futures::{Async, AsyncSink, Poll, Sink, StartSend};
-use futures_cpupool::CpuPool;
-use log::info;
+use tokio::task::JoinSet;
 
 use crate::disk::tasks;
 use crate::disk::tasks::context::DiskManagerContext;
@@ -15,92 +13,136 @@ use crate::{FileSystem, IDiskMessage};
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
-pub struct DiskManagerSink<F> {
-    pool: CpuPool,
+pub struct DiskManagerSink<F>
+where
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
+{
     context: DiskManagerContext<F>,
     max_capacity: usize,
     cur_capacity: Arc<AtomicUsize>,
-    task_queue: Arc<SegQueue<Task>>,
+    wake_queue: Arc<SegQueue<Waker>>,
+    task_set: Arc<Mutex<JoinSet<()>>>,
 }
 
-impl<F> Clone for DiskManagerSink<F> {
+impl<F> Clone for DiskManagerSink<F>
+where
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
+{
     fn clone(&self) -> DiskManagerSink<F> {
         DiskManagerSink {
-            pool: self.pool.clone(),
             context: self.context.clone(),
             max_capacity: self.max_capacity,
             cur_capacity: self.cur_capacity.clone(),
-            task_queue: self.task_queue.clone(),
+            wake_queue: self.wake_queue.clone(),
+            task_set: self.task_set.clone(),
         }
     }
 }
 
-impl<F> DiskManagerSink<F> {
+impl<F> DiskManagerSink<F>
+where
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
+{
     pub(super) fn new(
-        pool: CpuPool,
         context: DiskManagerContext<F>,
         max_capacity: usize,
         cur_capacity: Arc<AtomicUsize>,
-        task_queue: Arc<SegQueue<Task>>,
+        wake_queue: Arc<SegQueue<Waker>>,
     ) -> DiskManagerSink<F> {
         DiskManagerSink {
-            pool,
             context,
             max_capacity,
             cur_capacity,
-            task_queue,
+            wake_queue,
+            task_set: Arc::default(),
         }
     }
 
-    fn try_submit_work(&self) -> bool {
-        let cur_capacity = self.cur_capacity.fetch_add(1, Ordering::SeqCst);
+    fn try_submit_work(&self, waker: &Waker) -> Result<usize, usize> {
+        let cap = self.cur_capacity.fetch_add(1, Ordering::SeqCst) + 1;
+        let max = self.max_capacity;
 
-        if cur_capacity < self.max_capacity {
-            true
+        #[allow(clippy::comparison_chain)]
+        if cap < max {
+            tracing::trace!("now have {cap} of capacity: {max}");
+
+            Ok(cap)
+        } else if cap == max {
+            tracing::trace!("at max capacity: {max}");
+
+            Ok(cap)
         } else {
-            self.cur_capacity.fetch_sub(1, Ordering::SeqCst);
+            self.wake_queue.push(waker.clone());
+            tracing::debug!("now have {} pending wakers...", self.wake_queue.len());
 
-            false
+            self.cur_capacity.fetch_sub(1, Ordering::SeqCst);
+            tracing::debug!("at over capacity: {cap} of {max}");
+
+            Err(cap)
         }
     }
 }
 
-impl<F> Sink for DiskManagerSink<F>
+impl<F> futures::Sink<IDiskMessage> for DiskManagerSink<F>
 where
-    F: FileSystem + Send + Sync + 'static,
+    F: FileSystem + Sync + 'static,
+    Arc<F>: Send + Sync,
 {
-    type SinkItem = IDiskMessage;
-    type SinkError = ();
+    type Error = std::io::Error;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
-        info!("Starting Send For DiskManagerSink With IDiskMessage");
-
-        if self.try_submit_work() {
-            info!("DiskManagerSink Submitted Work On First Attempt");
-            tasks::execute_on_pool(item, &self.pool, self.context.clone());
-
-            return Ok(AsyncSink::Ready);
-        }
-
-        // We split the sink and stream, which means these could be polled in different event loops (I think),
-        // so we need to add our task, but then try to submit work again, in case the receiver processed work
-        // right after we tried to submit the first time.
-        info!("DiskManagerSink Failed To Submit Work On First Attempt, Adding Task To Queue");
-        self.task_queue.push(task::current());
-
-        if self.try_submit_work() {
-            // Receiver will look at the queue but wake us up, even though we don't need it to now...
-            info!("DiskManagerSink Submitted Work On Second Attempt");
-            tasks::execute_on_pool(item, &self.pool, self.context.clone());
-
-            Ok(AsyncSink::Ready)
-        } else {
-            // Receiver will look at the queue eventually...
-            Ok(AsyncSink::NotReady(item))
+    fn poll_ready(self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        match self.try_submit_work(cx.waker()) {
+            Ok(_remaining) => Poll::Ready(Ok(())),
+            Err(_full) => Poll::Pending,
         }
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        Ok(Async::Ready(()))
+    fn start_send(self: std::pin::Pin<&mut Self>, item: IDiskMessage) -> Result<(), Self::Error> {
+        tracing::trace!("Starting Send For DiskManagerSink With IDiskMessage");
+        self.task_set
+            .lock()
+            .unwrap()
+            .spawn(tasks::execute(item, self.context.clone()));
+        Ok(())
+    }
+
+    fn poll_flush(self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        let Ok(mut task_set) = self.task_set.try_lock() else {
+            tracing::warn!("unable to get task_set lock");
+            cx.waker().wake_by_ref();
+            return Poll::Pending;
+        };
+
+        tracing::debug!("flushing the {} tasks", task_set.len());
+
+        while let Some(ready) = match task_set.poll_join_next(cx) {
+            Poll::Ready(ready) => ready,
+            Poll::Pending => {
+                tracing::debug!("all {} task(s) are still pending...", task_set.len());
+                return Poll::Pending;
+            }
+        } {
+            match ready {
+                Ok(()) => {
+                    tracing::trace!("task completed... with {} remaining...", task_set.len());
+
+                    continue;
+                }
+                Err(e) => {
+                    tracing::error!("task completed... with {} remaining, with error: {e}", task_set.len());
+
+                    return Poll::Ready(Err(std::io::Error::new(std::io::ErrorKind::Other, e)));
+                }
+            }
+        }
+
+        Poll::Ready(Ok(()))
+    }
+
+    fn poll_close(self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.poll_flush(cx)
     }
 }

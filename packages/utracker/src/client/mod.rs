@@ -1,12 +1,12 @@
-use std::io;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
 
 use futures::future::Either;
 use futures::sink::Sink;
 use handshake::{DiscoveryInfo, InitiateMessage};
-use umio::external::Sender;
+use tracing::instrument;
+use umio::{MessageSender, ShutdownHandle};
 use util::bt::InfoHash;
 use util::trans::{LocallyShuffledIds, TransactionIds};
 
@@ -21,9 +21,27 @@ pub mod error;
 /// Capacity of outstanding requests (assuming each request uses at most 1 timer at any time)
 const DEFAULT_CAPACITY: usize = 4096;
 
+#[derive(Debug)]
+pub enum HandshakerMessage {
+    InitiateMessage(InitiateMessage),
+    ClientMetadata(ClientMetadata),
+}
+
+impl From<InitiateMessage> for HandshakerMessage {
+    fn from(message: InitiateMessage) -> Self {
+        Self::InitiateMessage(message)
+    }
+}
+
+impl From<ClientMetadata> for HandshakerMessage {
+    fn from(metadata: ClientMetadata) -> Self {
+        Self::ClientMetadata(metadata)
+    }
+}
+
 /// Request made by the `TrackerClient`.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ClientRequest {
     Announce(InfoHash, ClientState),
     Scrape(InfoHash),
@@ -101,27 +119,16 @@ impl ClientResponse {
 /// Client will shutdown on drop.
 #[allow(clippy::module_name_repetitions)]
 pub struct TrackerClient {
-    send: Sender<DispatchMessage>,
+    send: MessageSender<DispatchMessage>,
     // We are in charge of incrementing this, background worker is in charge of decrementing
     limiter: RequestLimiter,
     generator: TokenGenerator,
+    bound_socket: SocketAddr,
+    shutdown_handle: ShutdownHandle,
 }
 
 impl TrackerClient {
-    /// Create a new `TrackerClient`.
-    ///
-    /// # Errors
-    ///
-    /// It would return a IO error if unable build a new client.
-    pub fn new<H>(bind: SocketAddr, handshaker: H) -> io::Result<TrackerClient>
-    where
-        H: Sink + DiscoveryInfo + Send + 'static,
-        H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>,
-    {
-        TrackerClient::with_capacity(bind, handshaker, DEFAULT_CAPACITY)
-    }
-
-    /// Create a new `TrackerClient` with the given message capacity.
+    /// Run a new `TrackerClient` with the given message capacity.
     ///
     /// Panics if capacity == `usize::max_value`().
     ///
@@ -132,11 +139,22 @@ impl TrackerClient {
     /// # Panics
     ///
     /// It would panic if the desired capacity is too large.
-    pub fn with_capacity<H>(bind: SocketAddr, handshaker: H, capacity: usize) -> io::Result<TrackerClient>
+    #[instrument(skip())]
+    pub fn run<H>(bind: SocketAddr, handshaker: H, capacity_or_default: Option<usize>) -> std::io::Result<TrackerClient>
     where
-        H: Sink + DiscoveryInfo + Send + 'static,
-        H::SinkItem: From<Either<InitiateMessage, ClientMetadata>>,
+        H: Sink<std::io::Result<HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
+        H::Error: std::fmt::Display,
     {
+        let capacity = if let Some(capacity) = capacity_or_default {
+            tracing::trace!("with capacity {capacity}");
+
+            capacity
+        } else {
+            tracing::trace!("with default capacity: {DEFAULT_CAPACITY}");
+
+            DEFAULT_CAPACITY
+        };
+
         // Need channel capacity to be 1 more in case channel is saturated and client
         // is dropped so shutdown message can get through in the worst case
         let (chan_capacity, would_overflow) = capacity.overflowing_add(1);
@@ -147,10 +165,17 @@ impl TrackerClient {
         // Limit the capacity of messages (channel capacity - 1)
         let limiter = RequestLimiter::new(capacity);
 
-        dispatcher::create_dispatcher(bind, handshaker, chan_capacity, limiter.clone()).map(|chan| TrackerClient {
-            send: chan,
+        let (dispatcher, bound_socket, shutdown_handle) =
+            dispatcher::create_dispatcher(bind, handshaker, chan_capacity, limiter.clone())?;
+
+        tracing::info!(?bound_socket, "running client");
+
+        Ok(TrackerClient {
+            send: dispatcher,
             limiter,
             generator: TokenGenerator::new(),
+            bound_socket,
+            shutdown_handle,
         })
     }
 
@@ -161,25 +186,44 @@ impl TrackerClient {
     /// # Panics
     ///
     /// It would panic if unable to send request message.
+    #[instrument(skip(self))]
     pub fn request(&mut self, addr: SocketAddr, request: ClientRequest) -> Option<ClientToken> {
         if self.limiter.can_initiate() {
             let token = self.generator.generate();
+
+            let message = DispatchMessage::Request(addr, token, request);
+
+            tracing::debug!(?message, "requesting");
+
             self.send
-                .send(DispatchMessage::Request(addr, token, request))
+                .send(message)
                 .expect("bip_utracker: Failed To Send Client Request Message...");
 
             Some(token)
         } else {
+            tracing::debug!("initiation was limited");
+
             None
         }
+    }
+
+    #[must_use]
+    pub fn local_addr(&self) -> SocketAddr {
+        self.bound_socket
     }
 }
 
 impl Drop for TrackerClient {
+    #[instrument(skip(self))]
     fn drop(&mut self) {
+        tracing::info!("shutting down");
+        let (shutdown_finished_sender, shutdown_finished_receiver) = mpsc::sync_channel(0);
+
         self.send
-            .send(DispatchMessage::Shutdown)
+            .send(DispatchMessage::Shutdown(shutdown_finished_sender))
             .expect("bip_utracker: Failed To Send Client Shutdown Message...");
+
+        shutdown_finished_receiver.recv().unwrap().unwrap();
     }
 }
 
@@ -187,7 +231,7 @@ impl Drop for TrackerClient {
 
 /// Associates a `ClientRequest` with a `ClientResponse`.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ClientToken(u32);
 
 /// Generates tokens which double as transaction ids.
@@ -212,7 +256,7 @@ impl TokenGenerator {
 // ----------------------------------------------------------------------------//
 
 /// Limits requests based on the current number of outstanding requests.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RequestLimiter {
     active: Arc<AtomicUsize>,
     capacity: usize,
@@ -236,11 +280,11 @@ impl RequestLimiter {
     ///
     /// It is invalid to not make the request after this returns true.
     pub fn can_initiate(&self) -> bool {
-        let current_active_requests = self.active.fetch_add(1, Ordering::AcqRel);
+        let current_active_requests = self.active.fetch_add(1, Ordering::AcqRel) + 1;
 
         // If the number of requests stored previously was less than the capacity,
         // then the add is considered good and a request can (SHOULD) be made.
-        if current_active_requests < self.capacity {
+        if current_active_requests <= self.capacity {
             true
         } else {
             // Act as if the request just completed (decrement back down)

@@ -1,15 +1,21 @@
-use common::{core_loop_with_timeout, random_buffer, InMemoryFileSystem, MultiFileDirectAccessor};
-use disk::{DiskManagerBuilder, FileSystem, IDiskMessage, ODiskMessage};
-use futures::future::{Future, Loop};
-use futures::sink::Sink;
-use futures::stream::Stream;
+use common::{
+    random_buffer, runtime_loop_with_timeout, tracing_stderr_init, InMemoryFileSystem, MultiFileDirectAccessor, DEFAULT_TIMEOUT,
+    INIT,
+};
+use disk::{DiskManagerBuilder, FileSystem as _, IDiskMessage, ODiskMessage};
+use futures::future::{self, Either};
+use futures::{FutureExt, SinkExt as _};
 use metainfo::{Metainfo, MetainfoBuilder, PieceLength};
-use tokio_core::reactor::Core;
+use tracing::level_filters::LevelFilter;
 
 mod common;
 
-#[test]
-fn positive_add_torrent() {
+#[tokio::test]
+async fn positive_add_torrent() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::INFO);
+    });
+
     // Create some "files" as random bytes
     let data_a = (random_buffer(50), "/path/to/file/a".into());
     let data_b = (random_buffer(2000), "/path/to/file/b".into());
@@ -26,20 +32,19 @@ fn positive_add_torrent() {
 
     // Spin up a disk manager and add our created torrent to it
     let filesystem = InMemoryFileSystem::new();
-    let disk_manager = DiskManagerBuilder::new().build(filesystem.clone());
+    let disk_manager = DiskManagerBuilder::new().build(filesystem.me());
 
-    let (send, recv) = disk_manager.split();
-    send.send(IDiskMessage::AddTorrent(metainfo_file)).wait().unwrap();
+    let (mut send, recv) = disk_manager.into_parts();
+    send.send(IDiskMessage::AddTorrent(metainfo_file)).await.unwrap();
 
     // Verify that zero pieces are marked as good
-    let mut core = Core::new().unwrap();
-
-    // Run a core loop until we get the TorrentAdded message
-    let good_pieces = core_loop_with_timeout(&mut core, 500, (0, recv), |good_pieces, recv, msg| match msg {
-        ODiskMessage::TorrentAdded(_) => Loop::Break(good_pieces),
-        ODiskMessage::FoundGoodPiece(_, _) => Loop::Continue((good_pieces + 1, recv)),
+    // Run a runtime loop until we get the TorrentAdded message
+    let good_pieces = runtime_loop_with_timeout(DEFAULT_TIMEOUT, (0, recv), |good_pieces, recv, msg| match msg {
+        Ok(ODiskMessage::TorrentAdded(_)) => Either::Left(future::ready(good_pieces).boxed()),
+        Ok(ODiskMessage::FoundGoodPiece(_, _)) => Either::Right(future::ready((good_pieces + 1, recv)).boxed()),
         unexpected => panic!("Unexpected Message: {unexpected:?}"),
-    });
+    })
+    .await;
 
     assert_eq!(0, good_pieces);
 

@@ -1,23 +1,28 @@
-use futures::future::{self, Future};
-use tokio_core::reactor::Handle;
+/// Handle the initiation of connections, which are returned as a `HandshakeType`.
+#[allow(clippy::module_name_repetitions)]
+use std::time::Duration;
+
+use futures::future::{self, BoxFuture};
+use futures::{FutureExt, TryFutureExt as _};
 
 use crate::filter::filters::Filters;
 use crate::handshake::handler;
-use crate::handshake::handler::timer::HandshakeTimer;
 use crate::handshake::handler::HandshakeType;
 use crate::message::initiate::InitiateMessage;
 use crate::transport::Transport;
 
 /// Handle the initiation of connections, which are returned as a `HandshakeType`.
 #[allow(clippy::module_name_repetitions)]
-pub fn initiator_handler<T>(
+pub fn initiator_handler<'a, 'b, T>(
     item: InitiateMessage,
-    context: &(T, Filters, Handle, HandshakeTimer),
-) -> Box<dyn Future<Item = Option<HandshakeType<T::Socket>>, Error = ()>>
+    context: &'b (T, Filters, Duration),
+) -> BoxFuture<'a, std::io::Result<Option<HandshakeType<T::Socket>>>>
 where
-    T: Transport,
+    T: Transport + Send + Sync + 'a,
+    <T as Transport>::Socket: Send + Sync,
 {
-    let (transport, filters, handle, timer) = context;
+    let (transport, filters, timeout) = context;
+    let timeout = *timeout;
 
     if handler::should_filter(
         Some(item.address()),
@@ -27,18 +32,12 @@ where
         None,
         filters,
     ) {
-        Box::new(future::ok(None))
+        future::ok(None).boxed()
     } else {
-        let res_connect = transport
-            .connect(item.address(), handle)
-            .map(|connect| timer.timeout(connect));
-
-        Box::new(
-            future::lazy(|| res_connect)
-                .flatten()
-                .map(|socket| Some(HandshakeType::Initiate(socket, item)))
-                .or_else(|_| Ok(None)),
-        )
+        transport
+            .connect(*item.address(), timeout)
+            .map_ok(|s| Some(HandshakeType::Initiate(s, item)))
+            .boxed()
     }
 }
 
@@ -46,14 +45,10 @@ where
 mod tests {
     use std::time::Duration;
 
-    use futures::Future;
-    use tokio_core::reactor::Core;
-    use tokio_timer;
     use util::bt::{self, InfoHash, PeerId};
 
     use crate::filter::filters::test_filters::{BlockAddrFilter, BlockPeerIdFilter, BlockProtocolFilter};
     use crate::filter::filters::Filters;
-    use crate::handshake::handler::timer::HandshakeTimer;
     use crate::handshake::handler::HandshakeType;
     use crate::message::initiate::InitiateMessage;
     use crate::message::protocol::Protocol;
@@ -67,15 +62,34 @@ mod tests {
         [55u8; bt::INFO_HASH_LEN].into()
     }
 
-    #[test]
-    fn positive_empty_filter() {
-        let core = Core::new().unwrap();
+    #[tokio::test]
+    async fn positive_empty_filter() {
         let exp_message = InitiateMessage::new(Protocol::BitTorrent, any_info_hash(), "1.2.3.4:5".parse().unwrap());
-        let timer = HandshakeTimer::new(tokio_timer::wheel().build(), Duration::from_millis(1000));
+
+        let recv_enum_item = super::initiator_handler(
+            exp_message.clone(),
+            &(MockTransport, Filters::new(), Duration::from_millis(1000)),
+        )
+        .await
+        .unwrap();
+        let recv_item = match recv_enum_item {
+            Some(HandshakeType::Initiate(_, msg)) => msg,
+            Some(HandshakeType::Complete(_, _)) | None => panic!("Expected HandshakeType::Initiate"),
+        };
+
+        assert_eq!(exp_message, recv_item);
+    }
+
+    #[tokio::test]
+    async fn positive_passes_filter() {
+        let filters = Filters::new();
+        filters.add_filter(BlockAddrFilter::new("2.3.4.5:6".parse().unwrap()));
+
+        let exp_message = InitiateMessage::new(Protocol::BitTorrent, any_info_hash(), "1.2.3.4:5".parse().unwrap());
 
         let recv_enum_item =
-            super::initiator_handler(exp_message.clone(), &(MockTransport, Filters::new(), core.handle(), timer))
-                .wait()
+            super::initiator_handler(exp_message.clone(), &(MockTransport, filters, Duration::from_millis(1000)))
+                .await
                 .unwrap();
         let recv_item = match recv_enum_item {
             Some(HandshakeType::Initiate(_, msg)) => msg,
@@ -85,40 +99,17 @@ mod tests {
         assert_eq!(exp_message, recv_item);
     }
 
-    #[test]
-    fn positive_passes_filter() {
-        let core = Core::new().unwrap();
-        let timer = HandshakeTimer::new(tokio_timer::wheel().build(), Duration::from_millis(1000));
-
-        let filters = Filters::new();
-        filters.add_filter(BlockAddrFilter::new("2.3.4.5:6".parse().unwrap()));
-
-        let exp_message = InitiateMessage::new(Protocol::BitTorrent, any_info_hash(), "1.2.3.4:5".parse().unwrap());
-
-        let recv_enum_item = super::initiator_handler(exp_message.clone(), &(MockTransport, filters, core.handle(), timer))
-            .wait()
-            .unwrap();
-        let recv_item = match recv_enum_item {
-            Some(HandshakeType::Initiate(_, msg)) => msg,
-            Some(HandshakeType::Complete(_, _)) | None => panic!("Expected HandshakeType::Initiate"),
-        };
-
-        assert_eq!(exp_message, recv_item);
-    }
-
-    #[test]
-    fn positive_needs_data_filter() {
-        let core = Core::new().unwrap();
-        let timer = HandshakeTimer::new(tokio_timer::wheel().build(), Duration::from_millis(1000));
-
+    #[tokio::test]
+    async fn positive_needs_data_filter() {
         let filters = Filters::new();
         filters.add_filter(BlockPeerIdFilter::new(any_peer_id()));
 
         let exp_message = InitiateMessage::new(Protocol::BitTorrent, any_info_hash(), "1.2.3.4:5".parse().unwrap());
 
-        let recv_enum_item = super::initiator_handler(exp_message.clone(), &(MockTransport, filters, core.handle(), timer))
-            .wait()
-            .unwrap();
+        let recv_enum_item =
+            super::initiator_handler(exp_message.clone(), &(MockTransport, filters, Duration::from_millis(1000)))
+                .await
+                .unwrap();
         let recv_item = match recv_enum_item {
             Some(HandshakeType::Initiate(_, msg)) => msg,
             Some(HandshakeType::Complete(_, _)) | None => panic!("Expected HandshakeType::Initiate"),
@@ -127,11 +118,8 @@ mod tests {
         assert_eq!(exp_message, recv_item);
     }
 
-    #[test]
-    fn positive_fails_filter() {
-        let core = Core::new().unwrap();
-        let timer = HandshakeTimer::new(tokio_timer::wheel().build(), Duration::from_millis(1000));
-
+    #[tokio::test]
+    async fn positive_fails_filter() {
         let filters = Filters::new();
         filters.add_filter(BlockProtocolFilter::new(Protocol::Custom(vec![1, 2, 3, 4])));
 
@@ -141,9 +129,10 @@ mod tests {
             "1.2.3.4:5".parse().unwrap(),
         );
 
-        let recv_enum_item = super::initiator_handler(exp_message.clone(), &(MockTransport, filters, core.handle(), timer))
-            .wait()
-            .unwrap();
+        let recv_enum_item =
+            super::initiator_handler(exp_message.clone(), &(MockTransport, filters, Duration::from_millis(1000)))
+                .await
+                .unwrap();
         match recv_enum_item {
             None => (),
             Some(HandshakeType::Initiate(_, _) | HandshakeType::Complete(_, _)) => panic!("Expected No Handshake"),

@@ -1,17 +1,33 @@
-use std::fs::File;
-use std::io::{self, BufRead, Read, Write};
+use std::io::{BufRead, Read as _, Write as _};
+use std::sync::{Arc, Once};
 
 use disk::fs::NativeFileSystem;
 use disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
-use futures::{Future, Sink, Stream};
+use futures::{SinkExt, StreamExt};
 use metainfo::Metainfo;
+use tracing::level_filters::LevelFilter;
 
-fn main() {
-    println!("Utility For Allocating Disk Space For A Torrent File");
+static INIT: Once = Once::new();
 
-    let stdin = io::stdin();
+fn tracing_stderr_init(filter: LevelFilter) {
+    let builder = tracing_subscriber::fmt().with_max_level(filter).with_ansi(true);
+
+    builder.pretty().with_file(true).init();
+
+    tracing::info!("Logging initialized");
+}
+
+#[tokio::main]
+async fn main() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::INFO);
+    });
+
+    tracing::info!("Utility For Allocating Disk Space For A Torrent File");
+
+    let stdin = std::io::stdin();
     let mut input_lines = stdin.lock().lines();
-    let mut stdout = io::stdout();
+    let mut stdout = std::io::stdout();
 
     print!("Enter the destination download directory: ");
     stdout.flush().unwrap();
@@ -22,25 +38,26 @@ fn main() {
     let torrent_path = input_lines.next().unwrap().unwrap();
 
     let mut torrent_bytes = Vec::new();
-    File::open(torrent_path).unwrap().read_to_end(&mut torrent_bytes).unwrap();
+    std::fs::File::open(torrent_path)
+        .unwrap()
+        .read_to_end(&mut torrent_bytes)
+        .unwrap();
     let metainfo_file = Metainfo::from_bytes(torrent_bytes).unwrap();
 
-    let native_fs = NativeFileSystem::with_directory(download_path);
-    let disk_manager = DiskManagerBuilder::new().build(native_fs);
+    let filesystem = NativeFileSystem::with_directory(download_path);
+    let disk_manager = DiskManagerBuilder::new().build(Arc::new(filesystem));
 
-    let (disk_send, disk_recv) = disk_manager.split();
+    let (mut disk_send, mut disk_recv) = disk_manager.into_parts();
 
     let total_pieces = metainfo_file.info().pieces().count();
-    disk_send.send(IDiskMessage::AddTorrent(metainfo_file)).wait().unwrap();
-
-    println!();
+    disk_send.send(IDiskMessage::AddTorrent(metainfo_file)).await.unwrap();
 
     let mut good_pieces = 0;
-    for recv_msg in disk_recv.wait() {
+    while let Some(recv_msg) = disk_recv.next().await {
         match recv_msg.unwrap() {
             ODiskMessage::TorrentAdded(hash) => {
-                println!("Torrent With Hash {hash:?} Successfully Added");
-                println!("Torrent Has {good_pieces} Good Pieces Out Of {total_pieces} Total Pieces");
+                tracing::info!("Torrent With Hash {hash:?} Successfully Added");
+                tracing::info!("Torrent Has {good_pieces} Good Pieces Out Of {total_pieces} Total Pieces");
                 break;
             }
             ODiskMessage::FoundGoodPiece(_, _) => good_pieces += 1,

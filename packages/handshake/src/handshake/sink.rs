@@ -1,24 +1,27 @@
 //! `Sink` portion of the `Handshaker` for initiating handshakes.
 
+use futures::channel::mpsc;
 use futures::sink::Sink;
-use futures::sync::mpsc::{SendError, Sender};
-use futures::{Poll, StartSend};
+use futures::task::{Context, Poll};
+use futures::SinkExt as _;
 use util::bt::PeerId;
 
+use crate::discovery::DiscoveryInfo;
 use crate::filter::filters::Filters;
-use crate::{DiscoveryInfo, HandshakeFilter, HandshakeFilters, InitiateMessage};
+use crate::filter::{HandshakeFilter, HandshakeFilters};
+use crate::message::initiate::InitiateMessage;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 pub struct HandshakerSink {
-    send: Sender<InitiateMessage>,
+    send: mpsc::Sender<InitiateMessage>,
     port: u16,
     pid: PeerId,
     filters: Filters,
 }
 
 impl HandshakerSink {
-    pub(super) fn new(send: Sender<InitiateMessage>, port: u16, pid: PeerId, filters: Filters) -> HandshakerSink {
+    pub(super) fn new(send: mpsc::Sender<InitiateMessage>, port: u16, pid: PeerId, filters: Filters) -> HandshakerSink {
         HandshakerSink {
             send,
             port,
@@ -38,16 +41,23 @@ impl DiscoveryInfo for HandshakerSink {
     }
 }
 
-impl Sink for HandshakerSink {
-    type SinkItem = InitiateMessage;
-    type SinkError = SendError<InitiateMessage>;
+impl Sink<InitiateMessage> for HandshakerSink {
+    type Error = mpsc::SendError;
 
-    fn start_send(&mut self, item: InitiateMessage) -> StartSend<InitiateMessage, SendError<InitiateMessage>> {
-        self.send.start_send(item)
+    fn poll_ready(mut self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.send.poll_ready_unpin(cx)
     }
 
-    fn poll_complete(&mut self) -> Poll<(), SendError<InitiateMessage>> {
-        self.send.poll_complete()
+    fn start_send(mut self: std::pin::Pin<&mut Self>, item: InitiateMessage) -> Result<(), Self::Error> {
+        self.send.start_send_unpin(item)
+    }
+
+    fn poll_flush(mut self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.send.poll_flush_unpin(cx)
+    }
+
+    fn poll_close(mut self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.send.poll_close_unpin(cx)
     }
 }
 
@@ -70,3 +80,5 @@ impl HandshakeFilters for HandshakerSink {
         self.filters.clear_filters();
     }
 }
+
+//----------------------------------------------------------------------------------//

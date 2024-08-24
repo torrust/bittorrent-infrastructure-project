@@ -1,7 +1,6 @@
-use std::io;
-use std::io::Write;
-
-use nom::{be_u8, call, count_fixed, do_parse, error_position, IResult};
+use nom::bytes::complete::take;
+use nom::IResult;
+use tokio::io::{AsyncWrite, AsyncWriteExt as _};
 
 /// Number of bytes that the extension protocol takes.
 pub const NUM_EXTENSION_BYTES: usize = 8;
@@ -32,7 +31,10 @@ impl Extensions {
     }
 
     /// Create a new `Extensions` by parsing the given bytes.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to construct from bytes.
     pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Extensions> {
         parse_extension_bits(bytes)
     }
@@ -67,14 +69,26 @@ impl Extensions {
         self.bytes[byte_index] & (0x80 >> bit_index) != 0
     }
 
-    /// Write the `Extensions` to the given writer.
+    /// Write the `Extensions` to the given async writer.
     ///
     /// # Errors
     ///
     /// It would return an IO error if unable to write bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub async fn write_bytes<W>(&self, writer: &mut W) -> std::io::Result<()>
     where
-        W: Write,
+        W: AsyncWrite + Unpin,
+    {
+        writer.write_all(&self.bytes[..]).await
+    }
+
+    /// Write the `Extensions` to the given writer.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to write bytes.
+    pub fn write_bytes_sync<W>(&self, writer: &mut W) -> std::io::Result<()>
+    where
+        W: std::io::Write,
     {
         writer.write_all(&self.bytes[..])
     }
@@ -106,12 +120,11 @@ impl From<[u8; NUM_EXTENSION_BYTES]> for Extensions {
 }
 
 /// Parse the given bytes for extension bits.
-#[allow(deprecated)]
 fn parse_extension_bits(bytes: &[u8]) -> IResult<&[u8], Extensions> {
-    do_parse!(bytes,
-        bytes: count_fixed!(u8, be_u8, NUM_EXTENSION_BYTES) >>
-        (Extensions::with_bytes(bytes))
-    )
+    let (remaining, bytes) = take(NUM_EXTENSION_BYTES)(bytes)?;
+    let mut array = [0u8; NUM_EXTENSION_BYTES];
+    array.copy_from_slice(bytes);
+    Ok((remaining, Extensions::with_bytes(array)))
 }
 
 #[cfg(test)]

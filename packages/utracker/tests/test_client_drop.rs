@@ -1,26 +1,37 @@
-use common::handshaker;
-use futures::future::Either;
-use futures::stream::Stream;
+use std::net::SocketAddr;
+
+use common::{handshaker, tracing_stderr_init, DEFAULT_TIMEOUT, INIT, LOOPBACK_IPV4};
+use futures::StreamExt as _;
+use tokio::net::UdpSocket;
+use tracing::level_filters::LevelFilter;
 use util::bt::{self};
 use utracker::announce::{AnnounceEvent, ClientState};
-use utracker::{ClientError, ClientRequest, TrackerClient};
+use utracker::{ClientError, ClientRequest, HandshakerMessage, TrackerClient};
 
 mod common;
 
-#[test]
-#[allow(unused)]
-fn positive_client_request_failed() {
+#[tokio::test]
+async fn positive_client_request_failed() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::ERROR);
+    });
+
     let (sink, stream) = handshaker();
 
-    let server_addr = "127.0.0.1:3503".parse().unwrap();
-    // don't actually create the server :) since we want the request to wait for a little bit until we drop
+    // We bind a temp socket, then drop it...
+    let disconnected_addr: SocketAddr = {
+        let socket = UdpSocket::bind(LOOPBACK_IPV4).await.unwrap();
+        socket.local_addr().unwrap()
+    };
+
+    tokio::task::yield_now().await;
 
     let send_token = {
-        let mut client = TrackerClient::new("127.0.0.1:4503".parse().unwrap(), sink).unwrap();
+        let mut client = TrackerClient::run(LOOPBACK_IPV4, sink, None).unwrap();
 
         client
             .request(
-                server_addr,
+                disconnected_addr,
                 ClientRequest::Announce(
                     [0u8; bt::INFO_HASH_LEN].into(),
                     ClientState::new(0, 0, 0, AnnounceEvent::None),
@@ -30,17 +41,21 @@ fn positive_client_request_failed() {
     };
     // Client is now dropped
 
-    let mut blocking_stream = stream.wait();
+    let mut messages: Vec<_> = tokio::time::timeout(DEFAULT_TIMEOUT, stream.collect())
+        .await
+        .expect("it should not time out");
 
-    let metadata = match blocking_stream.next().unwrap().unwrap() {
-        Either::B(b) => b,
-        Either::A(_) => unreachable!(),
-    };
+    while let Some(message) = messages.pop() {
+        let metadata = match message.expect("it should be a handshake message") {
+            HandshakerMessage::InitiateMessage(_) => unreachable!(),
+            HandshakerMessage::ClientMetadata(metadata) => metadata,
+        };
 
-    assert_eq!(send_token, metadata.token());
+        assert_eq!(send_token, metadata.token());
 
-    match metadata.result() {
-        &Err(ClientError::ClientShutdown) => (),
-        _ => panic!("Did Not Receive ClientShutdown..."),
+        match metadata.result() {
+            Err(ClientError::ClientShutdown) => (),
+            _ => panic!("Did Not Receive ClientShutdown..."),
+        }
     }
 }

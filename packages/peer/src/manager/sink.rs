@@ -1,258 +1,275 @@
-//! Sink half of a `PeerManager`.
-
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use crossbeam::queue::SegQueue;
+use futures::channel::mpsc::{self, SendError};
 use futures::sink::Sink;
-use futures::stream::Stream;
-use futures::sync::mpsc::Sender;
-use futures::task::{self as futures_task, Task};
-use futures::{Async, AsyncSink, Poll, StartSend};
-use tokio_core::reactor::Handle;
-use tokio_timer::{self, Timer};
+use futures::task::{Context, Poll};
+use futures::{SinkExt as _, Stream, TryStream};
 
-use super::messages::{IPeerManagerMessage, ManagedMessage, OPeerManagerMessage};
-use super::task;
+use super::messages::{PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage};
+use super::task::run_peer;
 use crate::manager::builder::PeerManagerBuilder;
-use crate::manager::error::{PeerManagerError, PeerManagerErrorKind};
+use crate::manager::error::PeerManagerError;
 use crate::manager::peer_info::PeerInfo;
+use crate::manager::ManagedMessage;
 
+/// Sink half of a `PeerManager`.
 #[allow(clippy::module_name_repetitions)]
-pub struct PeerManagerSink<P>
+pub struct PeerManagerSink<Peer, Message>
 where
-    P: Sink + Stream,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
 {
-    handle: Handle,
-    timer: Timer,
-    build: PeerManagerBuilder,
-    send: Sender<OPeerManagerMessage<P::Item>>,
-    peers: Arc<Mutex<HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>>>,
-    task_queue: Arc<SegQueue<Task>>,
+    builder: PeerManagerBuilder,
+    sender: mpsc::Sender<Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>>,
+    #[allow(clippy::type_complexity)]
+    peers: Arc<Mutex<HashMap<PeerInfo, mpsc::Sender<PeerManagerInputMessage<Peer, Message>>>>>,
+    task_queue: Arc<SegQueue<tokio::task::JoinHandle<()>>>,
 }
 
-impl<P> Clone for PeerManagerSink<P>
+impl<Peer, Message> Clone for PeerManagerSink<Peer, Message>
 where
-    P: Sink + Stream,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
 {
-    fn clone(&self) -> PeerManagerSink<P> {
+    fn clone(&self) -> PeerManagerSink<Peer, Message> {
         PeerManagerSink {
-            handle: self.handle.clone(),
-            timer: self.timer.clone(),
-            build: self.build,
-            send: self.send.clone(),
+            builder: self.builder,
+            sender: self.sender.clone(),
             peers: self.peers.clone(),
             task_queue: self.task_queue.clone(),
         }
     }
 }
 
-impl<P> PeerManagerSink<P>
+impl<Peer, Message> PeerManagerSink<Peer, Message>
 where
-    P: Sink + Stream,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
 {
-    pub(super) fn new(
-        handle: Handle,
-        timer: Timer,
-        build: PeerManagerBuilder,
-        send: Sender<OPeerManagerMessage<P::Item>>,
-        peers: Arc<Mutex<HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>>>,
-        task_queue: Arc<SegQueue<Task>>,
-    ) -> PeerManagerSink<P> {
+    #[allow(clippy::type_complexity)]
+    pub fn new(
+        builder: PeerManagerBuilder,
+        sender: mpsc::Sender<Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>>,
+        peers: Arc<Mutex<HashMap<PeerInfo, mpsc::Sender<PeerManagerInputMessage<Peer, Message>>>>>,
+        task_queue: Arc<SegQueue<tokio::task::JoinHandle<()>>>,
+    ) -> PeerManagerSink<Peer, Message> {
         PeerManagerSink {
-            handle,
-            timer,
-            build,
-            send,
+            builder,
+            sender,
             peers,
             task_queue,
         }
     }
+}
 
-    fn run_with_lock_sink<F, T, E, G, I>(&mut self, item: I, call: F, not: G) -> StartSend<T, E>
-    where
-        F: FnOnce(
-            I,
-            &mut Handle,
-            &mut Timer,
-            &mut PeerManagerBuilder,
-            &mut Sender<OPeerManagerMessage<P::Item>>,
-            &mut HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>,
-        ) -> StartSend<T, E>,
-        G: FnOnce(I) -> T,
-    {
-        let (result, took_lock) = if let Ok(mut guard) = self.peers.try_lock() {
-            let result = call(
-                item,
-                &mut self.handle,
-                &mut self.timer,
-                &mut self.build,
-                &mut self.send,
-                &mut *guard,
-            );
-
-            // Closure could return not ready, need to stash in that case
-            if result.as_ref().map(futures::AsyncSink::is_not_ready).unwrap_or(false) {
-                self.task_queue.push(futures_task::current());
-            }
-
-            (result, true)
-        } else {
-            self.task_queue.push(futures_task::current());
-
-            if let Ok(mut guard) = self.peers.try_lock() {
-                let result = call(
-                    item,
-                    &mut self.handle,
-                    &mut self.timer,
-                    &mut self.build,
-                    &mut self.send,
-                    &mut *guard,
-                );
-
-                // Closure could return not ready, need to stash in that case
-                if result.as_ref().map(futures::AsyncSink::is_not_ready).unwrap_or(false) {
-                    self.task_queue.push(futures_task::current());
-                }
-
-                (result, true)
-            } else {
-                (Ok(AsyncSink::NotReady(not(item))), false)
+impl<Peer, Message> PeerManagerSink<Peer, Message>
+where
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
+{
+    fn handle_message(
+        &self,
+        item: std::io::Result<PeerManagerInputMessage<Peer, Message>>,
+    ) -> Result<(), PeerManagerError<SendError>> {
+        let message = match item {
+            Ok(message) => message,
+            Err(e) => {
+                tracing::debug!("got input message error {e}");
+                return Err(PeerManagerError::InputMessageError(e));
             }
         };
 
-        if took_lock {
-            // Just notify a single person waiting on the lock to reduce contention
-            if let Some(task) = self.task_queue.pop() {
-                task.notify();
-            }
+        match message {
+            PeerManagerInputMessage::AddPeer(info, peer) => self.add_peer(info, peer),
+            PeerManagerInputMessage::RemovePeer(info) => self.remove_peer(info),
+            PeerManagerInputMessage::SendMessage(info, mid, peer_message) => self.send_message(info, mid, peer_message),
         }
-
-        result
     }
 
-    fn run_with_lock_poll<F, T, E>(&mut self, call: F) -> Poll<T, E>
-    where
-        F: FnOnce(
-            &mut Handle,
-            &mut Timer,
-            &mut PeerManagerBuilder,
-            &mut Sender<OPeerManagerMessage<P::Item>>,
-            &mut HashMap<PeerInfo, Sender<IPeerManagerMessage<P>>>,
-        ) -> Poll<T, E>,
-    {
-        let (result, took_lock) = if let Ok(mut guard) = self.peers.try_lock() {
-            let result = call(
-                &mut self.handle,
-                &mut self.timer,
-                &mut self.build,
-                &mut self.send,
-                &mut *guard,
-            );
+    fn add_peer(&self, info: PeerInfo, peer: Peer) -> Result<(), PeerManagerError<SendError>> {
+        tracing::trace!("adding peer: {peer:?}, with info: {info:?}");
 
-            (result, true)
-        } else {
-            // Stash a task
-            self.task_queue.push(futures_task::current());
+        let Ok(mut guard) = self.peers.try_lock() else {
+            tracing::debug!("failed to get peers lock");
+            return Err(PeerManagerError::LockFailed);
+        };
 
-            // Try to get lock again in case of race condition
-            if let Ok(mut guard) = self.peers.try_lock() {
-                let result = call(
-                    &mut self.handle,
-                    &mut self.timer,
-                    &mut self.build,
-                    &mut self.send,
-                    &mut *guard,
-                );
+        let cur = guard.len();
+        let max = self.builder.peer_capacity();
 
-                (result, true)
-            } else {
-                (Ok(Async::NotReady), false)
+        if cur >= max {
+            tracing::debug!("max peers reached: {cur} of max: {max}");
+            return Err(PeerManagerError::PeerStoreFull(guard.len()));
+        }
+
+        match guard.entry(info) {
+            Entry::Occupied(_) => {
+                tracing::debug!("peer already exists: {info:?}");
+                return Err(PeerManagerError::PeerAlreadyExists(info));
+            }
+            Entry::Vacant(vac) => {
+                let (sender, task) = run_peer(peer, info, self.sender.clone(), &self.builder);
+                vac.insert(sender);
+                self.task_queue.push(task); // Add the task to the task queue
             }
         };
 
-        if took_lock {
-            // Just notify a single person waiting on the lock to reduce contention
-            if let Some(task) = self.task_queue.pop() {
-                task.notify();
-            }
-        }
+        Ok(())
+    }
 
-        result
+    fn remove_peer(&self, info: PeerInfo) -> Result<(), PeerManagerError<SendError>> {
+        tracing::trace!("removing peer, with info: {info:?}");
+
+        let Ok(mut guard) = self.peers.try_lock() else {
+            tracing::debug!("failed to get peers lock");
+            return Err(PeerManagerError::LockFailed);
+        };
+
+        let peer_sender = guard.get_mut(&info).ok_or(PeerManagerError::PeerNotFound(info))?;
+
+        peer_sender
+            .start_send(PeerManagerInputMessage::RemovePeer(info))
+            .map_err(PeerManagerError::SendFailed)?;
+
+        Ok(())
+    }
+
+    fn send_message(&self, info: PeerInfo, mid: u64, msg: Message) -> Result<(), PeerManagerError<SendError>> {
+        tracing::trace!("sending message {msg:?}, with info: {info:?}, and mid: {mid}");
+
+        let Ok(mut guard) = self.peers.try_lock() else {
+            tracing::debug!("failed to get peers lock");
+            return Err(PeerManagerError::LockFailed);
+        };
+
+        let peer_sender = guard.get_mut(&info).ok_or(PeerManagerError::PeerNotFound(info))?;
+
+        peer_sender
+            .start_send(PeerManagerInputMessage::SendMessage(info, mid, msg))
+            .map_err(PeerManagerError::SendFailed)?;
+
+        Ok(())
     }
 }
 
-impl<P> Sink for PeerManagerSink<P>
+impl<Peer, Message> Sink<std::io::Result<PeerManagerInputMessage<Peer, Message>>> for PeerManagerSink<Peer, Message>
 where
-    P: Sink<SinkError = std::io::Error> + Stream<Error = std::io::Error> + 'static,
-    P::SinkItem: ManagedMessage,
-    P::Item: ManagedMessage,
+    Peer: Sink<std::io::Result<Message>>
+        + Stream<Item = std::io::Result<Message>>
+        + TryStream<Ok = Message, Error = std::io::Error>
+        + std::fmt::Debug
+        + Send
+        + Unpin
+        + 'static,
+    Message: ManagedMessage + Send + 'static,
 {
-    type SinkItem = IPeerManagerMessage<P>;
-    type SinkError = PeerManagerError;
+    type Error = PeerManagerError<SendError>;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
-        match item {
-            IPeerManagerMessage::AddPeer(info, peer) => self.run_with_lock_sink(
-                (info, peer),
-                |(info, peer), handle, timer, builder, send, peers| {
-                    if peers.len() >= builder.peer_capacity() {
-                        Ok(AsyncSink::NotReady(IPeerManagerMessage::AddPeer(info, peer)))
-                    } else {
-                        match peers.entry(info) {
-                            Entry::Occupied(_) => Err(PeerManagerError::from_kind(PeerManagerErrorKind::PeerNotFound { info })),
-                            Entry::Vacant(vac) => {
-                                vac.insert(task::run_peer(peer, info, send.clone(), timer.clone(), builder, handle));
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        let Ok(mut guard) = self.peers.try_lock() else {
+            cx.waker().wake_by_ref();
+            return Poll::Pending;
+        };
 
-                                Ok(AsyncSink::Ready)
-                            }
-                        }
-                    }
-                },
-                |(info, peer)| IPeerManagerMessage::AddPeer(info, peer),
-            ),
-            IPeerManagerMessage::RemovePeer(info) => self.run_with_lock_sink(
-                info,
-                |info, _, _, _, _, peers| {
-                    peers
-                        .get_mut(&info)
-                        .ok_or_else(|| PeerManagerError::from_kind(PeerManagerErrorKind::PeerNotFound { info }))
-                        .and_then(|send| {
-                            send.start_send(IPeerManagerMessage::RemovePeer(info))
-                                .map_err(|_| panic!("bip_peer: PeerManager Failed To Send RemovePeer"))
-                        })
-                },
-                |info| IPeerManagerMessage::RemovePeer(info),
-            ),
-            IPeerManagerMessage::SendMessage(info, mid, peer_message) => self.run_with_lock_sink(
-                (info, mid, peer_message),
-                |(info, mid, peer_message), _, _, _, _, peers| {
-                    peers
-                        .get_mut(&info)
-                        .ok_or_else(|| PeerManagerError::from_kind(PeerManagerErrorKind::PeerNotFound { info }))
-                        .and_then(|send| {
-                            send.start_send(IPeerManagerMessage::SendMessage(info, mid, peer_message))
-                                .map_err(|_| panic!("bip_peer: PeerManager Failed to Send SendMessage"))
-                        })
-                },
-                |(info, mid, peer_message)| IPeerManagerMessage::SendMessage(info, mid, peer_message),
-            ),
+        for peer_sender in guard.values_mut() {
+            match peer_sender.poll_ready_unpin(cx) {
+                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Err(e)) => return Poll::Ready(Err(PeerManagerError::SendFailed(e))),
+                Poll::Pending => return Poll::Pending,
+            }
         }
+
+        Poll::Ready(Ok(()))
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        self.run_with_lock_poll(|_, _, _, _, peers| {
-            for peer_mut in peers.values_mut() {
-                // Needs type hint in case poll fails (so that error type matches)
-                let result: Poll<(), Self::SinkError> = peer_mut
-                    .poll_complete()
-                    .map_err(|_| panic!("bip_peer: PeerManaged Failed To Poll Peer"));
+    fn start_send(
+        self: Pin<&mut Self>,
+        item: std::io::Result<PeerManagerInputMessage<Peer, Message>>,
+    ) -> Result<(), Self::Error> {
+        tracing::trace!("handling message: {item:?}");
+        self.handle_message(item)
+    }
 
-                result?;
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        tracing::trace!("flushing...");
+
+        let Ok(mut guard) = self.peers.try_lock() else {
+            tracing::debug!("failed to get peers lock... will reschedule with waker");
+            cx.waker().wake_by_ref();
+            return Poll::Pending;
+        };
+
+        for peer_sender in guard.values_mut() {
+            match peer_sender.poll_flush_unpin(cx) {
+                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Err(e)) => return Poll::Ready(Err(PeerManagerError::FlushFailed(e))),
+                Poll::Pending => {
+                    tracing::debug!("pending to flush peer sender... will reschedule with waker");
+                    return Poll::Pending;
+                }
             }
+        }
 
-            Ok(Async::Ready(()))
-        })
+        Poll::Ready(Ok(()))
+    }
+
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        tracing::trace!("closing...");
+
+        let Ok(mut guard) = self.peers.try_lock() else {
+            tracing::debug!("failed to get peers lock... will reschedule with waker");
+            cx.waker().wake_by_ref();
+            return Poll::Pending;
+        };
+
+        for peer_sender in guard.values_mut() {
+            match peer_sender.poll_close_unpin(cx) {
+                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Err(e)) => return Poll::Ready(Err(PeerManagerError::FlushFailed(e))),
+                Poll::Pending => {
+                    tracing::debug!("pending to flush peer sender... will reschedule with waker");
+                    return Poll::Pending;
+                }
+            }
+        }
+
+        while let Some(task) = self.task_queue.pop() {
+            if !task.is_finished() {
+                tracing::debug!("task is not finished... will reschedule with waker");
+                self.task_queue.push(task);
+                cx.waker().wake_by_ref();
+                return Poll::Pending;
+            }
+        }
+
+        Poll::Ready(Ok(()))
     }
 }

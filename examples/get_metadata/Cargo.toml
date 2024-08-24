@@ -16,12 +16,14 @@ version.workspace = true
 [dependencies]
 dht = { path = "../../packages/dht" }
 handshake = { path = "../../packages/handshake" }
+metainfo = { path = "../../packages/metainfo" }
 peer = { path = "../../packages/peer" }
 select = { path = "../../packages/select" }
 
-clap = "3"
-futures = "0.1"
-hex = "0.4"
-pendulum = "0.3"
-tokio-codec = "0.1"
-tokio-core = "0.1"
+clap = "4"
+futures = "0"
+hex = "0"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0", features = ["codec"] }
+tracing = "0"
+tracing-subscriber = "0"

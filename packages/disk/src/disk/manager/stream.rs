@@ -2,67 +2,72 @@
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::task::{Context, Poll, Waker};
 
 use crossbeam::queue::SegQueue;
-use futures::sync::mpsc::Receiver;
-use futures::task::Task;
-use futures::{Async, Poll, Stream};
-use log::info;
+use futures::channel::mpsc;
+use futures::{Stream, StreamExt as _};
 
 use crate::ODiskMessage;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct DiskManagerStream {
-    recv: Receiver<ODiskMessage>,
-    cur_capacity: Arc<AtomicUsize>,
-    task_queue: Arc<SegQueue<Task>>,
+    recv: mpsc::Receiver<ODiskMessage>,
+    pub cur_capacity: Arc<AtomicUsize>,
+    wake_queue: Arc<SegQueue<Waker>>,
 }
 
 impl DiskManagerStream {
     pub(super) fn new(
-        recv: Receiver<ODiskMessage>,
+        recv: mpsc::Receiver<ODiskMessage>,
         cur_capacity: Arc<AtomicUsize>,
-        task_queue: Arc<SegQueue<Task>>,
+        wake_queue: Arc<SegQueue<Waker>>,
     ) -> DiskManagerStream {
         DiskManagerStream {
             recv,
             cur_capacity,
-            task_queue,
+            wake_queue,
         }
     }
 
-    fn complete_work(&self) {
-        self.cur_capacity.fetch_sub(1, Ordering::SeqCst);
+    fn complete_work(&self) -> usize {
+        let cap = self.cur_capacity.fetch_sub(1, Ordering::SeqCst) - 1;
+
+        tracing::debug!(
+            "Notify next waker: {} that there is space again: {cap}",
+            self.wake_queue.len()
+        );
+        if let Some(waker) = self.wake_queue.pop() {
+            waker.wake();
+        };
+
+        cap
     }
 }
 
 impl Stream for DiskManagerStream {
-    type Item = ODiskMessage;
-    type Error = ();
+    type Item = Result<ODiskMessage, ()>;
 
-    fn poll(&mut self) -> Poll<Option<ODiskMessage>, ()> {
-        info!("Polling DiskManagerStream For ODiskMessage");
+    fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        tracing::trace!("Polling DiskManagerStream For ODiskMessage");
 
-        match self.recv.poll() {
-            res @ Ok(Async::Ready(Some(
-                ODiskMessage::TorrentAdded(_)
-                | ODiskMessage::TorrentRemoved(_)
-                | ODiskMessage::TorrentSynced(_)
-                | ODiskMessage::BlockLoaded(_)
-                | ODiskMessage::BlockProcessed(_),
-            ))) => {
-                self.complete_work();
-
-                info!("Notifying DiskManager That We Can Submit More Work");
-
-                while let Some(task) = self.task_queue.pop() {
-                    task.notify();
+        match self.recv.poll_next_unpin(cx) {
+            Poll::Ready(Some(msg)) => {
+                match msg {
+                    ODiskMessage::TorrentAdded(_)
+                    | ODiskMessage::TorrentRemoved(_)
+                    | ODiskMessage::TorrentSynced(_)
+                    | ODiskMessage::BlockLoaded(_)
+                    | ODiskMessage::BlockProcessed(_) => {
+                        self.complete_work();
+                    }
+                    _ => {}
                 }
-
-                res
+                Poll::Ready(Some(Ok(msg)))
             }
-            other => other,
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending,
         }
     }
 }

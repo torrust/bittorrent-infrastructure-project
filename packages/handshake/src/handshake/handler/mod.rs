@@ -1,9 +1,8 @@
 use std::net::SocketAddr;
+use std::pin::Pin;
 
-use futures::future::{self, Future, IntoFuture, Loop};
-use futures::sink::Sink;
-use futures::stream::Stream;
-use tokio_core::reactor::Handle;
+use futures::sink::SinkExt;
+use futures::stream::StreamExt;
 use util::bt::{InfoHash, PeerId};
 
 use crate::filter::filters::Filters;
@@ -15,67 +14,34 @@ use crate::message::protocol::Protocol;
 pub mod handshaker;
 pub mod initiator;
 pub mod listener;
-pub mod timer;
 
 pub enum HandshakeType<S> {
     Initiate(S, InitiateMessage),
     Complete(S, SocketAddr),
 }
 
-enum LoopError<D> {
-    Terminate,
-    Recoverable(D),
-}
-
 /// Create loop for feeding the handler with the items coming from the stream, and forwarding the result to the sink.
 ///
 /// If the stream is used up, or an error is propagated from any of the elements, the loop will terminate.
 #[allow(clippy::module_name_repetitions)]
-pub fn loop_handler<M, H, K, F, R, C>(stream: M, handler: H, sink: K, context: C, handle: &Handle)
+pub async fn loop_handler<M, H, K, F, R, C>(mut stream: M, mut handler: H, mut sink: K, context: Pin<Box<C>>)
 where
-    M: Stream + 'static,
-    H: FnMut(M::Item, &C) -> F + 'static,
-    K: Sink<SinkItem = R> + 'static,
-    F: IntoFuture<Item = Option<R>> + 'static,
-    R: 'static,
+    M: futures::Stream + Unpin,
+    H: for<'a> FnMut(M::Item, &'a C) -> F,
+    K: futures::Sink<std::io::Result<R>> + Unpin,
+    F: futures::Future<Output = std::io::Result<Option<R>>>,
     C: 'static,
 {
-    handle.spawn(future::loop_fn(
-        (stream, handler, sink, context),
-        |(stream, mut handler, sink, context)| {
-            // We will terminate the loop if, the stream gives us an error, the stream gives us None, the handler gives
-            // us an error, or the sink gives us an error. If the handler gives us Ok(None), we will map that to a
-            // recoverable error (since our Ok(Some) result would have to continue with its own future, we hijack
-            // the error to store an immediate value). We finally map any recoverable errors back to an Ok value
-            // so we can continue with the loop in that case.
-            stream
-                .into_future()
-                .map_err(|_| LoopError::Terminate)
-                .and_then(|(opt_item, stream)| opt_item.ok_or(LoopError::Terminate).map(|item| (item, stream)))
-                .and_then(move |(item, stream)| {
-                    let into_future = handler(item, &context);
+    while let Some(item) = stream.next().await {
+        let Ok(maybe_result) = handler(item, &context).await else {
+            break;
+        };
 
-                    into_future
-                        .into_future()
-                        .map_err(|_| LoopError::Terminate)
-                        .and_then(move |opt_result| match opt_result {
-                            Some(result) => Ok((result, stream, handler, context, sink)),
-                            None => Err(LoopError::Recoverable((stream, handler, context, sink))),
-                        })
-                })
-                .and_then(|(result, stream, handler, context, sink)| {
-                    sink.send(result)
-                        .map_err(|_| LoopError::Terminate)
-                        .map(|sink| Loop::Continue((stream, handler, sink, context)))
-                })
-                .or_else(|loop_error| match loop_error {
-                    LoopError::Terminate => Err(()),
-                    LoopError::Recoverable((stream, handler, context, sink)) => {
-                        Ok(Loop::Continue((stream, handler, sink, context)))
-                    }
-                })
-        },
-    ));
+        drop(match maybe_result {
+            Some(result) => sink.send(Ok(result)).await,
+            None => continue,
+        });
+    }
 }
 
 /// Computes whether or not we should filter given the parameters and filters.

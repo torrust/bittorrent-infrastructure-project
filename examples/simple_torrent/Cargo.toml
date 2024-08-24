@@ -20,7 +20,9 @@ handshake = { path = "../../packages/handshake" }
 metainfo = { path = "../../packages/metainfo" }
 peer = { path = "../../packages/peer" }
 
-clap = "3"
-futures = "0.1"
-tokio-codec = "0.1"
-tokio-core = "0.1"
+clap = "4"
+futures = "0"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0", features = ["codec"] }
+tracing = "0"
+tracing-subscriber = "0"

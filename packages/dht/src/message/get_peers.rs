@@ -1,12 +1,11 @@
 use std::collections::BTreeMap;
-use std::fmt::Debug;
 use std::ops::Deref;
 
 use bencode::inner::BCowConvert;
 use bencode::{ben_bytes, ben_map, BConvert, BDictAccess, BMutAccess, BRefAccess, BencodeMut};
 use util::bt::{InfoHash, NodeId};
 
-use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::error::DhtError;
 use crate::message;
 use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
 use crate::message::request::{self, RequestValidate};
@@ -35,7 +34,7 @@ impl<'a> GetPeersRequest<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup, convert, and validate node.
-    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> DhtResult<GetPeersRequest<'a>>
+    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<GetPeersRequest<'a>, DhtError>
     where
         B: BRefAccess,
     {
@@ -85,7 +84,7 @@ impl<'a> GetPeersRequest<'a> {
 pub enum CompactInfoType<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
-    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+    B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
 {
     Nodes(CompactNodeInfo<'a>),
     Values(CompactValueInfo<'a, B::BType>),
@@ -97,7 +96,7 @@ where
 pub struct GetPeersResponse<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
-    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+    B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
 {
     trans_id: &'a [u8],
     node_id: NodeId,
@@ -110,7 +109,7 @@ where
 impl<'a, B> GetPeersResponse<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
-    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+    B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
 {
     #[must_use]
     pub fn new(
@@ -135,7 +134,7 @@ where
     pub fn from_parts(
         rsp_root: &'a dyn BDictAccess<B::BKey, B::BType>,
         trans_id: &'a [u8],
-    ) -> DhtResult<GetPeersResponse<'a, B::BType>> {
+    ) -> Result<GetPeersResponse<'a, B::BType>, DhtError> {
         let validate = ResponseValidate::new(trans_id);
 
         let node_id_bytes = validate.lookup_and_convert_bytes(rsp_root, message::NODE_ID_KEY)?;
@@ -163,9 +162,9 @@ where
                 CompactInfoType::Values(values_info)
             }
             (Err(_), Err(_)) => {
-                return Err(DhtError::from_kind(DhtErrorKind::InvalidResponse {
+                return Err(DhtError::InvalidResponse {
                     details: "Failed To Find nodes Or values In Node Response".to_owned(),
-                }))
+                })
             }
         };
 

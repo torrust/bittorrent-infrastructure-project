@@ -1,7 +1,7 @@
 //! Messaging primitives for contact information.
 
 use std::borrow::Cow;
-use std::io::{self, Write};
+use std::io::Write as _;
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use nom::{IResult, Needed};
@@ -21,22 +21,26 @@ pub enum CompactPeers<'a> {
 
 impl<'a> CompactPeers<'a> {
     /// Construct a `CompactPeers::V4` from the given bytes.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// It will return an error when unable to parse the bytes.
     pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>> {
         match CompactPeersV4::from_bytes(bytes) {
-            IResult::Done(i, peers) => IResult::Done(i, CompactPeers::V4(peers)),
-            IResult::Error(err) => IResult::Error(err),
-            IResult::Incomplete(need) => IResult::Incomplete(need),
+            IResult::Ok((i, peers)) => IResult::Ok((i, CompactPeers::V4(peers))),
+            IResult::Err(err) => IResult::Err(err),
         }
     }
 
     /// Construct a `CompactPeers::V6` from the given bytes.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// It will return an error when unable to parse the bytes.
     pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>> {
         match CompactPeersV6::from_bytes(bytes) {
-            IResult::Done(i, peers) => IResult::Done(i, CompactPeers::V6(peers)),
-            IResult::Error(err) => IResult::Error(err),
-            IResult::Incomplete(need) => IResult::Incomplete(need),
+            IResult::Ok((i, peers)) => IResult::Ok((i, CompactPeers::V6(peers))),
+            IResult::Err(err) => IResult::Err(err),
         }
     }
 
@@ -45,9 +49,9 @@ impl<'a> CompactPeers<'a> {
     /// # Errors
     ///
     /// It would return an IO Error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
         match self {
             CompactPeers::V4(peers) => peers.write_bytes(writer),
@@ -127,7 +131,10 @@ impl<'a> CompactPeersV4<'a> {
     }
 
     /// Construct a `CompactPeersV4` from the given bytes.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// It will return an error when unable to parse the bytes.
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV4<'a>> {
         parse_peers_v4(bytes)
     }
@@ -137,9 +144,9 @@ impl<'a> CompactPeersV4<'a> {
     /// # Errors
     ///
     /// It would return an IO Error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
         writer.write_all(&self.peers)?;
 
@@ -173,16 +180,16 @@ fn parse_peers_v4(bytes: &[u8]) -> IResult<&[u8], CompactPeersV4<'_>> {
     let remainder_bytes = bytes.len() % SOCKET_ADDR_V4_BYTES;
 
     if remainder_bytes != 0 {
-        IResult::Incomplete(Needed::Size(SOCKET_ADDR_V4_BYTES - remainder_bytes))
+        Err(nom::Err::Incomplete(nom::Needed::new(SOCKET_ADDR_V4_BYTES - remainder_bytes)))
     } else {
         let end_of_bytes = &bytes[bytes.len()..bytes.len()];
 
-        IResult::Done(
+        IResult::Ok((
             end_of_bytes,
             CompactPeersV4 {
                 peers: Cow::Borrowed(bytes),
             },
-        )
+        ))
     }
 }
 
@@ -246,7 +253,10 @@ impl<'a> CompactPeersV6<'a> {
     }
 
     /// Construct a `CompactPeersV6` from the given bytes.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// It will return an error when unable to parse the bytes.
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV6<'a>> {
         parse_peers_v6(bytes)
     }
@@ -256,9 +266,9 @@ impl<'a> CompactPeersV6<'a> {
     /// # Errors
     ///
     /// It would return an IO Error if unable to write the bytes.
-    pub fn write_bytes<W>(&self, mut writer: W) -> io::Result<()>
+    pub fn write_bytes<W>(&self, mut writer: W) -> std::io::Result<()>
     where
-        W: Write,
+        W: std::io::Write,
     {
         writer.write_all(&self.peers)?;
 
@@ -292,16 +302,16 @@ fn parse_peers_v6(bytes: &[u8]) -> IResult<&[u8], CompactPeersV6<'_>> {
     let remainder_bytes = bytes.len() % SOCKET_ADDR_V6_BYTES;
 
     if remainder_bytes != 0 {
-        IResult::Incomplete(Needed::Size(SOCKET_ADDR_V6_BYTES - remainder_bytes))
+        Err(nom::Err::Incomplete(nom::Needed::new(SOCKET_ADDR_V6_BYTES - remainder_bytes)))
     } else {
         let end_of_bytes = &bytes[bytes.len()..bytes.len()];
 
-        IResult::Done(
+        IResult::Ok((
             end_of_bytes,
             CompactPeersV6 {
                 peers: Cow::Borrowed(bytes),
             },
-        )
+        ))
     }
 }
 
@@ -377,7 +387,7 @@ mod tests {
         let received = CompactPeersV4::from_bytes(&bytes);
         let expected = CompactPeersV4::new();
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -389,7 +399,7 @@ mod tests {
 
         expected.insert("127.0.0.1:15".parse().unwrap());
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -402,7 +412,7 @@ mod tests {
         expected.insert("127.0.0.1:15".parse().unwrap());
         expected.insert("127.0.0.1:256".parse().unwrap());
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -468,7 +478,7 @@ mod tests {
         let received = CompactPeersV6::from_bytes(&bytes);
         let expected = CompactPeersV6::new();
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -482,7 +492,7 @@ mod tests {
 
         expected.insert("[ADBB:234A:55BD:FF34:3D3A::234A:55BD]:256".parse().unwrap()); // cspell:disable-line
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]
@@ -498,7 +508,7 @@ mod tests {
         expected.insert("[ADBB:234A:55BD:FF34:3D3A::234A:55BD]:256".parse().unwrap()); // cspell:disable-line
         expected.insert("[DABB:234A:55BD:FF34:3D3A::234A:55BD]:512".parse().unwrap()); // cspell:disable-line
 
-        assert_eq!(received, IResult::Done(&b""[..], expected));
+        assert_eq!(received, IResult::Ok((&b""[..], expected)));
     }
 
     #[test]

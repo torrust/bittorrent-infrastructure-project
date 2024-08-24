@@ -4,13 +4,18 @@
 
 // Nom has lots of unused warnings atm, keep this here for now.
 
-use std::io::{self, Write};
+use std::io::Write as _;
 
 use byteorder::{BigEndian, WriteBytesExt};
 use bytes::Bytes;
-use nom::{alt, be_u32, be_u8, call, error_node_position, error_position, map, opt, switch, tuple, tuple_parser, value, IResult};
+use nom::branch::alt;
+use nom::bytes::complete::take;
+use nom::combinator::{all_consuming, map, map_res, opt, value};
+use nom::number::complete::{be_u32, be_u8};
+use nom::sequence::{preceded, tuple};
+use nom::IResult;
+use thiserror::Error;
 
-use crate::manager::messages::ManagedMessage;
 use crate::protocol::PeerProtocol;
 
 // TODO: Propagate failures to cast values to/from usize
@@ -52,16 +57,30 @@ pub use crate::message::bits_ext::{BitsExtensionMessage, ExtendedMessage, Extend
 pub use crate::message::null::NullProtocolMessage;
 #[allow(clippy::module_name_repetitions)]
 pub use crate::message::prot_ext::{
-    PeerExtensionProtocolMessage, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
+    PeerExtensionProtocolMessage, PeerExtensionProtocolMessageError, UtMetadataDataMessage, UtMetadataMessage,
+    UtMetadataRejectMessage, UtMetadataRequestMessage,
 };
 #[allow(clippy::module_name_repetitions)]
 pub use crate::message::standard::{BitFieldIter, BitFieldMessage, CancelMessage, HaveMessage, PieceMessage, RequestMessage};
+use crate::ManagedMessage;
+
+#[derive(Error, Debug, Clone)]
+pub enum PeerWireProtocolMessageError {}
+
+impl From<PeerWireProtocolMessageError> for std::io::Error {
+    fn from(err: PeerWireProtocolMessageError) -> Self {
+        std::io::Error::new(std::io::ErrorKind::Other, err)
+    }
+}
 
 /// Enumeration of messages for `PeerWireProtocol`.
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone)]
 pub enum PeerWireProtocolMessage<P>
 where
-    P: PeerProtocol,
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     /// Message to keep the connection alive.
     KeepAlive,
@@ -93,12 +112,14 @@ where
     ///
     /// In reality, this can be any type that implements `ProtocolMessage` if, for example,
     /// you are running a private swarm where you know all nodes support a given message(s).
-    ProtExtension(P::ProtocolMessage),
+    ProtExtension(Result<P::ProtocolMessage, P::ProtocolMessageError>),
 }
 
 impl<P> ManagedMessage for PeerWireProtocolMessage<P>
 where
-    P: PeerProtocol,
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     fn keep_alive() -> PeerWireProtocolMessage<P> {
         PeerWireProtocolMessage::KeepAlive
@@ -111,17 +132,18 @@ where
 
 impl<P> PeerWireProtocolMessage<P>
 where
-    P: PeerProtocol,
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     /// Bytes Needed to encode Byte Slice
     ///
     /// # Errors
     ///
     /// This function will not return an error.
-    pub fn bytes_needed(bytes: &[u8]) -> io::Result<Option<usize>> {
-        match be_u32(bytes) {
-            // We need 4 bytes for the length, plus whatever the length is...
-            IResult::Done(_, length) => Ok(Some(MESSAGE_LENGTH_LEN_BYTES + u32_to_usize(length))),
+    pub fn bytes_needed(bytes: &[u8]) -> std::io::Result<Option<usize>> {
+        match be_u32::<_, nom::error::Error<&[u8]>>(bytes) {
+            Ok((_, length)) => Ok(Some(MESSAGE_LENGTH_LEN_BYTES + u32_to_usize(length))),
             _ => Ok(None),
         }
     }
@@ -131,11 +153,11 @@ where
     /// # Errors
     ///
     /// This function will return an error if unable to parse bytes for supplied protocol.
-    pub fn parse_bytes(bytes: Bytes, ext_protocol: &mut P) -> io::Result<PeerWireProtocolMessage<P>> {
+    pub fn parse_bytes(bytes: &[u8], ext_protocol: &mut P) -> std::io::Result<PeerWireProtocolMessage<P>> {
         match parse_message(bytes, ext_protocol) {
-            IResult::Done((), result) => result,
-            _ => Err(io::Error::new(
-                io::ErrorKind::Other,
+            Ok((_, result)) => result,
+            _ => Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
                 "Failed To Parse PeerWireProtocolMessage",
             )),
         }
@@ -146,9 +168,9 @@ where
     /// # Errors
     ///
     /// This function will return an error if unable to write bytes.
-    pub fn write_bytes<W>(&self, writer: W, ext_protocol: &mut P) -> io::Result<()>
+    pub fn write_bytes<W>(&self, writer: W, ext_protocol: &mut P) -> std::io::Result<usize>
     where
-        W: Write,
+        W: std::io::Write,
     {
         match self {
             &PeerWireProtocolMessage::KeepAlive => write_length_id_pair(writer, KEEP_ALIVE_MESSAGE_LEN, None),
@@ -170,7 +192,12 @@ where
         }
     }
 
-    pub fn message_size(&self, ext_protocol: &mut P) -> usize {
+    /// Retrieve how many bytes the message will occupy on the wire.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to calculate the message length.
+    pub fn message_size(&self, ext_protocol: &mut P) -> std::io::Result<usize> {
         let message_specific_len = match self {
             &PeerWireProtocolMessage::KeepAlive => KEEP_ALIVE_MESSAGE_LEN as usize,
             &PeerWireProtocolMessage::Choke => CHOKE_MESSAGE_LEN as usize,
@@ -183,24 +210,25 @@ where
             PeerWireProtocolMessage::Piece(msg) => BASE_PIECE_MESSAGE_LEN as usize + msg.block().len(),
             &PeerWireProtocolMessage::Cancel(_) => CANCEL_MESSAGE_LEN as usize,
             PeerWireProtocolMessage::BitsExtension(ext) => ext.message_size(),
-            PeerWireProtocolMessage::ProtExtension(ext) => ext_protocol.message_size(ext),
+            PeerWireProtocolMessage::ProtExtension(ext) => ext_protocol.message_size(ext)?,
         };
 
-        MESSAGE_LENGTH_LEN_BYTES + message_specific_len
+        Ok(MESSAGE_LENGTH_LEN_BYTES + message_specific_len)
     }
 }
 
 /// Write a length and optional id out to the given writer.
-fn write_length_id_pair<W>(mut writer: W, length: u32, opt_id: Option<u8>) -> io::Result<()>
+fn write_length_id_pair<W>(mut writer: W, length: u32, opt_id: Option<u8>) -> std::io::Result<usize>
 where
-    W: Write,
+    W: std::io::Write,
 {
     writer.write_u32::<BigEndian>(length)?;
 
     if let Some(id) = opt_id {
-        writer.write_u8(id)
+        let () = writer.write_u8(id)?;
+        Ok(5)
     } else {
-        Ok(())
+        Ok(4)
     }
 }
 
@@ -208,7 +236,7 @@ where
 ///
 /// Panics if parsing failed for any reason.
 fn parse_message_length(bytes: &[u8]) -> usize {
-    if let IResult::Done(_, len) = be_u32(bytes) {
+    if let Ok((_, len)) = be_u32::<_, nom::error::Error<&[u8]>>(bytes) {
         u32_to_usize(len)
     } else {
         panic!("bip_peer: Message Length Was Less Than 4 Bytes")
@@ -224,54 +252,226 @@ fn u32_to_usize(value: u32) -> usize {
 // the number of bytes needed will be returned. However, that number of bytes is on a per parser
 // basis. If possible, we should return the number of bytes needed for the rest of the WHOLE message.
 // This allows clients to only re invoke the parser when it knows it has enough of the data.
-fn parse_message<P>(mut bytes: Bytes, ext_protocol: &mut P) -> IResult<(), io::Result<PeerWireProtocolMessage<P>>>
-where
-    P: PeerProtocol,
-{
-    let header_bytes = bytes.clone();
 
-    // Attempt to parse a built in message type, otherwise, see if it is an extension type.
-    alt!(
-        (),
-        ignore_input!(switch!(header_bytes.as_ref(), throwaway_input!(tuple!(be_u32, opt!(be_u8))),
-            (KEEP_ALIVE_MESSAGE_LEN, None) => value!(
-                Ok(PeerWireProtocolMessage::KeepAlive)
-            ) |
-            (CHOKE_MESSAGE_LEN, Some(CHOKE_MESSAGE_ID)) => value!(
-                Ok(PeerWireProtocolMessage::Choke)
-            ) |
-            (UNCHOKE_MESSAGE_LEN, Some(UNCHOKE_MESSAGE_ID)) => value!(
-                Ok(PeerWireProtocolMessage::UnChoke)
-            ) |
-            (INTERESTED_MESSAGE_LEN, Some(INTERESTED_MESSAGE_ID)) => value!(
-                Ok(PeerWireProtocolMessage::Interested)
-            ) |
-            (UNINTERESTED_MESSAGE_LEN, Some(UNINTERESTED_MESSAGE_ID)) => value!(
-                Ok(PeerWireProtocolMessage::UnInterested)
-            ) |
-            (HAVE_MESSAGE_LEN, Some(HAVE_MESSAGE_ID)) => map!(
-                call!(HaveMessage::parse_bytes, &bytes.split_off(HEADER_LEN)),
-                |res_have| res_have.map(|have| PeerWireProtocolMessage::Have(have))
-            ) |
-            (message_len, Some(BITFIELD_MESSAGE_ID)) => map!(
-                call!(BitFieldMessage::parse_bytes, bytes.split_off(HEADER_LEN), message_len - 1),
-                |res_bitfield| res_bitfield.map(|bitfield| PeerWireProtocolMessage::BitField(bitfield))
-            ) |
-            (REQUEST_MESSAGE_LEN, Some(REQUEST_MESSAGE_ID)) => map!(
-                call!(RequestMessage::parse_bytes, &bytes.split_off(HEADER_LEN)),
-                |res_request| res_request.map(|request| PeerWireProtocolMessage::Request(request))
-            ) |
-            (message_len, Some(PIECE_MESSAGE_ID)) => map!(
-                call!(PieceMessage::parse_bytes, &bytes.split_off(HEADER_LEN), message_len - 1),
-                |res_piece| res_piece.map(|piece| PeerWireProtocolMessage::Piece(piece))
-            ) |
-            (CANCEL_MESSAGE_LEN, Some(CANCEL_MESSAGE_ID)) => map!(
-                call!(CancelMessage::parse_bytes, &bytes.split_off(HEADER_LEN)),
-                |res_cancel| res_cancel.map(|cancel| PeerWireProtocolMessage::Cancel(cancel))
-            )
-        )) | map!(call!(BitsExtensionMessage::parse_bytes, bytes.clone()), |res_bits_ext| {
-            res_bits_ext.map(|bits_ext| PeerWireProtocolMessage::BitsExtension(bits_ext))
-        }) | map!(value!(ext_protocol.parse_bytes(bytes)), |res_prot_ext| res_prot_ext
-            .map(|prot_ext| PeerWireProtocolMessage::ProtExtension(prot_ext)))
-    )
+fn parse_keep_alive<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        tuple((
+            be_u32::<_, nom::error::Error<&[u8]>>,
+            opt(be_u8::<_, nom::error::Error<&[u8]>>),
+        )),
+        |_| Ok(PeerWireProtocolMessage::KeepAlive),
+    )(input)
+}
+
+fn parse_choke<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        tuple((
+            value(CHOKE_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
+            value(Some(CHOKE_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
+        )),
+        |_| Ok(PeerWireProtocolMessage::Choke),
+    )(input)
+}
+
+fn parse_unchoke<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        tuple((
+            value(UNCHOKE_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
+            value(Some(UNCHOKE_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
+        )),
+        |_| Ok(PeerWireProtocolMessage::UnChoke),
+    )(input)
+}
+
+fn parse_interested<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        tuple((
+            value(INTERESTED_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
+            value(Some(INTERESTED_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
+        )),
+        |_| Ok(PeerWireProtocolMessage::Interested),
+    )(input)
+}
+
+fn parse_uninterested<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        tuple((
+            value(UNINTERESTED_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
+            value(Some(UNINTERESTED_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
+        )),
+        |_| Ok(PeerWireProtocolMessage::UnInterested),
+    )(input)
+}
+
+fn parse_have<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        preceded(
+            tuple((
+                value(HAVE_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
+                value(Some(HAVE_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
+            )),
+            take(4_usize),
+        ),
+        |have| HaveMessage::parse_bytes(have).map(PeerWireProtocolMessage::Have),
+    )(input)
+}
+
+fn parse_bitfield<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        preceded(
+            tuple((
+                value(BASE_BITFIELD_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
+                value(Some(BITFIELD_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
+            )),
+            take(4_usize),
+        ),
+        |bitfield| BitFieldMessage::parse_bytes(bitfield).map(PeerWireProtocolMessage::BitField),
+    )(input)
+}
+
+fn parse_request<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        preceded(
+            tuple((
+                value(REQUEST_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
+                value(Some(REQUEST_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
+            )),
+            take(4_usize),
+        ),
+        |request| RequestMessage::parse_bytes(request).map(PeerWireProtocolMessage::Request),
+    )(input)
+}
+
+fn parse_piece<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        preceded(
+            tuple((
+                value(BASE_PIECE_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
+                value(Some(PIECE_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
+            )),
+            take(4_usize),
+        ),
+        |piece| {
+            let len = parse_message_length(piece);
+            PieceMessage::parse_bytes(piece, len).map(PeerWireProtocolMessage::Piece)
+        },
+    )(input)
+}
+
+fn parse_cancel<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        preceded(
+            tuple((
+                value(CANCEL_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
+                value(Some(CANCEL_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
+            )),
+            take(4_usize),
+        ),
+        |cancel| CancelMessage::parse_bytes(cancel).map(PeerWireProtocolMessage::Cancel),
+    )(input)
+}
+
+fn parse_bits_extension<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        |input| BitsExtensionMessage::parse_bytes(input),
+        |res_bits_ext| res_bits_ext.map(|bits_ext| PeerWireProtocolMessage::BitsExtension(bits_ext)),
+    )(input)
+}
+
+fn parse_prot_extension<'a, P>(
+    input: &'a [u8],
+    ext_protocol: &mut P,
+) -> IResult<&'a [u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    map(
+        |input| match ext_protocol.parse_bytes(input) {
+            Ok(msg) => Ok((input, Ok(PeerWireProtocolMessage::ProtExtension(msg)))),
+            Err(_) => Err(nom::Err::Error(nom::error::Error {
+                input,
+                code: nom::error::ErrorKind::Fail,
+            })),
+        },
+        |result| result,
+    )(input)
+}
+
+fn parse_message<'a, P>(bytes: &'a [u8], ext_protocol: &mut P) -> IResult<&'a [u8], std::io::Result<PeerWireProtocolMessage<P>>>
+where
+    P: PeerProtocol + Clone + std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
+    <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
+{
+    alt((
+        parse_keep_alive,
+        parse_choke,
+        parse_unchoke,
+        parse_interested,
+        parse_uninterested,
+        parse_have,
+        parse_bitfield,
+        parse_request,
+        parse_piece,
+        parse_cancel,
+        parse_bits_extension,
+        |input| parse_prot_extension(input, ext_protocol),
+    ))(bytes)
 }

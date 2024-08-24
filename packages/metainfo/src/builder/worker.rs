@@ -1,13 +1,11 @@
-use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::Arc;
-use std::thread;
+use std::sync::{mpsc, Arc};
 
 use crossbeam::queue::SegQueue;
 use util::sha::ShaHash;
 
 use crate::accessor::{Accessor, PieceAccess};
 use crate::builder::buffer::{PieceBuffer, PieceBuffers};
-use crate::error::ParseResult;
+use crate::error::ParseError;
 
 /// Messages sent to the master hasher.
 pub enum MasterMessage {
@@ -32,7 +30,7 @@ pub fn start_hasher_workers<A, C>(
     num_pieces: u64,
     num_workers: usize,
     progress: C,
-) -> ParseResult<Vec<(usize, ShaHash)>>
+) -> Result<Vec<(usize, ShaHash)>, ParseError>
 where
     A: Accessor,
     C: FnMut(f64) + Send + 'static,
@@ -53,13 +51,13 @@ where
         let share_work_queue = work_queue.clone();
         let share_piece_buffers = piece_buffers.clone();
 
-        thread::spawn(move || {
+        std::thread::spawn(move || {
             start_hash_worker(&share_master_send, &share_work_queue, &share_piece_buffers);
         });
     }
 
     // Create a worker thread to execute the user callback for the progress update
-    thread::spawn(move || {
+    std::thread::spawn(move || {
         start_progress_updater(prog_recv, num_pieces, progress);
     });
 
@@ -74,11 +72,11 @@ where
 fn start_hash_master<A>(
     accessor: A,
     num_workers: usize,
-    recv: &Receiver<MasterMessage>,
+    recv: &mpsc::Receiver<MasterMessage>,
     work: &Arc<SegQueue<WorkerMessage>>,
     buffers: &Arc<PieceBuffers>,
-    progress_sender: &Sender<usize>,
-) -> ParseResult<Vec<(usize, ShaHash)>>
+    progress_sender: &mpsc::Sender<usize>,
+) -> Result<Vec<(usize, ShaHash)>, ParseError>
 where
     A: Accessor,
 {
@@ -162,7 +160,7 @@ where
 
 // ----------------------------------------------------------------------------//
 
-fn start_progress_updater<C>(recv: Receiver<usize>, num_pieces: u64, mut progress: C)
+fn start_progress_updater<C>(recv: mpsc::Receiver<usize>, num_pieces: u64, mut progress: C)
 where
     C: FnMut(f64),
 {
@@ -177,7 +175,7 @@ where
 // ----------------------------------------------------------------------------//
 
 /// Starts a hasher worker which will hash all of the buffers it receives.
-fn start_hash_worker(send: &Sender<MasterMessage>, work: &Arc<SegQueue<WorkerMessage>>, buffers: &Arc<PieceBuffers>) {
+fn start_hash_worker(send: &mpsc::Sender<MasterMessage>, work: &Arc<SegQueue<WorkerMessage>>, buffers: &Arc<PieceBuffers>) {
     let mut work_to_do = true;
 
     // Loop until we are instructed to stop working
@@ -206,7 +204,7 @@ fn start_hash_worker(send: &Sender<MasterMessage>, work: &Arc<SegQueue<WorkerMes
 
 #[cfg(test)]
 mod tests {
-    use std::io::{self, Cursor};
+
     use std::ops::{Index, Range};
     use std::path::Path;
     use std::sync::mpsc;
@@ -258,7 +256,7 @@ mod tests {
         }
 
         /// Access the metadata for all files including their length and path.
-        fn access_metadata<C>(&self, _: C) -> io::Result<()>
+        fn access_metadata<C>(&self, _: C) -> std::io::Result<()>
         where
             C: FnMut(u64, &Path),
         {
@@ -266,12 +264,12 @@ mod tests {
         }
 
         /// Access the sequential pieces that make up all of the files.
-        fn access_pieces<C>(&self, mut callback: C) -> io::Result<()>
+        fn access_pieces<C>(&self, mut callback: C) -> std::io::Result<()>
         where
-            C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
+            C: for<'a> FnMut(PieceAccess<'a>) -> std::io::Result<()>,
         {
             for range in &self.buffer_ranges {
-                let mut next_region = Cursor::new(self.contiguous_buffer.index(range.clone()));
+                let mut next_region = std::io::Cursor::new(self.contiguous_buffer.index(range.clone()));
 
                 callback(PieceAccess::Compute(&mut next_region))?;
             }

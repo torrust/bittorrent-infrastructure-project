@@ -13,23 +13,16 @@ pub type ServerResult<'a, T> = Result<T, &'a str>;
 
 pub trait ServerHandler: Send {
     /// Service a connection id request from the given address.
-    ///
-    /// If the result callback is not called, no response will be sent.
-    fn connect<R>(&mut self, addr: SocketAddr, result: R)
-    where
-        R: for<'a> FnOnce(ServerResult<'a, u64>);
+    fn connect(&mut self, addr: SocketAddr) -> Option<ServerResult<'_, u64>>;
 
     /// Service an announce request with the given connect id.
-    ///
-    /// If the result callback is not called, no response will be sent.
-    fn announce<'b, R>(&mut self, addr: SocketAddr, id: u64, req: &AnnounceRequest<'b>, result: R)
-    where
-        R: for<'a> FnOnce(ServerResult<'a, AnnounceResponse<'a>>);
+    fn announce(
+        &mut self,
+        addr: SocketAddr,
+        id: u64,
+        req: &AnnounceRequest<'_>,
+    ) -> Option<ServerResult<'_, AnnounceResponse<'_>>>;
 
     /// Service a scrape request with the given connect id.
-    ///
-    /// If the result callback is not called, no response will be sent.
-    fn scrape<'b, R>(&mut self, addr: SocketAddr, id: u64, req: &ScrapeRequest<'b>, result: R)
-    where
-        R: for<'a> FnOnce(ServerResult<'a, ScrapeResponse<'a>>);
+    fn scrape(&mut self, addr: SocketAddr, id: u64, req: &ScrapeRequest<'_>) -> Option<ServerResult<'_, ScrapeResponse<'_>>>;
 }

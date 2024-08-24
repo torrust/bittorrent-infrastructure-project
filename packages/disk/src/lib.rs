@@ -6,9 +6,7 @@ pub mod error;
 
 pub use crate::disk::fs::FileSystem;
 pub use crate::disk::manager::builder::DiskManagerBuilder;
-pub use crate::disk::manager::sink::DiskManagerSink;
-pub use crate::disk::manager::stream::DiskManagerStream;
-pub use crate::disk::manager::DiskManager;
+pub use crate::disk::manager::{DiskManager, DiskManagerSink, DiskManagerStream};
 pub use crate::disk::{IDiskMessage, ODiskMessage};
 pub use crate::memory::block::{Block, BlockMetadata, BlockMut};
 

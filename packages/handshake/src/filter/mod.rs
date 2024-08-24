@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::cmp::{Eq, PartialEq};
 use std::net::SocketAddr;
 
 use util::bt::{InfoHash, PeerId};

@@ -1,22 +1,23 @@
-use common::{random_buffer, InMemoryFileSystem, MultiFileDirectAccessor};
+use common::{random_buffer, tracing_stderr_init, InMemoryFileSystem, MultiFileDirectAccessor, DEFAULT_TIMEOUT, INIT};
 use disk::{DiskManagerBuilder, IDiskMessage};
-use futures::future::Future;
-use futures::sink::Sink;
-use futures::stream::Stream;
-use futures::{future, AsyncSink};
+use futures::{FutureExt, SinkExt as _, StreamExt as _};
 use metainfo::{Metainfo, MetainfoBuilder, PieceLength};
-use tokio_core::reactor::Core;
+use tracing::level_filters::LevelFilter;
 
 mod common;
 
-#[test]
-fn positive_disk_manager_send_backpressure() {
+#[tokio::test]
+async fn positive_disk_manager_send_backpressure() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::INFO);
+    });
+
     // Create some "files" as random bytes
     let data_a = (random_buffer(50), "/path/to/file/a".into());
     let data_b = (random_buffer(2000), "/path/to/file/b".into());
     let data_c = (random_buffer(0), "/path/to/file/c".into());
 
-    // Create our accessor for our in memory files and create a torrent file for them
+    // Create our accessor for our in-memory files and create a torrent file for them
     let files_accessor =
         MultiFileDirectAccessor::new("/my/downloads/".into(), vec![data_a.clone(), data_b.clone(), data_c.clone()]);
     let metainfo_bytes = MetainfoBuilder::new()
@@ -28,33 +29,40 @@ fn positive_disk_manager_send_backpressure() {
 
     // Spin up a disk manager and add our created torrent to it
     let filesystem = InMemoryFileSystem::new();
-    let (m_send, m_recv) = DiskManagerBuilder::new()
+    let (mut m_send, mut m_recv) = DiskManagerBuilder::new()
         .with_sink_buffer_capacity(1)
         .build(filesystem.clone())
-        .split();
-
-    let mut core = Core::new().unwrap();
+        .into_parts();
 
     // Add a torrent, so our receiver has a single torrent added message buffered
-    let mut m_send = core.run(m_send.send(IDiskMessage::AddTorrent(metainfo_file))).unwrap();
+    tokio::time::timeout(DEFAULT_TIMEOUT, m_send.send(IDiskMessage::AddTorrent(metainfo_file)))
+        .await
+        .unwrap()
+        .unwrap();
 
     // Try to send a remove message (but it should fail)
-    let (result, m_send) = core
-        .run(future::lazy(|| {
-            future::ok::<_, ()>((m_send.start_send(IDiskMessage::RemoveTorrent(info_hash)), m_send))
-        }))
-        .unwrap();
-    match result {
-        Ok(AsyncSink::NotReady(_)) => (),
-        _ => panic!("Unexpected Result From Backpressure Test"),
-    };
+    assert!(
+        m_send.send(IDiskMessage::RemoveTorrent(info_hash)).now_or_never().is_none(),
+        "it should have back_pressure"
+    );
 
     // Receive from our stream to unblock the backpressure
-    let m_recv = core.run(m_recv.into_future().map(|(_, recv)| recv).map_err(|_| ())).unwrap();
+    tokio::time::timeout(DEFAULT_TIMEOUT, m_recv.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
 
     // Try to send a remove message again which should go through
-    drop(core.run(m_send.send(IDiskMessage::RemoveTorrent(info_hash))).unwrap());
+    tokio::time::timeout(DEFAULT_TIMEOUT, m_send.send(IDiskMessage::RemoveTorrent(info_hash)))
+        .await
+        .unwrap()
+        .unwrap();
 
-    // Receive confirmation (just so the pool doesn't panic because we ended before it could send the message back)
-    drop(core.run(m_recv.into_future().map(|(_, recv)| recv).map_err(|_| ())).unwrap());
+    // Receive confirmation
+    tokio::time::timeout(DEFAULT_TIMEOUT, m_recv.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
 }

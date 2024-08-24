@@ -1,51 +1,55 @@
-use std::thread::{self};
-use std::time::Duration;
-
-use common::{handshaker, MockTrackerHandler};
-use futures::future::Either;
-use futures::stream::Stream;
+use common::{handshaker, tracing_stderr_init, MockTrackerHandler, DEFAULT_TIMEOUT, INIT, LOOPBACK_IPV4};
+use futures::StreamExt as _;
+use tracing::level_filters::LevelFilter;
 use util::bt::{self};
 use utracker::announce::{AnnounceEvent, ClientState};
-use utracker::{ClientRequest, TrackerClient, TrackerServer};
+use utracker::{ClientRequest, HandshakerMessage, TrackerClient, TrackerServer};
 
 mod common;
 
-#[test]
-#[allow(unused)]
-fn positive_announce_stopped() {
-    let (sink, stream) = handshaker();
+#[tokio::test]
+async fn positive_announce_stopped() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::ERROR);
+    });
 
-    let server_addr = "127.0.0.1:3502".parse().unwrap();
+    let (sink, mut stream) = handshaker();
+
     let mock_handler = MockTrackerHandler::new();
-    let server = TrackerServer::run(server_addr, mock_handler).unwrap();
+    let server = TrackerServer::run(LOOPBACK_IPV4, mock_handler).unwrap();
 
-    thread::sleep(Duration::from_millis(100));
-
-    let mut client = TrackerClient::new("127.0.0.1:4502".parse().unwrap(), sink).unwrap();
+    let mut client = TrackerClient::run(LOOPBACK_IPV4, sink, None).unwrap();
 
     let info_hash = [0u8; bt::INFO_HASH_LEN].into();
-    let mut blocking_stream = stream.wait();
 
     // Started
     {
-        let send_token = client
+        let _send_token = client
             .request(
-                server_addr,
+                server.local_addr(),
                 ClientRequest::Announce(info_hash, ClientState::new(0, 0, 0, AnnounceEvent::Started)),
             )
             .unwrap();
 
-        let init_msg = match blocking_stream.next().unwrap().unwrap() {
-            Either::A(a) => a,
-            Either::B(_) => unreachable!(),
+        let _init_msg = match tokio::time::timeout(DEFAULT_TIMEOUT, stream.next())
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap()
+        {
+            HandshakerMessage::InitiateMessage(message) => message,
+            HandshakerMessage::ClientMetadata(_) => unreachable!(),
         };
 
-        let metadata = match blocking_stream.next().unwrap().unwrap() {
-            Either::B(b) => b,
-            Either::A(_) => unreachable!(),
+        let metadata = match tokio::time::timeout(DEFAULT_TIMEOUT, stream.next())
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap()
+        {
+            HandshakerMessage::InitiateMessage(_) => unreachable!(),
+            HandshakerMessage::ClientMetadata(metadata) => metadata,
         };
-
-        assert_eq!(send_token, metadata.token());
 
         let response = metadata.result().as_ref().unwrap().announce_response().unwrap();
         assert_eq!(response.leechers(), 1);
@@ -55,19 +59,22 @@ fn positive_announce_stopped() {
 
     // Stopped
     {
-        let send_token = client
+        let _send_token = client
             .request(
-                server_addr,
+                server.local_addr(),
                 ClientRequest::Announce(info_hash, ClientState::new(0, 0, 0, AnnounceEvent::Stopped)),
             )
             .unwrap();
 
-        let metadata = match blocking_stream.next().unwrap().unwrap() {
-            Either::B(b) => b,
-            Either::A(_) => unreachable!(),
+        let metadata = match tokio::time::timeout(DEFAULT_TIMEOUT, stream.next())
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap()
+        {
+            HandshakerMessage::InitiateMessage(_) => unreachable!(),
+            HandshakerMessage::ClientMetadata(metadata) => metadata,
         };
-
-        assert_eq!(send_token, metadata.token());
 
         let response = metadata.result().as_ref().unwrap().announce_response().unwrap();
         assert_eq!(response.leechers(), 0);

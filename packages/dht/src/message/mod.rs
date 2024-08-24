@@ -1,9 +1,7 @@
-use std::fmt::Debug;
-
 use bencode::ext::BConvertExt;
 use bencode::{BConvert, BRefAccess, BencodeConvertError};
 
-use crate::error::{DhtError, DhtErrorKind, DhtResult};
+use crate::error::DhtError;
 use crate::message::error::ErrorMessage;
 use crate::message::request::RequestType;
 use crate::message::response::{ExpectedResponse, ResponseType};
@@ -61,7 +59,7 @@ impl BConvertExt for MessageValidate {}
 pub enum MessageType<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
-    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+    B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
 {
     Request(RequestType<'a>),
     Response(ResponseType<'a, B>),
@@ -71,14 +69,14 @@ where
 impl<'a, B> MessageType<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
-    B::BType: PartialEq + Eq + core::hash::Hash + Debug,
+    B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
 {
     /// Create a new `MessageType`
     ///
     /// # Errors
     ///
     /// This function will return an error if unable to lookup, convert and crate type.
-    pub fn new<T>(message: &'a B::BType, trans_mapper: T) -> DhtResult<MessageType<'a, B>>
+    pub fn new<T>(message: &'a B::BType, trans_mapper: T) -> Result<MessageType<'a, B>, DhtError>
     where
         T: Fn(&[u8]) -> ExpectedResponse,
     {
@@ -103,9 +101,9 @@ where
                 let err_message = ErrorMessage::from_parts(msg_root, trans_id)?;
                 Ok(MessageType::Error(err_message))
             }
-            unknown => Err(DhtError::from_kind(DhtErrorKind::InvalidMessage {
+            unknown => Err(DhtError::InvalidMessage {
                 code: unknown.to_owned(),
-            })),
+            }),
         }
     }
 }

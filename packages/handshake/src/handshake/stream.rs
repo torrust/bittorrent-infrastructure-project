@@ -1,26 +1,26 @@
-//! `Stream` portion of the `Handshaker` for completed handshakes.
+use std::task::{Context, Poll};
 
-use futures::sync::mpsc::Receiver;
-use futures::{Poll, Stream};
+use futures::channel::mpsc;
+use futures::{Stream, StreamExt as _};
 
 use crate::CompleteMessage;
 
+/// `Stream` portion of the `Handshaker` for completed handshakes.
 #[allow(clippy::module_name_repetitions)]
 pub struct HandshakerStream<S> {
-    recv: Receiver<CompleteMessage<S>>,
+    recv: mpsc::Receiver<std::io::Result<CompleteMessage<S>>>,
 }
 
 impl<S> HandshakerStream<S> {
-    pub(super) fn new(recv: Receiver<CompleteMessage<S>>) -> HandshakerStream<S> {
+    pub(super) fn new(recv: mpsc::Receiver<std::io::Result<CompleteMessage<S>>>) -> HandshakerStream<S> {
         HandshakerStream { recv }
     }
 }
 
 impl<S> Stream for HandshakerStream<S> {
-    type Item = CompleteMessage<S>;
-    type Error = ();
+    type Item = std::io::Result<CompleteMessage<S>>;
 
-    fn poll(&mut self) -> Poll<Option<CompleteMessage<S>>, ()> {
-        self.recv.poll()
+    fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.recv.poll_next_unpin(cx)
     }
 }

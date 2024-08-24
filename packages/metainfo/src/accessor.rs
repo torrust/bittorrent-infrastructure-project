@@ -1,5 +1,3 @@
-use std::fs::File;
-use std::io::{self, Cursor, Read};
 use std::path::{Path, PathBuf};
 
 use util::sha::ShaHash;
@@ -15,7 +13,7 @@ pub trait IntoAccessor {
     /// # Errors
     ///
     /// It would return an IO error if unable to convert to an ancestor.
-    fn into_accessor(self) -> io::Result<Self::Accessor>;
+    fn into_accessor(self) -> std::io::Result<Self::Accessor>;
 }
 
 /// Trait for accessing the data used to construct a torrent file.
@@ -28,7 +26,7 @@ pub trait Accessor {
     /// # Errors
     ///
     /// It would return an IO error if unable to access the metadata.
-    fn access_metadata<C>(&self, callback: C) -> io::Result<()>
+    fn access_metadata<C>(&self, callback: C) -> std::io::Result<()>
     where
         C: FnMut(u64, &Path);
 
@@ -37,9 +35,9 @@ pub trait Accessor {
     /// # Errors
     ///
     /// It would return an IO error if unable to access the pieces.
-    fn access_pieces<C>(&self, callback: C) -> io::Result<()>
+    fn access_pieces<C>(&self, callback: C) -> std::io::Result<()>
     where
-        C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>;
+        C: for<'a> FnMut(PieceAccess<'a>) -> std::io::Result<()>;
 }
 
 impl<'a, T> Accessor for &'a T
@@ -50,16 +48,16 @@ where
         Accessor::access_directory(*self)
     }
 
-    fn access_metadata<C>(&self, callback: C) -> io::Result<()>
+    fn access_metadata<C>(&self, callback: C) -> std::io::Result<()>
     where
         C: FnMut(u64, &Path),
     {
         Accessor::access_metadata(*self, callback)
     }
 
-    fn access_pieces<C>(&self, callback: C) -> io::Result<()>
+    fn access_pieces<C>(&self, callback: C) -> std::io::Result<()>
     where
-        C: for<'b> FnMut(PieceAccess<'b>) -> io::Result<()>,
+        C: for<'b> FnMut(PieceAccess<'b>) -> std::io::Result<()>,
     {
         Accessor::access_pieces(*self, callback)
     }
@@ -77,7 +75,7 @@ where
 /// (though not required).
 pub enum PieceAccess<'a> {
     /// Hash should be computed from the bytes read.
-    Compute(&'a mut dyn Read),
+    Compute(&'a mut dyn std::io::Read),
     /// Hash given should be used directly as the next checksum.
     PreComputed(ShaHash),
 }
@@ -101,7 +99,7 @@ impl FileAccessor {
     /// # Panics
     ///
     /// It would panic if unable to get the last directory name.
-    pub fn new<T>(path: T) -> io::Result<FileAccessor>
+    pub fn new<T>(path: T) -> std::io::Result<FileAccessor>
     where
         T: AsRef<Path>,
     {
@@ -124,7 +122,7 @@ impl FileAccessor {
 impl IntoAccessor for FileAccessor {
     type Accessor = FileAccessor;
 
-    fn into_accessor(self) -> io::Result<FileAccessor> {
+    fn into_accessor(self) -> std::io::Result<FileAccessor> {
         Ok(self)
     }
 }
@@ -135,7 +133,7 @@ where
 {
     type Accessor = FileAccessor;
 
-    fn into_accessor(self) -> io::Result<FileAccessor> {
+    fn into_accessor(self) -> std::io::Result<FileAccessor> {
         FileAccessor::new(self)
     }
 }
@@ -145,7 +143,7 @@ impl Accessor for FileAccessor {
         self.directory_name.as_ref().map(std::convert::AsRef::as_ref)
     }
 
-    fn access_metadata<C>(&self, mut callback: C) -> io::Result<()>
+    fn access_metadata<C>(&self, mut callback: C) -> std::io::Result<()>
     where
         C: FnMut(u64, &Path),
     {
@@ -172,13 +170,13 @@ impl Accessor for FileAccessor {
         Ok(())
     }
 
-    fn access_pieces<C>(&self, mut callback: C) -> io::Result<()>
+    fn access_pieces<C>(&self, mut callback: C) -> std::io::Result<()>
     where
-        C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
+        C: for<'a> FnMut(PieceAccess<'a>) -> std::io::Result<()>,
     {
         for res_entry in WalkDir::new(&self.absolute_path).into_iter().filter(entry_file_filter) {
             let entry = res_entry?;
-            let mut file = File::open(entry.path())?;
+            let mut file = std::fs::File::open(entry.path())?;
 
             callback(PieceAccess::Compute(&mut file))?;
         }
@@ -215,7 +213,7 @@ impl<'a> DirectAccessor<'a> {
 impl<'a> IntoAccessor for DirectAccessor<'a> {
     type Accessor = DirectAccessor<'a>;
 
-    fn into_accessor(self) -> io::Result<DirectAccessor<'a>> {
+    fn into_accessor(self) -> std::io::Result<DirectAccessor<'a>> {
         Ok(self)
     }
 }
@@ -225,7 +223,7 @@ impl<'a> Accessor for DirectAccessor<'a> {
         None
     }
 
-    fn access_metadata<C>(&self, mut callback: C) -> io::Result<()>
+    fn access_metadata<C>(&self, mut callback: C) -> std::io::Result<()>
     where
         C: FnMut(u64, &Path),
     {
@@ -237,11 +235,11 @@ impl<'a> Accessor for DirectAccessor<'a> {
         Ok(())
     }
 
-    fn access_pieces<C>(&self, mut callback: C) -> io::Result<()>
+    fn access_pieces<C>(&self, mut callback: C) -> std::io::Result<()>
     where
-        C: for<'b> FnMut(PieceAccess<'b>) -> io::Result<()>,
+        C: for<'b> FnMut(PieceAccess<'b>) -> std::io::Result<()>,
     {
-        let mut cursor = Cursor::new(self.file_contents);
+        let mut cursor = std::io::Cursor::new(self.file_contents);
 
         callback(PieceAccess::Compute(&mut cursor))
     }

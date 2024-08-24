@@ -1,5 +1,4 @@
-use core::time;
-use std::{io, thread};
+use std::time::Duration;
 
 use crossbeam::queue::SegQueue;
 
@@ -35,7 +34,7 @@ impl PieceBuffers {
     /// Checkout a piece buffer (possibly blocking) to be used.
     pub fn checkout(&self) -> PieceBuffer {
         let mut pb = None;
-        let ten_millis = time::Duration::from_millis(10);
+        let ten_millis = Duration::from_millis(10);
 
         while pb.is_none() {
             pb = self.piece_queue.pop();
@@ -44,7 +43,7 @@ impl PieceBuffers {
                 break;
             }
 
-            thread::sleep(ten_millis);
+            std::thread::sleep(ten_millis);
             continue;
         }
 
@@ -76,9 +75,9 @@ impl PieceBuffer {
         }
     }
 
-    pub fn write_bytes<C>(&mut self, mut callback: C) -> io::Result<usize>
+    pub fn write_bytes<C>(&mut self, mut callback: C) -> std::io::Result<usize>
     where
-        C: FnMut(&mut [u8]) -> io::Result<usize>,
+        C: FnMut(&mut [u8]) -> std::io::Result<usize>,
     {
         let new_bytes_read = callback(&mut self.buffer[self.bytes_read..])?;
         self.bytes_read += new_bytes_read;

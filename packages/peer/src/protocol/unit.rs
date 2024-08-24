@@ -1,7 +1,3 @@
-use std::io::{self, Write};
-
-use bytes::Bytes;
-
 use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Unit protocol which will always return a unit if called.
@@ -20,28 +16,34 @@ impl UnitProtocol {
 impl PeerProtocol for UnitProtocol {
     type ProtocolMessage = ();
 
-    fn bytes_needed(&mut self, _bytes: &[u8]) -> io::Result<Option<usize>> {
+    type ProtocolMessageError = std::io::Error;
+
+    fn bytes_needed(&mut self, _: &[u8]) -> std::io::Result<Option<usize>> {
         Ok(Some(0))
     }
 
-    fn parse_bytes(&mut self, _bytes: Bytes) -> io::Result<Self::ProtocolMessage> {
-        Ok(())
+    fn parse_bytes(&mut self, _: &[u8]) -> std::io::Result<Result<Self::ProtocolMessage, Self::ProtocolMessageError>> {
+        Ok(Ok(()))
     }
 
-    fn write_bytes<W>(&mut self, _message: &Self::ProtocolMessage, _writer: W) -> io::Result<()>
+    fn write_bytes<W>(&mut self, _: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>, _: W) -> std::io::Result<usize>
     where
-        W: Write,
+        W: std::io::Write,
     {
-        Ok(())
+        Ok(0)
     }
 
-    fn message_size(&mut self, _message: &Self::ProtocolMessage) -> usize {
-        0
+    fn message_size(&mut self, _: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>) -> std::io::Result<usize> {
+        Ok(0)
     }
 }
 
 impl<M> NestedPeerProtocol<M> for UnitProtocol {
-    fn received_message(&mut self, _message: &M) {}
+    fn received_message(&mut self, _message: &M) -> usize {
+        0
+    }
 
-    fn sent_message(&mut self, _message: &M) {}
+    fn sent_message(&mut self, _message: &M) -> usize {
+        0
+    }
 }

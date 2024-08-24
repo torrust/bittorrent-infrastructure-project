@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "contrib/umio",
     "examples/get_metadata",
     "examples/simple_torrent",
     "packages/bencode",

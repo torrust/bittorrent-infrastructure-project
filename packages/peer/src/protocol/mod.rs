@@ -1,9 +1,5 @@
 //! Generic `PeerProtocol` implementations.
 
-use std::io::{self, Write};
-
-use bytes::Bytes;
-
 pub mod extension;
 pub mod null;
 pub mod unit;
@@ -14,6 +10,7 @@ pub mod wire;
 pub trait PeerProtocol {
     /// Type of message the protocol operates with.
     type ProtocolMessage;
+    type ProtocolMessageError;
 
     /// Total number of bytes needed to parse a complete message. This is not
     /// in addition to what we were given, this is the total number of bytes, so
@@ -26,26 +23,34 @@ pub trait PeerProtocol {
     /// # Errors
     ///
     /// This function will return an IO result if unable to calculate the bytes needed.
-    fn bytes_needed(&mut self, bytes: &[u8]) -> io::Result<Option<usize>>;
+    fn bytes_needed(&mut self, bytes: &[u8]) -> std::io::Result<Option<usize>>;
 
     /// Parse a `ProtocolMessage` from the given bytes.
     ///
     /// # Errors
     ///
     /// This function will return an IO error if unable to parse the bytes into a [`Self::ProtocolMessage`].
-    fn parse_bytes(&mut self, bytes: Bytes) -> io::Result<Self::ProtocolMessage>;
+    fn parse_bytes(&mut self, bytes: &[u8]) -> std::io::Result<Result<Self::ProtocolMessage, Self::ProtocolMessageError>>;
 
     /// Write a `ProtocolMessage` to the given writer.
     ///
     /// # Errors
     ///
     /// This function will return an error if it fails to write-out.
-    fn write_bytes<W>(&mut self, message: &Self::ProtocolMessage, writer: W) -> io::Result<()>
+    fn write_bytes<W>(
+        &mut self,
+        item: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>,
+        writer: W,
+    ) -> std::io::Result<usize>
     where
-        W: Write;
+        W: std::io::Write;
 
     /// Retrieve how many bytes the message will occupy on the wire.
-    fn message_size(&mut self, message: &Self::ProtocolMessage) -> usize;
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if unable to calculate the message length.
+    fn message_size(&mut self, message: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>) -> std::io::Result<usize>;
 }
 
 /// Trait for nested peer protocols to see higher level peer protocol messages.
@@ -64,8 +69,8 @@ pub trait PeerProtocol {
 #[allow(clippy::module_name_repetitions)]
 pub trait NestedPeerProtocol<M> {
     /// Notify a nested protocol that we have received the given message.
-    fn received_message(&mut self, message: &M);
+    fn received_message(&mut self, message: &M) -> usize;
 
     /// Notify a nested protocol that we have sent the given message.
-    fn sent_message(&mut self, message: &M);
+    fn sent_message(&mut self, message: &M) -> usize;
 }

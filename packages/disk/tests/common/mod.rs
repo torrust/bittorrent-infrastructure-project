@@ -1,64 +1,84 @@
-use std::cmp;
 use std::collections::HashMap;
-use std::io::{self};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Once, Weak};
 use std::time::Duration;
 
 use bytes::BytesMut;
 use disk::{BlockMetadata, BlockMut, FileSystem, IDiskMessage};
-use futures::future::{self, Future, Loop};
-use futures::sink::{Sink, Wait};
+use futures::future::BoxFuture;
 use futures::stream::Stream;
+use futures::{future, Sink, SinkExt as _, StreamExt as _};
 use metainfo::{Accessor, IntoAccessor, PieceAccess};
-use tokio_core::reactor::{Core, Timeout};
+use tokio::time::timeout;
+use tracing::level_filters::LevelFilter;
 use util::bt::InfoHash;
+
+#[allow(dead_code)]
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_millis(500);
+
+#[allow(dead_code)]
+pub static INIT: Once = Once::new();
+
+#[allow(dead_code)]
+pub fn tracing_stderr_init(filter: LevelFilter) {
+    let builder = tracing_subscriber::fmt()
+        .with_max_level(filter)
+        .with_ansi(true)
+        .with_writer(std::io::stderr);
+
+    builder.pretty().with_file(true).init();
+
+    tracing::info!("Logging initialized");
+}
 
 /// Generate buffer of size random bytes.
 pub fn random_buffer(size: usize) -> Vec<u8> {
     let mut buffer = vec![0u8; size];
-
     rand::Rng::fill(&mut rand::thread_rng(), buffer.as_mut_slice());
-
     buffer
 }
 
-/// Initiate a core loop with the given timeout, state, and closure.
+/// Initiate a runtime loop with the given timeout, state, and closure.
 ///
 /// Returns R or panics if an error occurred in the loop (including a timeout).
 #[allow(dead_code)]
-pub fn core_loop_with_timeout<I, S, F, R>(core: &mut Core, timeout_ms: u64, state: (I, S), call: F) -> R
+pub async fn runtime_loop_with_timeout<'a, 'b, I, S, F, R>(timeout_time: Duration, initial_state: (I, S), mut call: F) -> R
 where
-    F: FnMut(I, S, S::Item) -> Loop<R, (I, S)>,
-    S: Stream,
+    F: FnMut(I, S, S::Item) -> future::Either<BoxFuture<'a, R>, BoxFuture<'b, (I, S)>>,
+    S: Stream + Unpin,
+    R: 'static,
+    I: std::fmt::Debug + Clone,
 {
-    let timeout = Timeout::new(Duration::from_millis(timeout_ms), &core.handle())
-        .unwrap()
-        .then(|_| Err(()));
-
-    // Have to stick the call in our init state so that we transfer ownership between loops
-    core.run(
-        future::loop_fn((call, state), |(mut call, (init, stream))| {
-            stream.into_future().map(|(opt_msg, stream)| {
-                let msg = opt_msg.unwrap_or_else(|| panic!("End Of Stream Reached"));
-
-                match call(init, stream, msg) {
-                    Loop::Continue((init, stream)) => Loop::Continue((call, (init, stream))),
-                    Loop::Break(ret) => Loop::Break(ret),
+    let mut state = initial_state;
+    loop {
+        let (init, mut stream) = state;
+        if let Some(msg) = {
+            timeout(timeout_time, stream.next())
+                .await
+                .unwrap_or_else(|_| panic!("timeout while waiting for next message: {timeout_time:?}, {init:?}"))
+        } {
+            match call(init.clone(), stream, msg) {
+                future::Either::Left(fut) => {
+                    return timeout(timeout_time, fut)
+                        .await
+                        .unwrap_or_else(|_| panic!("timeout waiting for final processing: {timeout_time:?}, {init:?}"));
                 }
-            })
-        })
-        .map_err(|_| ())
-        .select(timeout)
-        .map(|(item, _)| item),
-    )
-    .unwrap_or_else(|_| panic!("Core Loop Timed Out"))
+                future::Either::Right(fut) => {
+                    state = timeout(timeout_time, fut)
+                        .await
+                        .unwrap_or_else(|_| panic!("timeout waiting for next loop state: {timeout_time:?}, {init:?}"));
+                }
+            }
+        } else {
+            panic!("End Of Stream Reached");
+        }
+    }
 }
 
 /// Send block with the given metadata and entire data given.
 #[allow(dead_code)]
-pub fn send_block<S, M>(
-    blocking_send: &mut Wait<S>,
+pub async fn send_block<S, M>(
+    sink: &mut S,
     data: &[u8],
     hash: InfoHash,
     piece_index: u64,
@@ -66,9 +86,14 @@ pub fn send_block<S, M>(
     block_len: usize,
     modify: M,
 ) where
-    S: Sink<SinkItem = IDiskMessage>,
+    S: Sink<IDiskMessage> + Unpin,
     M: Fn(&mut [u8]),
+    <S as Sink<IDiskMessage>>::Error: std::fmt::Display,
 {
+    tracing::trace!(
+        "sending block for torrent: {hash}, index: {piece_index}, block_offset: {block_offset}, block_length: {block_len}"
+    );
+
     let mut bytes = BytesMut::new();
     bytes.extend_from_slice(data);
 
@@ -76,9 +101,9 @@ pub fn send_block<S, M>(
 
     modify(&mut block[..]);
 
-    blocking_send
-        .send(IDiskMessage::ProcessBlock(block.into()))
-        .unwrap_or_else(|_| panic!("Failed To Send Process Block Message"));
+    sink.send(IDiskMessage::ProcessBlock(block.into()))
+        .await
+        .unwrap_or_else(|e| panic!("Failed To Send Process Block Message: {e}"));
 }
 
 //----------------------------------------------------------------------------//
@@ -99,7 +124,7 @@ impl MultiFileDirectAccessor {
 impl IntoAccessor for MultiFileDirectAccessor {
     type Accessor = MultiFileDirectAccessor;
 
-    fn into_accessor(self) -> io::Result<MultiFileDirectAccessor> {
+    fn into_accessor(self) -> std::io::Result<MultiFileDirectAccessor> {
         Ok(self)
     }
 }
@@ -111,7 +136,7 @@ impl Accessor for MultiFileDirectAccessor {
         Some(self.dir.as_ref())
     }
 
-    fn access_metadata<C>(&self, mut callback: C) -> io::Result<()>
+    fn access_metadata<C>(&self, mut callback: C) -> std::io::Result<()>
     where
         C: FnMut(u64, &Path),
     {
@@ -122,9 +147,9 @@ impl Accessor for MultiFileDirectAccessor {
         Ok(())
     }
 
-    fn access_pieces<C>(&self, mut callback: C) -> io::Result<()>
+    fn access_pieces<C>(&self, mut callback: C) -> std::io::Result<()>
     where
-        C: for<'a> FnMut(PieceAccess<'a>) -> io::Result<()>,
+        C: for<'a> FnMut(PieceAccess<'a>) -> std::io::Result<()>,
     {
         for (buffer, _) in &self.files {
             callback(PieceAccess::Compute(&mut &buffer[..]))?;
@@ -137,16 +162,24 @@ impl Accessor for MultiFileDirectAccessor {
 //----------------------------------------------------------------------------//
 
 /// Allow us to mock out the file system.
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct InMemoryFileSystem {
-    files: Arc<Mutex<HashMap<PathBuf, Vec<u8>>>>,
+    #[allow(dead_code)]
+    me: Weak<Self>,
+    files: Mutex<HashMap<PathBuf, Vec<u8>>>,
 }
 
 impl InMemoryFileSystem {
-    pub fn new() -> InMemoryFileSystem {
-        InMemoryFileSystem {
-            files: Arc::new(Mutex::new(HashMap::new())),
-        }
+    pub fn new() -> Arc<Self> {
+        Arc::new_cyclic(|me| Self {
+            me: me.clone(),
+            files: Mutex::default(),
+        })
+    }
+
+    #[allow(dead_code)]
+    pub fn me(&self) -> Arc<Self> {
+        self.me.upgrade().unwrap()
     }
 
     pub fn run_with_lock<C, R>(&self, call: C) -> R
@@ -166,7 +199,7 @@ pub struct InMemoryFile {
 impl FileSystem for InMemoryFileSystem {
     type File = InMemoryFile;
 
-    fn open_file<P>(&self, path: P) -> io::Result<Self::File>
+    fn open_file<P>(&self, path: P) -> std::io::Result<Self::File>
     where
         P: AsRef<Path> + Send + 'static,
     {
@@ -181,40 +214,40 @@ impl FileSystem for InMemoryFileSystem {
         Ok(InMemoryFile { path: file_path })
     }
 
-    fn sync_file<P>(&self, _path: P) -> io::Result<()>
+    fn sync_file<P>(&self, _path: P) -> std::io::Result<()>
     where
         P: AsRef<Path> + Send + 'static,
     {
         Ok(())
     }
 
-    fn file_size(&self, file: &Self::File) -> io::Result<u64> {
+    fn file_size(&self, file: &Self::File) -> std::io::Result<u64> {
         self.run_with_lock(|files| {
             files
                 .get(&file.path)
                 .map(|file| file.len() as u64)
-                .ok_or(io::Error::new(io::ErrorKind::NotFound, "File Not Found"))
+                .ok_or(std::io::Error::new(std::io::ErrorKind::NotFound, "File Not Found"))
         })
     }
 
-    fn read_file(&self, file: &mut Self::File, offset: u64, buffer: &mut [u8]) -> io::Result<usize> {
+    fn read_file(&self, file: &mut Self::File, offset: u64, buffer: &mut [u8]) -> std::io::Result<usize> {
         self.run_with_lock(|files| {
             files
                 .get(&file.path)
                 .map(|file_buffer| {
                     let cast_offset: usize = offset.try_into().unwrap();
-                    let bytes_to_copy = cmp::min(file_buffer.len() - cast_offset, buffer.len());
+                    let bytes_to_copy = std::cmp::min(file_buffer.len() - cast_offset, buffer.len());
                     let bytes = &file_buffer[cast_offset..(bytes_to_copy + cast_offset)];
 
                     buffer.clone_from_slice(bytes);
 
                     bytes_to_copy
                 })
-                .ok_or(io::Error::new(io::ErrorKind::NotFound, "File Not Found"))
+                .ok_or(std::io::Error::new(std::io::ErrorKind::NotFound, "File Not Found"))
         })
     }
 
-    fn write_file(&self, file: &mut Self::File, offset: u64, buffer: &[u8]) -> io::Result<usize> {
+    fn write_file(&self, file: &mut Self::File, offset: u64, buffer: &[u8]) -> std::io::Result<usize> {
         self.run_with_lock(|files| {
             files
                 .get_mut(&file.path)
@@ -226,16 +259,16 @@ impl FileSystem for InMemoryFileSystem {
                         file_buffer.resize(last_byte_pos, 0);
                     }
 
-                    let bytes_to_copy = cmp::min(file_buffer.len() - cast_offset, buffer.len());
+                    let bytes_to_copy = std::cmp::min(file_buffer.len() - cast_offset, buffer.len());
 
                     if bytes_to_copy != 0 {
                         file_buffer[cast_offset..(cast_offset + bytes_to_copy)].clone_from_slice(buffer);
                     }
 
-                    // TODO: If the file is full, this will return zero, we should also simulate io::ErrorKind::WriteZero
+                    // TODO: If the file is full, this will return zero, we should also simulate std::io::ErrorKind::WriteZero
                     bytes_to_copy
                 })
-                .ok_or(io::Error::new(io::ErrorKind::NotFound, "File Not Found"))
+                .ok_or(std::io::Error::new(std::io::ErrorKind::NotFound, "File Not Found"))
         })
     }
 }

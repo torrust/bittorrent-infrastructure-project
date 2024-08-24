@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 use crate::error::ErrorResponse;
 
 /// Result type for a `ClientRequest`.
@@ -5,18 +7,23 @@ pub type ClientResult<T> = Result<T, ClientError>;
 
 /// Errors occurring as the result of a `ClientRequest`.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum ClientError {
-    /// Request timeout reached.
+    #[error("Request timeout reached")]
     MaxTimeout,
-    /// Request length exceeded the packet length.
+
+    #[error("Request length exceeded the packet length")]
     MaxLength,
-    /// Client shut down the request client.
+
+    #[error("Client shut down the request client")]
     ClientShutdown,
-    /// Server sent us an invalid message.
+
+    #[error("Server sent us an invalid message")]
     ServerError,
-    /// Requested to send from IPv4 to IPv6 or vice versa.
+
+    #[error("Requested to send from IPv4 to IPv6 or vice versa")]
     IPVersionMismatch,
-    /// Server returned an error message.
-    ServerMessage(ErrorResponse<'static>),
+
+    #[error("Server returned an error message : {0}")]
+    ServerMessage(#[from] ErrorResponse<'static>),
 }

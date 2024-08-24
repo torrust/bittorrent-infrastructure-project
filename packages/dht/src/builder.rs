@@ -1,10 +1,11 @@
 use std::collections::HashSet;
-use std::io;
-use std::net::{SocketAddr, UdpSocket};
-use std::sync::mpsc::{self, Receiver};
+use std::net::SocketAddr;
+use std::sync::Arc;
 
-use log::warn;
-use mio::Sender;
+use futures::channel::mpsc;
+use futures::SinkExt as _;
+use tokio::net::UdpSocket;
+use tokio::task::JoinSet;
 use util::bt::InfoHash;
 use util::net;
 
@@ -14,39 +15,48 @@ use crate::worker::{self, DhtEvent, OneshotTask, ShutdownCause};
 
 /// Maintains a Distributed Hash (Routing) Table.
 pub struct MainlineDht {
-    send: Sender<OneshotTask>,
+    main_task_sender: mpsc::Sender<OneshotTask>,
+    _tasks: JoinSet<()>,
 }
 
 impl MainlineDht {
     /// Start the `MainlineDht` with the given `DhtBuilder` and Handshaker.
-    fn with_builder<H>(builder: DhtBuilder, handshaker: H) -> io::Result<MainlineDht>
+    async fn with_builder<H>(builder: DhtBuilder, handshaker: H) -> std::io::Result<MainlineDht>
     where
         H: HandshakerTrait + 'static,
     {
-        let send_sock = UdpSocket::bind(builder.src_addr)?;
-        let recv_sock = send_sock.try_clone()?;
+        let send_sock = Arc::new(UdpSocket::bind(builder.src_addr).await?);
+        let recv_sock = send_sock.clone();
 
-        let kill_sock = send_sock.try_clone()?;
+        let kill_sock = send_sock.clone();
         let kill_addr = send_sock.local_addr()?;
 
-        let send = worker::start_mainline_dht(
-            send_sock,
+        let (main_task_sender, tasks) = worker::start_mainline_dht(
+            &send_sock,
             recv_sock,
             builder.read_only,
             builder.ext_addr,
             handshaker,
             kill_sock,
             kill_addr,
-        )?;
+        );
 
         let nodes: Vec<SocketAddr> = builder.nodes.into_iter().collect();
         let routers: Vec<Router> = builder.routers.into_iter().collect();
 
-        if send.send(OneshotTask::StartBootstrap(routers, nodes)).is_err() {
-            warn!("bip_dt: MainlineDht failed to send a start bootstrap message...");
+        if main_task_sender
+            .clone()
+            .send(OneshotTask::StartBootstrap(routers, nodes))
+            .await
+            .is_err()
+        {
+            tracing::warn!("bip_dt: MainlineDht failed to send a start bootstrap message...");
         }
 
-        Ok(MainlineDht { send })
+        Ok(MainlineDht {
+            main_task_sender,
+            _tasks: tasks,
+        })
     }
 
     /// Perform a search for the given `InfoHash` with an optional announce on the closest nodes.
@@ -57,9 +67,15 @@ impl MainlineDht {
     ///
     /// If the initial bootstrap has not finished, the search will be queued and executed once
     /// the bootstrap has completed.
-    pub fn search(&self, hash: InfoHash, announce: bool) {
-        if self.send.send(OneshotTask::StartLookup(hash, announce)).is_err() {
-            warn!("bip_dht: MainlineDht failed to send a start lookup message...");
+    pub async fn search(&self, hash: InfoHash, announce: bool) {
+        if self
+            .main_task_sender
+            .clone()
+            .send(OneshotTask::StartLookup(hash, announce))
+            .await
+            .is_err()
+        {
+            tracing::warn!("bip_dht: MainlineDht failed to send a start lookup message...");
         }
     }
 
@@ -68,11 +84,11 @@ impl MainlineDht {
     /// It is important to at least monitor the DHT for shutdown events as any calls
     /// after that event occurs will not be processed but no indication will be given.
     #[must_use]
-    pub fn events(&self) -> Receiver<DhtEvent> {
-        let (send, recv) = mpsc::channel();
+    pub async fn events(&self) -> mpsc::Receiver<DhtEvent> {
+        let (send, recv) = mpsc::channel(1);
 
-        if self.send.send(OneshotTask::RegisterSender(send)).is_err() {
-            warn!("bip_dht: MainlineDht failed to send a register sender message...");
+        if let Err(e) = self.main_task_sender.clone().send(OneshotTask::RegisterSender(send)).await {
+            tracing::warn!("bip_dht: MainlineDht failed to send a register sender message..., {e}");
             // TODO: Should we push a Shutdown event through the sender here? We would need
             // to know the cause or create a new cause for this specific scenario since the
             // client could have been lazy and wasn't monitoring this until after it shutdown!
@@ -84,8 +100,13 @@ impl MainlineDht {
 
 impl Drop for MainlineDht {
     fn drop(&mut self) {
-        if self.send.send(OneshotTask::Shutdown(ShutdownCause::ClientInitiated)).is_err() {
-            warn!(
+        if self
+            .main_task_sender
+            .clone()
+            .try_send(OneshotTask::Shutdown(ShutdownCause::ClientInitiated))
+            .is_err()
+        {
+            tracing::warn!(
                 "bip_dht: MainlineDht failed to send a shutdown message (may have already been \
                    shutdown)..."
             );
@@ -198,10 +219,10 @@ impl DhtBuilder {
     /// # Errors
     ///
     /// It would return error if unable to build from the handshaker.
-    pub fn start_mainline<H>(self, handshaker: H) -> io::Result<MainlineDht>
+    pub async fn start_mainline<H>(self, handshaker: H) -> std::io::Result<MainlineDht>
     where
         H: HandshakerTrait + 'static,
     {
-        MainlineDht::with_builder(self, handshaker)
+        MainlineDht::with_builder(self, handshaker).await
     }
 }

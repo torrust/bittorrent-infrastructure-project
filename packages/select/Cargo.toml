@@ -22,12 +22,13 @@ peer = { path = "../peer" }
 util = { path = "../util" }
 utracker = { path = "../utracker" }
 
-bit-set = "0.5"
-bytes = "0.4"
-error-chain = "0.12"
-futures = "0.1"
-log = "0.4"
-rand = "0.8"
+bit-set = "0"
+bytes = "1"
+futures = "0"
+rand = "0"
+thiserror = "1"
+tracing = "0"
 
 [dev-dependencies]
-futures-test = { git = "https://github.com/carllerche/better-future.git" }
+tokio = { version = "1", features = ["full"] }
+tracing-subscriber = "0"

@@ -1,27 +1,17 @@
 use std::collections::HashSet;
-use std::io::{self, Read};
+use std::io::Read as _;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use std::thread::{self};
+use std::sync::Once;
 
 use dht::handshaker_trait::HandshakerTrait;
 use dht::{DhtBuilder, Router};
+use futures::future::BoxFuture;
+use futures::StreamExt;
+use tokio::task::JoinSet;
+use tracing::level_filters::LevelFilter;
 use util::bt::{InfoHash, PeerId};
 
-struct SimpleLogger;
-
-impl log::Log for SimpleLogger {
-    fn enabled(&self, metadata: &log::Metadata<'_>) -> bool {
-        metadata.level() <= log::Level::Info
-    }
-
-    fn log(&self, record: &log::Record<'_>) {
-        if self.enabled(record.metadata()) {
-            println!("{} - {}", record.level(), record.args());
-        }
-    }
-
-    fn flush(&self) {}
-}
+static INIT: Once = Once::new();
 
 struct SimpleHandshaker {
     filter: HashSet<SocketAddr>,
@@ -46,23 +36,37 @@ impl HandshakerTrait for SimpleHandshaker {
     }
 
     /// Initiates a handshake with the given socket address.
-    fn connect(&mut self, _: Option<PeerId>, _: InfoHash, addr: SocketAddr) {
+    fn connect(&mut self, _: Option<PeerId>, _: InfoHash, addr: SocketAddr) -> BoxFuture<'_, ()> {
         if self.filter.contains(&addr) {
-            return;
+            return Box::pin(std::future::ready(()));
         }
 
         self.filter.insert(addr);
         self.count += 1;
-        println!("Received new peer {:?}, total unique peers {}", addr, self.count);
+        tracing::trace!("Received new peer {:?}, total unique peers {}", addr, self.count);
+
+        Box::pin(std::future::ready(()))
     }
 
     /// Send the given Metadata back to the client.
     fn metadata(&mut self, (): Self::MetadataEnvelope) {}
 }
 
-fn main() {
-    log::set_logger(&SimpleLogger).unwrap();
-    log::set_max_level(log::LevelFilter::max());
+fn tracing_stderr_init(filter: LevelFilter) {
+    let builder = tracing_subscriber::fmt().with_max_level(filter).with_ansi(true);
+
+    builder.pretty().with_file(true).init();
+
+    tracing::info!("Logging initialized");
+}
+
+#[tokio::main]
+async fn main() {
+    INIT.call_once(|| {
+        tracing_stderr_init(LevelFilter::INFO);
+    });
+
+    let mut tasks = JoinSet::new();
 
     let hash = InfoHash::from_bytes(b"My Unique Info Hash");
 
@@ -74,23 +78,24 @@ fn main() {
         .set_source_addr(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 6889)))
         .set_read_only(false)
         .start_mainline(handshaker)
+        .await
         .unwrap();
 
     // Spawn a thread to listen to and report events
-    let events = dht.events();
-    thread::spawn(move || {
-        for event in events {
-            println!("\nReceived Dht Event {event:?}");
+    let mut events = dht.events().await;
+    tasks.spawn(async move {
+        while let Some(event) = events.next().await {
+            tracing::trace!("\nReceived Dht Event {event:?}");
         }
     });
 
     // Let the user announce or search on our info hash
-    let stdin = io::stdin();
+    let stdin = std::io::stdin();
     let stdin_lock = stdin.lock();
     for byte in stdin_lock.bytes() {
         match &[byte.unwrap()] {
-            b"a" => dht.search(hash, true),
-            b"s" => dht.search(hash, false),
+            b"a" => dht.search(hash, true).await,
+            b"s" => dht.search(hash, false).await,
             _ => (),
         }
     }
