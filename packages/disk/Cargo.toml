@@ -24,7 +24,7 @@ crossbeam = "0"
 futures = "0"
 lru-cache = "0"
 pin-project = "1"
-thiserror = "1"
+thiserror = "2"
 tokio = { version = "1", features = ["full"] }
 tracing = "0"
 
