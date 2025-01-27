@@ -23,7 +23,7 @@ umio = { path = "../../contrib/umio" }
 
 byteorder = "1"
 futures = "0"
-nom = "7"
+nom = "8"
 rand = "0"
 thiserror = "1"
 tracing = "0"
