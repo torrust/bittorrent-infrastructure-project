@@ -23,6 +23,7 @@ pub mod option;
 pub mod scrape;
 
 mod client;
+mod runtime;
 mod server;
 
 pub use util::bt::{InfoHash, PeerId};

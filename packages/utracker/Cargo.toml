@@ -19,7 +19,7 @@ version.workspace = true
 handshake = { path = "../handshake" }
 util = { path = "../util" }
 
-umio = { path = "../../contrib/umio" }
+tokio = { version = "1", features = ["net", "rt", "sync", "time"] }
 
 byteorder = "1"
 futures = "0"

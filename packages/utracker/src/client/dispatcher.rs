@@ -11,17 +11,19 @@ use futures::sink::Sink;
 use futures::{FutureExt, SinkExt};
 use handshake::{DiscoveryInfo, InitiateMessage, Protocol};
 use nom::IResult;
+use tokio::net::UdpSocket;
+use tokio::runtime::Builder;
+use tokio::sync::mpsc::UnboundedReceiver;
 use tracing::{instrument, Level};
-use umio::{Dispatcher, ELoopBuilder, MessageSender, Provider, ShutdownHandle};
 use util::bt::PeerId;
 
-use super::HandshakerMessage;
 use crate::announce::{AnnounceRequest, DesiredPeers, SourceIP};
 use crate::client::error::{ClientError, ClientResult};
 use crate::client::{ClientMetadata, ClientRequest, ClientResponse, ClientToken, RequestLimiter};
 use crate::option::AnnounceOptions;
 use crate::request::{self, RequestType, TrackerRequest};
 use crate::response::{ResponseType, TrackerResponse};
+use crate::runtime::{channel, MessageSender, ShutdownHandle};
 use crate::scrape::ScrapeRequest;
 
 const EXPECTED_PACKET_LENGTH: usize = 1500;
@@ -30,15 +32,15 @@ const CONNECTION_ID_VALID_DURATION_MILLIS: i64 = 60000;
 const MAXIMUM_REQUEST_RETRANSMIT_ATTEMPTS: u64 = 8;
 
 /// Internal dispatch timeout.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum DispatchTimeout {
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum DispatchTimeout {
     Connect(ClientToken),
     #[default]
     CleanUp,
 }
 
 #[derive(Default, Clone, Copy, Debug)]
-struct TimeoutToken {
+pub struct TimeoutToken {
     id: TimeoutId,
     dispatch: DispatchTimeout,
 }
@@ -88,6 +90,7 @@ impl std::hash::Hash for TimeoutToken {
 pub enum DispatchMessage {
     Request(SocketAddr, ClientToken, ClientRequest),
     StartTimer,
+    Timeout(TimeoutToken),
     Shutdown(mpsc::SyncSender<std::io::Result<()>>),
 }
 
@@ -103,42 +106,81 @@ pub fn create_dispatcher<H>(
     limiter: RequestLimiter,
 ) -> std::io::Result<(MessageSender<DispatchMessage>, SocketAddr, ShutdownHandle)>
 where
-    H: Sink<std::io::Result<HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
+    H: Sink<std::io::Result<crate::client::HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
     H::Error: std::fmt::Display,
 {
     tracing::debug!("creating dispatcher");
 
-    // Timer capacity is plus one for the cache cleanup timer
-    let builder = ELoopBuilder::new()
-        .channel_capacity(msg_capacity)
-        .timer_capacity(msg_capacity + 1)
-        .bind_address(bind)
-        .buffer_length(EXPECTED_PACKET_LENGTH);
+    let std_socket = std::net::UdpSocket::bind(bind)?;
+    std_socket.set_nonblocking(true)?;
+    let local_addr = std_socket.local_addr()?;
 
-    let (mut eloop, socket, shutdown) = builder.build()?;
-    let channel = eloop.channel();
+    let (tx, rx) = channel();
+    let tx_for_thread = tx.clone();
 
-    let dispatcher = ClientDispatcher::new(handshaker, bind, limiter);
+    let handle = std::thread::spawn(move || {
+        let rt = Builder::new_current_thread().enable_all().build().expect("tokio runtime");
+        rt.block_on(run_client(std_socket, handshaker, msg_capacity, limiter, tx_for_thread, rx));
+    });
 
-    let handle = {
-        let (started_eloop_sender, started_eloop_receiver) = mpsc::sync_channel(0);
-
-        let handle = std::thread::spawn(move || {
-            eloop.run(dispatcher, &started_eloop_sender).unwrap();
-        });
-
-        let () = started_eloop_receiver
-            .recv()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e))??;
-
-        handle
-    };
-
-    channel
-        .send(DispatchMessage::StartTimer)
+    tx.send(DispatchMessage::StartTimer)
         .expect("bip_utracker: ELoop Failed To Start Connect ID Timer...");
 
-    Ok((channel, socket, shutdown))
+    Ok((tx, local_addr, handle))
+}
+
+#[instrument(skip(socket, handshaker, limiter, tx, rx))]
+async fn run_client<H>(
+    socket: std::net::UdpSocket,
+    handshaker: H,
+    msg_capacity: usize,
+    limiter: RequestLimiter,
+    tx: MessageSender<DispatchMessage>,
+    mut rx: UnboundedReceiver<DispatchMessage>,
+) where
+    H: Sink<std::io::Result<crate::client::HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
+    H::Error: std::fmt::Display,
+{
+    let socket = UdpSocket::from_std(socket).expect("convert socket");
+    let bound_addr = socket.local_addr().expect("local addr");
+    let mut dispatcher = ClientDispatcher::new(handshaker, bound_addr, limiter, tx);
+
+    let mut buf = vec![0u8; EXPECTED_PACKET_LENGTH];
+
+    loop {
+        tokio::select! {
+            res = socket.recv_from(&mut buf) => {
+                match res {
+                    Ok((size, addr)) => {
+                        if let IResult::Ok((_, response)) = TrackerResponse::from_bytes(&buf[..size]) {
+                            dispatcher.recv_response(&socket, &response, addr).await;
+                        } else {
+                            tracing::error!("received an incoming error message");
+                        }
+                    }
+                    Err(e) => tracing::error!(%e, "error receiving from socket"),
+                }
+            }
+            Some(message) = rx.recv() => {
+                match message {
+                    DispatchMessage::Request(addr, token, req_type) => {
+                        dispatcher.send_request(&socket, addr, token, req_type).await;
+                    }
+                    DispatchMessage::StartTimer => dispatcher.timeout(&socket, TimeoutToken::default()).await,
+                    DispatchMessage::Timeout(token) => {
+                        dispatcher.timeouts.remove(&token.id);
+                        dispatcher.timeout(&socket, token).await;
+                    }
+                    DispatchMessage::Shutdown(shutdown_finished_sender) => {
+                        dispatcher.shutdown(&socket).await;
+                        drop(shutdown_finished_sender.send(Ok(())));
+                        break;
+                    }
+                }
+            }
+            else => break,
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------//
@@ -153,16 +195,18 @@ struct ClientDispatcher<H> {
     active_requests: HashMap<ClientToken, ConnectTimer>,
     id_cache: ConnectIdCache,
     limiter: RequestLimiter,
+    tx: MessageSender<DispatchMessage>,
+    timeouts: HashMap<TimeoutId, tokio::task::JoinHandle<()>>,
 }
 
 impl<H> ClientDispatcher<H>
 where
-    H: Sink<std::io::Result<HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
+    H: Sink<std::io::Result<crate::client::HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
     H::Error: std::fmt::Display,
 {
     /// Create a new `ClientDispatcher`.
     #[instrument(skip(), ret(level = Level::TRACE))]
-    pub fn new(handshaker: H, bind: SocketAddr, limiter: RequestLimiter) -> Self {
+    pub fn new(handshaker: H, bind: SocketAddr, limiter: RequestLimiter, tx: MessageSender<DispatchMessage>) -> Self {
         tracing::debug!("new client dispatcher");
 
         let peer_id = handshaker.peer_id();
@@ -176,13 +220,20 @@ where
             active_requests: HashMap::new(),
             id_cache: ConnectIdCache::new(),
             limiter,
+            tx,
+            timeouts: HashMap::new(),
         }
     }
 
     /// Shutdown the current dispatcher, notifying all pending requests.
-    #[instrument(skip(self, provider), fields(unfinished_requests= %self.active_requests.len()))]
-    pub fn shutdown(&mut self, provider: &mut Provider<'_, Self>) {
+    #[instrument(skip(self, socket), fields(unfinished_requests= %self.active_requests.len()))]
+    pub async fn shutdown(&mut self, socket: &UdpSocket) {
         tracing::debug!("shuting down...");
+
+        // cancel timers
+        for (_id, handle) in self.timeouts.drain() {
+            handle.abort();
+        }
 
         let mut active_requests = std::mem::take(&mut self.active_requests);
         let mut unfinished_requests = active_requests.drain();
@@ -192,12 +243,11 @@ where
             tracing::trace!(?client_token, ?connect_timer, "removing...");
 
             if let Some(id) = connect_timer.timeout_id() {
-                provider.remove_timeout(TimeoutToken::cleanup(id)).unwrap();
+                self.cancel_timeout(TimeoutToken::cleanup(id));
             }
 
             self.notify_client(client_token, Err(ClientError::ClientShutdown));
         }
-        provider.shutdown();
     }
 
     /// Finish a request by sending the result back to the client.
@@ -214,14 +264,8 @@ where
     }
 
     /// Process a request to be sent to the given address and associated with the given token.
-    #[instrument(skip(self, provider, addr, token, request))]
-    pub fn send_request(
-        &mut self,
-        provider: &mut Provider<'_, Self>,
-        addr: SocketAddr,
-        token: ClientToken,
-        request: ClientRequest,
-    ) {
+    #[instrument(skip(self, socket, addr, token, request))]
+    pub async fn send_request(&mut self, socket: &UdpSocket, addr: SocketAddr, token: ClientToken, request: ClientRequest) {
         tracing::debug!(?addr, ?token, ?request, "sending request");
 
         let bound_addr = self.bound_addr;
@@ -239,13 +283,13 @@ where
         }
         self.active_requests.insert(token, ConnectTimer::new(addr, request));
 
-        self.process_request(provider, token, false);
+        self.process_request(socket, token, false).await;
     }
 
     /// Process a response received from some tracker and match it up against our sent requests.
-    #[instrument(skip(self, provider, response, addr))]
+    #[instrument(skip(self, socket, response, addr))]
     #[allow(tail_expr_drop_order)]
-    pub fn recv_response(&mut self, provider: &mut Provider<'_, Self>, response: &TrackerResponse<'_>, addr: SocketAddr) {
+    pub async fn recv_response(&mut self, socket: &UdpSocket, response: &TrackerResponse<'_>, addr: SocketAddr) {
         tracing::debug!(?response, ?addr, "receiving response");
 
         let token = ClientToken(response.transaction_id());
@@ -265,9 +309,7 @@ where
         };
 
         if let Some(clear_timeout_token) = conn_timer.timeout_id().map(TimeoutToken::cleanup) {
-            provider
-                .remove_timeout(clear_timeout_token)
-                .expect("bip_utracker: Failed To Clear Request Timeout");
+            self.cancel_timeout(clear_timeout_token);
         }
 
         // Check if the response requires us to update the connection timer
@@ -275,7 +317,7 @@ where
             self.id_cache.put(addr, id);
 
             self.active_requests.insert(token, conn_timer);
-            self.process_request(provider, token, false);
+            self.process_request(socket, token, false).await;
         } else {
             // Match the request type against the response type and update our client
             match (conn_timer.message_params().1, response.response_type()) {
@@ -310,8 +352,8 @@ where
     /// Process an existing request, either re requesting a connection id or sending the actual request again.
     ///
     /// If this call is the result of a timeout, that will decide whether to cancel the request or not.
-    #[instrument(skip(self, provider, token, timed_out))]
-    fn process_request(&mut self, provider: &mut Provider<'_, Self>, token: ClientToken, timed_out: bool) {
+    #[instrument(skip(self, socket, token, timed_out))]
+    async fn process_request(&mut self, socket: &UdpSocket, token: ClientToken, timed_out: bool) {
         tracing::debug!(?token, ?timed_out, "processing request");
 
         let Some(mut conn_timer) = self.active_requests.remove(&token) else {
@@ -369,26 +411,21 @@ where
 
         // Try to write the request out to the server
         let mut write_success = false;
-        provider.set_dest(addr);
 
-        {
-            match tracker_request.write_bytes(provider) {
-                Ok(()) => {
-                    write_success = true;
-                }
-                Err(e) => {
-                    tracing::error!(?e, "failed to write out the tracker request with error");
-                }
-            }
+        let mut buf = Vec::with_capacity(EXPECTED_PACKET_LENGTH);
+        match tracker_request.write_bytes(&mut buf) {
+            Ok(()) => match socket.send_to(&buf, addr).await {
+                Ok(_) => write_success = true,
+                Err(e) => tracing::error!(?e, "failed to write out the tracker request with error"),
+            },
+            Err(e) => tracing::error!(?e, "failed to serialize tracker request"),
         }
 
         let next_timeout_at = Instant::now().checked_add(Duration::from_millis(next_timeout)).unwrap();
 
         let (timeout_token, timeout_id) = TimeoutToken::new(DispatchTimeout::Connect(token));
 
-        let () = provider
-            .set_timeout(timeout_token, next_timeout_at)
-            .expect("bip_utracker: Failed To Set Timeout For Request");
+        self.set_timeout(timeout_token, next_timeout_at);
 
         // If message was not sent (too long to fit) then end the request
         if write_success {
@@ -402,55 +439,28 @@ where
             self.notify_client(token, Err(e));
         }
     }
-}
 
-impl<H> Dispatcher for ClientDispatcher<H>
-where
-    H: Sink<std::io::Result<HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
-    H::Error: std::fmt::Display,
-{
-    type TimeoutToken = TimeoutToken;
-    type Message = DispatchMessage;
-
-    #[instrument(skip(self, provider, message, addr))]
-    fn incoming(&mut self, mut provider: Provider<'_, Self>, message: &[u8], addr: SocketAddr) {
-        tracing::debug!(?message, %addr, "received incoming");
-
-        let () = match TrackerResponse::from_bytes(message) {
-            IResult::Ok((_, response)) => {
-                tracing::trace!(?response, %addr, "received an incoming response");
-
-                self.recv_response(&mut provider, &response, addr);
-            }
-            Err(e) => {
-                tracing::error!(%e, "received an incoming error message");
-            }
-        };
+    fn set_timeout(&mut self, token: TimeoutToken, deadline: Instant) {
+        let sleep_until = tokio::time::Instant::from_std(deadline);
+        let tx = self.tx.clone();
+        let handle = tokio::spawn(async move {
+            tokio::time::sleep_until(sleep_until).await;
+            drop(tx.send(DispatchMessage::Timeout(token)));
+        });
+        self.timeouts.insert(token.id, handle);
     }
 
-    #[instrument(skip(self, provider, message))]
-    fn notify(&mut self, mut provider: Provider<'_, Self>, message: DispatchMessage) {
-        tracing::debug!(?message, "received notify");
-
-        match message {
-            DispatchMessage::Request(addr, token, req_type) => {
-                self.send_request(&mut provider, addr, token, req_type);
-            }
-            DispatchMessage::StartTimer => self.timeout(provider, TimeoutToken::default()),
-            DispatchMessage::Shutdown(shutdown_finished_sender) => {
-                self.shutdown(&mut provider);
-
-                let () = shutdown_finished_sender.send(Ok(())).unwrap();
-            }
+    fn cancel_timeout(&mut self, token: TimeoutToken) {
+        if let Some(handle) = self.timeouts.remove(&token.id) {
+            handle.abort();
         }
     }
-
-    #[instrument(skip(self, provider, timeout))]
-    fn timeout(&mut self, mut provider: Provider<'_, Self>, timeout: TimeoutToken) {
+    #[instrument(skip(self, socket, timeout))]
+    pub async fn timeout(&mut self, socket: &UdpSocket, timeout: TimeoutToken) {
         tracing::debug!(?timeout, "received timeout");
 
         match timeout.dispatch {
-            DispatchTimeout::Connect(token) => self.process_request(&mut provider, token, true),
+            DispatchTimeout::Connect(token) => self.process_request(socket, token, true).await,
             DispatchTimeout::CleanUp => {
                 self.id_cache.clean_expired();
 
@@ -458,9 +468,7 @@ where
                     .checked_add(Duration::from_millis(CONNECTION_ID_VALID_DURATION_MILLIS as u64))
                     .unwrap();
 
-                provider
-                    .set_timeout(TimeoutToken::default(), next_timeout_at)
-                    .expect("bip_utracker: Failed To Restart Connect Id Cleanup Timer");
+                self.set_timeout(TimeoutToken::default(), next_timeout_at);
             }
         }
     }
@@ -627,6 +635,7 @@ impl ConnectIdCache {
         while let Some((addr, (_, prev_time))) = opt_curr_entry.take() {
             if is_expired(curr_time, prev_time) {
                 self.cache.remove(&addr);
+                removed += 1;
             }
 
             curr_index += 1;

@@ -6,13 +6,13 @@ use futures::future::Either;
 use futures::sink::Sink;
 use handshake::{DiscoveryInfo, InitiateMessage};
 use tracing::instrument;
-use umio::{MessageSender, ShutdownHandle};
 use util::bt::InfoHash;
 use util::trans::{LocallyShuffledIds, TransactionIds};
 
 use crate::announce::{AnnounceResponse, ClientState};
 use crate::client::dispatcher::DispatchMessage;
 use crate::client::error::ClientResult;
+use crate::runtime::{MessageSender, ShutdownHandle};
 use crate::scrape::ScrapeResponse;
 
 mod dispatcher;
