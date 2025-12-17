@@ -22,4 +22,4 @@ workspace = true
 chrono = "0"
 num = "0"
 rand = "0"
-rust-crypto = "0"
+sha1 = "0"

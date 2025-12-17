@@ -1,5 +1,4 @@
-use crypto::digest::Digest;
-use crypto::sha1::Sha1;
+use sha1::{Digest, Sha1};
 
 use crate::sha::{self, ShaHash};
 
@@ -26,7 +25,7 @@ impl ShaHashBuilder {
     /// Add bytes to the `ShaHashBuilder`.
     #[must_use]
     pub fn add_bytes(mut self, bytes: &[u8]) -> Self {
-        self.sha.input(bytes);
+        self.sha.update(bytes);
 
         self
     }
@@ -36,7 +35,8 @@ impl ShaHashBuilder {
     pub fn build(&self) -> ShaHash {
         let mut buffer = [0u8; sha::SHA_HASH_LEN];
 
-        self.sha.clone().result(&mut buffer);
+        let digest = self.sha.clone().finalize();
+        buffer.copy_from_slice(&digest);
 
         buffer.into()
     }
