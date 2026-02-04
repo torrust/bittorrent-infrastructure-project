@@ -47,7 +47,7 @@ impl HaveMessage {
     pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<HaveMessage> {
         match parse_have(bytes) {
             Ok((_, msg)) => msg,
-            Err(_) => Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to parse HaveMessage")),
+            Err(_) => Err(std::io::Error::other("Failed to parse HaveMessage")),
         }
     }
 
@@ -139,8 +139,7 @@ impl BitFieldMessage {
         let len = bytes.len();
         match parse_bitfield(bytes, len) {
             Ok((_, msg)) => msg,
-            Err(_) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            Err(_) => Err(std::io::Error::other(
                 "Failed to parse BitFieldMessage",
             )),
         }
@@ -304,8 +303,7 @@ impl RequestMessage {
     pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<RequestMessage> {
         match parse_request(bytes) {
             Ok((_, msg)) => msg,
-            Err(_) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            Err(_) => Err(std::io::Error::other(
                 "Failed to parse RequestMessage",
             )),
         }
@@ -445,7 +443,7 @@ impl PieceMessage {
     pub fn parse_bytes(bytes: &[u8], len: usize) -> std::io::Result<PieceMessage> {
         match parse_piece(bytes, len) {
             Ok((_, msg)) => msg,
-            Err(_) => Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to parse PieceMessage")),
+            Err(_) => Err(std::io::Error::other("Failed to parse PieceMessage")),
         }
     }
 
@@ -596,8 +594,7 @@ impl CancelMessage {
     pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<CancelMessage> {
         match parse_cancel(bytes) {
             Ok((_, msg)) => msg,
-            Err(_) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            Err(_) => Err(std::io::Error::other(
                 "Failed to parse CancelMessage",
             )),
         }

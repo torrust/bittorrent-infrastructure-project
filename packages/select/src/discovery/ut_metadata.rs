@@ -192,7 +192,7 @@ impl UtMetadataModule {
         let opt_completed_hash = self
             .pending_map
             .iter()
-            .find(|(_, opt_pending)| opt_pending.as_ref().map_or(false, |pending| pending.left == 0))
+            .find(|(_, opt_pending)| opt_pending.as_ref().is_some_and(|pending| pending.left == 0))
             .map(|(hash, _)| *hash);
 
         opt_completed_hash.and_then(|completed_hash| {
@@ -269,7 +269,7 @@ impl UtMetadataModule {
                     *opt_pending = Some(pending_info_from_metadata_size(active_peers.metadata_size));
                 }
             }
-            pending_tasks_available |= opt_pending.as_ref().map_or(false, |pending| !pending.messages.is_empty());
+            pending_tasks_available |= opt_pending.as_ref().is_some_and(|pending| !pending.messages.is_empty());
         }
         pending_tasks_available
     }
@@ -327,7 +327,7 @@ fn pending_info_from_metadata_size(metadata_size: i64) -> PendingInfo {
     let cast_metadata_size: usize = metadata_size.try_into().unwrap();
     let bytes = vec![0u8; cast_metadata_size];
     let mut messages = Vec::new();
-    let num_pieces = if cast_metadata_size % MAX_REQUEST_SIZE != 0 {
+    let num_pieces = if !cast_metadata_size.is_multiple_of(MAX_REQUEST_SIZE) {
         cast_metadata_size / MAX_REQUEST_SIZE + 1
     } else {
         cast_metadata_size / MAX_REQUEST_SIZE

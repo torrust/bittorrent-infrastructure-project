@@ -45,8 +45,7 @@ where
     fn parse_bytes(&mut self, bytes: &[u8]) -> std::io::Result<Result<Self::ProtocolMessage, Self::ProtocolMessageError>> {
         match self.our_extended_msg {
             Some(ref extended_msg) => PeerExtensionProtocolMessage::parse_bytes(bytes, extended_msg, &mut self.custom_protocol),
-            None => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            None => Err(std::io::Error::other(
                 "Extension Message Received From Peer Before Extended Message...",
             )),
         }
@@ -72,8 +71,7 @@ where
                 extended_msg,
                 &mut self.custom_protocol,
             )?),
-            None => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            None => Err(std::io::Error::other(
                 "Extension Message Sent From Us Before Extended Message...",
             )),
         }

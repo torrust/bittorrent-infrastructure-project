@@ -24,7 +24,7 @@ pub trait HandshakeFilters {
     fn clear_filters(&self);
 }
 
-impl<'a, T> HandshakeFilters for &'a T
+impl<T> HandshakeFilters for &T
 where
     T: HandshakeFilters,
 {

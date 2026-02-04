@@ -27,7 +27,7 @@ impl<'a> CompactNodeInfo<'a> {
     ///
     /// This function will return an error if the byte array is the wrong length.
     pub fn new(nodes: &'a [u8]) -> LengthResult<CompactNodeInfo<'a>> {
-        if nodes.len() % BYTES_PER_COMPACT_NODE_INFO != 0 {
+        if !nodes.len().is_multiple_of(BYTES_PER_COMPACT_NODE_INFO) {
             Err(Error::new(
                 LengthErrorKind::LengthMultipleExpected,
                 BYTES_PER_COMPACT_NODE_INFO,
@@ -86,7 +86,7 @@ pub struct CompactValueInfo<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
 {
-    values: Cow<'a, Vec<Cow<'a, B::BType>>>,
+    values: Cow<'a, [Cow<'a, B::BType>]>,
 }
 
 impl<'a, B> CompactValueInfo<'a, B>
@@ -118,7 +118,7 @@ where
         }
 
         Ok(CompactValueInfo {
-            values: Cow::Owned(values.into_iter().map(|b| Cow::Borrowed(b)).collect()),
+            values: Cow::Owned(values.into_iter().map(Cow::Borrowed).collect()),
         })
     }
 
@@ -149,7 +149,7 @@ pub struct CompactValueInfoIter<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
 {
-    values: Cow<'a, Vec<Cow<'a, B::BType>>>,
+    values: Cow<'a, [Cow<'a, B::BType>]>,
     pos: usize,
 }
 

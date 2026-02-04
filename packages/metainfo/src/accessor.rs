@@ -40,7 +40,7 @@ pub trait Accessor {
         C: for<'a> FnMut(PieceAccess<'a>) -> std::io::Result<()>;
 }
 
-impl<'a, T> Accessor for &'a T
+impl<T> Accessor for &T
 where
     T: Accessor,
 {
@@ -105,7 +105,7 @@ impl FileAccessor {
     {
         let absolute_path = path.as_ref().canonicalize()?;
         let directory_name = if absolute_path.is_dir() {
-            let dir_name: &Path = absolute_path.iter().last().unwrap().as_ref();
+            let dir_name: &Path = absolute_path.iter().next_back().unwrap().as_ref();
 
             Some(dir_name.to_path_buf())
         } else {

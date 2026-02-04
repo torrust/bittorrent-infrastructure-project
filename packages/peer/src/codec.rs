@@ -53,8 +53,7 @@ where
 
         if let Some(max_payload) = self.max_payload {
             if bytes_needed > max_payload {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
+                return Err(std::io::Error::other(
                     "PeerProtocolCodec Enforced Maximum Payload Check For Peer",
                 ));
             }
@@ -67,7 +66,7 @@ where
         };
 
         match self.protocol.parse_bytes(&bytes) {
-            Ok(item) => item.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e)),
+            Ok(item) => item.map_err(std::io::Error::other),
             Err(err) => Err(err),
         }
         .map(Some)

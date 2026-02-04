@@ -30,16 +30,11 @@ const CONNECTION_ID_VALID_DURATION_MILLIS: i64 = 60000;
 const MAXIMUM_REQUEST_RETRANSMIT_ATTEMPTS: u64 = 8;
 
 /// Internal dispatch timeout.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum DispatchTimeout {
     Connect(ClientToken),
+    #[default]
     CleanUp,
-}
-
-impl Default for DispatchTimeout {
-    fn default() -> Self {
-        Self::CleanUp
-    }
 }
 
 #[derive(Default, Clone, Copy, Debug)]

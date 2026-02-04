@@ -78,10 +78,7 @@ pub fn dummy_block_node_ids(num_ids: u8) -> Vec<NodeId> {
 
     for repeat in 0..num_ids {
         let mut id = [0u8; bt::NODE_ID_LEN];
-
-        for byte in &mut id {
-            *byte = repeat;
-        }
+        id.fill(repeat);
 
         id_block.push(id.into());
     }

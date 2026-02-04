@@ -15,7 +15,7 @@ impl BConvert for IoErrorBencodeConvert {
     type Error = std::io::Error;
 
     fn handle_error(&self, error: BencodeConvertError) -> Self::Error {
-        std::io::Error::new(std::io::ErrorKind::Other, error.to_string())
+        std::io::Error::other(error.to_string())
     }
 }
 

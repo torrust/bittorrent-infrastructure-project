@@ -19,7 +19,7 @@ pub struct PieceChecker<F> {
     state: MetainfoState,
 }
 
-impl<'a, F> PieceChecker<F>
+impl<F> PieceChecker<F>
 where
     F: FileSystem + Sync + 'static,
     Arc<F>: Send + Sync,

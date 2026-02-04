@@ -60,8 +60,7 @@ where
                 self.wake();
             } else {
                 self.buffer_pool.push(buffer);
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
+                return Err(std::io::Error::other(
                     "No outgoing socket address set",
                 ));
             }

@@ -58,7 +58,7 @@ pub trait FileSystem {
     fn write_file(&self, file: &mut Self::File, offset: u64, buffer: &[u8]) -> std::io::Result<usize>;
 }
 
-impl<'a, F> FileSystem for &'a F
+impl<F> FileSystem for &F
 where
     F: FileSystem + Sync + 'static,
     Arc<F>: Send + Sync,

@@ -61,7 +61,7 @@ where
     {
         let message = match item {
             Ok(message) => message,
-            Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, err.clone())),
+            Err(err) => match *err {},
         };
 
         let message_bytes_written = message.write_bytes(writer, &mut self.ext_protocol)?;
@@ -76,7 +76,7 @@ where
     fn message_size(&mut self, item: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>) -> std::io::Result<usize> {
         let message = match item {
             Ok(message) => message,
-            Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, err.clone())),
+            Err(err) => match *err {},
         };
 
         message.message_size(&mut self.ext_protocol)

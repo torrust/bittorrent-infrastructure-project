@@ -134,7 +134,7 @@ where
                 Err(e) => {
                     tracing::error!("task completed... with {} remaining, with error: {e}", task_set.len());
 
-                    return Poll::Ready(Err(std::io::Error::new(std::io::ErrorKind::Other, e)));
+                    return Poll::Ready(Err(std::io::Error::other(e)));
                 }
             }
         }

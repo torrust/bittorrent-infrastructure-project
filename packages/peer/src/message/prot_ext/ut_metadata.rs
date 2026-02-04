@@ -73,8 +73,7 @@ impl UtMetadataMessage {
 
                 Ok(message)
             }
-            Err(err) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            Err(err) => Err(std::io::Error::other(
                 format!("Failed To Parse UtMetadataMessage As Bencode: {err}"),
             )),
         }

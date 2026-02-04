@@ -364,7 +364,7 @@ where
 
 /// Validates and allocates the hash pieces on the heap.
 fn allocate_pieces(pieces: &[u8]) -> Result<Vec<[u8; sha::SHA_HASH_LEN]>, ParseError> {
-    if pieces.len() % sha::SHA_HASH_LEN != 0 {
+    if !pieces.len().is_multiple_of(sha::SHA_HASH_LEN) {
         let error_msg = format!("Piece Hash Length Of {} Is Invalid", pieces.len());
         Err(ParseError::MissingData { details: error_msg })
     } else {

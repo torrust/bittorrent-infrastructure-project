@@ -60,7 +60,7 @@ enum Downloader {
 }
 
 enum Setup {
-    Finished((NativeDiskManager, PeerManager, TcpHandshaker), JoinSet<()>),
+    Finished(Box<(NativeDiskManager, PeerManager, TcpHandshaker)>, JoinSet<()>),
     Interrupted,
 }
 
@@ -101,12 +101,12 @@ async fn main() {
 
     // Await either the completion of the setup or the Ctrl-C signal
     let setup = tokio::select! {
-        setup = setup => Setup::Finished(setup.0, setup.1),
+        setup = setup => Setup::Finished(Box::new(setup.0), setup.1),
         () = ctrl_c() => Setup::Interrupted,
     };
 
     let (managers, mut handshaker_tasks) = match setup {
-        Setup::Finished(managers, handshaker_tasks) => (managers, handshaker_tasks),
+        Setup::Finished(managers, handshaker_tasks) => (*managers, handshaker_tasks),
         Setup::Interrupted => {
             tracing::warn!("setup was canceled...");
             return;

@@ -385,7 +385,7 @@ impl ExtendedMessage {
             let (raw_bencode, _) = bytes.split_at(cast_len);
 
             let res_extended_message = BencodeRef::decode(raw_bencode, BDecodeOpt::default())
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err.to_string()))
+                .map_err(|err| std::io::Error::other(err.to_string()))
                 .and_then(|bencode| {
                     let ben_dict = bencode_util::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY)?;
 

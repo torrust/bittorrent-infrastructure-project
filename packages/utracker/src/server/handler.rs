@@ -10,7 +10,6 @@ pub type ServerResult<'a, T> = Result<T, &'a str>;
 
 /// Trait for providing a `TrackerServer` with methods to service `TrackerRequests`.
 #[allow(clippy::module_name_repetitions)]
-
 pub trait ServerHandler: Send {
     /// Service a connection id request from the given address.
     fn connect(&mut self, addr: SocketAddr) -> Option<ServerResult<'_, u64>>;
