@@ -7,7 +7,7 @@ use nom::bytes::complete::take;
 use nom::character::complete::not_line_ending;
 use nom::combinator::map_res;
 use nom::sequence::terminated;
-use nom::IResult;
+use nom::{IResult, Parser};
 use thiserror::Error;
 
 /// Error reported by the server and sent to the client.
@@ -38,7 +38,7 @@ impl<'a> ErrorResponse<'a> {
     ///
     /// It will return an error when unable to parse the bytes.
     pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ErrorResponse<'a>> {
-        let (remaining, message) = map_res(terminated(not_line_ending, take(0usize)), std::str::from_utf8)(bytes)?;
+        let (remaining, message) = map_res(terminated(not_line_ending, take(0usize)), std::str::from_utf8).parse(bytes)?;
         Ok((remaining, ErrorResponse::new(message)))
     }
 

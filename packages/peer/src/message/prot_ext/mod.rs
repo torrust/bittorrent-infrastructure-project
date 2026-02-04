@@ -12,8 +12,8 @@ use nom::combinator::{map, value};
 use nom::error::{ErrorKind, ParseError};
 use nom::multi::length_data;
 use nom::number::complete::{be_u32, be_u8};
-use nom::sequence::{pair, tuple};
-use nom::IResult;
+use nom::sequence::pair;
+use nom::{IResult, Parser};
 use thiserror::Error;
 use ut_metadata::UtMetadataMessageError;
 
@@ -174,7 +174,7 @@ where
         &'a [u8],
         std::io::Result<Result<PeerExtensionProtocolMessage<P>, PeerExtensionProtocolMessageError>>,
     > {
-        let (_, (message_len, extended_message_id, message_id)) = tuple((be_u32, be_u8, be_u8))(input)?;
+        let (_, (message_len, extended_message_id, message_id)) = (be_u32, be_u8, be_u8).parse(input)?;
 
         if extended_message_id == bits_ext::EXTENDED_MESSAGE_ID {
             let from = EXTENSION_HEADER_LEN;
@@ -206,7 +206,7 @@ where
     };
 
     // Attempt to parse a built in message type, otherwise, see if it is an extension type.
-    alt((ut_metadata_fn, custom_fn))(bytes)
+    alt((ut_metadata_fn, custom_fn)).parse(bytes)
 }
 
 fn parse_extensions_with_id<P>(

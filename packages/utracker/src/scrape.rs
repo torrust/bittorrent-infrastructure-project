@@ -7,8 +7,7 @@ use std::num::NonZero;
 use nom::bytes::complete::take;
 use nom::combinator::map_res;
 use nom::number::complete::be_i32;
-use nom::sequence::tuple;
-use nom::{IResult, Needed};
+use nom::{IResult, Needed, Parser};
 use tracing::instrument;
 use util::bt::{self, InfoHash};
 use util::convert;
@@ -60,7 +59,7 @@ impl ScrapeStats {
 }
 
 fn parse_stats(bytes: &[u8]) -> IResult<&[u8], ScrapeStats> {
-    let (remaining, (seeders, downloaded, leechers)) = tuple((be_i32, be_i32, be_i32))(bytes)?;
+    let (remaining, (seeders, downloaded, leechers)) = (be_i32, be_i32, be_i32).parse(bytes)?;
     Ok((remaining, ScrapeStats::new(seeders, downloaded, leechers)))
 }
 

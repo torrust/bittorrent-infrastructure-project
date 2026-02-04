@@ -1,7 +1,6 @@
 use nom::bytes::complete::take;
 use nom::number::complete::u8;
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 use tokio::io::{AsyncWrite, AsyncWriteExt as _};
 
 const BT_PROTOCOL: &[u8] = b"BitTorrent protocol";
@@ -81,7 +80,7 @@ fn parse_protocol(bytes: &[u8]) -> IResult<&[u8], Protocol> {
 }
 
 fn parse_real_protocol(bytes: &[u8]) -> IResult<&[u8], Protocol> {
-    let (remaining, (_length, raw_protocol)) = tuple((u8, take(bytes[0] as usize)))(bytes)?;
+    let (remaining, (_length, raw_protocol)) = (u8, take(bytes[0] as usize)).parse(bytes)?;
     if raw_protocol == BT_PROTOCOL {
         Ok((remaining, Protocol::BitTorrent))
     } else {
@@ -91,7 +90,7 @@ fn parse_real_protocol(bytes: &[u8]) -> IResult<&[u8], Protocol> {
 
 #[allow(dead_code)]
 fn parse_raw_protocol(bytes: &[u8]) -> IResult<&[u8], &[u8]> {
-    let (remaining, (_length, raw_protocol)) = tuple((u8, take(bytes[0] as usize)))(bytes)?;
+    let (remaining, (_length, raw_protocol)) = (u8, take(bytes[0] as usize)).parse(bytes)?;
     Ok((remaining, raw_protocol))
 }
 

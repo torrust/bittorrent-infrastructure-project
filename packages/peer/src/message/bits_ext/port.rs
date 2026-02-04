@@ -3,7 +3,7 @@ use std::io::Write as _;
 use bytes::{BufMut, Bytes, BytesMut};
 use nom::combinator::map;
 use nom::number::complete::be_u16;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 use crate::message;
 use crate::message::bits_ext;
@@ -44,7 +44,7 @@ impl PortMessage {
     ///
     /// This function will return an error if the byte slice cannot be parsed into a `PortMessage`.
     pub fn parse_bytes(bytes: &[u8]) -> IResult<&[u8], PortMessage> {
-        map(be_u16, PortMessage::new)(bytes)
+        map(be_u16, PortMessage::new).parse(bytes)
     }
 
     /// Writes the current state of the `PortMessage` as bytes.

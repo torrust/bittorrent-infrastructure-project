@@ -12,8 +12,8 @@ use nom::branch::alt;
 use nom::bytes::complete::take;
 use nom::combinator::{all_consuming, map, map_res, opt, value};
 use nom::number::complete::{be_u32, be_u8};
-use nom::sequence::{preceded, tuple};
-use nom::IResult;
+use nom::sequence::preceded;
+use nom::{IResult, Parser};
 use thiserror::Error;
 
 use crate::protocol::PeerProtocol;
@@ -257,12 +257,13 @@ where
     <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     map(
-        tuple((
+        (
             be_u32::<_, nom::error::Error<&[u8]>>,
             opt(be_u8::<_, nom::error::Error<&[u8]>>),
-        )),
+        ),
         |_| Ok(PeerWireProtocolMessage::KeepAlive),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_choke<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -272,12 +273,13 @@ where
     <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     map(
-        tuple((
+        (
             value(CHOKE_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
             value(Some(CHOKE_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
-        )),
+        ),
         |_| Ok(PeerWireProtocolMessage::Choke),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_unchoke<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -287,12 +289,13 @@ where
     <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     map(
-        tuple((
+        (
             value(UNCHOKE_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
             value(Some(UNCHOKE_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
-        )),
+        ),
         |_| Ok(PeerWireProtocolMessage::UnChoke),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_interested<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -302,12 +305,13 @@ where
     <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     map(
-        tuple((
+        (
             value(INTERESTED_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
             value(Some(INTERESTED_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
-        )),
+        ),
         |_| Ok(PeerWireProtocolMessage::Interested),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_uninterested<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -317,12 +321,13 @@ where
     <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     map(
-        tuple((
+        (
             value(UNINTERESTED_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
             value(Some(UNINTERESTED_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
-        )),
+        ),
         |_| Ok(PeerWireProtocolMessage::UnInterested),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_have<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -333,14 +338,15 @@ where
 {
     map(
         preceded(
-            tuple((
+            (
                 value(HAVE_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
                 value(Some(HAVE_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
-            )),
+            ),
             take(4_usize),
         ),
         |have| HaveMessage::parse_bytes(have).map(PeerWireProtocolMessage::Have),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_bitfield<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -351,14 +357,15 @@ where
 {
     map(
         preceded(
-            tuple((
+            (
                 value(BASE_BITFIELD_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
                 value(Some(BITFIELD_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
-            )),
+            ),
             take(4_usize),
         ),
         |bitfield| BitFieldMessage::parse_bytes(bitfield).map(PeerWireProtocolMessage::BitField),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_request<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -369,14 +376,15 @@ where
 {
     map(
         preceded(
-            tuple((
+            (
                 value(REQUEST_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
                 value(Some(REQUEST_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
-            )),
+            ),
             take(4_usize),
         ),
         |request| RequestMessage::parse_bytes(request).map(PeerWireProtocolMessage::Request),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_piece<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -387,17 +395,18 @@ where
 {
     map(
         preceded(
-            tuple((
+            (
                 value(BASE_PIECE_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
                 value(Some(PIECE_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
-            )),
+            ),
             take(4_usize),
         ),
         |piece| {
             let len = parse_message_length(piece);
             PieceMessage::parse_bytes(piece, len).map(PeerWireProtocolMessage::Piece)
         },
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_cancel<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -408,14 +417,15 @@ where
 {
     map(
         preceded(
-            tuple((
+            (
                 value(CANCEL_MESSAGE_LEN, be_u32::<_, nom::error::Error<&[u8]>>),
                 value(Some(CANCEL_MESSAGE_ID), be_u8::<_, nom::error::Error<&[u8]>>),
-            )),
+            ),
             take(4_usize),
         ),
         |cancel| CancelMessage::parse_bytes(cancel).map(PeerWireProtocolMessage::Cancel),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_bits_extension<P>(input: &[u8]) -> IResult<&[u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -427,7 +437,8 @@ where
     map(
         |input| BitsExtensionMessage::parse_bytes(input),
         |res_bits_ext| res_bits_ext.map(|bits_ext| PeerWireProtocolMessage::BitsExtension(bits_ext)),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_prot_extension<'a, P>(
@@ -448,7 +459,8 @@ where
             })),
         },
         |result| result,
-    )(input)
+    )
+    .parse(input)
 }
 
 fn parse_message<'a, P>(bytes: &'a [u8], ext_protocol: &mut P) -> IResult<&'a [u8], std::io::Result<PeerWireProtocolMessage<P>>>
@@ -470,5 +482,6 @@ where
         parse_cancel,
         parse_bits_extension,
         |input| parse_prot_extension(input, ext_protocol),
-    ))(bytes)
+    ))
+    .parse(bytes)
 }

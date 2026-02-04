@@ -10,8 +10,7 @@ use nom::bytes::complete::{take, take_while};
 use nom::combinator::map;
 use nom::error::Error;
 use nom::number::complete::{be_u16, be_u32, be_u8};
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 use util::convert;
 
 use crate::message;
@@ -58,7 +57,7 @@ impl BitsExtensionMessage {
     /// This function will return an error if the byte slice cannot be parsed into a `BitsExtensionMessage`.
     pub fn parse_bytes<'a>(input: &'a [u8]) -> IResult<&'a [u8], std::io::Result<BitsExtensionMessage>> {
         let port_fn = |input: &'a [u8]| -> IResult<&'a [u8], std::io::Result<BitsExtensionMessage>> {
-            let (_, (message_len, message_id)) = tuple((be_u32, be_u8))(input)?;
+            let (_, (message_len, message_id)) = (be_u32, be_u8).parse(input)?;
 
             if (message_len, message_id) == (PORT_MESSAGE_LEN, PORT_MESSAGE_ID) {
                 let (_, res_port) = PortMessage::parse_bytes(&input[message::HEADER_LEN..])?;
@@ -72,7 +71,7 @@ impl BitsExtensionMessage {
         };
 
         let ext_fn = |input: &'a [u8]| -> IResult<&'a [u8], std::io::Result<BitsExtensionMessage>> {
-            let (_, (message_len, extended_message_id, extended_message_handshake_id)) = tuple((be_u32, be_u8, be_u8))(input)?;
+            let (_, (message_len, extended_message_id, extended_message_handshake_id)) = (be_u32, be_u8, be_u8).parse(input)?;
 
             if (message_len, extended_message_id, extended_message_handshake_id)
                 == (message_len, EXTENDED_MESSAGE_ID, EXTENDED_MESSAGE_HANDSHAKE_ID)
@@ -87,7 +86,7 @@ impl BitsExtensionMessage {
             }
         };
 
-        alt((port_fn, ext_fn))(input)
+        alt((port_fn, ext_fn)).parse(input)
     }
 
     /// Writes the current state of the `BitsExtensionMessage` as bytes.

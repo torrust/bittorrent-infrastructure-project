@@ -1,7 +1,6 @@
 use nom::bytes::complete::take;
 use nom::combinator::map_res;
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 use tokio::io::{AsyncWrite, AsyncWriteExt as _};
 use util::bt::{self, InfoHash, PeerId};
 
@@ -78,12 +77,13 @@ pub fn write_len_with_protocol_len(protocol_len: u8) -> usize {
 
 #[allow(clippy::ptr_arg)]
 fn parse_remote_handshake(bytes: &Vec<u8>) -> IResult<(), HandshakeMessage> {
-    let res = tuple((
+    let res = (
         Protocol::from_bytes,
         Extensions::from_bytes,
         parse_remote_hash,
         parse_remote_pid,
-    ))(bytes);
+    )
+        .parse(bytes.as_slice());
 
     let (_, (prot, ext, hash, pid)) = res.map_err(|e: nom::Err<nom::error::Error<&[u8]>>| e.map_input(|_| ()))?;
 
@@ -92,14 +92,13 @@ fn parse_remote_handshake(bytes: &Vec<u8>) -> IResult<(), HandshakeMessage> {
 
 fn parse_remote_hash(bytes: &[u8]) -> IResult<&[u8], InfoHash> {
     map_res(take(bt::INFO_HASH_LEN), |hash: &[u8]| {
-        InfoHash::from_hash(hash).map_err(|_| nom::Err::Error((bytes, nom::error::ErrorKind::LengthValue)))
-    })(bytes)
+        InfoHash::from_hash(hash).map_err(|_| ())
+    })
+    .parse(bytes)
 }
 
 fn parse_remote_pid(bytes: &[u8]) -> IResult<&[u8], PeerId> {
-    map_res(take(bt::PEER_ID_LEN), |pid: &[u8]| {
-        PeerId::from_hash(pid).map_err(|_| nom::Err::Error((bytes, nom::error::ErrorKind::LengthValue)))
-    })(bytes)
+    map_res(take(bt::PEER_ID_LEN), |pid: &[u8]| PeerId::from_hash(pid).map_err(|_| ())).parse(bytes)
 }
 
 #[cfg(test)]

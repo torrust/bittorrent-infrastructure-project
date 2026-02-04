@@ -1,4 +1,3 @@
-#![allow(deprecated)]
 //! Messaging primitives for announcing.
 
 use std::io::Write as _;
@@ -10,8 +9,7 @@ use nom::bytes::complete::{tag, take};
 use nom::combinator::{map, value};
 use nom::multi::count;
 use nom::number::complete::{be_i32, be_i64, be_u16, be_u32, be_u8};
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 use tracing::instrument;
 use util::bt::{self, InfoHash, PeerId};
 use util::convert;
@@ -192,7 +190,7 @@ impl<'a> AnnounceRequest<'a> {
 
 /// Parse an `AnnounceRequest` with the given `SourceIP` type constructor.
 fn parse_request(bytes: &[u8], ip_type: fn(bytes: &[u8]) -> IResult<&[u8], SourceIP>) -> IResult<&[u8], AnnounceRequest<'_>> {
-    let (bytes, (info_hash, peer_id, state, ip, key, num_want, port, options)) = tuple((
+    let (bytes, (info_hash, peer_id, state, ip, key, num_want, port, options)) = (
         map(take(bt::INFO_HASH_LEN), |bytes: &[u8]| InfoHash::from_hash(bytes).unwrap()),
         map(take(bt::PEER_ID_LEN), |bytes: &[u8]| PeerId::from_hash(bytes).unwrap()),
         ClientState::from_bytes,
@@ -201,7 +199,8 @@ fn parse_request(bytes: &[u8], ip_type: fn(bytes: &[u8]) -> IResult<&[u8], Sourc
         DesiredPeers::from_bytes,
         be_u16,
         AnnounceOptions::from_bytes,
-    ))(bytes)?;
+    )
+        .parse(bytes)?;
 
     Ok((
         bytes,
@@ -312,7 +311,7 @@ fn parse_response<'a>(
     bytes: &'a [u8],
     peers_type: fn(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>>,
 ) -> IResult<&'a [u8], AnnounceResponse<'a>> {
-    let (bytes, (interval, leechers, seeders, peers)) = tuple((be_i32, be_i32, be_i32, peers_type))(bytes)?;
+    let (bytes, (interval, leechers, seeders, peers)) = (be_i32, be_i32, be_i32, peers_type).parse(bytes)?;
 
     Ok((bytes, AnnounceResponse::new(interval, leechers, seeders, peers)))
 }
@@ -395,7 +394,7 @@ impl ClientState {
 }
 
 fn parse_state(bytes: &[u8]) -> IResult<&[u8], ClientState> {
-    let (bytes, (downloaded, left, uploaded, event)) = tuple((be_i64, be_i64, be_i64, AnnounceEvent::from_bytes))(bytes)?;
+    let (bytes, (downloaded, left, uploaded, event)) = (be_i64, be_i64, be_i64, AnnounceEvent::from_bytes).parse(bytes)?;
 
     Ok((bytes, ClientState::new(downloaded, left, uploaded, event)))
 }
@@ -541,9 +540,10 @@ impl SourceIP {
 
 fn parse_preference_v4(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
     let (bytes, ip) = alt((
-        map(tag(&IMPLIED_IPV4_ID), |_| SourceIP::ImpliedV4),
+        map(tag(&IMPLIED_IPV4_ID[..]), |_| SourceIP::ImpliedV4),
         map(parse_ipv4, SourceIP::ExplicitV4),
-    ))(bytes)?;
+    ))
+    .parse(bytes)?;
     Ok((bytes, ip))
 }
 
@@ -556,9 +556,10 @@ fn parse_ipv4(bytes: &[u8]) -> IResult<&[u8], Ipv4Addr> {
 
 fn parse_preference_v6(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
     let (bytes, ip) = alt((
-        map(tag(&IMPLIED_IPV6_ID), |_| SourceIP::ImpliedV6),
+        map(tag(&IMPLIED_IPV6_ID[..]), |_| SourceIP::ImpliedV6),
         map(parse_ipv6, SourceIP::ExplicitV6),
-    ))(bytes)?;
+    ))
+    .parse(bytes)?;
     Ok((bytes, ip))
 }
 

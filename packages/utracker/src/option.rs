@@ -11,8 +11,7 @@ use nom::bytes::complete::{tag, take};
 use nom::combinator::{eof, map};
 use nom::multi::length_data;
 use nom::number::complete::be_u8;
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 use tracing::instrument;
 
 const END_OF_OPTIONS_BYTE: u8 = 0x00;
@@ -155,7 +154,8 @@ fn parse_options<'a>(bytes: &'a [u8], option_map: &mut HashMap<u8, Cow<'a, [u8]>
     while !eof {
         let parse_result = alt((parse_end_option, parse_no_option, |input| {
             parse_user_option(input, option_map)
-        }))(curr_bytes);
+        }))
+        .parse(curr_bytes);
 
         match parse_result {
             Ok((new_bytes, found_eof)) => {
@@ -173,17 +173,17 @@ fn parse_options<'a>(bytes: &'a [u8], option_map: &mut HashMap<u8, Cow<'a, [u8]>
 
 /// Parse an end of buffer or the end of option byte.
 fn parse_end_option(input: &[u8]) -> IResult<&[u8], bool> {
-    map(alt((eof, tag([END_OF_OPTIONS_BYTE]))), |_| true)(input)
+    map(alt((eof, tag(&[END_OF_OPTIONS_BYTE][..]))), |_| true).parse(input)
 }
 
 /// Parse a noop byte.
 fn parse_no_option(input: &[u8]) -> IResult<&[u8], bool> {
-    map(tag([NO_OPERATION_BYTE]), |_| false)(input)
+    map(tag(&[NO_OPERATION_BYTE][..]), |_| false).parse(input)
 }
 
 /// Parse a user defined option.
 fn parse_user_option<'a>(input: &'a [u8], option_map: &mut HashMap<u8, Cow<'a, [u8]>>) -> IResult<&'a [u8], bool> {
-    let (input, (option_byte, option_contents)) = tuple((be_u8, length_data(be_u8)))(input)?;
+    let (input, (option_byte, option_contents)) = (be_u8, length_data(be_u8)).parse(input)?;
 
     match option_map.entry(option_byte) {
         Entry::Occupied(mut occ) => {

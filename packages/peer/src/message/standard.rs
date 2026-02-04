@@ -5,8 +5,7 @@ use bytes::Bytes;
 use nom::bytes::complete::take;
 use nom::combinator::{map, map_res};
 use nom::number::complete::be_u32;
-use nom::sequence::tuple;
-use nom::{IResult, Needed};
+use nom::{IResult, Needed, Parser};
 
 use crate::message;
 
@@ -95,7 +94,7 @@ impl HaveMessage {
 ///
 /// This function will return an error if the byte slice cannot be parsed into a `HaveMessage`.
 fn parse_have(bytes: &[u8]) -> IResult<&[u8], std::io::Result<HaveMessage>> {
-    map(be_u32, |index| Ok(HaveMessage::new(index)))(bytes)
+    map(be_u32, |index| Ok(HaveMessage::new(index))).parse(bytes)
 }
 
 // ----------------------------------------------------------------------------//
@@ -383,9 +382,10 @@ impl RequestMessage {
 ///
 /// This function will return an error if the byte slice cannot be parsed into a `RequestMessage`.
 fn parse_request(bytes: &[u8]) -> IResult<&[u8], std::io::Result<RequestMessage>> {
-    map(tuple((be_u32, be_u32, be_u32)), |(index, offset, length)| {
+    map((be_u32, be_u32, be_u32), |(index, offset, length)| {
         Ok(RequestMessage::new(index, offset, message::u32_to_usize(length)))
-    })(bytes)
+    })
+    .parse(bytes)
 }
 
 // ----------------------------------------------------------------------------//
@@ -536,11 +536,12 @@ impl PieceMessage {
 /// This function will return an error if the byte slice cannot be parsed into a `PieceMessage`.
 fn parse_piece(bytes: &[u8], len: usize) -> IResult<&[u8], std::io::Result<PieceMessage>> {
     map(
-        tuple((be_u32, be_u32, take(len - 8))),
+        (be_u32, be_u32, take(len - 8)),
         |(piece_index, block_offset, block): (u32, u32, &[u8])| {
             Ok(PieceMessage::new(piece_index, block_offset, Bytes::copy_from_slice(block)))
         },
-    )(bytes)
+    )
+    .parse(bytes)
 }
 
 // ----------------------------------------------------------------------------//
@@ -672,9 +673,10 @@ impl CancelMessage {
 ///
 /// This function will return an error if the byte slice cannot be parsed into a `CancelMessage`.
 fn parse_cancel(bytes: &[u8]) -> IResult<&[u8], std::io::Result<CancelMessage>> {
-    map(tuple((be_u32, be_u32, be_u32)), |(index, offset, length)| {
+    map((be_u32, be_u32, be_u32), |(index, offset, length)| {
         Ok(CancelMessage::new(index, offset, message::u32_to_usize(length)))
-    })(bytes)
+    })
+    .parse(bytes)
 }
 
 #[cfg(test)]

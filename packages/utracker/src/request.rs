@@ -6,8 +6,7 @@ use byteorder::{BigEndian, WriteBytesExt};
 use nom::bytes::complete::take;
 use nom::combinator::{map, map_res};
 use nom::number::complete::{be_u32, be_u64};
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 use tracing::instrument;
 
 use crate::announce::AnnounceRequest;
@@ -148,7 +147,7 @@ impl<'a> TrackerRequest<'a> {
 }
 
 fn parse_request(bytes: &[u8]) -> IResult<&[u8], TrackerRequest<'_>> {
-    let (remaining, (connection_id, action_id, transaction_id)) = tuple((be_u64, be_u32, be_u32))(bytes)?;
+    let (remaining, (connection_id, action_id, transaction_id)) = (be_u64, be_u32, be_u32).parse(bytes)?;
 
     match (connection_id, action_id) {
         (CONNECT_ID_PROTOCOL_ID, crate::CONNECT_ACTION_ID) => Ok((

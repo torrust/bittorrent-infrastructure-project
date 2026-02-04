@@ -5,8 +5,7 @@ use std::io::Write as _;
 use byteorder::{BigEndian, WriteBytesExt};
 use nom::combinator::map;
 use nom::number::complete::{be_u32, be_u64};
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 use crate::announce::AnnounceResponse;
 use crate::contact::CompactPeers;
@@ -135,7 +134,7 @@ impl<'a> TrackerResponse<'a> {
 }
 
 fn parse_response(bytes: &[u8]) -> IResult<&[u8], TrackerResponse<'_>> {
-    let (remaining, (action_id, transaction_id)) = tuple((be_u32, be_u32))(bytes)?;
+    let (remaining, (action_id, transaction_id)) = (be_u32, be_u32).parse(bytes)?;
 
     match action_id {
         crate::CONNECT_ACTION_ID => {
