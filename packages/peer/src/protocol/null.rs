@@ -30,9 +30,7 @@ impl PeerProtocol for NullProtocol {
     }
 
     fn parse_bytes(&mut self, _: &[u8]) -> std::io::Result<Result<Self::ProtocolMessage, Self::ProtocolMessageError>> {
-        Err(std::io::Error::other(
-            "Attempted To Parse Bytes As Null Protocol",
-        ))
+        Err(std::io::Error::other("Attempted To Parse Bytes As Null Protocol"))
     }
 
     fn write_bytes<W>(&mut self, _: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>, _: W) -> std::io::Result<usize>

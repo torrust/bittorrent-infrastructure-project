@@ -34,7 +34,7 @@ pub fn tracing_stderr_init(filter: LevelFilter) {
 /// Generate buffer of size random bytes.
 pub fn random_buffer(size: usize) -> Vec<u8> {
     let mut buffer = vec![0u8; size];
-    rand::Rng::fill(&mut rand::thread_rng(), buffer.as_mut_slice());
+    rand::Rng::fill(&mut rand::rng(), buffer.as_mut_slice());
     buffer
 }
 

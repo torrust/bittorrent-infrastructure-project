@@ -156,9 +156,7 @@ where
     pub fn parse_bytes(bytes: &[u8], ext_protocol: &mut P) -> std::io::Result<PeerWireProtocolMessage<P>> {
         match parse_message(bytes, ext_protocol) {
             Ok((_, result)) => result,
-            _ => Err(std::io::Error::other(
-                "Failed To Parse PeerWireProtocolMessage",
-            )),
+            _ => Err(std::io::Error::other("Failed To Parse PeerWireProtocolMessage")),
         }
     }
 

@@ -129,9 +129,7 @@ where
         match self {
             PeerExtensionProtocolMessage::UtMetadata(msg) => {
                 let Some(ext_id) = extended.query_id(&ExtendedType::UtMetadata) else {
-                    return Err(std::io::Error::other(
-                        "Can't Send UtMetadataMessage As We Have No Id Mapping",
-                    ));
+                    return Err(std::io::Error::other("Can't Send UtMetadataMessage As We Have No Id Mapping"));
                 };
 
                 let total_len = (2 + msg.message_size());

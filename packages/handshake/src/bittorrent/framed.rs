@@ -195,7 +195,7 @@ where
                 *this.state = HandshakeState::Reading;
 
                 cx.waker().wake_by_ref();
-                return Poll::Pending;
+                Poll::Pending
             }
             HandshakeState::Reading => {
                 tracing::trace!("handshake reading...");
@@ -243,7 +243,7 @@ where
                 };
 
                 cx.waker().wake_by_ref();
-                return Poll::Pending;
+                Poll::Pending
             }
 
             HandshakeState::Ready => {
@@ -259,33 +259,33 @@ where
                         tracing::trace!("Parsed HandshakeMessage: {:?}", message);
                         self.state = HandshakeState::Finished;
 
-                        return Poll::Ready(Some(Ok(message)));
+                        Poll::Ready(Some(Ok(message)))
                     }
                     Err(nom::Err::Incomplete(needed)) => {
                         tracing::error!("Failed to parse incomplete HandshakeMessage: {needed:?}");
                         self.state = HandshakeState::Errored;
 
-                        return Poll::Ready(Some(Err(std::io::Error::new(
+                        Poll::Ready(Some(Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
                             format!("Failed to parse incomplete HandshakeMessage: {needed:?}"),
-                        ))));
+                        ))))
                     }
                     Err(e) => {
                         tracing::error!("Failed to parse HandshakeMessage");
                         self.state = HandshakeState::Errored;
 
-                        return Poll::Ready(Some(Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e))));
+                        Poll::Ready(Some(Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e))))
                     }
                 }
             }
             HandshakeState::Finished => {
                 tracing::trace!("handshake finished...");
-                return Poll::Ready(None);
+                Poll::Ready(None)
             }
 
             HandshakeState::Errored => {
                 tracing::warn!("handshake polled while errored...");
-                return Poll::Ready(None);
+                Poll::Ready(None)
             }
         }
     }

@@ -45,9 +45,9 @@ impl Router {
     pub fn ipv4_addr(&self) -> std::io::Result<SocketAddrV4> {
         let mut addrs = self.socket_addrs()?;
 
-        addrs.find_map(map_ipv4).ok_or(std::io::Error::other(
-            "No IPv4 Addresses Found For Host",
-        ))
+        addrs
+            .find_map(map_ipv4)
+            .ok_or(std::io::Error::other("No IPv4 Addresses Found For Host"))
     }
 
     /// Returns the [`SocketAddrV6`] of this [`Router`].
@@ -58,9 +58,9 @@ impl Router {
     pub fn ipv6_addr(&self) -> std::io::Result<SocketAddrV6> {
         let mut addrs = self.socket_addrs()?;
 
-        addrs.find_map(map_ipv6).ok_or(std::io::Error::other(
-            "No IPv6 Addresses Found For Host",
-        ))
+        addrs
+            .find_map(map_ipv6)
+            .ok_or(std::io::Error::other("No IPv6 Addresses Found For Host"))
     }
 
     /// Returns the [`SocketAddr`] of this [`Router`].
@@ -71,9 +71,7 @@ impl Router {
     pub fn socket_addr(&self) -> std::io::Result<SocketAddr> {
         let mut addrs = self.socket_addrs()?;
 
-        addrs.next().ok_or(std::io::Error::other(
-            "No SocketAddresses Found For Host",
-        ))
+        addrs.next().ok_or(std::io::Error::other("No SocketAddresses Found For Host"))
     }
 
     fn socket_addrs(&self) -> std::io::Result<IntoIter<SocketAddr>> {

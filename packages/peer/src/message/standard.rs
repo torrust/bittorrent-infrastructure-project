@@ -139,9 +139,7 @@ impl BitFieldMessage {
         let len = bytes.len();
         match parse_bitfield(bytes, len) {
             Ok((_, msg)) => msg,
-            Err(_) => Err(std::io::Error::other(
-                "Failed to parse BitFieldMessage",
-            )),
+            Err(_) => Err(std::io::Error::other("Failed to parse BitFieldMessage")),
         }
     }
 
@@ -303,9 +301,7 @@ impl RequestMessage {
     pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<RequestMessage> {
         match parse_request(bytes) {
             Ok((_, msg)) => msg,
-            Err(_) => Err(std::io::Error::other(
-                "Failed to parse RequestMessage",
-            )),
+            Err(_) => Err(std::io::Error::other("Failed to parse RequestMessage")),
         }
     }
 
@@ -594,9 +590,7 @@ impl CancelMessage {
     pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<CancelMessage> {
         match parse_cancel(bytes) {
             Ok((_, msg)) => msg,
-            Err(_) => Err(std::io::Error::other(
-                "Failed to parse CancelMessage",
-            )),
+            Err(_) => Err(std::io::Error::other("Failed to parse CancelMessage")),
         }
     }
 

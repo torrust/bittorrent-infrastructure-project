@@ -15,7 +15,7 @@ use peer::messages::{
     ExtendedMessage, ExtendedType, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
 };
 use peer::PeerInfo;
-use rand::{self, Rng};
+use rand::Rng;
 
 use crate::discovery::error::DiscoveryError;
 use crate::discovery::{IDiscoveryMessage, ODiscoveryMessage};
@@ -213,7 +213,7 @@ impl UtMetadataModule {
                         if !active_peers.peers.is_empty() {
                             let mut active_peers_iter = active_peers.peers.iter();
                             let num_active_peers = active_peers_iter.len();
-                            let selected_peer_num = rand::thread_rng().gen::<usize>() % num_active_peers;
+                            let selected_peer_num = rand::rng().random_range(0..num_active_peers);
                             let selected_peer = active_peers_iter.nth(selected_peer_num).unwrap();
                             let selected_message = pending.messages.pop().unwrap();
                             self.active_requests

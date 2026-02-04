@@ -144,15 +144,13 @@ where
     }
 
     #[instrument(skip(self, waker, shutdown_handle, event, poll))]
-    pub fn handle_event<T>(
+    pub fn handle_event(
         &mut self,
         waker: &Waker,
         shutdown_handle: &mut ShutdownHandle,
         event: &mio::event::Event,
         poll: &mut Poll,
-    ) where
-        T: std::fmt::Debug,
-    {
+    ) {
         tracing::trace!(?event, "handle event");
 
         if event.token() == UDP_SOCKET_TOKEN {

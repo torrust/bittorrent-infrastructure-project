@@ -439,7 +439,7 @@ where
 
             // Handle events
             for event in &self.events {
-                dispatch_handler.handle_event::<D>(&self.loop_waker.waker, &mut self.shutdown_handle, event, &mut self.poll);
+                dispatch_handler.handle_event(&self.loop_waker.waker, &mut self.shutdown_handle, event, &mut self.poll);
             }
 
             // Handle messages

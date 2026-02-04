@@ -25,7 +25,7 @@ const WIPE_DATA_DIR: bool = false;
 fn generate_single_file_torrent(piece_len: usize, file_len: usize) -> (Metainfo, Vec<u8>) {
     let mut buffer = vec![0u8; file_len];
 
-    rand::thread_rng().fill(buffer.as_mut_slice());
+    rand::rng().fill(buffer.as_mut_slice());
 
     let metainfo_bytes = {
         let accessor = DirectAccessor::new("benchmark_file", &buffer[..]);

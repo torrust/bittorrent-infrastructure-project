@@ -30,8 +30,10 @@ pub mod error;
 
 /// Applies a Fisher-Yates shuffle on the given list.
 pub fn fisher_shuffle<T: Default>(list: &mut [T]) {
+    use rand::Rng;
+    let mut rng = rand::rng();
     for i in 0..list.len() {
-        let swap_index = (rand::random::<usize>() % (list.len() - i)) + i;
+        let swap_index = rng.random_range(i..list.len());
 
         // Can't push the src_val directly into the swap_index in case i and swap_index
         // are the same value (we will end up setting our index to the default value).
