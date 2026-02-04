@@ -27,7 +27,7 @@ impl Stream for UberStream {
                 Poll::Ready(None) => return Poll::Ready(None),
                 Poll::Pending => (),
             }
-        };
+        }
 
         for discovery in self.discovery.lock().unwrap().iter_mut() {
             match Arc::get_mut(discovery).unwrap().poll_next_unpin(cx) {

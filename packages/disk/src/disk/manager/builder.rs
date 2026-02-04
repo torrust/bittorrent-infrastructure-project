@@ -9,6 +9,7 @@ const DEFAULT_THREAD_POOL_SIZE: usize = 4;
 
 /// `DiskManagerBuilder` for building `DiskManager`s with different settings.
 #[allow(clippy::module_name_repetitions)]
+#[allow(clippy::struct_field_names)]
 pub struct DiskManagerBuilder {
     thread_pool_size: usize,
     pending_size: usize,

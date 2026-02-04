@@ -129,7 +129,7 @@ fn decode_dict(
                 })
             }
             _ => (),
-        };
+        }
         curr_pos = next_pos;
 
         let (value, next_pos) = decode(bytes, curr_pos, opts, depth + 1)?;

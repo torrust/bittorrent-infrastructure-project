@@ -218,7 +218,7 @@ impl<'a> IntoAccessor for DirectAccessor<'a> {
     }
 }
 
-impl<'a> Accessor for DirectAccessor<'a> {
+impl Accessor for DirectAccessor<'_> {
     fn access_directory(&self) -> Option<&Path> {
         None
     }

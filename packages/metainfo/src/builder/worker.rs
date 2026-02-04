@@ -182,8 +182,8 @@ fn start_hash_worker(send: &mpsc::Sender<MasterMessage>, work: &Arc<SegQueue<Wor
     while work_to_do {
         let work_item = work.pop();
 
-        match work_item {
-            Some(work) => match work {
+        if let Some(work) = work_item {
+            match work {
                 WorkerMessage::Finish => {
                     work_to_do = false;
                 }
@@ -193,8 +193,7 @@ fn start_hash_worker(send: &mpsc::Sender<MasterMessage>, work: &Arc<SegQueue<Wor
                     send.send(MasterMessage::AcceptPiece(index, hash)).unwrap();
                     buffers.checkin(buffer);
                 }
-            },
-            None => continue,
+            }
         }
     }
 

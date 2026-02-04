@@ -70,7 +70,7 @@ impl MagnetLink {
         // Is Magnet Link?
         if url.scheme() != "magnet" {
             return None;
-        };
+        }
 
         // Gather Magnet Link data from query string
         let mut result: Option<MagnetLink> = None;
@@ -78,7 +78,7 @@ impl MagnetLink {
         for (k, v) in url.query_pairs() {
             if result.is_none() {
                 result = Some(Self::default());
-            };
+            }
 
             if let Some(ref mut r) = result {
                 match &k[..] {

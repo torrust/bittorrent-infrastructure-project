@@ -53,7 +53,7 @@ impl UberSink {
     fn poll_discovery_flush(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Error>> {
         for discovery in self.discovery.lock().unwrap().iter_mut() {
             match Arc::get_mut(discovery).unwrap().poll_flush_unpin(cx) {
-                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Ok(())) => (),
                 Poll::Ready(Err(e)) => return Poll::Ready(Err(Error::Discovery(e))),
                 Poll::Pending => {
                     cx.waker().wake_by_ref();

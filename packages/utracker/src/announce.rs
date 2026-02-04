@@ -644,7 +644,7 @@ mod tests {
         let peer_id = [4, 2, 123, 23, 34, 5, 56, 2, 3, 4, 45, 6, 7, 8, 5, 6, 4, 56, 34, 42];
         let (downloaded, left, uploaded) = (123_908, 12_309_123, 123_123);
         let state = ClientState::new(downloaded, left, uploaded, AnnounceEvent::None);
-        let ip = Ipv4Addr::new(127, 0, 0, 1);
+        let ip = Ipv4Addr::LOCALHOST;
         let key = 234_234;
         let num_want = 34;
         let port = 6969;
@@ -799,7 +799,7 @@ mod tests {
     fn positive_write_source_ipv4_explicit() {
         let mut received = Vec::new();
 
-        let ip = Ipv4Addr::new(127, 0, 0, 1);
+        let ip = Ipv4Addr::LOCALHOST;
         let explicit_ip = SourceIP::ExplicitV4(ip);
         explicit_ip.write_bytes(&mut received).unwrap();
 
@@ -1057,7 +1057,7 @@ mod tests {
         let bytes = [127, 0, 0, 1];
 
         let received = SourceIP::from_bytes_v4(&bytes).unwrap().1;
-        let expected = SourceIP::ExplicitV4(Ipv4Addr::new(127, 0, 0, 1));
+        let expected = SourceIP::ExplicitV4(Ipv4Addr::LOCALHOST);
 
         assert_eq!(received, expected);
     }

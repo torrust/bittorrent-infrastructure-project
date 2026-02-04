@@ -109,7 +109,7 @@ where
                 let path = helpers::build_path(opt_parent_dir, file);
 
                 match filesystem.sync_file(path) {
-                    Ok(()) => continue,
+                    Ok(()) => (),
                     Err(e) => return std::future::ready(Err(e)).boxed(),
                 }
             }

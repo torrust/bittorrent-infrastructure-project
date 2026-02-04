@@ -48,6 +48,13 @@ where
         Self { sender, waker }
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the channel is disconnected.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the waker fails to wake.
     #[instrument(skip(self))]
     pub fn send(&self, msg: T) -> Result<(), mpsc::SendError<T>> {
         tracing::trace!("sending message");
@@ -206,7 +213,7 @@ where
 
             lock.lock().unwrap().push(timeout);
             cvar.notify_one();
-        };
+        }
 
         tracing::trace!(%inserted, "new timeout");
 
@@ -240,7 +247,7 @@ impl ShutdownHandle {
             tracing::info!("shutdown called");
         } else {
             tracing::debug!("shutdown already called");
-        };
+        }
 
         match self.waker.wake() {
             Ok(()) => tracing::trace!("waking... shutdown"),
@@ -406,8 +413,12 @@ where
     /// # Errors
     ///
     /// This function will return an error if binding the UDP socket or polling events fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the socket was not previously set.
     #[instrument(skip(self, dispatcher))]
-    pub fn run(&mut self, dispatcher: D, started_eloop_sender: mpsc::SyncSender<std::io::Result<()>>) -> std::io::Result<()>
+    pub fn run(&mut self, dispatcher: D, started_eloop_sender: &mpsc::SyncSender<std::io::Result<()>>) -> std::io::Result<()>
     where
         D: std::fmt::Debug,
         <D as Dispatcher>::Message: std::fmt::Debug,

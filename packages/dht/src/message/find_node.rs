@@ -8,6 +8,7 @@ use crate::message::request::{self, RequestValidate};
 use crate::message::response::ResponseValidate;
 
 #[allow(clippy::module_name_repetitions)]
+#[allow(clippy::struct_field_names)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct FindNodeRequest<'a> {
     trans_id: &'a [u8],

@@ -134,7 +134,7 @@ async fn positive_complete_torrent() {
 
         while let Some(task) = tasks.try_join_next() {
             match task {
-                Ok(()) => continue,
+                Ok(()) => (),
                 Err(e) => panic!("task joined with error: {e}"),
             }
         }
@@ -195,7 +195,7 @@ async fn positive_complete_torrent() {
 
         while let Some(task) = tasks.try_join_next() {
             match task {
-                Ok(()) => continue,
+                Ok(()) => (),
                 Err(e) => panic!("task joined with error: {e}"),
             }
         }

@@ -181,7 +181,7 @@ pub enum BucketContents<'a> {
 }
 
 #[allow(dead_code)]
-impl<'a> BucketContents<'a> {
+impl BucketContents<'_> {
     fn is_empty(&self) -> bool {
         matches!(self, &BucketContents::Empty)
     }
@@ -216,7 +216,7 @@ impl<'a> Iterator for Buckets<'a> {
     fn next(&mut self) -> Option<BucketContents<'a>> {
         if self.index > MAX_BUCKETS {
             return None;
-        };
+        }
 
         if self.index == MAX_BUCKETS {
             // If not all sorted buckets were present, return the assorted bucket
@@ -291,7 +291,7 @@ impl<'a> Iterator for ClosestNodes<'a> {
         if let Some(ref mut iter) = self.current_iter {
             if let Some(node) = iter.next() {
                 return Some(node);
-            };
+            }
         }
 
         // Check if we have any nodes to give in the assorted bucket
@@ -302,7 +302,7 @@ impl<'a> Iterator for ClosestNodes<'a> {
                 node.2 = true;
 
                 return Some(node.1);
-            };
+            }
         }
 
         // Check if we can move to a new bucket

@@ -128,8 +128,6 @@ where
             match ready {
                 Ok(()) => {
                     tracing::trace!("task completed... with {} remaining...", task_set.len());
-
-                    continue;
                 }
                 Err(e) => {
                     tracing::error!("task completed... with {} remaining, with error: {e}", task_set.len());

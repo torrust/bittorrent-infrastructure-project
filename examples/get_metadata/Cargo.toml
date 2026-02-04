@@ -13,6 +13,9 @@ publish.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 dht = { path = "../../packages/dht" }
 handshake = { path = "../../packages/handshake" }

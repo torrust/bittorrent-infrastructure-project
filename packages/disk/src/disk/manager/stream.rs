@@ -40,7 +40,7 @@ impl DiskManagerStream {
         );
         if let Some(waker) = self.wake_queue.pop() {
             waker.wake();
-        };
+        }
 
         cap
     }

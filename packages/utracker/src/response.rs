@@ -25,7 +25,7 @@ pub enum ResponseType<'a> {
     Error(ErrorResponse<'a>),
 }
 
-impl<'a> ResponseType<'a> {
+impl ResponseType<'_> {
     /// Create an owned version of the `ResponseType`.
     #[must_use]
     pub fn to_owned(&self) -> ResponseType<'static> {
@@ -104,7 +104,7 @@ impl<'a> TrackerResponse<'a> {
 
                 err.write_bytes(&mut writer)?;
             }
-        };
+        }
 
         writer.flush();
 

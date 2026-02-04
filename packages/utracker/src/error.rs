@@ -17,7 +17,7 @@ pub struct ErrorResponse<'a> {
     message: Cow<'a, str>,
 }
 
-impl<'a> std::fmt::Display for ErrorResponse<'a> {
+impl std::fmt::Display for ErrorResponse<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Server Error: {}", self.message)
     }

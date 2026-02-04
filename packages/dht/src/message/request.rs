@@ -68,14 +68,14 @@ impl<'a> RequestValidate<'a> {
     }
 }
 
-impl<'a> BConvert for RequestValidate<'a> {
+impl BConvert for RequestValidate<'_> {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
         error.into()
     }
 }
-impl<'a> BConvertExt for RequestValidate<'a> {}
+impl BConvertExt for RequestValidate<'_> {}
 
 // ----------------------------------------------------------------------------//
 

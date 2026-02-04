@@ -14,24 +14,10 @@
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.check.workspace": true,
     "rust-analyzer.check.allTargets": true,
-    "rust-analyzer.check.extraArgs": [
-        "--",
-        "-D",
-        "clippy::correctness",
-        "-D",
-        "clippy::suspicious",
-        "-W",
-        "clippy::complexity",
-        "-W",
-        "clippy::perf",
-        "-W",
-        "clippy::style",
-        "-W",
-        "clippy::pedantic"
-        ],
+    "rust-analyzer.check.extraArgs": [],
     "evenBetterToml.formatter.allowedBlankLines": 1,
     "evenBetterToml.formatter.columnWidth": 130,
     "evenBetterToml.formatter.trailingNewline": true,
     "evenBetterToml.formatter.reorderKeys": true,
-    "evenBetterToml.formatter.reorderArrays": true,
+    "evenBetterToml.formatter.reorderArrays": true
 }

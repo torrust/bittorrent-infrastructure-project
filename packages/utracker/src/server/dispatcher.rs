@@ -47,7 +47,7 @@ where
         let (started_eloop_sender, started_eloop_receiver) = mpsc::sync_channel(0);
 
         let handle = std::thread::spawn(move || {
-            eloop.run(dispatcher, started_eloop_sender).unwrap();
+            eloop.run(dispatcher, &started_eloop_sender).unwrap();
         });
 
         let () = started_eloop_receiver
@@ -111,7 +111,7 @@ where
             RequestType::Scrape(req) => {
                 self.forward_scrape(provider, trans_id, conn_id, req, addr);
             }
-        };
+        }
     }
 
     /// Forward a connect request on to the appropriate handler method.

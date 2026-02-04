@@ -138,6 +138,7 @@ where
     type Item = Result<HandshakeMessage, std::io::Error>;
 
     #[instrument(skip(self, cx))]
+    #[allow(clippy::too_many_lines)]
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match self.state {
             HandshakeState::Waiting => {
@@ -170,7 +171,7 @@ where
                         tracing::error!("Error reading bytes: {:?}", e);
                         *this.state = HandshakeState::Errored;
                         return Poll::Ready(Some(Err(e)));
-                    };
+                    }
                 }
 
                 let filled = buf.filled();
@@ -226,7 +227,7 @@ where
                         tracing::error!("Error reading bytes: {:?}", e);
                         *this.state = HandshakeState::Errored;
                         return Poll::Ready(Some(Err(e)));
-                    };
+                    }
                 }
 
                 let filled = buf.filled().len();
@@ -240,7 +241,7 @@ where
                 if filled == length {
                     tracing::trace!("have full amount");
                     *this.state = HandshakeState::Ready;
-                };
+                }
 
                 cx.waker().wake_by_ref();
                 Poll::Pending

@@ -327,10 +327,10 @@ fn pending_info_from_metadata_size(metadata_size: i64) -> PendingInfo {
     let cast_metadata_size: usize = metadata_size.try_into().unwrap();
     let bytes = vec![0u8; cast_metadata_size];
     let mut messages = Vec::new();
-    let num_pieces = if !cast_metadata_size.is_multiple_of(MAX_REQUEST_SIZE) {
-        cast_metadata_size / MAX_REQUEST_SIZE + 1
-    } else {
+    let num_pieces = if cast_metadata_size.is_multiple_of(MAX_REQUEST_SIZE) {
         cast_metadata_size / MAX_REQUEST_SIZE
+    } else {
+        cast_metadata_size / MAX_REQUEST_SIZE + 1
     };
     for index in 0..num_pieces {
         messages.push(UtMetadataRequestMessage::new(index.try_into().unwrap()));

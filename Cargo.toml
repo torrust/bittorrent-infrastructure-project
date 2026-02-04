@@ -42,3 +42,22 @@ lto = false
 opt-level = 3
 panic = 'unwind'
 rpath = false
+
+[workspace.lints.rust]
+warnings = { level = "deny", priority = -1 }
+future-incompatible  = { level = "deny", priority = -1 }
+let-underscore  = { level = "deny", priority = -1 }
+nonstandard-style  = { level = "deny", priority = -1 }
+rust-2018-compatibility  = { level = "deny", priority = -1 }
+rust-2018-idioms  = { level = "deny", priority = -1 }
+rust-2021-compatibility  = { level = "deny", priority = -1 }
+unused  = { level = "deny", priority = -1 }
+deprecated-safe = { level = "deny", priority = -1 }
+
+[workspace.lints.clippy]
+complexity = { level = "deny", priority = -1 }
+correctness = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+style = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }

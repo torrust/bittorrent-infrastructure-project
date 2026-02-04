@@ -95,7 +95,7 @@ impl AnnounceStorage {
                     Entry::Vacant(vac) => {
                         vac.insert(vec![item]);
                     }
-                };
+                }
 
                 Some(false)
             }

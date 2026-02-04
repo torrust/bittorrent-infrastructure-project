@@ -82,7 +82,7 @@ impl<'a> ResponseValidate<'a> {
     }
 }
 
-impl<'a> BConvert for ResponseValidate<'a> {
+impl BConvert for ResponseValidate<'_> {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
@@ -90,7 +90,7 @@ impl<'a> BConvert for ResponseValidate<'a> {
     }
 }
 
-impl<'a> BConvertExt for ResponseValidate<'a> {}
+impl BConvertExt for ResponseValidate<'_> {}
 
 // ----------------------------------------------------------------------------//
 

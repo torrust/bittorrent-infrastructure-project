@@ -153,7 +153,7 @@ impl Node {
             NodeStatus::Good => return NodeStatus::Good,
             NodeStatus::Bad => return NodeStatus::Bad,
             NodeStatus::Questionable => (),
-        };
+        }
 
         recently_requested(self, curr_time)
     }

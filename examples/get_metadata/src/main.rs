@@ -101,8 +101,8 @@ fn parse_arguments() -> ArgMatches {
 }
 
 fn extract_arguments(matches: &ArgMatches) -> (String, String) {
-    let hash = matches.get_one::<String>("infohash").unwrap().to_string();
-    let output = matches.get_one::<String>("output").unwrap().to_string();
+    let hash = matches.get_one::<String>("infohash").unwrap().clone();
+    let output = matches.get_one::<String>("output").unwrap().clone();
     (hash, output)
 }
 

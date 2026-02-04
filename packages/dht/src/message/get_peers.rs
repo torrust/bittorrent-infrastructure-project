@@ -205,7 +205,7 @@ impl<'a> GetPeersResponse<'a, BencodeMut<'a>> {
         response_args.insert(message::NODE_ID_KEY.as_bytes(), ben_bytes!(self.node_id.as_ref()));
         if let Some(token) = self.token {
             response_args.insert(message::TOKEN_KEY.as_bytes(), ben_bytes!(token));
-        };
+        }
 
         match &self.info_type {
             CompactInfoType::Nodes(nodes) => {
@@ -232,7 +232,7 @@ impl<'a> GetPeersResponse<'a, BencodeMut<'a>> {
                     b_mut
                 });
             }
-        };
+        }
 
         let mut bencode_map = BencodeMut::new_dict();
 

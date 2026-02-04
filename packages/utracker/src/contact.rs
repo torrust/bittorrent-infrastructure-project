@@ -102,7 +102,7 @@ impl<'a> CompactPeersIter<'a> {
 }
 
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for CompactPeersIter<'a> {
+impl Iterator for CompactPeersIter<'_> {
     type Item = SocketAddr;
 
     fn next(&mut self) -> Option<SocketAddr> {
@@ -210,7 +210,7 @@ impl<'a> CompactPeersV4Iter<'a> {
 }
 
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for CompactPeersV4Iter<'a> {
+impl Iterator for CompactPeersV4Iter<'_> {
     type Item = SocketAddrV4;
 
     fn next(&mut self) -> Option<SocketAddrV4> {
@@ -332,7 +332,7 @@ impl<'a> CompactPeersV6Iter<'a> {
 }
 
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for CompactPeersV6Iter<'a> {
+impl Iterator for CompactPeersV6Iter<'_> {
     type Item = SocketAddrV6;
 
     fn next(&mut self) -> Option<SocketAddrV6> {

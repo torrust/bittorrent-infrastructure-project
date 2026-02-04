@@ -322,7 +322,7 @@ where
                                 tracing::error!("AnnounceStorage contained an IPv6 Address...");
                                 return;
                             }
-                        };
+                        }
 
                         bytes[4] = (port >> 8) as u8;
                         bytes[5] = (port & 0x00FF) as u8;

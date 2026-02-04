@@ -124,7 +124,7 @@ where
         let (started_eloop_sender, started_eloop_receiver) = mpsc::sync_channel(0);
 
         let handle = std::thread::spawn(move || {
-            eloop.run(dispatcher, started_eloop_sender).unwrap();
+            eloop.run(dispatcher, &started_eloop_sender).unwrap();
         });
 
         let () = started_eloop_receiver
@@ -236,7 +236,7 @@ where
                 return;
             }
             _ => (),
-        };
+        }
         self.active_requests.insert(token, ConnectTimer::new(addr, request));
 
         self.process_request(provider, token, false);
@@ -272,7 +272,7 @@ where
             provider
                 .remove_timeout(clear_timeout_token)
                 .expect("bip_utracker: Failed To Clear Request Timeout");
-        };
+        }
 
         // Check if the response requires us to update the connection timer
         if let &ResponseType::Connect(id) = response.response_type() {
@@ -383,7 +383,7 @@ where
                 Err(e) => {
                     tracing::error!(?e, "failed to write out the tracker request with error");
                 }
-            };
+            }
         }
 
         let next_timeout_at = Instant::now().checked_add(Duration::from_millis(next_timeout)).unwrap();
@@ -466,7 +466,7 @@ where
                     .set_timeout(TimeoutToken::default(), next_timeout_at)
                     .expect("bip_utracker: Failed To Restart Connect Id Cleanup Timer");
             }
-        };
+        }
     }
 }
 

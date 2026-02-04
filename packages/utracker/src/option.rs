@@ -165,7 +165,7 @@ fn parse_options<'a>(bytes: &'a [u8], option_map: &mut HashMap<u8, Cow<'a, [u8]>
             Err(e) => {
                 return Err(e);
             }
-        };
+        }
     }
 
     Ok((curr_bytes, eof))
@@ -192,7 +192,7 @@ fn parse_user_option<'a>(input: &'a [u8], option_map: &mut HashMap<u8, Cow<'a, [
         Entry::Vacant(vac) => {
             vac.insert(Cow::Borrowed(option_contents));
         }
-    };
+    }
 
     Ok((input, false))
 }

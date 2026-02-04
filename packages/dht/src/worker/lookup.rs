@@ -513,5 +513,5 @@ fn insert_sorted_node(nodes: &Mutex<Vec<(Distance, Node, Arc<AtomicBool>)>>, tar
             }
         }
         Err(ins_index) => nodes.insert(ins_index, (node_dist, node, Arc::new(AtomicBool::new(pinged)))),
-    };
+    }
 }

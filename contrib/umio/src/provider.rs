@@ -35,7 +35,7 @@ where
     _marker: PhantomData<D>,
 }
 
-impl<'a, D> Write for Provider<'a, D>
+impl<D> Write for Provider<'_, D>
 where
     D: Dispatcher + std::fmt::Debug,
 {

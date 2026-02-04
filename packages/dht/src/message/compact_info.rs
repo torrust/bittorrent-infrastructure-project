@@ -27,13 +27,13 @@ impl<'a> CompactNodeInfo<'a> {
     ///
     /// This function will return an error if the byte array is the wrong length.
     pub fn new(nodes: &'a [u8]) -> LengthResult<CompactNodeInfo<'a>> {
-        if !nodes.len().is_multiple_of(BYTES_PER_COMPACT_NODE_INFO) {
+        if nodes.len().is_multiple_of(BYTES_PER_COMPACT_NODE_INFO) {
+            Ok(CompactNodeInfo { nodes })
+        } else {
             Err(Error::new(
                 LengthErrorKind::LengthMultipleExpected,
                 BYTES_PER_COMPACT_NODE_INFO,
             ))
-        } else {
-            Ok(CompactNodeInfo { nodes })
         }
     }
 
@@ -62,7 +62,7 @@ pub struct CompactNodeInfoIter<'a> {
 }
 
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for CompactNodeInfoIter<'a> {
+impl Iterator for CompactNodeInfoIter<'_> {
     type Item = (NodeId, SocketAddrV4);
 
     fn next(&mut self) -> Option<(NodeId, SocketAddrV4)> {
@@ -153,7 +153,7 @@ where
     pos: usize,
 }
 
-impl<'a, B> Iterator for CompactValueInfoIter<'a, B>
+impl<B> Iterator for CompactValueInfoIter<'_, B>
 where
     B: BRefAccess<BType = B> + Clone,
 {
@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn positive_compact_values_one() {
-        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_truncation, clippy::decimal_bitwise_operands)]
         let bytes = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
         let bencode_values = ben_list!(ben_bytes!(&bytes[..]));
         let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
@@ -272,14 +272,14 @@ mod tests {
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
         assert_eq!(collected_info.len(), 1);
 
-        assert_eq!(collected_info[0], SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 6881));
+        assert_eq!(collected_info[0], SocketAddrV4::new(Ipv4Addr::LOCALHOST, 6881));
     }
 
     #[test]
     fn positive_compact_values_many() {
-        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_truncation, clippy::decimal_bitwise_operands)]
         let bytes_one = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
-        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_truncation, clippy::decimal_bitwise_operands)]
         let bytes_two = [10, 0, 0, 1, (6889 >> 8) as u8, (6889 & 0x00FF) as u8];
         let bencode_values = ben_list!(ben_bytes!(&bytes_one[..]), ben_bytes!(&bytes_two[..]));
         let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
@@ -287,7 +287,7 @@ mod tests {
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
         assert_eq!(collected_info.len(), 2);
 
-        assert_eq!(collected_info[0], SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 6881));
+        assert_eq!(collected_info[0], SocketAddrV4::new(Ipv4Addr::LOCALHOST, 6881));
         assert_eq!(collected_info[1], SocketAddrV4::new(Ipv4Addr::new(10, 0, 0, 1), 6889));
     }
 }

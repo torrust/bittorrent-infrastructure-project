@@ -172,9 +172,9 @@ fn parse_arguments() -> clap::ArgMatches {
 }
 
 fn extract_arguments(matches: &clap::ArgMatches) -> (String, String, String) {
-    let torrent_file_path = matches.get_one::<String>("file").unwrap().to_string();
-    let download_directory = matches.get_one::<String>("dir").unwrap().to_string();
-    let peer_address = matches.get_one::<String>("peer").unwrap().to_string();
+    let torrent_file_path = matches.get_one::<String>("file").unwrap().clone();
+    let download_directory = matches.get_one::<String>("dir").unwrap().clone();
+    let peer_address = matches.get_one::<String>("peer").unwrap().clone();
     (torrent_file_path, download_directory, peer_address)
 }
 

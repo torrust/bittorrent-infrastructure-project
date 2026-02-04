@@ -44,7 +44,6 @@ impl PieceBuffers {
             }
 
             std::thread::sleep(ten_millis);
-            continue;
         }
 
         pb.expect("Checked is_some in loop above.")

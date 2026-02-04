@@ -115,7 +115,7 @@ impl TokenStore {
                 self.curr_secret = rand::random::<u32>();
                 self.last_refresh = Utc::now();
             }
-        };
+        }
     }
 }
 

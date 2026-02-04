@@ -140,7 +140,7 @@ where
                 vac.insert(sender);
                 self.task_queue.push(task); // Add the task to the task queue
             }
-        };
+        }
 
         Ok(())
     }
@@ -201,7 +201,7 @@ where
 
         for peer_sender in guard.values_mut() {
             match peer_sender.poll_ready_unpin(cx) {
-                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Ok(())) => (),
                 Poll::Ready(Err(e)) => return Poll::Ready(Err(PeerManagerError::SendFailed(e))),
                 Poll::Pending => return Poll::Pending,
             }
@@ -229,7 +229,7 @@ where
 
         for peer_sender in guard.values_mut() {
             match peer_sender.poll_flush_unpin(cx) {
-                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Ok(())) => (),
                 Poll::Ready(Err(e)) => return Poll::Ready(Err(PeerManagerError::FlushFailed(e))),
                 Poll::Pending => {
                     tracing::debug!("pending to flush peer sender... will reschedule with waker");
@@ -252,7 +252,7 @@ where
 
         for peer_sender in guard.values_mut() {
             match peer_sender.poll_close_unpin(cx) {
-                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Ok(())) => (),
                 Poll::Ready(Err(e)) => return Poll::Ready(Err(PeerManagerError::FlushFailed(e))),
                 Poll::Pending => {
                     tracing::debug!("pending to flush peer sender... will reschedule with waker");

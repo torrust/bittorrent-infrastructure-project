@@ -27,7 +27,7 @@ pub enum RequestType<'a> {
     Scrape(ScrapeRequest<'a>),
 }
 
-impl<'a> RequestType<'a> {
+impl RequestType<'_> {
     /// Create an owned version of the `RequestType`.
     #[must_use]
     pub fn to_owned(&self) -> RequestType<'static> {
@@ -107,7 +107,7 @@ impl<'a> TrackerRequest<'a> {
 
                     req.write_bytes(&mut writer)?;
                 }
-            };
+            }
         }
         writer.flush()?;
 

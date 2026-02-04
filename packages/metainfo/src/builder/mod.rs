@@ -57,7 +57,7 @@ pub struct MetainfoBuilder<'a> {
     info: InfoBuilder<'a>,
 }
 
-impl<'a> Default for MetainfoBuilder<'a> {
+impl Default for MetainfoBuilder<'_> {
     fn default() -> Self {
         Self {
             root: BencodeMut::new_dict(),
@@ -299,7 +299,7 @@ pub struct InfoBuilder<'a> {
     piece_length: PieceLength,
 }
 
-impl<'a> Default for InfoBuilder<'a> {
+impl Default for InfoBuilder<'_> {
     fn default() -> Self {
         Self {
             info: BencodeMut::new_dict(),

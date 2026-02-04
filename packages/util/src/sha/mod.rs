@@ -146,7 +146,7 @@ impl<'a> Bits<'a> {
 }
 
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for Bits<'a> {
+impl Iterator for Bits<'_> {
     type Item = BitRep;
 
     fn next(&mut self) -> Option<BitRep> {

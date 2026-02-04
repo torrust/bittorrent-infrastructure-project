@@ -262,7 +262,7 @@ impl<'a> ScrapeRequestIter<'a> {
     }
 }
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for ScrapeRequestIter<'a> {
+impl Iterator for ScrapeRequestIter<'_> {
     type Item = InfoHash;
 
     fn next(&mut self) -> Option<InfoHash> {
@@ -277,7 +277,7 @@ impl<'a> Iterator for ScrapeRequestIter<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for ScrapeRequestIter<'a> {
+impl ExactSizeIterator for ScrapeRequestIter<'_> {
     fn len(&self) -> usize {
         self.hashes.len() / bt::INFO_HASH_LEN
     }
@@ -300,7 +300,7 @@ impl<'a> ScrapeResponseIter<'a> {
 }
 
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for ScrapeResponseIter<'a> {
+impl Iterator for ScrapeResponseIter<'_> {
     type Item = ScrapeStats;
 
     fn next(&mut self) -> Option<ScrapeStats> {
@@ -318,7 +318,7 @@ impl<'a> Iterator for ScrapeResponseIter<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for ScrapeResponseIter<'a> {
+impl ExactSizeIterator for ScrapeResponseIter<'_> {
     fn len(&self) -> usize {
         self.stats.len() / SCRAPE_STATS_BYTES
     }

@@ -178,7 +178,7 @@ mod tests {
 
     #[test]
     fn positive_sock_v4_to_bytes_be() {
-        let sock_addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 1600);
+        let sock_addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 1600);
 
         let received = super::sock_v4_to_bytes_be(sock_addr);
         #[allow(clippy::cast_possible_truncation)]
@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn positive_sock_v6_to_bytes_be() {
-        let sock_addr = SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), 1821, 0, 0);
+        let sock_addr = SocketAddrV6::new(Ipv6Addr::LOCALHOST, 1821, 0, 0);
 
         let received = super::sock_v6_to_bytes_be(sock_addr);
 
@@ -306,7 +306,7 @@ mod tests {
     #[test]
     fn positive_bytes_be_to_sock_v4() {
         let bytes = [127, 0, 0, 1, 1, 1];
-        let expected_sock = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 257);
+        let expected_sock = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 257);
 
         let result_sock = super::bytes_be_to_sock_v4(bytes);
 

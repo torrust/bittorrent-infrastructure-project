@@ -57,7 +57,7 @@ where
                     "PeerProtocolCodec Enforced Maximum Payload Check For Peer",
                 ));
             }
-        };
+        }
 
         let bytes = if bytes_needed <= src.len() {
             src.split_to(bytes_needed).freeze()

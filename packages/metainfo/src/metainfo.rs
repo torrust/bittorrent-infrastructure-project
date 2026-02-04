@@ -165,6 +165,7 @@ fn parse_meta_bytes(bytes: &[u8]) -> Result<Metainfo, ParseError> {
 
 /// Contains directory and checksum data for a torrent file.
 #[derive(Debug, Clone, Eq, PartialEq)]
+#[allow(clippy::struct_field_names)]
 pub struct Info {
     info_hash: InfoHash,
     files: Vec<File>,
@@ -364,10 +365,7 @@ where
 
 /// Validates and allocates the hash pieces on the heap.
 fn allocate_pieces(pieces: &[u8]) -> Result<Vec<[u8; sha::SHA_HASH_LEN]>, ParseError> {
-    if !pieces.len().is_multiple_of(sha::SHA_HASH_LEN) {
-        let error_msg = format!("Piece Hash Length Of {} Is Invalid", pieces.len());
-        Err(ParseError::MissingData { details: error_msg })
-    } else {
+    if pieces.len().is_multiple_of(sha::SHA_HASH_LEN) {
         let mut hash_buffers = Vec::with_capacity(pieces.len() / sha::SHA_HASH_LEN);
         let mut hash_bytes = [0u8; sha::SHA_HASH_LEN];
 
@@ -380,6 +378,9 @@ fn allocate_pieces(pieces: &[u8]) -> Result<Vec<[u8; sha::SHA_HASH_LEN]>, ParseE
         }
 
         Ok(hash_buffers)
+    } else {
+        let error_msg = format!("Piece Hash Length Of {} Is Invalid", pieces.len());
+        Err(ParseError::MissingData { details: error_msg })
     }
 }
 
@@ -549,7 +550,7 @@ mod tests {
                             }
 
                             info_dict_access.insert(parse::FILES_KEY.into(), bencode_files);
-                        };
+                        }
                     })
                     .or_else(|| {
                         // We intended to build a single file torrent if a directory was not specified
@@ -561,7 +562,7 @@ mod tests {
                                 .map(|p| info_dict_access.insert(parse::NAME_KEY.into(), ben_bytes!(&p[0][..])));
                             opt_len.map(|l| info_dict_access.insert(parse::LENGTH_KEY.into(), ben_int!(l)));
                             opt_md5.map(|m| info_dict_access.insert(parse::MD5SUM_KEY.into(), ben_bytes!(m)));
-                        };
+                        }
 
                         None
                     });
