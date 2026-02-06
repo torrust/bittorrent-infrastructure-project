@@ -39,8 +39,8 @@ impl<S> LegacyHandshaker<S>
 where
     S: DiscoveryInfo + Unpin,
 {
-    pub fn new(sink: S) -> LegacyHandshaker<S> {
-        LegacyHandshaker {
+    pub fn new(sink: S) -> Self {
+        Self {
             port: sink.port(),
             id: sink.peer_id(),
             sender: sink,
@@ -134,6 +134,7 @@ enum MainDht {
 
 #[allow(clippy::too_many_lines)]
 #[tokio::main]
+#[allow(tail_expr_drop_order)]
 async fn main() {
     INIT.call_once(|| {
         tracing_stdout_init(LevelFilter::TRACE);
@@ -305,7 +306,7 @@ async fn main() {
 
         tracing::info!("Bootstrapping Dht...");
         while let Some(message) = dht.events().await.next().await {
-            if let DhtEvent::BootstrapCompleted = message {
+            if matches!(message, DhtEvent::BootstrapCompleted) {
                 break;
             }
         }

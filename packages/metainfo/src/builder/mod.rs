@@ -69,7 +69,7 @@ impl Default for MetainfoBuilder<'_> {
 impl<'a> MetainfoBuilder<'a> {
     /// Create a new `MetainfoBuilder` with some default values set.
     #[must_use]
-    pub fn new() -> MetainfoBuilder<'a> {
+    pub fn new() -> Self {
         MetainfoBuilder::default()
     }
 
@@ -79,7 +79,7 @@ impl<'a> MetainfoBuilder<'a> {
     ///
     /// It would panic if unable to get the dictionary, or the data is somehow corrupt.
     #[must_use]
-    pub fn set_trackers(mut self, opt_trackers: Option<&'a Vec<Vec<String>>>) -> MetainfoBuilder<'a> {
+    pub fn set_trackers(mut self, opt_trackers: Option<&'a Vec<Vec<String>>>) -> Self {
         {
             let dict_access = self.root.dict_mut().unwrap();
 
@@ -119,7 +119,7 @@ impl<'a> MetainfoBuilder<'a> {
     ///
     /// It would panic if unable to get the dictionary.
     #[must_use]
-    pub fn set_main_tracker(mut self, opt_tracker_url: Option<&'a str>) -> MetainfoBuilder<'a> {
+    pub fn set_main_tracker(mut self, opt_tracker_url: Option<&'a str>) -> Self {
         {
             let dict_access = self.root.dict_mut().unwrap();
 
@@ -139,7 +139,7 @@ impl<'a> MetainfoBuilder<'a> {
     ///
     /// It would panic if unable to get the dictionary.
     #[must_use]
-    pub fn set_creation_date(mut self, opt_secs_epoch: Option<i64>) -> MetainfoBuilder<'a> {
+    pub fn set_creation_date(mut self, opt_secs_epoch: Option<i64>) -> Self {
         {
             let dict_access = self.root.dict_mut().unwrap();
 
@@ -159,7 +159,7 @@ impl<'a> MetainfoBuilder<'a> {
     ///
     /// It would panic if unable to get the dictionary.
     #[must_use]
-    pub fn set_comment(mut self, opt_comment: Option<&'a str>) -> MetainfoBuilder<'a> {
+    pub fn set_comment(mut self, opt_comment: Option<&'a str>) -> Self {
         {
             let dict_access = self.root.dict_mut().unwrap();
 
@@ -179,7 +179,7 @@ impl<'a> MetainfoBuilder<'a> {
     ///
     /// It would panic if unable to get the dictionary.
     #[must_use]
-    pub fn set_created_by(mut self, opt_created_by: Option<&'a str>) -> MetainfoBuilder<'a> {
+    pub fn set_created_by(mut self, opt_created_by: Option<&'a str>) -> Self {
         {
             let dict_access = self.root.dict_mut().unwrap();
 
@@ -195,7 +195,7 @@ impl<'a> MetainfoBuilder<'a> {
 
     /// Set or unset the private flag for the torrent file.
     #[must_use]
-    pub fn set_private_flag(mut self, opt_is_private: Option<bool>) -> MetainfoBuilder<'a> {
+    pub fn set_private_flag(mut self, opt_is_private: Option<bool>) -> Self {
         self.info = self.info.set_private_flag(opt_is_private);
 
         self
@@ -203,7 +203,7 @@ impl<'a> MetainfoBuilder<'a> {
 
     /// Sets the piece length for the torrent file.
     #[must_use]
-    pub fn set_piece_length(mut self, piece_length: PieceLength) -> MetainfoBuilder<'a> {
+    pub fn set_piece_length(mut self, piece_length: PieceLength) -> Self {
         self.info = self.info.set_piece_length(piece_length);
 
         self
@@ -308,9 +308,9 @@ impl Default for InfoBuilder<'_> {
     }
 }
 
-impl<'a> InfoBuilder<'a> {
+impl InfoBuilder<'_> {
     #[must_use]
-    pub fn new() -> InfoBuilder<'a> {
+    pub fn new() -> Self {
         InfoBuilder::default()
     }
 
@@ -320,7 +320,7 @@ impl<'a> InfoBuilder<'a> {
     ///
     /// It would panic if unable to get the dictionary.
     #[must_use]
-    pub fn set_private_flag(mut self, opt_is_private: Option<bool>) -> InfoBuilder<'a> {
+    pub fn set_private_flag(mut self, opt_is_private: Option<bool>) -> Self {
         let opt_numeric_is_private = opt_is_private.map(i64::from);
 
         {
@@ -335,7 +335,7 @@ impl<'a> InfoBuilder<'a> {
 
     /// Sets the piece length for the torrent file.
     #[must_use]
-    pub fn set_piece_length(mut self, piece_length: PieceLength) -> InfoBuilder<'a> {
+    pub const fn set_piece_length(mut self, piece_length: PieceLength) -> Self {
         self.piece_length = piece_length;
 
         self

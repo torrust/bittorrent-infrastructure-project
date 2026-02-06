@@ -17,8 +17,8 @@ pub struct BlockMetadata {
 
 impl BlockMetadata {
     #[must_use]
-    pub fn new(info_hash: InfoHash, piece_index: u64, block_offset: u64, block_length: usize) -> BlockMetadata {
-        BlockMetadata {
+    pub const fn new(info_hash: InfoHash, piece_index: u64, block_offset: u64, block_length: usize) -> Self {
+        Self {
             info_hash,
             piece_index,
             block_offset,
@@ -27,34 +27,34 @@ impl BlockMetadata {
     }
 
     #[must_use]
-    pub fn with_default_hash(piece_index: u64, block_offset: u64, block_length: usize) -> BlockMetadata {
-        BlockMetadata::new([0u8; bt::INFO_HASH_LEN].into(), piece_index, block_offset, block_length)
+    pub fn with_default_hash(piece_index: u64, block_offset: u64, block_length: usize) -> Self {
+        Self::new([0u8; bt::INFO_HASH_LEN].into(), piece_index, block_offset, block_length)
     }
 
     #[must_use]
-    pub fn info_hash(&self) -> InfoHash {
+    pub const fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
     #[must_use]
-    pub fn piece_index(&self) -> u64 {
+    pub const fn piece_index(&self) -> u64 {
         self.piece_index
     }
 
     #[must_use]
-    pub fn block_offset(&self) -> u64 {
+    pub const fn block_offset(&self) -> u64 {
         self.block_offset
     }
 
     #[must_use]
-    pub fn block_length(&self) -> usize {
+    pub const fn block_length(&self) -> usize {
         self.block_length
     }
 }
 
 impl Default for BlockMetadata {
-    fn default() -> BlockMetadata {
-        BlockMetadata::new([0u8; bt::INFO_HASH_LEN].into(), 0, 0, 0)
+    fn default() -> Self {
+        Self::new([0u8; bt::INFO_HASH_LEN].into(), 0, 0, 0)
     }
 }
 
@@ -69,12 +69,12 @@ pub struct Block {
 
 impl Block {
     /// Create a new `Block`.
-    pub fn new(metadata: BlockMetadata, block_data: Bytes) -> Block {
-        Block { metadata, block_data }
+    pub const fn new(metadata: BlockMetadata, block_data: Bytes) -> Self {
+        Self { metadata, block_data }
     }
 
     /// Access the metadata for the block.
-    pub fn metadata(&self) -> BlockMetadata {
+    pub const fn metadata(&self) -> BlockMetadata {
         self.metadata
     }
 
@@ -84,8 +84,8 @@ impl Block {
 }
 
 impl From<BlockMut> for Block {
-    fn from(block: BlockMut) -> Block {
-        Block::new(block.metadata(), block.block_data.freeze())
+    fn from(block: BlockMut) -> Self {
+        Self::new(block.metadata(), block.block_data.freeze())
     }
 }
 
@@ -110,13 +110,13 @@ pub struct BlockMut {
 impl BlockMut {
     /// Create a new `BlockMut`.
     #[must_use]
-    pub fn new(metadata: BlockMetadata, block_data: BytesMut) -> BlockMut {
-        BlockMut { metadata, block_data }
+    pub const fn new(metadata: BlockMetadata, block_data: BytesMut) -> Self {
+        Self { metadata, block_data }
     }
 
     /// Access the metadata for the block.
     #[must_use]
-    pub fn metadata(&self) -> BlockMetadata {
+    pub const fn metadata(&self) -> BlockMetadata {
         self.metadata
     }
 

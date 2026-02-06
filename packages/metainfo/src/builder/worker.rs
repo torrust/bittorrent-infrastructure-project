@@ -88,11 +88,7 @@ where
     accessor.access_pieces(|piece_access| {
         match piece_access {
             PieceAccess::Compute(piece_region) => {
-                let mut curr_piece_buffer = if let Some(piece_buffer) = opt_piece_buffer.take() {
-                    piece_buffer
-                } else {
-                    buffers.checkout()
-                };
+                let mut curr_piece_buffer = opt_piece_buffer.take().unwrap_or_else(|| buffers.checkout());
 
                 let mut end_of_region = false;
                 while !end_of_region {
@@ -225,8 +221,8 @@ mod tests {
     }
 
     impl MockAccessor {
-        fn new() -> MockAccessor {
-            MockAccessor {
+        fn new() -> Self {
+            Self {
                 buffer_ranges: Vec::new(),
                 contiguous_buffer: Vec::new(),
             }

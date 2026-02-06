@@ -54,7 +54,7 @@ pub struct TrackerRequest<'a> {
 impl<'a> TrackerRequest<'a> {
     /// Create a new `TrackerRequest`.
     #[must_use]
-    pub fn new(conn_id: u64, trans_id: u32, req_type: RequestType<'a>) -> TrackerRequest<'a> {
+    pub const fn new(conn_id: u64, trans_id: u32, req_type: RequestType<'a>) -> Self {
         TrackerRequest {
             connection_id: conn_id,
             transaction_id: trans_id,
@@ -67,7 +67,7 @@ impl<'a> TrackerRequest<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerRequest<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_request(bytes)
     }
 
@@ -119,19 +119,19 @@ impl<'a> TrackerRequest<'a> {
     /// For Connect requests, this will always be equal to 0x41727101980. Therefore,
     /// you should not hand out that specific ID to peers that make a connect request.
     #[must_use]
-    pub fn connection_id(&self) -> u64 {
+    pub const fn connection_id(&self) -> u64 {
         self.connection_id
     }
 
     /// Transaction ID supplied with a request to uniquely identify a response.
     #[must_use]
-    pub fn transaction_id(&self) -> u32 {
+    pub const fn transaction_id(&self) -> u32 {
         self.transaction_id
     }
 
     /// Actual type of request that this `TrackerRequest` represents.
     #[must_use]
-    pub fn request_type(&self) -> &RequestType<'_> {
+    pub const fn request_type(&self) -> &RequestType<'_> {
         &self.request_type
     }
 

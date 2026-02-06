@@ -26,8 +26,8 @@ pub struct HonestRevealModuleBuilder {
 
 impl HonestRevealModuleBuilder {
     #[must_use]
-    pub fn new() -> HonestRevealModuleBuilder {
-        HonestRevealModuleBuilder {
+    pub fn new() -> Self {
+        Self {
             torrents: HashMap::new(),
             out_queue: VecDeque::new(),
             out_bytes: BytesMut::new(),
@@ -56,8 +56,8 @@ pub struct HonestRevealModule {
 
 impl HonestRevealModule {
     #[must_use]
-    pub fn from_builder(builder: HonestRevealModuleBuilder) -> HonestRevealModule {
-        HonestRevealModule {
+    pub fn from_builder(builder: HonestRevealModuleBuilder) -> Self {
+        Self {
             torrents: builder.torrents,
             out_queue: builder.out_queue,
             out_bytes: builder.out_bytes,
@@ -201,18 +201,22 @@ impl HonestRevealModule {
     }
 
     #[instrument(skip(self))]
-    fn poll_next_message(&mut self, cx: &mut Context<'_>) -> Poll<Option<Result<ORevealMessage, RevealError>>> {
+    #[allow(tail_expr_drop_order, clippy::single_match_else)]
+    fn poll_next_message(&mut self, cx: &Context<'_>) -> Poll<Option<Result<ORevealMessage, RevealError>>> {
         tracing::trace!("polling for next message");
 
-        if let Some(message) = self.out_queue.pop_front() {
-            tracing::trace!("sending message {message:?}");
+        match self.out_queue.pop_front() {
+            Some(message) => {
+                tracing::trace!("sending message {message:?}");
 
-            Poll::Ready(Some(Ok(message)))
-        } else {
-            tracing::trace!("no messages found... pending");
+                Poll::Ready(Some(Ok(message)))
+            }
+            _ => {
+                tracing::trace!("no messages found... pending");
 
-            self.opt_stream_waker = Some(cx.waker().clone());
-            Poll::Pending
+                self.opt_stream_waker = Some(cx.waker().clone());
+                Poll::Pending
+            }
         }
     }
 }

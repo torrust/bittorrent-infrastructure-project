@@ -67,8 +67,8 @@ pub struct UberModuleBuilder {
 impl UberModuleBuilder {
     /// Create a new `UberModuleBuilder`.
     #[must_use]
-    pub fn new() -> UberModuleBuilder {
-        UberModuleBuilder {
+    pub fn new() -> Self {
+        Self {
             discovery: Arc::default(),
             ext_builder: None,
         }
@@ -79,7 +79,7 @@ impl UberModuleBuilder {
     /// This message will only be sent when the extension bit from the handshake it set. Note that if a builder
     /// is not given and a peer with the extension bit set connects, we will NOT send any extended message.
     #[must_use]
-    pub fn with_extended_builder(mut self, builder: Option<ExtendedMessageBuilder>) -> UberModuleBuilder {
+    pub fn with_extended_builder(mut self, builder: Option<ExtendedMessageBuilder>) -> Self {
         self.ext_builder = builder;
         self
     }
@@ -90,7 +90,7 @@ impl UberModuleBuilder {
     ///
     /// It would panic if unable to get a lock for the discovery.
     #[must_use]
-    pub fn with_discovery_module<T>(self, module: T) -> UberModuleBuilder
+    pub fn with_discovery_module<T>(self, module: T) -> Self
     where
         T: ExtendedListener
             + Sink<IDiscoveryMessage, Error = DiscoveryError>
@@ -121,11 +121,11 @@ pub struct UberModule {
 
 impl UberModule {
     /// Create an `UberModule` from the given `UberModuleBuilder`.
-    pub fn from_builder(builder: UberModuleBuilder) -> UberModule {
+    pub fn from_builder(builder: UberModuleBuilder) -> Self {
         let discovery = builder.discovery;
         let extended = builder.ext_builder.map(ExtendedModule::new);
 
-        UberModule {
+        Self {
             sink: UberSink {
                 discovery: discovery.clone(),
                 extended: extended.clone(),

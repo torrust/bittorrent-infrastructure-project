@@ -80,7 +80,7 @@ where
         waker: &'a Waker,
         shutdown_handle: &'a mut ShutdownHandle,
         timer_sender: &'a mpsc::Sender<TimeoutAction<D::TimeoutToken>>,
-    ) -> Provider<'a, D> {
+    ) -> Self {
         Provider {
             buffer_pool,
             buffer: None,

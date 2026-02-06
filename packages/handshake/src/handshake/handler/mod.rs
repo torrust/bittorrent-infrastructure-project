@@ -24,6 +24,7 @@ pub enum HandshakeType<S> {
 ///
 /// If the stream is used up, or an error is propagated from any of the elements, the loop will terminate.
 #[allow(clippy::module_name_repetitions)]
+#[allow(tail_expr_drop_order)]
 pub async fn loop_handler<M, H, K, F, R, C>(mut stream: M, mut handler: H, mut sink: K, context: Pin<Box<C>>)
 where
     M: futures::Stream + Unpin,

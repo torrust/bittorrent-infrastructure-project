@@ -7,12 +7,12 @@ fn positive_ben_map_macro() {
     })
     .encode();
 
-    assert_eq!("d3:key5:valuee".as_bytes(), &result[..]); // cspell:disable-line
+    assert_eq!(b"d3:key5:valuee", &result[..]); // cspell:disable-line
 }
 
 #[test]
 fn positive_ben_list_macro() {
     let result = (ben_list!(ben_int!(5))).encode();
 
-    assert_eq!("li5ee".as_bytes(), &result[..]); // cspell:disable-line
+    assert_eq!(b"li5ee", &result[..]); // cspell:disable-line
 }

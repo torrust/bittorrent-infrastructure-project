@@ -19,8 +19,8 @@ impl<P> PeerProtocolCodec<P> {
     /// It is strongly recommended to use `PeerProtocolCodec::with_max_payload`
     /// instead of this function, as this function will not enforce a limit on
     /// received payload length.
-    pub fn new(protocol: P) -> PeerProtocolCodec<P> {
-        PeerProtocolCodec {
+    pub const fn new(protocol: P) -> Self {
+        Self {
             protocol,
             max_payload: None,
         }
@@ -28,8 +28,8 @@ impl<P> PeerProtocolCodec<P> {
 
     /// Create a new `PeerProtocolCodec` which will yield an error if
     /// receiving a payload larger than the specified `max_payload`.
-    pub fn with_max_payload(protocol: P, max_payload: usize) -> PeerProtocolCodec<P> {
-        PeerProtocolCodec {
+    pub const fn with_max_payload(protocol: P, max_payload: usize) -> Self {
+        Self {
             protocol,
             max_payload: Some(max_payload),
         }
@@ -44,6 +44,7 @@ where
     type Item = P::ProtocolMessage;
     type Error = std::io::Error;
 
+    #[allow(tail_expr_drop_order)]
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         let bytes_needed = self.protocol.bytes_needed(src)?;
 

@@ -61,10 +61,9 @@ fn decode_int(bytes: &[u8], pos: usize, delim: u8) -> BencodeParseResult<(i64, u
     // Position of end of integer type, next byte is the start of the next value
     let absolute_end_pos = pos + relative_end_pos;
     let next_pos = absolute_end_pos + 1;
-    match int_str.parse::<i64>() {
-        Ok(n) => Ok((n, next_pos)),
-        Err(_) => Err(BencodeParseError::InvalidIntParseError { pos }),
-    }
+    int_str
+        .parse::<i64>()
+        .map_or(Err(BencodeParseError::InvalidIntParseError { pos }), |n| Ok((n, next_pos)))
 }
 
 use std::convert::TryFrom;
@@ -195,15 +194,12 @@ mod tests {
         let bencode = BencodeRef::decode(GENERAL, BDecodeOpt::default()).unwrap();
 
         let ben_dict = bencode.dict().unwrap();
-        assert_eq!(ben_dict.lookup("".as_bytes()).unwrap().str().unwrap(), "zero_len_key");
-        assert_eq!(
-            ben_dict.lookup("location".as_bytes()).unwrap().str().unwrap(),
-            "udp://test.com:80"
-        );
-        assert_eq!(ben_dict.lookup("number".as_bytes()).unwrap().int().unwrap(), 500_500_i64);
+        assert_eq!(ben_dict.lookup(b"").unwrap().str().unwrap(), "zero_len_key");
+        assert_eq!(ben_dict.lookup(b"location").unwrap().str().unwrap(), "udp://test.com:80");
+        assert_eq!(ben_dict.lookup(b"number").unwrap().int().unwrap(), 500_500_i64);
 
-        let nested_dict = ben_dict.lookup("nested dict".as_bytes()).unwrap().dict().unwrap();
-        let nested_list = nested_dict.lookup("list".as_bytes()).unwrap().list().unwrap();
+        let nested_dict = ben_dict.lookup(b"nested dict").unwrap().dict().unwrap();
+        let nested_list = nested_dict.lookup(b"list").unwrap().list().unwrap();
         assert_eq!(nested_list[0].int().unwrap(), -500_500_i64);
     }
 
@@ -225,15 +221,12 @@ mod tests {
     fn positive_decode_dict() {
         let bencode = BencodeRef::decode(DICTIONARY, BDecodeOpt::default()).unwrap();
         let dict = bencode.dict().unwrap();
-        assert_eq!(dict.lookup("test_key".as_bytes()).unwrap().str().unwrap(), "test_value");
+        assert_eq!(dict.lookup(b"test_key").unwrap().str().unwrap(), "test_value");
 
-        let nested_dict = dict.lookup("test_dict".as_bytes()).unwrap().dict().unwrap();
-        assert_eq!(
-            nested_dict.lookup("nested_key".as_bytes()).unwrap().str().unwrap(),
-            "nested_value"
-        );
+        let nested_dict = dict.lookup(b"test_dict").unwrap().dict().unwrap();
+        assert_eq!(nested_dict.lookup(b"nested_key").unwrap().str().unwrap(), "nested_value");
 
-        let nested_list = nested_dict.lookup("nested_list".as_bytes()).unwrap().list().unwrap();
+        let nested_list = nested_dict.lookup(b"nested_list").unwrap().list().unwrap();
         assert_eq!(nested_list[0].int().unwrap(), 500i64);
         assert_eq!(nested_list[1].int().unwrap(), -500i64);
         assert_eq!(nested_list[2].int().unwrap(), 0i64);
@@ -253,10 +246,7 @@ mod tests {
         assert_eq!(nested_list[0].str().unwrap(), "nested_bytes");
 
         let nested_dict = list[5].dict().unwrap();
-        assert_eq!(
-            nested_dict.lookup("test_key".as_bytes()).unwrap().str().unwrap(),
-            "test_value"
-        );
+        assert_eq!(nested_dict.lookup(b"test_key").unwrap().str().unwrap(), "test_value");
     }
 
     #[test]

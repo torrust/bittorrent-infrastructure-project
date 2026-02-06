@@ -26,8 +26,8 @@ impl HaveMessage {
     ///
     /// A new `HaveMessage` instance.
     #[must_use]
-    pub fn new(piece_index: u32) -> HaveMessage {
-        HaveMessage { piece_index }
+    pub const fn new(piece_index: u32) -> Self {
+        Self { piece_index }
     }
 
     /// Parses a byte slice into a `HaveMessage`.
@@ -43,7 +43,7 @@ impl HaveMessage {
     /// # Errors
     ///
     /// This function will return an error if the byte slice cannot be parsed into a `HaveMessage`.
-    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<HaveMessage> {
+    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<Self> {
         match parse_have(bytes) {
             Ok((_, msg)) => msg,
             Err(_) => Err(std::io::Error::other("Failed to parse HaveMessage")),
@@ -75,7 +75,7 @@ impl HaveMessage {
     ///
     /// The piece index.
     #[must_use]
-    pub fn piece_index(&self) -> u32 {
+    pub const fn piece_index(&self) -> u32 {
         self.piece_index
     }
 }
@@ -117,8 +117,8 @@ impl BitFieldMessage {
     /// # Returns
     ///
     /// A new `BitFieldMessage` instance.
-    pub fn new(bytes: Bytes) -> BitFieldMessage {
-        BitFieldMessage { bytes }
+    pub const fn new(bytes: Bytes) -> Self {
+        Self { bytes }
     }
 
     /// Parses a byte slice into a `BitFieldMessage`.
@@ -134,7 +134,7 @@ impl BitFieldMessage {
     /// # Errors
     ///
     /// This function will return an error if the byte slice cannot be parsed into a `BitFieldMessage`.
-    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<BitFieldMessage> {
+    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<Self> {
         let len = bytes.len();
         match parse_bitfield(bytes, len) {
             Ok((_, msg)) => msg,
@@ -228,8 +228,8 @@ pub struct BitFieldIter {
 }
 
 impl BitFieldIter {
-    fn new(bytes: Bytes) -> BitFieldIter {
-        BitFieldIter { bytes, cur_bit: 0 }
+    const fn new(bytes: Bytes) -> Self {
+        Self { bytes, cur_bit: 0 }
     }
 }
 
@@ -276,8 +276,8 @@ impl RequestMessage {
     ///
     /// A new `RequestMessage` instance.
     #[must_use]
-    pub fn new(piece_index: u32, block_offset: u32, block_length: usize) -> RequestMessage {
-        RequestMessage {
+    pub const fn new(piece_index: u32, block_offset: u32, block_length: usize) -> Self {
+        Self {
             piece_index,
             block_offset,
             block_length,
@@ -297,7 +297,7 @@ impl RequestMessage {
     /// # Errors
     ///
     /// This function will return an error if the byte slice cannot be parsed into a `RequestMessage`.
-    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<RequestMessage> {
+    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<Self> {
         match parse_request(bytes) {
             Ok((_, msg)) => msg,
             Err(_) => Err(std::io::Error::other("Failed to parse RequestMessage")),
@@ -343,7 +343,7 @@ impl RequestMessage {
     ///
     /// The piece index.
     #[must_use]
-    pub fn piece_index(&self) -> u32 {
+    pub const fn piece_index(&self) -> u32 {
         self.piece_index
     }
 
@@ -353,7 +353,7 @@ impl RequestMessage {
     ///
     /// The block offset.
     #[must_use]
-    pub fn block_offset(&self) -> u32 {
+    pub const fn block_offset(&self) -> u32 {
         self.block_offset
     }
 
@@ -363,7 +363,7 @@ impl RequestMessage {
     ///
     /// The block length.
     #[must_use]
-    pub fn block_length(&self) -> usize {
+    pub const fn block_length(&self) -> usize {
         self.block_length
     }
 }
@@ -413,9 +413,9 @@ impl PieceMessage {
     /// # Returns
     ///
     /// A new `PieceMessage` instance.
-    pub fn new(piece_index: u32, block_offset: u32, block: Bytes) -> PieceMessage {
+    pub const fn new(piece_index: u32, block_offset: u32, block: Bytes) -> Self {
         // TODO: Check that users Bytes wont overflow a u32
-        PieceMessage {
+        Self {
             piece_index,
             block_offset,
             block,
@@ -436,7 +436,7 @@ impl PieceMessage {
     /// # Errors
     ///
     /// This function will return an error if the byte slice cannot be parsed into a `PieceMessage`.
-    pub fn parse_bytes(bytes: &[u8], len: usize) -> std::io::Result<PieceMessage> {
+    pub fn parse_bytes(bytes: &[u8], len: usize) -> std::io::Result<Self> {
         match parse_piece(bytes, len) {
             Ok((_, msg)) => msg,
             Err(_) => Err(std::io::Error::other("Failed to parse PieceMessage")),
@@ -486,7 +486,7 @@ impl PieceMessage {
     ///
     /// The piece index.
     #[must_use]
-    pub fn piece_index(&self) -> u32 {
+    pub const fn piece_index(&self) -> u32 {
         self.piece_index
     }
 
@@ -496,7 +496,7 @@ impl PieceMessage {
     ///
     /// The block offset.
     #[must_use]
-    pub fn block_offset(&self) -> u32 {
+    pub const fn block_offset(&self) -> u32 {
         self.block_offset
     }
 
@@ -506,7 +506,7 @@ impl PieceMessage {
     ///
     /// The block length.
     #[must_use]
-    pub fn block_length(&self) -> usize {
+    pub const fn block_length(&self) -> usize {
         self.block.len()
     }
 
@@ -567,8 +567,8 @@ impl CancelMessage {
     ///
     /// A new `CancelMessage` instance.
     #[must_use]
-    pub fn new(piece_index: u32, block_offset: u32, block_length: usize) -> CancelMessage {
-        CancelMessage {
+    pub const fn new(piece_index: u32, block_offset: u32, block_length: usize) -> Self {
+        Self {
             piece_index,
             block_offset,
             block_length,
@@ -588,7 +588,7 @@ impl CancelMessage {
     /// # Errors
     ///
     /// This function will return an error if the byte slice cannot be parsed into a `CancelMessage`.
-    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<CancelMessage> {
+    pub fn parse_bytes(bytes: &[u8]) -> std::io::Result<Self> {
         match parse_cancel(bytes) {
             Ok((_, msg)) => msg,
             Err(_) => Err(std::io::Error::other("Failed to parse CancelMessage")),
@@ -634,7 +634,7 @@ impl CancelMessage {
     ///
     /// The piece index.
     #[must_use]
-    pub fn piece_index(&self) -> u32 {
+    pub const fn piece_index(&self) -> u32 {
         self.piece_index
     }
 
@@ -644,7 +644,7 @@ impl CancelMessage {
     ///
     /// The block offset.
     #[must_use]
-    pub fn block_offset(&self) -> u32 {
+    pub const fn block_offset(&self) -> u32 {
         self.block_offset
     }
 
@@ -654,7 +654,7 @@ impl CancelMessage {
     ///
     /// The block length.
     #[must_use]
-    pub fn block_length(&self) -> usize {
+    pub const fn block_length(&self) -> usize {
         self.block_length
     }
 }

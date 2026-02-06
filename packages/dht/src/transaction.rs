@@ -65,13 +65,13 @@ pub struct AIDGenerator {
 }
 
 impl AIDGenerator {
-    pub fn new() -> AIDGenerator {
+    pub fn new() -> Self {
         let (next_alloc, mut action_ids) = generate_aids(0);
 
         // Randomize the order of ids
         util::fisher_shuffle(&mut action_ids);
 
-        AIDGenerator {
+        Self {
             next_alloc,
             curr_index: 0,
             action_ids,
@@ -132,9 +132,9 @@ pub struct MIDGenerator {
 
 impl MIDGenerator {
     // Accepts an action id that has ALREADY BEEN SHIFTED!
-    fn new(action_id: u64) -> MIDGenerator {
+    const fn new(action_id: u64) -> Self {
         // In order to speed up tests, we will generate the first block lazily.
-        MIDGenerator {
+        Self {
             action_id,
             next_alloc: 0,
             curr_index: MESSAGE_ID_PREALLOC_LEN,
@@ -142,7 +142,7 @@ impl MIDGenerator {
         }
     }
 
-    pub fn action_id(&self) -> ActionID {
+    pub const fn action_id(&self) -> ActionID {
         ActionID::from_transaction_id(self.action_id)
     }
 
@@ -196,17 +196,17 @@ pub struct TransactionID {
 }
 
 impl TransactionID {
-    fn new(trans_id: u64) -> TransactionID {
+    const fn new(trans_id: u64) -> Self {
         let trans_id_bytes = convert::eight_bytes_to_array(trans_id);
 
-        TransactionID {
+        Self {
             trans_id,
             trans_id_bytes,
         }
     }
 
     /// Construct a transaction id from a series of bytes.
-    pub fn from_bytes(bytes: &[u8]) -> Option<TransactionID> {
+    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() != TRANSACTION_ID_BYTES {
             return None;
         }
@@ -217,15 +217,15 @@ impl TransactionID {
             trans_id |= u64::from(*byte);
         }
 
-        Some(TransactionID::new(trans_id))
+        Some(Self::new(trans_id))
     }
 
-    pub fn action_id(&self) -> ActionID {
+    pub const fn action_id(&self) -> ActionID {
         ActionID::from_transaction_id(self.trans_id)
     }
 
     #[allow(unused)]
-    pub fn message_id(&self) -> MessageID {
+    pub const fn message_id(&self) -> MessageID {
         MessageID::from_transaction_id(self.trans_id)
     }
 }
@@ -244,11 +244,11 @@ pub struct ActionID {
 }
 
 impl ActionID {
-    fn from_transaction_id(trans_id: u64) -> ActionID {
+    const fn from_transaction_id(trans_id: u64) -> Self {
         // The ACTUAL action id
         let shifted_action_id = trans_id >> MESSAGE_ID_SHIFT;
 
-        ActionID {
+        Self {
             action_id: shifted_action_id,
         }
     }
@@ -264,12 +264,12 @@ pub struct MessageID {
 
 impl MessageID {
     #[allow(unused)]
-    fn from_transaction_id(trans_id: u64) -> MessageID {
+    const fn from_transaction_id(trans_id: u64) -> Self {
         let clear_action_id = MAX_MESSAGE_ID - 1;
         // The ACTUAL message id
         let shifted_message_id = trans_id & clear_action_id;
 
-        MessageID {
+        Self {
             message_id: shifted_message_id,
         }
     }

@@ -49,7 +49,7 @@ impl TimeoutToken {
         (Self { id, dispatch }, id)
     }
 
-    fn cleanup(id: TimeoutId) -> Self {
+    const fn cleanup(id: TimeoutId) -> Self {
         Self {
             id,
             dispatch: DispatchTimeout::CleanUp,
@@ -162,13 +162,13 @@ where
 {
     /// Create a new `ClientDispatcher`.
     #[instrument(skip(), ret(level = Level::TRACE))]
-    pub fn new(handshaker: H, bind: SocketAddr, limiter: RequestLimiter) -> ClientDispatcher<H> {
+    pub fn new(handshaker: H, bind: SocketAddr, limiter: RequestLimiter) -> Self {
         tracing::debug!("new client dispatcher");
 
         let peer_id = handshaker.peer_id();
         let port = handshaker.port();
 
-        ClientDispatcher {
+        Self {
             handshaker,
             pid: peer_id,
             port,
@@ -181,7 +181,7 @@ where
 
     /// Shutdown the current dispatcher, notifying all pending requests.
     #[instrument(skip(self, provider), fields(unfinished_requests= %self.active_requests.len()))]
-    pub fn shutdown(&mut self, provider: &mut Provider<'_, ClientDispatcher<H>>) {
+    pub fn shutdown(&mut self, provider: &mut Provider<'_, Self>) {
         tracing::debug!("shuting down...");
 
         let mut active_requests = std::mem::take(&mut self.active_requests);
@@ -217,7 +217,7 @@ where
     #[instrument(skip(self, provider, addr, token, request))]
     pub fn send_request(
         &mut self,
-        provider: &mut Provider<'_, ClientDispatcher<H>>,
+        provider: &mut Provider<'_, Self>,
         addr: SocketAddr,
         token: ClientToken,
         request: ClientRequest,
@@ -244,12 +244,8 @@ where
 
     /// Process a response received from some tracker and match it up against our sent requests.
     #[instrument(skip(self, provider, response, addr))]
-    pub fn recv_response(
-        &mut self,
-        provider: &mut Provider<'_, ClientDispatcher<H>>,
-        response: &TrackerResponse<'_>,
-        addr: SocketAddr,
-    ) {
+    #[allow(tail_expr_drop_order)]
+    pub fn recv_response(&mut self, provider: &mut Provider<'_, Self>, response: &TrackerResponse<'_>, addr: SocketAddr) {
         tracing::debug!(?response, ?addr, "receiving response");
 
         let token = ClientToken(response.transaction_id());
@@ -315,7 +311,7 @@ where
     ///
     /// If this call is the result of a timeout, that will decide whether to cancel the request or not.
     #[instrument(skip(self, provider, token, timed_out))]
-    fn process_request(&mut self, provider: &mut Provider<'_, ClientDispatcher<H>>, token: ClientToken, timed_out: bool) {
+    fn process_request(&mut self, provider: &mut Provider<'_, Self>, token: ClientToken, timed_out: bool) {
         tracing::debug!(?token, ?timed_out, "processing request");
 
         let Some(mut conn_timer) = self.active_requests.remove(&token) else {
@@ -486,7 +482,7 @@ impl Default for TimeoutId {
 }
 
 impl TimeoutId {
-    fn new(id: u128) -> Self {
+    const fn new(id: u128) -> Self {
         Self { id }
     }
 }
@@ -517,8 +513,8 @@ struct ConnectTimer {
 
 impl ConnectTimer {
     /// Create a new `ConnectTimer`.
-    pub fn new(addr: SocketAddr, request: ClientRequest) -> ConnectTimer {
-        ConnectTimer {
+    pub const fn new(addr: SocketAddr, request: ClientRequest) -> Self {
+        Self {
             addr,
             attempt: 0,
             request,
@@ -543,12 +539,12 @@ impl ConnectTimer {
     }
 
     /// Yields the current timeout id if one is set.
-    pub fn timeout_id(&self) -> Option<TimeoutId> {
+    pub const fn timeout_id(&self) -> Option<TimeoutId> {
         self.timeout_id
     }
 
     /// Sets a new timeout id.
-    pub fn set_timeout_id(&mut self, id: TimeoutId) {
+    pub const fn set_timeout_id(&mut self, id: TimeoutId) {
         self.timeout_id = Some(id);
     }
 
@@ -580,8 +576,8 @@ struct ConnectIdCache {
 
 impl ConnectIdCache {
     /// Create a new connect id cache.
-    fn new() -> ConnectIdCache {
-        ConnectIdCache { cache: HashMap::new() }
+    fn new() -> Self {
+        Self { cache: HashMap::new() }
     }
 
     /// Get an active connection id for the given addr.

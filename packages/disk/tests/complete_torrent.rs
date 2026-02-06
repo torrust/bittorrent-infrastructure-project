@@ -14,6 +14,7 @@ mod common;
 #[allow(unused_variables)]
 #[allow(unreachable_code)]
 #[allow(clippy::too_many_lines)]
+#[allow(tail_expr_drop_order)]
 #[tokio::test]
 async fn positive_complete_torrent() {
     INIT.call_once(|| {

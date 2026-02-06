@@ -32,13 +32,13 @@ where
 {
     /// Create a new `LocallyShuffledIds` struct.
     #[must_use]
-    pub fn new() -> LocallyShuffledIds<T> {
-        LocallyShuffledIds::start_at(T::zero())
+    pub fn new() -> Self {
+        Self::start_at(T::zero())
     }
 
     /// Create a new `LocallyShuffledIds` struct at the starting value.
-    pub fn start_at(start: T) -> LocallyShuffledIds<T> {
-        LocallyShuffledIds {
+    pub const fn start_at(start: T) -> Self {
+        Self {
             sequential: SequentialIds::start_at(start),
             stored_ids: Vec::new(),
         }

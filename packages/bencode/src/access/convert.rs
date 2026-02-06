@@ -12,10 +12,12 @@ pub trait BConvertExt: BConvert {
         B: BRefAccessExt<'a>,
         E: AsRef<[u8]>,
     {
-        bencode.bytes_ext().ok_or(self.handle_error(BencodeConvertError::WrongType {
-            key: error_key.as_ref().to_owned(),
-            expected_type: "Bytes".to_owned(),
-        }))
+        bencode.bytes_ext().ok_or_else(|| {
+            self.handle_error(BencodeConvertError::WrongType {
+                key: error_key.as_ref().to_owned(),
+                expected_type: "Bytes".to_owned(),
+            })
+        })
     }
 
     /// See `BConvert::convert_str`.
@@ -24,10 +26,12 @@ pub trait BConvertExt: BConvert {
         B: BRefAccessExt<'a>,
         E: AsRef<[u8]>,
     {
-        bencode.str_ext().ok_or(self.handle_error(BencodeConvertError::WrongType {
-            key: error_key.as_ref().to_owned(),
-            expected_type: "UTF-8 Bytes".to_owned(),
-        }))
+        bencode.str_ext().ok_or_else(|| {
+            self.handle_error(BencodeConvertError::WrongType {
+                key: error_key.as_ref().to_owned(),
+                expected_type: "UTF-8 Bytes".to_owned(),
+            })
+        })
     }
 
     /// See `BConvert::lookup_and_convert_bytes`.
@@ -73,10 +77,12 @@ pub trait BConvert {
         B: BRefAccess,
         E: AsRef<[u8]>,
     {
-        bencode.int().ok_or(self.handle_error(BencodeConvertError::WrongType {
-            key: error_key.as_ref().to_owned(),
-            expected_type: "Integer".to_owned(),
-        }))
+        bencode.int().ok_or_else(|| {
+            self.handle_error(BencodeConvertError::WrongType {
+                key: error_key.as_ref().to_owned(),
+                expected_type: "Integer".to_owned(),
+            })
+        })
     }
 
     /// Attempt to convert the given bencode value into bytes.
@@ -87,10 +93,12 @@ pub trait BConvert {
         B: BRefAccess,
         E: AsRef<[u8]>,
     {
-        bencode.bytes().ok_or(self.handle_error(BencodeConvertError::WrongType {
-            key: error_key.as_ref().to_owned(),
-            expected_type: "Bytes".to_owned(),
-        }))
+        bencode.bytes().ok_or_else(|| {
+            self.handle_error(BencodeConvertError::WrongType {
+                key: error_key.as_ref().to_owned(),
+                expected_type: "Bytes".to_owned(),
+            })
+        })
     }
 
     /// Attempt to convert the given bencode value into a UTF-8 string.
@@ -101,10 +109,12 @@ pub trait BConvert {
         B: BRefAccess,
         E: AsRef<[u8]>,
     {
-        bencode.str().ok_or(self.handle_error(BencodeConvertError::WrongType {
-            key: error_key.as_ref().to_owned(),
-            expected_type: "UTF-8 Bytes".to_owned(),
-        }))
+        bencode.str().ok_or_else(|| {
+            self.handle_error(BencodeConvertError::WrongType {
+                key: error_key.as_ref().to_owned(),
+                expected_type: "UTF-8 Bytes".to_owned(),
+            })
+        })
     }
 
     /// Attempt to convert the given bencode value into a list.
@@ -115,10 +125,12 @@ pub trait BConvert {
         B: BRefAccess,
         E: AsRef<[u8]>,
     {
-        bencode.list().ok_or(self.handle_error(BencodeConvertError::WrongType {
-            key: error_key.as_ref().to_owned(),
-            expected_type: "List".to_owned(),
-        }))
+        bencode.list().ok_or_else(|| {
+            self.handle_error(BencodeConvertError::WrongType {
+                key: error_key.as_ref().to_owned(),
+                expected_type: "List".to_owned(),
+            })
+        })
     }
 
     /// Attempt to convert the given bencode value into a dictionary.
@@ -129,10 +141,12 @@ pub trait BConvert {
         B: BRefAccess,
         E: AsRef<[u8]>,
     {
-        bencode.dict().ok_or(self.handle_error(BencodeConvertError::WrongType {
-            key: error_key.as_ref().to_owned(),
-            expected_type: "Dictionary".to_owned(),
-        }))
+        bencode.dict().ok_or_else(|| {
+            self.handle_error(BencodeConvertError::WrongType {
+                key: error_key.as_ref().to_owned(),
+                expected_type: "Dictionary".to_owned(),
+            })
+        })
     }
 
     /// Look up a value in a dictionary of bencoded values using the given key.
@@ -143,10 +157,9 @@ pub trait BConvert {
     {
         let key_ref = key.as_ref();
 
-        match dictionary.lookup(key_ref) {
-            Some(n) => Ok(n),
-            None => Err(self.handle_error(BencodeConvertError::MissingKey { key: key_ref.to_owned() })),
-        }
+        dictionary
+            .lookup(key_ref)
+            .ok_or_else(|| self.handle_error(BencodeConvertError::MissingKey { key: key_ref.to_owned() }))
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to an integer.

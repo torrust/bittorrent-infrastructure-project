@@ -82,8 +82,8 @@ pub struct TcpListenerStream {
 
 impl TcpListenerStream {
     /// Creates a new `TcpListenerStream` from a `TcpListener`.
-    fn new(listener: TcpListener) -> Self {
-        TcpListenerStream { listener }
+    const fn new(listener: TcpListener) -> Self {
+        Self { listener }
     }
 }
 
@@ -152,8 +152,8 @@ pub mod test_transports {
 
     impl MockListener {
         /// Creates a new `MockListener` with the given address.
-        fn new(addr: SocketAddr) -> MockListener {
-            MockListener {
+        fn new(addr: SocketAddr) -> Self {
+            Self {
                 addr,
                 empty: stream::empty(),
             }

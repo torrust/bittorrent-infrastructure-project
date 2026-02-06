@@ -99,7 +99,7 @@ impl FileAccessor {
     /// # Panics
     ///
     /// It would panic if unable to get the last directory name.
-    pub fn new<T>(path: T) -> std::io::Result<FileAccessor>
+    pub fn new<T>(path: T) -> std::io::Result<Self>
     where
         T: AsRef<Path>,
     {
@@ -112,7 +112,7 @@ impl FileAccessor {
             None
         };
 
-        Ok(FileAccessor {
+        Ok(Self {
             absolute_path,
             directory_name,
         })
@@ -120,9 +120,9 @@ impl FileAccessor {
 }
 
 impl IntoAccessor for FileAccessor {
-    type Accessor = FileAccessor;
+    type Accessor = Self;
 
-    fn into_accessor(self) -> std::io::Result<FileAccessor> {
+    fn into_accessor(self) -> std::io::Result<Self> {
         Ok(self)
     }
 }
@@ -202,7 +202,7 @@ pub struct DirectAccessor<'a> {
 impl<'a> DirectAccessor<'a> {
     /// Create a new `DirectAccessor` from the given file name and contents.
     #[must_use]
-    pub fn new(file_name: &'a str, file_contents: &'a [u8]) -> DirectAccessor<'a> {
+    pub const fn new(file_name: &'a str, file_contents: &'a [u8]) -> Self {
         DirectAccessor {
             file_name,
             file_contents,
@@ -210,10 +210,10 @@ impl<'a> DirectAccessor<'a> {
     }
 }
 
-impl<'a> IntoAccessor for DirectAccessor<'a> {
-    type Accessor = DirectAccessor<'a>;
+impl IntoAccessor for DirectAccessor<'_> {
+    type Accessor = Self;
 
-    fn into_accessor(self) -> std::io::Result<DirectAccessor<'a>> {
+    fn into_accessor(self) -> std::io::Result<Self> {
         Ok(self)
     }
 }

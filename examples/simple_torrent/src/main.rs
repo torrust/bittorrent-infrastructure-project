@@ -81,6 +81,7 @@ async fn ctrl_c() {
 }
 
 #[tokio::main]
+#[allow(tail_expr_drop_order)]
 async fn main() {
     INIT.call_once(|| {
         tracing_stdout_init(LevelFilter::TRACE);
@@ -309,7 +310,7 @@ type TcpHandshaker = Handshaker<TcpStream>;
 
 async fn setup_handshaker() -> (TcpHandshaker, JoinSet<()>) {
     HandshakerBuilder::new()
-        .with_peer_id(PeerId::from_hash("-BI0000-000000000000".as_bytes()).unwrap())
+        .with_peer_id(PeerId::from_hash(b"-BI0000-000000000000").unwrap())
         .with_config(HandshakerConfig::default().with_wait_buffer_size(0).with_done_buffer_size(0))
         .build(TcpTransport)
         .await
@@ -354,6 +355,7 @@ async fn handle_new_connections(
     new_peers.forward(peer_manager_sender.clone()).await.unwrap();
 }
 
+#[allow(tail_expr_drop_order)]
 async fn handle_peer_manager_messages(
     mut peer_manager_receiver: PeerManagerStream<
         Framed<TcpStream, PeerProtocolCodec<PeerWireProtocol<NullProtocol>>>,
@@ -445,6 +447,7 @@ async fn handle_peer_manager_messages(
     }
 }
 
+#[allow(tail_expr_drop_order)]
 async fn handle_disk_manager_messages(
     mut disk_manager_receiver: DiskManagerStream,
     disk_request_map: Arc<Mutex<HashMap<BlockMetadata, Vec<PeerInfo>>>>,
@@ -497,6 +500,7 @@ async fn handle_disk_manager_messages(
     }
 }
 
+#[allow(tail_expr_drop_order)]
 async fn handle_existing_pieces(
     mut selection_receiver: mpsc::Receiver<PeerSelectionState>,
     mut piece_requests: Vec<RequestMessage>,
@@ -519,6 +523,7 @@ async fn handle_existing_pieces(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[allow(tail_expr_drop_order)]
 async fn handle_selection_messages(
     mut selection_receiver: mpsc::Receiver<PeerSelectionState>,
     mut peer_manager_sender: PeerManagerSink<
@@ -556,15 +561,13 @@ async fn handle_selection_messages(
             PeerSelectionState::GoodPiece(piece_index) => {
                 current_pieces += 1;
 
-                if let Some(peer_info) = optional_peer {
+                optional_peer.as_ref().map_or_else(Vec::new, |&peer_info| {
                     vec![PeerManagerInputMessage::SendMessage(
                         peer_info,
                         0,
                         PeerWireProtocolMessage::Have(HaveMessage::new(piece_index.try_into().unwrap())),
                     )]
-                } else {
-                    vec![]
-                }
+                })
             }
             PeerSelectionState::RemovedPeer(peer_info) => {
                 eprintln!("Peer {peer_info:?} Got Disconnected");

@@ -13,7 +13,7 @@ pub struct PieceBuffers {
 
 impl PieceBuffers {
     /// Create a new queue filled with a number of piece buffers based on the number of workers.
-    pub fn new(piece_length: usize, num_workers: usize) -> PieceBuffers {
+    pub fn new(piece_length: usize, num_workers: usize) -> Self {
         let piece_queue = SegQueue::new();
 
         let total_buffers = calculate_total_buffers(num_workers);
@@ -21,7 +21,7 @@ impl PieceBuffers {
             piece_queue.push(PieceBuffer::new(piece_length));
         }
 
-        PieceBuffers { piece_queue }
+        Self { piece_queue }
     }
 
     /// Checkin the given piece buffer to be re-used.
@@ -51,7 +51,7 @@ impl PieceBuffers {
 }
 
 /// Calculates the optimal number of piece buffers given the number of workers.
-fn calculate_total_buffers(num_workers: usize) -> usize {
+const fn calculate_total_buffers(num_workers: usize) -> usize {
     num_workers * TOTAL_BUFFERS_MULTIPLICATIVE + TOTAL_BUFFERS_ADDITIVE
 }
 
@@ -67,8 +67,8 @@ pub struct PieceBuffer {
 
 impl PieceBuffer {
     /// Create a new piece buffer.
-    fn new(piece_length: usize) -> PieceBuffer {
-        PieceBuffer {
+    fn new(piece_length: usize) -> Self {
+        Self {
             buffer: vec![0u8; piece_length],
             bytes_read: 0,
         }
@@ -85,12 +85,12 @@ impl PieceBuffer {
     }
 
     /// Whether or not the given piece buffer is full.
-    pub fn is_whole(&self) -> bool {
+    pub const fn is_whole(&self) -> bool {
         self.bytes_read == self.buffer.len()
     }
 
     /// Whether or not the given piece buffer is empty.
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.bytes_read == 0
     }
 

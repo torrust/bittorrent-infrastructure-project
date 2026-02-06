@@ -20,8 +20,8 @@ where
     /// Create a new `PeerExtensionProtocol` with the given (nested) custom extension protocol.
     ///
     /// Notes for `PeerWireProtocol` apply to this custom extension protocol.
-    pub fn new(custom_protocol: P) -> PeerExtensionProtocol<P> {
-        PeerExtensionProtocol {
+    pub const fn new(custom_protocol: P) -> Self {
+        Self {
             our_extended_msg: None,
             their_extended_msg: None,
             custom_protocol,

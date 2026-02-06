@@ -65,7 +65,7 @@ impl TableLookup {
         table: Arc<RwLock<RoutingTable>>,
         out: mpsc::Sender<(Vec<u8>, SocketAddr)>,
         scheduled_task_sender: mpsc::Sender<ScheduledTaskCheck>,
-    ) -> BoxFuture<'a, Option<TableLookup>> {
+    ) -> BoxFuture<'a, Option<Self>> {
         async move {
             let all_sorted_nodes = Mutex::new(Vec::with_capacity(bucket::MAX_BUCKET_SIZE));
 
@@ -86,7 +86,7 @@ impl TableLookup {
                 (node, distance_to_beat)
             });
 
-            let table_lookup = TableLookup {
+            let table_lookup = Self {
                 table_id,
                 target_id,
                 in_endgame: AtomicBool::default(),
@@ -118,10 +118,11 @@ impl TableLookup {
         .boxed()
     }
 
-    pub fn info_hash(&self) -> InfoHash {
+    pub const fn info_hash(&self) -> InfoHash {
         self.target_id
     }
 
+    #[allow(clippy::future_not_send)]
     pub async fn recv_response<B>(
         &self,
         node: Node,
@@ -156,6 +157,7 @@ impl TableLookup {
             CompactInfoType::Both(n, v) => (Some(v.into_iter().collect()), Some(n)),
         };
 
+        #[allow(clippy::option_if_let_else)]
         let (iterate_nodes, next_dist_to_beat) = if let Some(nodes) = opt_nodes {
             #[allow(clippy::mutable_key_type)]
             let requested_nodes = &self.requested_nodes;
@@ -163,7 +165,10 @@ impl TableLookup {
             let already_requested = |node_info: &(NodeId, SocketAddrV4)| {
                 let node = Node::as_questionable(node_info.0, SocketAddr::V4(node_info.1));
 
-                !requested_nodes.lock().unwrap().contains(&node)
+                // Required for Rust 2024 drop order
+                #[allow(clippy::let_and_return)]
+                let result = !requested_nodes.lock().unwrap().contains(&node);
+                result
             };
 
             let next_dist_to_beat = nodes
@@ -226,10 +231,7 @@ impl TableLookup {
             }
         }
 
-        match opt_values {
-            Some(values) => LookupStatus::Values(values),
-            None => self.current_lookup_status(),
-        }
+        opt_values.map_or_else(|| self.current_lookup_status(), LookupStatus::Values)
     }
 
     pub async fn recv_timeout(
@@ -257,6 +259,7 @@ impl TableLookup {
         self.current_lookup_status()
     }
 
+    #[allow(clippy::significant_drop_tightening)]
     pub async fn recv_finished(
         &self,
         handshake_port: u16,
@@ -332,6 +335,7 @@ impl TableLookup {
         }
     }
 
+    #[allow(clippy::significant_drop_tightening)]
     async fn start_request_round<'a, I>(
         &self,
         nodes: I,
@@ -395,6 +399,7 @@ impl TableLookup {
         }
     }
 
+    #[allow(clippy::significant_drop_tightening)]
     async fn start_endgame_round(
         &self,
         table: Arc<RwLock<RoutingTable>>,
@@ -451,7 +456,7 @@ where
     let dummy_id = [0u8; bt::NODE_ID_LEN].into();
     let default = (Node::as_bad(dummy_id, net::default_route_v4()), false);
 
-    let mut pick_nodes = [default.clone(), default.clone(), default.clone(), default.clone()];
+    let mut pick_nodes = [default.clone(), default.clone(), default.clone(), default];
     for (src, dst) in sorted_nodes.zip(pick_nodes.iter_mut()) {
         dst.0 = src.1.clone();
         dst.1 = true;
@@ -470,7 +475,7 @@ where
     let dummy_id = [0u8; bt::NODE_ID_LEN].into();
     let default = (Node::as_bad(dummy_id, net::default_route_v4()), false);
 
-    let mut pick_nodes = [default.clone(), default.clone(), default.clone()];
+    let mut pick_nodes = [default.clone(), default.clone(), default];
     for (id, v4_addr) in unsorted_nodes {
         let addr = SocketAddr::V4(v4_addr);
         let node = Node::as_questionable(id, addr);

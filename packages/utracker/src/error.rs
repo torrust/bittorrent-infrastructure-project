@@ -26,7 +26,7 @@ impl std::fmt::Display for ErrorResponse<'_> {
 impl<'a> ErrorResponse<'a> {
     /// Create a new `ErrorResponse`.
     #[must_use]
-    pub fn new(message: &'a str) -> ErrorResponse<'a> {
+    pub const fn new(message: &'a str) -> Self {
         ErrorResponse {
             message: Cow::Borrowed(message),
         }
@@ -37,7 +37,7 @@ impl<'a> ErrorResponse<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ErrorResponse<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         let (remaining, message) = map_res(terminated(not_line_ending, take(0usize)), std::str::from_utf8).parse(bytes)?;
         Ok((remaining, ErrorResponse::new(message)))
     }

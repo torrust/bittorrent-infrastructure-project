@@ -42,6 +42,7 @@ pub fn random_buffer(size: usize) -> Vec<u8> {
 ///
 /// Returns R or panics if an error occurred in the loop (including a timeout).
 #[allow(dead_code)]
+#[allow(tail_expr_drop_order)]
 pub async fn runtime_loop_with_timeout<'a, 'b, I, S, F, R>(timeout_time: Duration, initial_state: (I, S), mut call: F) -> R
 where
     F: FnMut(I, S, S::Item) -> future::Either<BoxFuture<'a, R>, BoxFuture<'b, (I, S)>>,
@@ -52,12 +53,11 @@ where
     let mut state = initial_state;
     loop {
         let (init, mut stream) = state;
-        if let Some(msg) = {
-            timeout(timeout_time, stream.next())
-                .await
-                .unwrap_or_else(|_| panic!("timeout while waiting for next message: {timeout_time:?}, {init:?}"))
-        } {
-            match call(init.clone(), stream, msg) {
+        match timeout(timeout_time, stream.next())
+            .await
+            .unwrap_or_else(|_| panic!("timeout while waiting for next message: {timeout_time:?}, {init:?}"))
+        {
+            Some(msg) => match call(init.clone(), stream, msg) {
                 future::Either::Left(fut) => {
                     return timeout(timeout_time, fut)
                         .await
@@ -68,9 +68,10 @@ where
                         .await
                         .unwrap_or_else(|_| panic!("timeout waiting for next loop state: {timeout_time:?}, {init:?}"));
                 }
+            },
+            _ => {
+                panic!("End Of Stream Reached");
             }
-        } else {
-            panic!("End Of Stream Reached");
         }
     }
 }
@@ -115,16 +116,16 @@ pub struct MultiFileDirectAccessor {
 }
 
 impl MultiFileDirectAccessor {
-    pub fn new(dir: PathBuf, files: Vec<(Vec<u8>, PathBuf)>) -> MultiFileDirectAccessor {
-        MultiFileDirectAccessor { dir, files }
+    pub const fn new(dir: PathBuf, files: Vec<(Vec<u8>, PathBuf)>) -> Self {
+        Self { dir, files }
     }
 }
 
 // TODO: Ugh, once specialization lands, we can see about having a default impl for IntoAccessor
 impl IntoAccessor for MultiFileDirectAccessor {
-    type Accessor = MultiFileDirectAccessor;
+    type Accessor = Self;
 
-    fn into_accessor(self) -> std::io::Result<MultiFileDirectAccessor> {
+    fn into_accessor(self) -> std::io::Result<Self> {
         Ok(self)
     }
 }
@@ -226,7 +227,7 @@ impl FileSystem for InMemoryFileSystem {
             files
                 .get(&file.path)
                 .map(|file| file.len() as u64)
-                .ok_or(std::io::Error::new(std::io::ErrorKind::NotFound, "File Not Found"))
+                .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "File Not Found"))
         })
     }
 
@@ -243,7 +244,7 @@ impl FileSystem for InMemoryFileSystem {
 
                     bytes_to_copy
                 })
-                .ok_or(std::io::Error::new(std::io::ErrorKind::NotFound, "File Not Found"))
+                .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "File Not Found"))
         })
     }
 
@@ -268,7 +269,7 @@ impl FileSystem for InMemoryFileSystem {
                     // TODO: If the file is full, this will return zero, we should also simulate std::io::ErrorKind::WriteZero
                     bytes_to_copy
                 })
-                .ok_or(std::io::Error::new(std::io::ErrorKind::NotFound, "File Not Found"))
+                .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "File Not Found"))
         })
     }
 }

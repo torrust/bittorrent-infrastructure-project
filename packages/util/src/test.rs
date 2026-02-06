@@ -27,13 +27,13 @@ pub fn travel_into_past(offset: Duration) -> DateTime<Utc> {
 
 /// Generates a dummy Ipv4 address as an `IpAddr`.
 #[must_use]
-pub fn dummy_ipv4_addr() -> IpAddr {
+pub const fn dummy_ipv4_addr() -> IpAddr {
     IpAddr::V4(Ipv4Addr::LOCALHOST)
 }
 
 /// Generates a dummy ipv6 address as an `IpAddr`.
 #[must_use]
-pub fn dummy_ipv6_addr() -> IpAddr {
+pub const fn dummy_ipv6_addr() -> IpAddr {
     let v6_addr = Ipv6Addr::new(127, 0, 0, 1, 0, 0, 0, 0);
 
     IpAddr::V6(v6_addr)
@@ -41,7 +41,7 @@ pub fn dummy_ipv6_addr() -> IpAddr {
 
 /// Generates a dummy socket address v4 as a `SocketAddr`.
 #[must_use]
-pub fn dummy_socket_addr_v4() -> SocketAddr {
+pub const fn dummy_socket_addr_v4() -> SocketAddr {
     let v4_socket = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0);
 
     SocketAddr::V4(v4_socket)

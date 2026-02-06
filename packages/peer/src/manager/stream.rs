@@ -42,7 +42,7 @@ where
     Message: ManagedMessage + Send + 'static,
 {
     #[allow(clippy::type_complexity)]
-    pub fn new(
+    pub const fn new(
         recv: mpsc::Receiver<Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>>,
         peers: Arc<Mutex<HashMap<PeerInfo, mpsc::Sender<PeerManagerInputMessage<Peer, Message>>>>>,
     ) -> Self {
@@ -67,6 +67,7 @@ where
 {
     type Item = Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>;
 
+    #[allow(tail_expr_drop_order)]
     fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let next_message = match self.opt_pending.take() {
             Some(message) => message,
@@ -85,16 +86,18 @@ where
                         return Poll::Pending;
                     };
 
-                    match peers.remove(&info) {
-                        Some(peer) => {
+                    peers.remove(&info).map_or_else(
+                        || {
+                            Poll::Ready(Some(Err(PeerManagerOutputError::PeerErrorAndMissing(
+                                info,
+                                Some(Box::new(err)),
+                            ))))
+                        },
+                        |peer| {
                             drop(peer);
                             Poll::Ready(Some(Ok(PeerManagerOutputMessage::PeerRemoved(info))))
-                        }
-                        None => Poll::Ready(Some(Err(PeerManagerOutputError::PeerErrorAndMissing(
-                            info,
-                            Some(Box::new(err)),
-                        )))),
-                    }
+                        },
+                    )
                 }
                 PeerManagerOutputError::PeerErrorAndMissing(_, _)
                 | PeerManagerOutputError::PeerDisconnectedAndMissing(_)
@@ -106,13 +109,13 @@ where
                     return Poll::Pending;
                 };
 
-                match peers.remove(&info) {
-                    Some(peer) => {
+                peers.remove(&info).map_or_else(
+                    || Poll::Ready(Some(Err(PeerManagerOutputError::PeerRemovedAndMissing(info)))),
+                    |peer| {
                         drop(peer);
                         Poll::Ready(Some(Ok(PeerManagerOutputMessage::PeerRemoved(info))))
-                    }
-                    None => Poll::Ready(Some(Err(PeerManagerOutputError::PeerRemovedAndMissing(info)))),
-                }
+                    },
+                )
             }
 
             Ok(PeerManagerOutputMessage::PeerDisconnect(info)) => {
@@ -121,13 +124,13 @@ where
                     return Poll::Pending;
                 };
 
-                match peers.remove(&info) {
-                    Some(peer) => {
+                peers.remove(&info).map_or_else(
+                    || Poll::Ready(Some(Err(PeerManagerOutputError::PeerDisconnectedAndMissing(info)))),
+                    |peer| {
                         drop(peer);
                         Poll::Ready(Some(Ok(PeerManagerOutputMessage::PeerRemoved(info))))
-                    }
-                    None => Poll::Ready(Some(Err(PeerManagerOutputError::PeerDisconnectedAndMissing(info)))),
-                }
+                    },
+                )
             }
 
             Ok(msg) => Poll::Ready(Some(Ok(msg))),

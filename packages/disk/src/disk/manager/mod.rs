@@ -39,7 +39,7 @@ where
     Arc<F>: Send + Sync,
 {
     /// Create a `DiskManager` from the given `DiskManagerBuilder`.
-    pub fn from_builder(builder: &DiskManagerBuilder, fs: Arc<F>) -> DiskManager<F> {
+    pub fn from_builder(builder: &DiskManagerBuilder, fs: Arc<F>) -> Self {
         let cur_sink_capacity = Arc::new(AtomicUsize::new(0));
         let sink_capacity = builder.sink_buffer_capacity();
         let stream_capacity = builder.stream_buffer_capacity();
@@ -49,9 +49,9 @@ where
         let wake_queue = Arc::new(SegQueue::new());
 
         let sink = DiskManagerSink::new(context, sink_capacity, cur_sink_capacity.clone(), wake_queue.clone());
-        let stream = DiskManagerStream::new(out_recv, cur_sink_capacity, wake_queue.clone());
+        let stream = DiskManagerStream::new(out_recv, cur_sink_capacity, wake_queue);
 
-        DiskManager { sink, stream }
+        Self { sink, stream }
     }
 
     /// Break the `DiskManager` into a sink and stream.

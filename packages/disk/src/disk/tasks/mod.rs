@@ -76,10 +76,13 @@ where
     // In case we are resuming a download, we need to send the diff for the newly added torrent
     send_piece_diff(&init_state, info_hash, sender, true).await;
 
-    match context.insert_torrent(file, &init_state) {
+    // Required for Rust 2024 drop order
+    #[allow(clippy::let_and_return)]
+    let result = match context.insert_torrent(file, &init_state) {
         Ok(_) => Ok(()),
         Err((hash, _)) => Err(TorrentError::ExistingInfoHash { hash }),
-    }
+    };
+    result
 }
 
 fn execute_remove_torrent<F>(hash: InfoHash, context: &DiskManagerContext<F>) -> TorrentResult<()>

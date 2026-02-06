@@ -21,8 +21,8 @@ pub struct HandshakerSink {
 }
 
 impl HandshakerSink {
-    pub(super) fn new(send: mpsc::Sender<InitiateMessage>, port: u16, pid: PeerId, filters: Filters) -> HandshakerSink {
-        HandshakerSink {
+    pub(super) const fn new(send: mpsc::Sender<InitiateMessage>, port: u16, pid: PeerId, filters: Filters) -> Self {
+        Self {
             send,
             port,
             pid,

@@ -1,3 +1,5 @@
+#![allow(clippy::significant_drop_tightening)]
+
 use std::io::{BufRead, Read as _, Write as _};
 use std::sync::{Arc, Once};
 
@@ -18,6 +20,7 @@ fn tracing_stderr_init(filter: LevelFilter) {
 }
 
 #[tokio::main]
+#[allow(tail_expr_drop_order)]
 async fn main() {
     INIT.call_once(|| {
         tracing_stderr_init(LevelFilter::INFO);

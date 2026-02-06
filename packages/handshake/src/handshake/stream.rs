@@ -12,8 +12,8 @@ pub struct HandshakerStream<S> {
 }
 
 impl<S> HandshakerStream<S> {
-    pub(super) fn new(recv: mpsc::Receiver<std::io::Result<CompleteMessage<S>>>) -> HandshakerStream<S> {
-        HandshakerStream { recv }
+    pub(super) const fn new(recv: mpsc::Receiver<std::io::Result<CompleteMessage<S>>>) -> Self {
+        Self { recv }
     }
 }
 

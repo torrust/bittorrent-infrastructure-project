@@ -45,10 +45,10 @@ pub enum MockMessage {
 
 impl MockDispatcher {
     #[instrument(skip(), ret(level = Level::TRACE))]
-    pub fn new() -> (MockDispatcher, mpsc::Receiver<MockMessage>) {
+    pub fn new() -> (Self, mpsc::Receiver<MockMessage>) {
         let (send, recv) = mpsc::channel();
 
-        (MockDispatcher { send }, recv)
+        (Self { send }, recv)
     }
 }
 

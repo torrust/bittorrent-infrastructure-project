@@ -2,20 +2,20 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 
 /// Convert a 4 byte value to an array of 4 bytes.
 #[must_use]
-pub fn four_bytes_to_array(unsigned: u32) -> [u8; 4] {
+pub const fn four_bytes_to_array(unsigned: u32) -> [u8; 4] {
     unsigned.to_be_bytes()
 }
 
 /// Convert a 4 byte value to an array of 4 bytes.
 #[must_use]
-pub fn four_bytes_to_array_signed(signed: i32) -> [u8; 4] {
+pub const fn four_bytes_to_array_signed(signed: i32) -> [u8; 4] {
     signed.to_be_bytes()
 }
 
 /// Convert an 8 byte value to an array of 8 bytes.
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
-pub fn eight_bytes_to_array(bytes: u64) -> [u8; 8] {
+pub const fn eight_bytes_to_array(bytes: u64) -> [u8; 8] {
     [
         (bytes >> 56) as u8,
         (bytes >> 48) as u8,
@@ -30,7 +30,7 @@ pub fn eight_bytes_to_array(bytes: u64) -> [u8; 8] {
 
 /// Convert an ipv4 address to an array of 4 bytes big endian.
 #[must_use]
-pub fn ipv4_to_bytes_be(v4_addr: Ipv4Addr) -> [u8; 4] {
+pub const fn ipv4_to_bytes_be(v4_addr: Ipv4Addr) -> [u8; 4] {
     v4_addr.octets()
 }
 
@@ -57,7 +57,7 @@ pub fn ipv6_to_bytes_be(v6_addr: Ipv6Addr) -> [u8; 16] {
 
 // Convert a port to an array of 2 bytes big endian.
 #[must_use]
-pub fn port_to_bytes_be(port: u16) -> [u8; 2] {
+pub const fn port_to_bytes_be(port: u16) -> [u8; 2] {
     #[allow(clippy::cast_possible_truncation)]
     [(port >> 8) as u8, port as u8]
 }
@@ -94,7 +94,7 @@ pub fn sock_v6_to_bytes_be(v6_sock: SocketAddrV6) -> [u8; 18] {
 
 /// Convert an array of 4 bytes big endian to an ipv4 address.
 #[must_use]
-pub fn bytes_be_to_ipv4(bytes: [u8; 4]) -> Ipv4Addr {
+pub const fn bytes_be_to_ipv4(bytes: [u8; 4]) -> Ipv4Addr {
     Ipv4Addr::new(bytes[0], bytes[1], bytes[2], bytes[3])
 }
 

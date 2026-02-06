@@ -19,18 +19,11 @@ impl Topic {
                     Err(_) => return None,
                 }
             }
-            match ShaHash::from_hash(&hash[..]) {
-                Ok(sha_hash) => Some(Topic::BitTorrentInfoHash(sha_hash)),
-                Err(_) => None,
-            }
+            ShaHash::from_hash(&hash[..]).ok().map(Self::BitTorrentInfoHash)
         } else if s.starts_with("urn:btih:") && s.len() == 9 + 32 {
             // BitTorrent Info Hash, base-32
-            base32::decode(base32::Alphabet::Rfc4648 { padding: true }, &s[9..]).and_then(|hash| {
-                match ShaHash::from_hash(&hash[..]) {
-                    Ok(sha_hash) => Some(Topic::BitTorrentInfoHash(sha_hash)),
-                    Err(_) => None,
-                }
-            })
+            base32::decode(base32::Alphabet::Rfc4648 { padding: true }, &s[9..])
+                .and_then(|hash| ShaHash::from_hash(&hash[..]).ok().map(Self::BitTorrentInfoHash))
         } else {
             None
         }
@@ -73,7 +66,7 @@ impl MagnetLink {
         }
 
         // Gather Magnet Link data from query string
-        let mut result: Option<MagnetLink> = None;
+        let mut result: Option<Self> = None;
 
         for (k, v) in url.query_pairs() {
             if result.is_none() {
@@ -107,7 +100,7 @@ impl MagnetLink {
     }
 
     #[must_use]
-    pub fn get_info_hash(&self) -> Option<InfoHash> {
+    pub const fn get_info_hash(&self) -> Option<InfoHash> {
         match self.exact_topic {
             Some(Topic::BitTorrentInfoHash(info_hash)) => Some(info_hash),
             _ => None,

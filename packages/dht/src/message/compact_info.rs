@@ -26,7 +26,7 @@ impl<'a> CompactNodeInfo<'a> {
     /// # Errors
     ///
     /// This function will return an error if the byte array is the wrong length.
-    pub fn new(nodes: &'a [u8]) -> LengthResult<CompactNodeInfo<'a>> {
+    pub const fn new(nodes: &'a [u8]) -> LengthResult<Self> {
         if nodes.len().is_multiple_of(BYTES_PER_COMPACT_NODE_INFO) {
             Ok(CompactNodeInfo { nodes })
         } else {
@@ -38,7 +38,7 @@ impl<'a> CompactNodeInfo<'a> {
     }
 
     #[must_use]
-    pub fn nodes(&self) -> &'a [u8] {
+    pub const fn nodes(&self) -> &'a [u8] {
         self.nodes
     }
 }
@@ -103,7 +103,7 @@ where
     ///
     /// It is VERY important that the values have been checked to contain only
     /// bencoded bytes and not other types as that will result in a panic.
-    pub fn new(values: &'a dyn BListAccess<B::BType>) -> LengthResult<CompactValueInfo<'a, B>> {
+    pub fn new(values: &'a dyn BListAccess<B::BType>) -> LengthResult<Self> {
         for (index, node) in values.into_iter().enumerate() {
             // TODO: Do not unwrap here please
             let compact_value = node.bytes().unwrap();
@@ -257,9 +257,7 @@ mod tests {
         let bencode_values = Vec::new();
         let compact_value: CompactValueInfo<'_, BencodeRef<'_>> = CompactValueInfo::new(&bencode_values).unwrap();
 
-        let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
-
-        assert!(collected_info.is_empty());
+        assert!(compact_value.into_iter().next().is_none());
     }
 
     #[test]

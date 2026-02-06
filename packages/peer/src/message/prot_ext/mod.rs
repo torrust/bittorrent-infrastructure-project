@@ -101,7 +101,7 @@ where
         bytes: &[u8],
         extended: &ExtendedMessage,
         custom_prot: &mut P,
-    ) -> std::io::Result<Result<PeerExtensionProtocolMessage<P>, PeerExtensionProtocolMessageError>> {
+    ) -> std::io::Result<Result<Self, PeerExtensionProtocolMessageError>> {
         // pass through an inner `std::io::Error`, and wrap any nom-error.
         let res = match parse_extensions(bytes, extended, custom_prot) {
             Ok((_, result)) => result?,
@@ -127,7 +127,7 @@ where
         W: std::io::Write,
     {
         match self {
-            PeerExtensionProtocolMessage::UtMetadata(msg) => {
+            Self::UtMetadata(msg) => {
                 let Some(ext_id) = extended.query_id(&ExtendedType::UtMetadata) else {
                     return Err(std::io::Error::other("Can't Send UtMetadataMessage As We Have No Id Mapping"));
                 };
@@ -145,7 +145,7 @@ where
 
                 Ok(id_length + total_len)
             }
-            PeerExtensionProtocolMessage::Custom(msg) => custom_prot.write_bytes(msg, writer),
+            Self::Custom(msg) => custom_prot.write_bytes(msg, writer),
         }
     }
 
@@ -156,8 +156,8 @@ where
     /// This function will return an error if unable to calculate the message length.
     pub fn message_size(&self, custom_prot: &mut P) -> std::io::Result<usize> {
         match self {
-            PeerExtensionProtocolMessage::UtMetadata(msg) => Ok(msg.message_size()),
-            PeerExtensionProtocolMessage::Custom(msg) => custom_prot.message_size(msg),
+            Self::UtMetadata(msg) => Ok(msg.message_size()),
+            Self::Custom(msg) => custom_prot.message_size(msg),
         }
     }
 }

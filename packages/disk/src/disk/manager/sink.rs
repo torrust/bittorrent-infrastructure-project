@@ -30,8 +30,8 @@ where
     F: FileSystem + Sync + 'static,
     Arc<F>: Send + Sync,
 {
-    fn clone(&self) -> DiskManagerSink<F> {
-        DiskManagerSink {
+    fn clone(&self) -> Self {
+        Self {
             context: self.context.clone(),
             max_capacity: self.max_capacity,
             cur_capacity: self.cur_capacity.clone(),
@@ -51,8 +51,8 @@ where
         max_capacity: usize,
         cur_capacity: Arc<AtomicUsize>,
         wake_queue: Arc<SegQueue<Waker>>,
-    ) -> DiskManagerSink<F> {
-        DiskManagerSink {
+    ) -> Self {
+        Self {
             context,
             max_capacity,
             cur_capacity,
@@ -109,6 +109,7 @@ where
         Ok(())
     }
 
+    #[allow(tail_expr_drop_order)]
     fn poll_flush(self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         let Ok(mut task_set) = self.task_set.try_lock() else {
             tracing::warn!("unable to get task_set lock");

@@ -77,18 +77,13 @@ where
 {
     /// Create a new `ServerDispatcher`.
     #[instrument(skip(), ret(level = Level::TRACE))]
-    fn new(handler: H) -> ServerDispatcher<H> {
-        ServerDispatcher { handler }
+    fn new(handler: H) -> Self {
+        Self { handler }
     }
 
     /// Forward the request on to the appropriate handler method.
     #[instrument(skip(self, provider))]
-    fn process_request(
-        &mut self,
-        provider: &mut Provider<'_, ServerDispatcher<H>>,
-        request: &TrackerRequest<'_>,
-        addr: SocketAddr,
-    ) {
+    fn process_request(&mut self, provider: &mut Provider<'_, Self>, request: &TrackerRequest<'_>, addr: SocketAddr) {
         tracing::trace!("process request");
 
         let conn_id = request.connection_id();
@@ -116,7 +111,7 @@ where
 
     /// Forward a connect request on to the appropriate handler method.
     #[instrument(skip(self, provider))]
-    fn forward_connect(&mut self, provider: &mut Provider<'_, ServerDispatcher<H>>, trans_id: u32, addr: SocketAddr) {
+    fn forward_connect(&mut self, provider: &mut Provider<'_, Self>, trans_id: u32, addr: SocketAddr) {
         let Some(attempt) = self.handler.connect(addr) else {
             tracing::warn!("connect attempt canceled");
 
@@ -139,7 +134,7 @@ where
     #[instrument(skip(self, provider))]
     fn forward_announce(
         &mut self,
-        provider: &mut Provider<'_, ServerDispatcher<H>>,
+        provider: &mut Provider<'_, Self>,
         trans_id: u32,
         conn_id: u64,
         request: &AnnounceRequest<'_>,
@@ -166,7 +161,7 @@ where
     #[instrument(skip(self, provider))]
     fn forward_scrape(
         &mut self,
-        provider: &mut Provider<'_, ServerDispatcher<H>>,
+        provider: &mut Provider<'_, Self>,
         trans_id: u32,
         conn_id: u64,
         request: &ScrapeRequest<'_>,

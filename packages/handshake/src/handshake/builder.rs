@@ -43,14 +43,14 @@ impl Default for HandshakerBuilder {
 impl HandshakerBuilder {
     /// Create a new `HandshakerBuilder`.
     #[must_use]
-    pub fn new() -> HandshakerBuilder {
+    pub fn new() -> Self {
         Self::default()
     }
 
     /// Address that the host will listen on.
     ///
     /// Defaults to `IN_ADDR_ANY` using port 0 (any free port).
-    pub fn with_bind_addr(&mut self, addr: SocketAddr) -> &mut HandshakerBuilder {
+    pub const fn with_bind_addr(&mut self, addr: SocketAddr) -> &mut Self {
         self.bind = addr;
 
         self
@@ -60,7 +60,7 @@ impl HandshakerBuilder {
     ///
     /// Defaults to the port that is being listened on (will only work if the
     /// host is not natted).
-    pub fn with_open_port(&mut self, port: u16) -> &mut HandshakerBuilder {
+    pub const fn with_open_port(&mut self, port: u16) -> &mut Self {
         self.port = port;
 
         self
@@ -71,14 +71,14 @@ impl HandshakerBuilder {
     /// Defaults to a random SHA-1 hash; official clients should use an encoding scheme.
     ///
     /// See [BEP 0020](http://www.bittorrent.org/beps/bep_0020.html).
-    pub fn with_peer_id(&mut self, peer_id: PeerId) -> &mut HandshakerBuilder {
+    pub const fn with_peer_id(&mut self, peer_id: PeerId) -> &mut Self {
         self.pid = peer_id;
 
         self
     }
 
     /// Extensions supported by our client, advertised to the peer when handshaking.
-    pub fn with_extensions(&mut self, ext: Extensions) -> &mut HandshakerBuilder {
+    pub const fn with_extensions(&mut self, ext: Extensions) -> &mut Self {
         self.ext = ext;
 
         self
@@ -87,7 +87,7 @@ impl HandshakerBuilder {
     /// Configuration that will be used to alter the internal behavior of handshaking.
     ///
     /// This will typically not need to be set unless you know what you are doing.
-    pub fn with_config(&mut self, config: HandshakerConfig) -> &mut HandshakerBuilder {
+    pub const fn with_config(&mut self, config: HandshakerConfig) -> &mut Self {
         self.config = config;
 
         self

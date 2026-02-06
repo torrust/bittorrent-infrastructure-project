@@ -20,10 +20,7 @@ pub trait Dispatcher: Sized + std::fmt::Debug {
     fn timeout(&mut self, _provider: Provider<'_, Self>, _timeout: Self::TimeoutToken) {}
 }
 
-pub struct DispatchHandler<D: Dispatcher>
-where
-    D: std::fmt::Debug,
-{
+pub struct DispatchHandler<D: Dispatcher + std::fmt::Debug> {
     pub dispatch: D,
     pub out_queue: VecDeque<(Buffer, SocketAddr)>,
     socket: UdpSocket,
@@ -32,10 +29,7 @@ where
     pub timer_sender: mpsc::Sender<TimeoutAction<D::TimeoutToken>>,
 }
 
-impl<D: Dispatcher + std::fmt::Debug> std::fmt::Debug for DispatchHandler<D>
-where
-    D: std::fmt::Debug,
-{
+impl<D: Dispatcher + std::fmt::Debug> std::fmt::Debug for DispatchHandler<D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DispatchHandler")
             .field("dispatch", &self.dispatch)
@@ -59,7 +53,7 @@ where
         dispatch: D,
         poll: &mut Poll,
         timer_sender: mpsc::Sender<TimeoutAction<D::TimeoutToken>>,
-    ) -> DispatchHandler<D>
+    ) -> Self
     where
         D: std::fmt::Debug,
         <D as Dispatcher>::TimeoutToken: std::fmt::Debug,
@@ -72,7 +66,7 @@ where
             .register(&mut socket, UDP_SOCKET_TOKEN, Interest::READABLE)
             .unwrap();
 
-        DispatchHandler {
+        Self {
             dispatch,
             out_queue,
             socket,
@@ -144,13 +138,7 @@ where
     }
 
     #[instrument(skip(self, waker, shutdown_handle, event, poll))]
-    pub fn handle_event(
-        &mut self,
-        waker: &Waker,
-        shutdown_handle: &mut ShutdownHandle,
-        event: &mio::event::Event,
-        poll: &mut Poll,
-    ) {
+    pub fn handle_event(&mut self, waker: &Waker, shutdown_handle: &mut ShutdownHandle, event: &mio::event::Event, poll: &Poll) {
         tracing::trace!(?event, "handle event");
 
         if event.token() == UDP_SOCKET_TOKEN {
@@ -177,7 +165,7 @@ where
     }
 
     #[instrument(skip(self, poll))]
-    fn update_interest(&mut self, poll: &mut Poll) {
+    fn update_interest(&mut self, poll: &Poll) {
         tracing::trace!("update interest");
 
         self.current_interest = if self.out_queue.is_empty() {

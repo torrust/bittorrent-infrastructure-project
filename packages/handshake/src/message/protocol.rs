@@ -19,7 +19,7 @@ impl Protocol {
     /// # Errors
     ///
     /// This function will return an error if unable to construct from bytes.
-    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Protocol> {
+    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         parse_protocol(bytes)
     }
 
@@ -33,8 +33,8 @@ impl Protocol {
         W: AsyncWrite + Unpin,
     {
         let (len, bytes) = match self {
-            Protocol::BitTorrent => (BT_PROTOCOL_LEN as usize, BT_PROTOCOL),
-            Protocol::Custom(prot) => (prot.len(), &prot[..]),
+            Self::BitTorrent => (BT_PROTOCOL_LEN as usize, BT_PROTOCOL),
+            Self::Custom(prot) => (prot.len(), &prot[..]),
         };
 
         #[allow(clippy::cast_possible_truncation)]
@@ -54,8 +54,8 @@ impl Protocol {
         W: std::io::Write,
     {
         let (len, bytes) = match self {
-            Protocol::BitTorrent => (BT_PROTOCOL_LEN as usize, BT_PROTOCOL),
-            Protocol::Custom(prot) => (prot.len(), &prot[..]),
+            Self::BitTorrent => (BT_PROTOCOL_LEN as usize, BT_PROTOCOL),
+            Self::Custom(prot) => (prot.len(), &prot[..]),
         };
 
         #[allow(clippy::cast_possible_truncation)]
@@ -67,10 +67,10 @@ impl Protocol {
 
     /// Get the length of the given protocol (does not include the length byte).
     #[must_use]
-    pub fn write_len(&self) -> usize {
+    pub const fn write_len(&self) -> usize {
         match self {
-            Protocol::BitTorrent => BT_PROTOCOL_LEN as usize,
-            Protocol::Custom(custom) => custom.len(),
+            Self::BitTorrent => BT_PROTOCOL_LEN as usize,
+            Self::Custom(custom) => custom.len(),
         }
     }
 }

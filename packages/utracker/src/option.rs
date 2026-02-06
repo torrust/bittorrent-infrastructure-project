@@ -45,7 +45,7 @@ pub struct AnnounceOptions<'a> {
 impl<'a> AnnounceOptions<'a> {
     /// Create a new set of `AnnounceOptions`.
     #[must_use]
-    pub fn new() -> AnnounceOptions<'a> {
+    pub fn new() -> Self {
         AnnounceOptions {
             raw_options: HashMap::new(),
         }
@@ -56,7 +56,7 @@ impl<'a> AnnounceOptions<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceOptions<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         let mut raw_options = HashMap::new();
 
         let (remaining, _) = parse_options(bytes, &mut raw_options)?;
@@ -207,7 +207,7 @@ pub struct URLDataOption<'a> {
 impl<'a> URLDataOption<'a> {
     /// Create a new `URLDataOption` from the given bytes.
     #[must_use]
-    pub fn new(url_data: &'a [u8]) -> URLDataOption<'a> {
+    pub const fn new(url_data: &'a [u8]) -> Self {
         URLDataOption { url_data }
     }
 }
@@ -221,7 +221,7 @@ impl<'a> AnnounceOption<'a> for URLDataOption<'a> {
         self.url_data.len()
     }
 
-    fn read_option(bytes: &'a [u8]) -> Option<URLDataOption<'a>> {
+    fn read_option(bytes: &'a [u8]) -> Option<Self> {
         Some(URLDataOption { url_data: bytes })
     }
 

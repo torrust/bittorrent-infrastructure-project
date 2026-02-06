@@ -49,7 +49,7 @@ pub struct TrackerResponse<'a> {
 impl<'a> TrackerResponse<'a> {
     /// Create a new `TrackerResponse`.
     #[must_use]
-    pub fn new(trans_id: u32, res_type: ResponseType<'a>) -> TrackerResponse<'a> {
+    pub const fn new(trans_id: u32, res_type: ResponseType<'a>) -> Self {
         TrackerResponse {
             transaction_id: trans_id,
             response_type: res_type,
@@ -61,7 +61,7 @@ impl<'a> TrackerResponse<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerResponse<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_response(bytes)
     }
 
@@ -113,13 +113,13 @@ impl<'a> TrackerResponse<'a> {
 
     /// Transaction ID supplied with a response to uniquely identify a request.
     #[must_use]
-    pub fn transaction_id(&self) -> u32 {
+    pub const fn transaction_id(&self) -> u32 {
         self.transaction_id
     }
 
     /// Actual type of response that this `TrackerResponse` represents.
     #[must_use]
-    pub fn response_type(&self) -> &ResponseType<'a> {
+    pub const fn response_type(&self) -> &ResponseType<'a> {
         &self.response_type
     }
 

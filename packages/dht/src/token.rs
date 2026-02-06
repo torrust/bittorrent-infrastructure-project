@@ -31,14 +31,14 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(bytes: &[u8]) -> LengthResult<Token> {
+    pub fn new(bytes: &[u8]) -> LengthResult<Self> {
         if bytes.len() == sha::SHA_HASH_LEN {
             let mut token = [0u8; sha::SHA_HASH_LEN];
 
             for (src, dst) in bytes.iter().zip(token.iter_mut()) {
                 *dst = *src;
             }
-            Ok(Token::from(token))
+            Ok(Self::from(token))
         } else {
             Err(Error::new(LengthErrorKind::LengthExpected, sha::SHA_HASH_LEN))
         }
@@ -52,8 +52,8 @@ impl From<Token> for [u8; sha::SHA_HASH_LEN] {
 }
 
 impl From<[u8; sha::SHA_HASH_LEN]> for Token {
-    fn from(token: [u8; sha::SHA_HASH_LEN]) -> Token {
-        Token { token }
+    fn from(token: [u8; sha::SHA_HASH_LEN]) -> Self {
+        Self { token }
     }
 }
 
@@ -74,7 +74,7 @@ pub struct TokenStore {
 }
 
 impl TokenStore {
-    pub fn new() -> TokenStore {
+    pub fn new() -> Self {
         // We cant just use a placeholder for the last secret as that would allow external
         // nodes to exploit recently started dhts. Instead, just generate another placeholder
         // secret for the last secret with the assumption that we wont get a valid announce
@@ -83,7 +83,7 @@ impl TokenStore {
         let last_secret = rand::random::<u32>();
         let last_refresh = Utc::now();
 
-        TokenStore {
+        Self {
             curr_secret,
             last_secret,
             last_refresh,

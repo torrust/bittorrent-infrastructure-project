@@ -20,10 +20,10 @@ impl std::fmt::Debug for BufferPool {
 
 impl BufferPool {
     #[instrument(skip())]
-    pub fn new(buffer_size: usize) -> BufferPool {
+    pub fn new(buffer_size: usize) -> Self {
         let buffers = Vec::new();
 
-        BufferPool { buffers, buffer_size }
+        Self { buffers, buffer_size }
     }
 
     #[instrument(skip(self), fields(remaining= %self.buffers.len()))]
@@ -61,8 +61,8 @@ impl std::fmt::Debug for Buffer {
 
 impl Buffer {
     #[instrument(skip())]
-    fn new(len: usize) -> Buffer {
-        Buffer {
+    fn new(len: usize) -> Self {
+        Self {
             buffer: std::io::Cursor::new(vec![0_u8; len]),
         }
     }

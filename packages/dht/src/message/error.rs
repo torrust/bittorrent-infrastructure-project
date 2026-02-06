@@ -27,12 +27,12 @@ pub enum ErrorCode {
 }
 
 impl ErrorCode {
-    fn new(code: u8) -> Result<ErrorCode, DhtError> {
+    fn new(code: u8) -> Result<Self, DhtError> {
         match code {
-            GENERIC_ERROR_CODE => Ok(ErrorCode::GenericError),
-            SERVER_ERROR_CODE => Ok(ErrorCode::ServerError),
-            PROTOCOL_ERROR_CODE => Ok(ErrorCode::ProtocolError),
-            METHOD_UNKNOWN_CODE => Ok(ErrorCode::MethodUnknown),
+            GENERIC_ERROR_CODE => Ok(Self::GenericError),
+            SERVER_ERROR_CODE => Ok(Self::ServerError),
+            PROTOCOL_ERROR_CODE => Ok(Self::ProtocolError),
+            METHOD_UNKNOWN_CODE => Ok(Self::MethodUnknown),
             unknown => Err(DhtError::InvalidResponse {
                 details: format!("Error Message Invalid Error Code {unknown:?}"),
             }),
@@ -102,7 +102,7 @@ impl<'a> ErrorMessage<'a> {
     // interface in error.rs for the DhtErrorKind object. Most likely our error messages will not
     // need to be dynamically generated (up in the air at this point) so this is a performance loss.
     #[must_use]
-    pub fn new(trans_id: Vec<u8>, code: ErrorCode, message: String) -> ErrorMessage<'static> {
+    pub const fn new(trans_id: Vec<u8>, code: ErrorCode, message: String) -> ErrorMessage<'static> {
         let trans_id_cow = Cow::Owned(trans_id);
         let message_cow = Cow::Owned(message);
 
@@ -118,7 +118,7 @@ impl<'a> ErrorMessage<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup the error.
-    pub fn from_parts<B>(root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<ErrorMessage<'a>, DhtError>
+    pub fn from_parts<B>(root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<Self, DhtError>
     where
         B: BRefAccess<BType = B>,
     {
@@ -144,7 +144,7 @@ impl<'a> ErrorMessage<'a> {
     }
 
     #[must_use]
-    pub fn error_code(&self) -> ErrorCode {
+    pub const fn error_code(&self) -> ErrorCode {
         self.code
     }
 

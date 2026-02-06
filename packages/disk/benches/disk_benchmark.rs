@@ -1,3 +1,5 @@
+#![allow(clippy::significant_drop_tightening)]
+
 use std::sync::Arc;
 
 use bytes::BytesMut;
@@ -41,6 +43,7 @@ fn generate_single_file_torrent(piece_len: usize, file_len: usize) -> (Metainfo,
 }
 
 /// Adds the given metainfo file to the given sender, and waits for the added notification.
+#[allow(tail_expr_drop_order)]
 async fn add_metainfo_file<S, R>(metainfo: Metainfo, block_send: Arc<Mutex<S>>, block_recv: Arc<Mutex<R>>)
 where
     S: futures::Sink<IDiskMessage> + Unpin,
@@ -89,6 +92,7 @@ where
 
 /// Pushes the given bytes as piece blocks to the given sender, and blocks until all notifications
 /// of the blocks being processed have been received (does not check piece messages).
+#[allow(tail_expr_drop_order)]
 async fn process_blocks<S, R>(data: Arc<ProcessBlockData<S, R>>)
 where
     S: futures::Sink<IDiskMessage> + Unpin,
@@ -170,8 +174,8 @@ fn bench_process_file_with_fs<F>(
         block_length,
         info_hash,
         bytes,
-        block_send: block_send.clone(),
-        block_recv: block_recv.clone(),
+        block_send,
+        block_recv,
     };
 
     let runner = &tokio::runtime::Runtime::new().unwrap();

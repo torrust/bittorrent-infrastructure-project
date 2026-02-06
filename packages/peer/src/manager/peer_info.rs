@@ -20,8 +20,8 @@ pub struct PeerInfo {
 impl PeerInfo {
     /// Create a new `PeerInfo` object.
     #[must_use]
-    pub fn new(addr: SocketAddr, pid: PeerId, hash: InfoHash, extensions: Extensions) -> PeerInfo {
-        PeerInfo {
+    pub const fn new(addr: SocketAddr, pid: PeerId, hash: InfoHash, extensions: Extensions) -> Self {
+        Self {
             addr,
             pid,
             hash,
@@ -31,31 +31,31 @@ impl PeerInfo {
 
     /// Retrieve the peer address.
     #[must_use]
-    pub fn addr(&self) -> &SocketAddr {
+    pub const fn addr(&self) -> &SocketAddr {
         &self.addr
     }
 
     /// Retrieve the peer id.
     #[must_use]
-    pub fn peer_id(&self) -> &PeerId {
+    pub const fn peer_id(&self) -> &PeerId {
         &self.pid
     }
 
     /// Retrieve the peer info hash.
     #[must_use]
-    pub fn hash(&self) -> &InfoHash {
+    pub const fn hash(&self) -> &InfoHash {
         &self.hash
     }
 
     /// Retrieve the extensions supported by this peer.
     #[must_use]
-    pub fn extensions(&self) -> &Extensions {
+    pub const fn extensions(&self) -> &Extensions {
         &self.ext
     }
 }
 
 impl PartialEq for PeerInfo {
-    fn eq(&self, other: &PeerInfo) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.addr.eq(&other.addr) && self.pid.eq(&other.pid) && self.hash.eq(&other.hash)
     }
 }

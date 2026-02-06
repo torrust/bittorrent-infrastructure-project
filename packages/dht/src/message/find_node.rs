@@ -18,7 +18,7 @@ pub struct FindNodeRequest<'a> {
 
 impl<'a> FindNodeRequest<'a> {
     #[must_use]
-    pub fn new(trans_id: &'a [u8], node_id: NodeId, target_id: NodeId) -> FindNodeRequest<'a> {
+    pub const fn new(trans_id: &'a [u8], node_id: NodeId, target_id: NodeId) -> Self {
         FindNodeRequest {
             trans_id,
             node_id,
@@ -34,11 +34,7 @@ impl<'a> FindNodeRequest<'a> {
     /// # Errors
     ///
     /// It will return an error if unable to lookup an validate the node parts.
-    pub fn from_parts<B>(
-        rqst_root: &dyn BDictAccess<B::BKey, B>,
-        trans_id: &'a [u8],
-        target_key: &str,
-    ) -> Result<FindNodeRequest<'a>, DhtError>
+    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8], target_key: &str) -> Result<Self, DhtError>
     where
         B: BRefAccess,
     {
@@ -54,17 +50,17 @@ impl<'a> FindNodeRequest<'a> {
     }
 
     #[must_use]
-    pub fn transaction_id(&self) -> &'a [u8] {
+    pub const fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
     #[must_use]
-    pub fn node_id(&self) -> NodeId {
+    pub const fn node_id(&self) -> NodeId {
         self.node_id
     }
 
     #[must_use]
-    pub fn target_id(&self) -> NodeId {
+    pub const fn target_id(&self) -> NodeId {
         self.target_id
     }
 
@@ -98,7 +94,7 @@ impl<'a> FindNodeResponse<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to validate the nodes.
-    pub fn new(trans_id: &'a [u8], node_id: NodeId, nodes: &'a [u8]) -> Result<FindNodeResponse<'a>, DhtError> {
+    pub fn new(trans_id: &'a [u8], node_id: NodeId, nodes: &'a [u8]) -> Result<Self, DhtError> {
         let validate = ResponseValidate::new(trans_id);
         let compact_nodes = validate.validate_nodes(nodes)?;
 
@@ -114,7 +110,7 @@ impl<'a> FindNodeResponse<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup and and validate node.
-    pub fn from_parts<B>(rsp_root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<FindNodeResponse<'a>, DhtError>
+    pub fn from_parts<B>(rsp_root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<Self, DhtError>
     where
         B: BRefAccess,
     {
@@ -129,17 +125,17 @@ impl<'a> FindNodeResponse<'a> {
     }
 
     #[must_use]
-    pub fn transaction_id(&self) -> &'a [u8] {
+    pub const fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
     #[must_use]
-    pub fn node_id(&self) -> NodeId {
+    pub const fn node_id(&self) -> NodeId {
         self.node_id
     }
 
     #[must_use]
-    pub fn nodes(&self) -> CompactNodeInfo<'a> {
+    pub const fn nodes(&self) -> CompactNodeInfo<'a> {
         self.nodes
     }
 

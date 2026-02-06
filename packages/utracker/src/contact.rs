@@ -25,7 +25,7 @@ impl<'a> CompactPeers<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>> {
+    pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         match CompactPeersV4::from_bytes(bytes) {
             IResult::Ok((i, peers)) => IResult::Ok((i, CompactPeers::V4(peers))),
             IResult::Err(err) => IResult::Err(err),
@@ -37,7 +37,7 @@ impl<'a> CompactPeers<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeers<'a>> {
+    pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         match CompactPeersV6::from_bytes(bytes) {
             IResult::Ok((i, peers)) => IResult::Ok((i, CompactPeers::V6(peers))),
             IResult::Err(err) => IResult::Err(err),
@@ -96,7 +96,7 @@ pub struct CompactPeersIter<'a> {
 
 impl<'a> CompactPeersIter<'a> {
     /// Create a new `CompactPeersIter`.
-    fn new(iter: CompactPeersIterType<'a>) -> CompactPeersIter<'a> {
+    const fn new(iter: CompactPeersIterType<'a>) -> Self {
         CompactPeersIter { iter }
     }
 }
@@ -124,7 +124,7 @@ pub struct CompactPeersV4<'a> {
 impl<'a> CompactPeersV4<'a> {
     /// Create a new `CompactPeersV4`.
     #[must_use]
-    pub fn new() -> CompactPeersV4<'a> {
+    pub const fn new() -> Self {
         CompactPeersV4 {
             peers: Cow::Owned(Vec::new()),
         }
@@ -135,7 +135,7 @@ impl<'a> CompactPeersV4<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV4<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_peers_v4(bytes)
     }
 
@@ -204,7 +204,7 @@ pub struct CompactPeersV4Iter<'a> {
 
 impl<'a> CompactPeersV4Iter<'a> {
     /// Create a new `CompactPeersV4Iter`.
-    fn new(peers: &'a [u8]) -> CompactPeersV4Iter<'a> {
+    const fn new(peers: &'a [u8]) -> Self {
         CompactPeersV4Iter { peers, offset: 0 }
     }
 }
@@ -246,7 +246,7 @@ pub struct CompactPeersV6<'a> {
 impl<'a> CompactPeersV6<'a> {
     /// Create a new `CompactPeersV6`.
     #[must_use]
-    pub fn new() -> CompactPeersV6<'a> {
+    pub const fn new() -> Self {
         CompactPeersV6 {
             peers: Cow::Owned(Vec::new()),
         }
@@ -257,7 +257,7 @@ impl<'a> CompactPeersV6<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], CompactPeersV6<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_peers_v6(bytes)
     }
 
@@ -326,7 +326,7 @@ pub struct CompactPeersV6Iter<'a> {
 
 impl<'a> CompactPeersV6Iter<'a> {
     /// Create a new `CompactPeersV6Iter`.
-    fn new(peers: &'a [u8]) -> CompactPeersV6Iter<'a> {
+    const fn new(peers: &'a [u8]) -> Self {
         CompactPeersV6Iter { peers, offset: 0 }
     }
 }

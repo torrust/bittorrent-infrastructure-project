@@ -1,3 +1,5 @@
+#![allow(clippy::significant_drop_tightening)]
+
 use std::collections::{HashMap, HashSet};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::sync::{Arc, Mutex, Once};
@@ -62,10 +64,10 @@ pub struct InnerMockTrackerHandler {
 #[allow(dead_code)]
 impl MockTrackerHandler {
     #[instrument(skip(), ret(level = Level::TRACE))]
-    pub fn new() -> MockTrackerHandler {
+    pub fn new() -> Self {
         tracing::debug!("new mock handler");
 
-        MockTrackerHandler {
+        Self {
             inner: Arc::new(Mutex::new(InnerMockTrackerHandler {
                 cids: HashSet::new(),
                 cid_generator: LocallyShuffledIds::<u64>::new(),

@@ -69,7 +69,7 @@ pub enum PeerWireProtocolMessageError {}
 
 impl From<PeerWireProtocolMessageError> for std::io::Error {
     fn from(err: PeerWireProtocolMessageError) -> Self {
-        std::io::Error::other(err)
+        Self::other(err)
     }
 }
 
@@ -121,12 +121,12 @@ where
     <P as PeerProtocol>::ProtocolMessage: std::fmt::Debug,
     <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
-    fn keep_alive() -> PeerWireProtocolMessage<P> {
-        PeerWireProtocolMessage::KeepAlive
+    fn keep_alive() -> Self {
+        Self::KeepAlive
     }
 
     fn is_keep_alive(&self) -> bool {
-        matches!(self, &PeerWireProtocolMessage::KeepAlive)
+        matches!(self, &Self::KeepAlive)
     }
 }
 
@@ -153,7 +153,7 @@ where
     /// # Errors
     ///
     /// This function will return an error if unable to parse bytes for supplied protocol.
-    pub fn parse_bytes(bytes: &[u8], ext_protocol: &mut P) -> std::io::Result<PeerWireProtocolMessage<P>> {
+    pub fn parse_bytes(bytes: &[u8], ext_protocol: &mut P) -> std::io::Result<Self> {
         match parse_message(bytes, ext_protocol) {
             Ok((_, result)) => result,
             _ => Err(std::io::Error::other("Failed To Parse PeerWireProtocolMessage")),
@@ -170,22 +170,18 @@ where
         W: std::io::Write,
     {
         match self {
-            &PeerWireProtocolMessage::KeepAlive => write_length_id_pair(writer, KEEP_ALIVE_MESSAGE_LEN, None),
-            &PeerWireProtocolMessage::Choke => write_length_id_pair(writer, CHOKE_MESSAGE_LEN, Some(CHOKE_MESSAGE_ID)),
-            &PeerWireProtocolMessage::UnChoke => write_length_id_pair(writer, UNCHOKE_MESSAGE_LEN, Some(UNCHOKE_MESSAGE_ID)),
-            &PeerWireProtocolMessage::Interested => {
-                write_length_id_pair(writer, INTERESTED_MESSAGE_LEN, Some(INTERESTED_MESSAGE_ID))
-            }
-            &PeerWireProtocolMessage::UnInterested => {
-                write_length_id_pair(writer, UNINTERESTED_MESSAGE_LEN, Some(UNINTERESTED_MESSAGE_ID))
-            }
-            PeerWireProtocolMessage::Have(msg) => msg.write_bytes(writer),
-            PeerWireProtocolMessage::BitField(msg) => msg.write_bytes(writer),
-            PeerWireProtocolMessage::Request(msg) => msg.write_bytes(writer),
-            PeerWireProtocolMessage::Piece(msg) => msg.write_bytes(writer),
-            PeerWireProtocolMessage::Cancel(msg) => msg.write_bytes(writer),
-            PeerWireProtocolMessage::BitsExtension(ext) => ext.write_bytes(writer),
-            PeerWireProtocolMessage::ProtExtension(ext) => ext_protocol.write_bytes(ext, writer),
+            &Self::KeepAlive => write_length_id_pair(writer, KEEP_ALIVE_MESSAGE_LEN, None),
+            &Self::Choke => write_length_id_pair(writer, CHOKE_MESSAGE_LEN, Some(CHOKE_MESSAGE_ID)),
+            &Self::UnChoke => write_length_id_pair(writer, UNCHOKE_MESSAGE_LEN, Some(UNCHOKE_MESSAGE_ID)),
+            &Self::Interested => write_length_id_pair(writer, INTERESTED_MESSAGE_LEN, Some(INTERESTED_MESSAGE_ID)),
+            &Self::UnInterested => write_length_id_pair(writer, UNINTERESTED_MESSAGE_LEN, Some(UNINTERESTED_MESSAGE_ID)),
+            Self::Have(msg) => msg.write_bytes(writer),
+            Self::BitField(msg) => msg.write_bytes(writer),
+            Self::Request(msg) => msg.write_bytes(writer),
+            Self::Piece(msg) => msg.write_bytes(writer),
+            Self::Cancel(msg) => msg.write_bytes(writer),
+            Self::BitsExtension(ext) => ext.write_bytes(writer),
+            Self::ProtExtension(ext) => ext_protocol.write_bytes(ext, writer),
         }
     }
 
@@ -196,18 +192,18 @@ where
     /// This function will return an error if unable to calculate the message length.
     pub fn message_size(&self, ext_protocol: &mut P) -> std::io::Result<usize> {
         let message_specific_len = match self {
-            &PeerWireProtocolMessage::KeepAlive => KEEP_ALIVE_MESSAGE_LEN as usize,
-            &PeerWireProtocolMessage::Choke => CHOKE_MESSAGE_LEN as usize,
-            &PeerWireProtocolMessage::UnChoke => UNCHOKE_MESSAGE_LEN as usize,
-            &PeerWireProtocolMessage::Interested => INTERESTED_MESSAGE_LEN as usize,
-            &PeerWireProtocolMessage::UnInterested => UNINTERESTED_MESSAGE_LEN as usize,
-            &PeerWireProtocolMessage::Have(_) => HAVE_MESSAGE_LEN as usize,
-            PeerWireProtocolMessage::BitField(msg) => BASE_BITFIELD_MESSAGE_LEN as usize + msg.bitfield().len(),
-            &PeerWireProtocolMessage::Request(_) => REQUEST_MESSAGE_LEN as usize,
-            PeerWireProtocolMessage::Piece(msg) => BASE_PIECE_MESSAGE_LEN as usize + msg.block().len(),
-            &PeerWireProtocolMessage::Cancel(_) => CANCEL_MESSAGE_LEN as usize,
-            PeerWireProtocolMessage::BitsExtension(ext) => ext.message_size(),
-            PeerWireProtocolMessage::ProtExtension(ext) => ext_protocol.message_size(ext)?,
+            &Self::KeepAlive => KEEP_ALIVE_MESSAGE_LEN as usize,
+            &Self::Choke => CHOKE_MESSAGE_LEN as usize,
+            &Self::UnChoke => UNCHOKE_MESSAGE_LEN as usize,
+            &Self::Interested => INTERESTED_MESSAGE_LEN as usize,
+            &Self::UnInterested => UNINTERESTED_MESSAGE_LEN as usize,
+            &Self::Have(_) => HAVE_MESSAGE_LEN as usize,
+            Self::BitField(msg) => BASE_BITFIELD_MESSAGE_LEN as usize + msg.bitfield().len(),
+            &Self::Request(_) => REQUEST_MESSAGE_LEN as usize,
+            Self::Piece(msg) => BASE_PIECE_MESSAGE_LEN as usize + msg.block().len(),
+            &Self::Cancel(_) => CANCEL_MESSAGE_LEN as usize,
+            Self::BitsExtension(ext) => ext.message_size(),
+            Self::ProtExtension(ext) => ext_protocol.message_size(ext)?,
         };
 
         Ok(MESSAGE_LENGTH_LEN_BYTES + message_specific_len)
@@ -451,12 +447,16 @@ where
     <P as PeerProtocol>::ProtocolMessageError: std::fmt::Debug,
 {
     map(
-        |input| match ext_protocol.parse_bytes(input) {
-            Ok(msg) => Ok((input, Ok(PeerWireProtocolMessage::ProtExtension(msg)))),
-            Err(_) => Err(nom::Err::Error(nom::error::Error {
-                input,
-                code: nom::error::ErrorKind::Fail,
-            })),
+        |input| {
+            ext_protocol.parse_bytes(input).map_or_else(
+                |_| {
+                    Err(nom::Err::Error(nom::error::Error {
+                        input,
+                        code: nom::error::ErrorKind::Fail,
+                    }))
+                },
+                |msg| Ok((input, Ok(PeerWireProtocolMessage::ProtExtension(msg)))),
+            )
         },
         |result| result,
     )

@@ -36,7 +36,7 @@ pub struct BencodeRef<'a> {
 impl<'a> BencodeRef<'a> {
     /// Decode the given bytes into a `BencodeRef` using the given decode options.
     #[allow(clippy::missing_errors_doc)]
-    pub fn decode(bytes: &'a [u8], opts: BDecodeOpt) -> BencodeParseResult<BencodeRef<'a>> {
+    pub fn decode(bytes: &'a [u8], opts: BDecodeOpt) -> BencodeParseResult<Self> {
         // Apply try so any errors return before the eof check
         let (bencode, end_pos) = decode::decode(bytes, 0, opts, 0)?;
 
@@ -49,7 +49,7 @@ impl<'a> BencodeRef<'a> {
 
     /// Get a byte slice of the current bencode byte representation.
     #[must_use]
-    pub fn buffer(&self) -> &'a [u8] {
+    pub const fn buffer(&self) -> &'a [u8] {
         #[allow(clippy::match_same_arms)]
         match self.inner {
             Inner::Int(_, buffer) => buffer,
@@ -62,9 +62,9 @@ impl<'a> BencodeRef<'a> {
 
 impl<'a> BRefAccess for BencodeRef<'a> {
     type BKey = &'a [u8];
-    type BType = BencodeRef<'a>;
+    type BType = Self;
 
-    fn kind<'b>(&'b self) -> RefKind<'b, &'a [u8], BencodeRef<'a>> {
+    fn kind<'b>(&'b self) -> RefKind<'b, &'a [u8], Self> {
         match self.inner {
             Inner::Int(n, _) => RefKind::Int(n),
             Inner::Bytes(n, _) => RefKind::Bytes(n),
@@ -88,14 +88,14 @@ impl<'a> BRefAccess for BencodeRef<'a> {
         self.bytes_ext()
     }
 
-    fn list(&self) -> Option<&dyn BListAccess<BencodeRef<'a>>> {
+    fn list(&self) -> Option<&dyn BListAccess<Self>> {
         match self.inner {
             Inner::List(ref n, _) => Some(n),
             _ => None,
         }
     }
 
-    fn dict(&self) -> Option<&dyn BDictAccess<&'a [u8], BencodeRef<'a>>> {
+    fn dict(&self) -> Option<&dyn BDictAccess<&'a [u8], Self>> {
         match self.inner {
             Inner::Dict(ref n, _) => Some(n),
             _ => None,

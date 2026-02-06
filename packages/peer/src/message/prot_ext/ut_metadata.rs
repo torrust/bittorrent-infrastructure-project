@@ -35,7 +35,7 @@ impl UtMetadataMessage {
     /// # Errors
     ///
     /// This function will return an error if unable to parse given bytes into type.
-    pub fn parse_bytes(mut bytes: Bytes) -> std::io::Result<Result<UtMetadataMessage, UtMetadataMessageError>> {
+    pub fn parse_bytes(mut bytes: Bytes) -> std::io::Result<Result<Self, UtMetadataMessageError>> {
         // Our bencode is pretty flat, and we don't want to enforce a full decode, as data
         // messages have the raw data appended outside of the bencode structure...
         let decode_opts = BDecodeOpt::new(2, false, false);
@@ -50,18 +50,12 @@ impl UtMetadataMessage {
                 let extra_bytes = bytes;
 
                 let message = match msg_type {
-                    REQUEST_MESSAGE_TYPE_ID => Ok(UtMetadataMessage::Request(UtMetadataRequestMessage::with_bytes(
-                        piece,
-                        &bencode_bytes,
-                    ))),
-                    REJECT_MESSAGE_TYPE_ID => Ok(UtMetadataMessage::Reject(UtMetadataRejectMessage::with_bytes(
-                        piece,
-                        &bencode_bytes,
-                    ))),
+                    REQUEST_MESSAGE_TYPE_ID => Ok(Self::Request(UtMetadataRequestMessage::with_bytes(piece, &bencode_bytes))),
+                    REJECT_MESSAGE_TYPE_ID => Ok(Self::Reject(UtMetadataRejectMessage::with_bytes(piece, &bencode_bytes))),
                     DATA_MESSAGE_TYPE_ID => {
                         let total_size = bencode_util::parse_total_size(bencode_dict)?;
 
-                        Ok(UtMetadataMessage::Data(UtMetadataDataMessage::with_bytes(
+                        Ok(Self::Data(UtMetadataDataMessage::with_bytes(
                             piece,
                             total_size,
                             extra_bytes,
@@ -89,17 +83,17 @@ impl UtMetadataMessage {
         W: std::io::Write,
     {
         match self {
-            UtMetadataMessage::Request(request) => request.write_bytes(writer),
-            UtMetadataMessage::Data(data) => data.write_bytes(writer),
-            UtMetadataMessage::Reject(reject) => reject.write_bytes(writer),
+            Self::Request(request) => request.write_bytes(writer),
+            Self::Data(data) => data.write_bytes(writer),
+            Self::Reject(reject) => reject.write_bytes(writer),
         }
     }
 
-    pub fn message_size(&self) -> usize {
+    pub const fn message_size(&self) -> usize {
         match self {
-            UtMetadataMessage::Request(request) => request.message_size(),
-            UtMetadataMessage::Data(data) => data.message_size(),
-            UtMetadataMessage::Reject(reject) => reject.message_size(),
+            Self::Request(request) => request.message_size(),
+            Self::Data(data) => data.message_size(),
+            Self::Reject(reject) => reject.message_size(),
         }
     }
 }
@@ -116,7 +110,7 @@ pub struct UtMetadataRequestMessage {
 
 impl UtMetadataRequestMessage {
     #[must_use]
-    pub fn new(piece: i64) -> UtMetadataRequestMessage {
+    pub fn new(piece: i64) -> Self {
         let encoded_bytes_size = (ben_map! {
             bencode_util::MESSAGE_TYPE_KEY => ben_int!(i64::from(REQUEST_MESSAGE_TYPE_ID)),
             bencode_util::PIECE_INDEX_KEY  => ben_int!(piece)
@@ -124,14 +118,14 @@ impl UtMetadataRequestMessage {
         .encode()
         .len();
 
-        UtMetadataRequestMessage {
+        Self {
             piece,
             bencode_size: encoded_bytes_size,
         }
     }
 
-    pub fn with_bytes(piece: i64, bytes: &Bytes) -> UtMetadataRequestMessage {
-        UtMetadataRequestMessage {
+    pub const fn with_bytes(piece: i64, bytes: &Bytes) -> Self {
+        Self {
             piece,
             bencode_size: bytes.len(),
         }
@@ -156,12 +150,12 @@ impl UtMetadataRequestMessage {
     }
 
     #[must_use]
-    pub fn message_size(&self) -> usize {
+    pub const fn message_size(&self) -> usize {
         self.bencode_size
     }
 
     #[must_use]
-    pub fn piece(&self) -> i64 {
+    pub const fn piece(&self) -> i64 {
         self.piece
     }
 }
@@ -177,7 +171,7 @@ pub struct UtMetadataDataMessage {
 }
 
 impl UtMetadataDataMessage {
-    pub fn new(piece: i64, total_size: i64, data: Bytes) -> UtMetadataDataMessage {
+    pub fn new(piece: i64, total_size: i64, data: Bytes) -> Self {
         let encoded_bytes_len = (ben_map! {
             bencode_util::MESSAGE_TYPE_KEY => ben_int!(i64::from(DATA_MESSAGE_TYPE_ID)),
             bencode_util::PIECE_INDEX_KEY  => ben_int!(piece),
@@ -186,7 +180,7 @@ impl UtMetadataDataMessage {
         .encode()
         .len();
 
-        UtMetadataDataMessage {
+        Self {
             piece,
             total_size,
             data,
@@ -194,8 +188,8 @@ impl UtMetadataDataMessage {
         }
     }
 
-    pub fn with_bytes(piece: i64, total_size: i64, data: Bytes, bytes: &Bytes) -> UtMetadataDataMessage {
-        UtMetadataDataMessage {
+    pub const fn with_bytes(piece: i64, total_size: i64, data: Bytes, bytes: &Bytes) -> Self {
+        Self {
             piece,
             total_size,
             data,
@@ -224,19 +218,19 @@ impl UtMetadataDataMessage {
         writer.write_all(self.data.as_ref())
     }
 
-    pub fn message_size(&self) -> usize {
+    pub const fn message_size(&self) -> usize {
         self.bencode_size + self.data.len()
     }
 
-    pub fn piece(&self) -> i64 {
+    pub const fn piece(&self) -> i64 {
         self.piece
     }
 
-    pub fn total_size(&self) -> i64 {
+    pub const fn total_size(&self) -> i64 {
         self.total_size
     }
 
-    pub fn data(&self) -> &Bytes {
+    pub const fn data(&self) -> &Bytes {
         &self.data
     }
 }
@@ -251,7 +245,7 @@ pub struct UtMetadataRejectMessage {
 
 impl UtMetadataRejectMessage {
     #[must_use]
-    pub fn new(piece: i64) -> UtMetadataRejectMessage {
+    pub fn new(piece: i64) -> Self {
         let encoded_bytes_size = (ben_map! {
             bencode_util::MESSAGE_TYPE_KEY => ben_int!(i64::from(REJECT_MESSAGE_TYPE_ID)),
             bencode_util::PIECE_INDEX_KEY  => ben_int!(piece)
@@ -259,14 +253,14 @@ impl UtMetadataRejectMessage {
         .encode()
         .len();
 
-        UtMetadataRejectMessage {
+        Self {
             piece,
             bencode_size: encoded_bytes_size,
         }
     }
 
-    pub fn with_bytes(piece: i64, bytes: &Bytes) -> UtMetadataRejectMessage {
-        UtMetadataRejectMessage {
+    pub const fn with_bytes(piece: i64, bytes: &Bytes) -> Self {
+        Self {
             piece,
             bencode_size: bytes.len(),
         }
@@ -291,12 +285,12 @@ impl UtMetadataRejectMessage {
     }
 
     #[must_use]
-    pub fn message_size(&self) -> usize {
+    pub const fn message_size(&self) -> usize {
         self.bencode_size
     }
 
     #[must_use]
-    pub fn piece(&self) -> i64 {
+    pub const fn piece(&self) -> i64 {
         self.piece
     }
 }

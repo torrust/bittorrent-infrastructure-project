@@ -21,7 +21,7 @@ pub struct GetPeersRequest<'a> {
 
 impl<'a> GetPeersRequest<'a> {
     #[must_use]
-    pub fn new(trans_id: &'a [u8], node_id: NodeId, info_hash: InfoHash) -> GetPeersRequest<'a> {
+    pub const fn new(trans_id: &'a [u8], node_id: NodeId, info_hash: InfoHash) -> Self {
         GetPeersRequest {
             trans_id,
             node_id,
@@ -34,7 +34,7 @@ impl<'a> GetPeersRequest<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup, convert, and validate node.
-    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<GetPeersRequest<'a>, DhtError>
+    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<Self, DhtError>
     where
         B: BRefAccess,
     {
@@ -50,17 +50,17 @@ impl<'a> GetPeersRequest<'a> {
     }
 
     #[must_use]
-    pub fn transaction_id(&self) -> &'a [u8] {
+    pub const fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
     #[must_use]
-    pub fn node_id(&self) -> NodeId {
+    pub const fn node_id(&self) -> NodeId {
         self.node_id
     }
 
     #[must_use]
-    pub fn info_hash(&self) -> InfoHash {
+    pub const fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
@@ -112,7 +112,7 @@ where
     B::BType: PartialEq + Eq + core::hash::Hash + std::fmt::Debug,
 {
     #[must_use]
-    pub fn new(
+    pub const fn new(
         trans_id: &'a [u8],
         node_id: NodeId,
         token: Option<&'a [u8]>,
@@ -172,17 +172,17 @@ where
     }
 
     #[must_use]
-    pub fn transaction_id(&self) -> &'a [u8] {
+    pub const fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
     #[must_use]
-    pub fn node_id(&self) -> NodeId {
+    pub const fn node_id(&self) -> NodeId {
         self.node_id
     }
 
     #[must_use]
-    pub fn token(&self) -> Option<&'a [u8]> {
+    pub const fn token(&self) -> Option<&'a [u8]> {
         self.token
     }
 

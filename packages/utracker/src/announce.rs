@@ -57,7 +57,7 @@ impl<'a> AnnounceRequest<'a> {
         num_want: DesiredPeers,
         port: u16,
         options: AnnounceOptions<'a>,
-    ) -> AnnounceRequest<'a> {
+    ) -> Self {
         tracing::trace!("new announce request");
         AnnounceRequest {
             info_hash: hash,
@@ -76,7 +76,7 @@ impl<'a> AnnounceRequest<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceRequest<'a>> {
+    pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_request(bytes, SourceIP::from_bytes_v4)
     }
 
@@ -85,7 +85,7 @@ impl<'a> AnnounceRequest<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceRequest<'a>> {
+    pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_request(bytes, SourceIP::from_bytes_v6)
     }
 
@@ -121,49 +121,49 @@ impl<'a> AnnounceRequest<'a> {
 
     /// `InfoHash` of the current request.
     #[must_use]
-    pub fn info_hash(&self) -> InfoHash {
+    pub const fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
     /// `PeerId` of the current request.
     #[must_use]
-    pub fn peer_id(&self) -> PeerId {
+    pub const fn peer_id(&self) -> PeerId {
         self.peer_id
     }
 
     /// State reported by the client in the given request.
     #[must_use]
-    pub fn state(&self) -> ClientState {
+    pub const fn state(&self) -> ClientState {
         self.state
     }
 
     /// Source address to send the response to.
     #[must_use]
-    pub fn source_ip(&self) -> SourceIP {
+    pub const fn source_ip(&self) -> SourceIP {
         self.ip
     }
 
     /// Unique key randomized by the client that the server can use.
     #[must_use]
-    pub fn key(&self) -> u32 {
+    pub const fn key(&self) -> u32 {
         self.key
     }
 
     /// Number of peers desired by the client.
     #[must_use]
-    pub fn num_want(&self) -> DesiredPeers {
+    pub const fn num_want(&self) -> DesiredPeers {
         self.num_want
     }
 
     /// Port to send the response to.
     #[must_use]
-    pub fn port(&self) -> u16 {
+    pub const fn port(&self) -> u16 {
         self.port
     }
 
     /// Set of `AnnounceOptions` supplied in the request.
     #[must_use]
-    pub fn options(&self) -> &AnnounceOptions<'a> {
+    pub const fn options(&self) -> &AnnounceOptions<'a> {
         &self.options
     }
 
@@ -223,7 +223,7 @@ pub struct AnnounceResponse<'a> {
 impl<'a> AnnounceResponse<'a> {
     /// Create a new `AnnounceResponse`
     #[must_use]
-    pub fn new(interval: i32, leechers: i32, seeders: i32, peers: CompactPeers<'a>) -> AnnounceResponse<'a> {
+    pub const fn new(interval: i32, leechers: i32, seeders: i32, peers: CompactPeers<'a>) -> Self {
         AnnounceResponse {
             interval,
             leechers,
@@ -237,7 +237,7 @@ impl<'a> AnnounceResponse<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceResponse<'a>> {
+    pub fn from_bytes_v4(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_response(bytes, CompactPeers::from_bytes_v4)
     }
 
@@ -246,7 +246,7 @@ impl<'a> AnnounceResponse<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], AnnounceResponse<'a>> {
+    pub fn from_bytes_v6(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_response(bytes, CompactPeers::from_bytes_v6)
     }
 
@@ -270,25 +270,25 @@ impl<'a> AnnounceResponse<'a> {
 
     /// Interval in seconds that clients should wait before re-announcing.
     #[must_use]
-    pub fn interval(&self) -> i32 {
+    pub const fn interval(&self) -> i32 {
         self.interval
     }
 
     /// Number of leechers the tracker knows about for the torrent.
     #[must_use]
-    pub fn leechers(&self) -> i32 {
+    pub const fn leechers(&self) -> i32 {
         self.leechers
     }
 
     /// Number of seeders the tracker knows about for the torrent.
     #[must_use]
-    pub fn seeders(&self) -> i32 {
+    pub const fn seeders(&self) -> i32 {
         self.seeders
     }
 
     /// Peers the tracker knows about that are sharing the torrent.
     #[must_use]
-    pub fn peers(&self) -> &CompactPeers<'a> {
+    pub const fn peers(&self) -> &CompactPeers<'a> {
         &self.peers
     }
 
@@ -331,9 +331,9 @@ impl ClientState {
     /// Create a new `ClientState`.
     #[must_use]
     #[instrument(skip())]
-    pub fn new(bytes_downloaded: i64, bytes_left: i64, bytes_uploaded: i64, event: AnnounceEvent) -> ClientState {
+    pub fn new(bytes_downloaded: i64, bytes_left: i64, bytes_uploaded: i64, event: AnnounceEvent) -> Self {
         tracing::trace!("new client state");
-        ClientState {
+        Self {
             downloaded: bytes_downloaded,
             left: bytes_left,
             uploaded: bytes_uploaded,
@@ -346,7 +346,7 @@ impl ClientState {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], ClientState> {
+    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         parse_state(bytes)
     }
 
@@ -370,25 +370,25 @@ impl ClientState {
 
     /// Event reported by the client.
     #[must_use]
-    pub fn event(&self) -> AnnounceEvent {
+    pub const fn event(&self) -> AnnounceEvent {
         self.event
     }
 
     /// Bytes left to be downloaded.
     #[must_use]
-    pub fn bytes_left(&self) -> i64 {
+    pub const fn bytes_left(&self) -> i64 {
         self.left
     }
 
     /// Bytes already uploaded.
     #[must_use]
-    pub fn bytes_uploaded(&self) -> i64 {
+    pub const fn bytes_uploaded(&self) -> i64 {
         self.uploaded
     }
 
     /// Bytes already downloaded.
     #[must_use]
-    pub fn bytes_downloaded(&self) -> i64 {
+    pub const fn bytes_downloaded(&self) -> i64 {
         self.downloaded
     }
 }
@@ -421,7 +421,7 @@ impl AnnounceEvent {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], AnnounceEvent> {
+    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         parse_event(bytes)
     }
 
@@ -441,12 +441,12 @@ impl AnnounceEvent {
 
     /// Access the raw id of the current event.
     #[must_use]
-    pub fn as_id(&self) -> i32 {
+    pub const fn as_id(&self) -> i32 {
         match *self {
-            AnnounceEvent::None => ANNOUNCE_NONE_EVENT,
-            AnnounceEvent::Completed => ANNOUNCE_COMPLETED_EVENT,
-            AnnounceEvent::Started => ANNOUNCE_STARTED_EVENT,
-            AnnounceEvent::Stopped => ANNOUNCE_STOPPED_EVENT,
+            Self::None => ANNOUNCE_NONE_EVENT,
+            Self::Completed => ANNOUNCE_COMPLETED_EVENT,
+            Self::Started => ANNOUNCE_STARTED_EVENT,
+            Self::Stopped => ANNOUNCE_STOPPED_EVENT,
         }
     }
 }
@@ -484,7 +484,7 @@ impl SourceIP {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes_v4(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
+    pub fn from_bytes_v4(bytes: &[u8]) -> IResult<&[u8], Self> {
         parse_preference_v4(bytes)
     }
 
@@ -493,7 +493,7 @@ impl SourceIP {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes_v6(bytes: &[u8]) -> IResult<&[u8], SourceIP> {
+    pub fn from_bytes_v6(bytes: &[u8]) -> IResult<&[u8], Self> {
         parse_preference_v6(bytes)
     }
 
@@ -507,25 +507,25 @@ impl SourceIP {
         W: std::io::Write,
     {
         match *self {
-            SourceIP::ImpliedV4 => SourceIP::write_bytes_slice(writer, &IMPLIED_IPV4_ID[..]),
-            SourceIP::ImpliedV6 => SourceIP::write_bytes_slice(writer, &IMPLIED_IPV6_ID[..]),
-            SourceIP::ExplicitV4(addr) => SourceIP::write_bytes_slice(writer, &convert::ipv4_to_bytes_be(addr)[..]),
-            SourceIP::ExplicitV6(addr) => SourceIP::write_bytes_slice(writer, &convert::ipv6_to_bytes_be(addr)[..]),
+            Self::ImpliedV4 => Self::write_bytes_slice(writer, &IMPLIED_IPV4_ID[..]),
+            Self::ImpliedV6 => Self::write_bytes_slice(writer, &IMPLIED_IPV6_ID[..]),
+            Self::ExplicitV4(addr) => Self::write_bytes_slice(writer, &convert::ipv4_to_bytes_be(addr)[..]),
+            Self::ExplicitV6(addr) => Self::write_bytes_slice(writer, &convert::ipv6_to_bytes_be(addr)[..]),
         }
     }
 
     /// Whether or not the source is an IPv6 address.
     #[must_use]
-    pub fn is_ipv6(&self) -> bool {
+    pub const fn is_ipv6(&self) -> bool {
         match *self {
-            SourceIP::ExplicitV6(_) | SourceIP::ImpliedV6 => true,
-            SourceIP::ImpliedV4 | SourceIP::ExplicitV4(_) => false,
+            Self::ExplicitV6(_) | Self::ImpliedV6 => true,
+            Self::ImpliedV4 | Self::ExplicitV4(_) => false,
         }
     }
 
     /// Whether or not the source is an IPv4 address.
     #[must_use]
-    pub fn is_ipv4(&self) -> bool {
+    pub const fn is_ipv4(&self) -> bool {
         !self.is_ipv6()
     }
 
@@ -587,7 +587,7 @@ impl DesiredPeers {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], DesiredPeers> {
+    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         parse_desired(bytes)
     }
 
@@ -602,8 +602,8 @@ impl DesiredPeers {
         W: std::io::Write,
     {
         let write_value = match self {
-            DesiredPeers::Default => DEFAULT_NUM_WANT,
-            DesiredPeers::Specified(count) => *count,
+            Self::Default => DEFAULT_NUM_WANT,
+            Self::Specified(count) => *count,
         };
         writer.write_i32::<BigEndian>(write_value)?;
 

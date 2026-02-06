@@ -45,6 +45,7 @@ enum Task {
 
 /// Spawns a DHT handler that maintains our routing table and executes our actions on the DHT.
 #[allow(clippy::module_name_repetitions)]
+#[allow(tail_expr_drop_order)]
 pub fn create_dht_handler<H>(
     table: RoutingTable,
     out: mpsc::Sender<(Vec<u8>, SocketAddr)>,
@@ -153,7 +154,7 @@ where
         scheduled_task_sender: mpsc::Sender<ScheduledTaskCheck>,
         read_only: bool,
         handshaker: H,
-    ) -> DhtHandler<H> {
+    ) -> Self {
         let mut aid_generator = AIDGenerator::new();
 
         // Insert the refresh task to execute after the bootstrap
@@ -162,7 +163,7 @@ where
         let table_refresh = Box::new(TableRefresh::new(mid_generator));
         let future_actions = vec![PostBootstrapAction::Refresh(table_refresh, refresh_trans_id)];
 
-        DhtHandler {
+        Self {
             read_only,
             handshaker: futures::lock::Mutex::new(handshaker),
             out_channel: out,
@@ -199,7 +200,7 @@ where
         }
     }
 
-    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::too_many_lines, clippy::significant_drop_tightening, clippy::option_if_let_else)]
     async fn handle_incoming(&self, buffer: &[u8], addr: SocketAddr) {
         // Parse the buffer as a bencoded message
         let Ok(bencode) = BencodeRef::decode(buffer, BDecodeOpt::default()) else {
@@ -977,8 +978,8 @@ where
             table_actions.remove(&action_id);
         }
         // Start the post bootstrap actions.
-        let mut future_actions = self.future_actions.lock().unwrap().split_off(0);
-        for table_action in future_actions.drain(..) {
+        let future_actions = self.future_actions.lock().unwrap().split_off(0);
+        for table_action in future_actions {
             match table_action {
                 PostBootstrapAction::Lookup(info_hash, should_announce) => {
                     drop(table_action);

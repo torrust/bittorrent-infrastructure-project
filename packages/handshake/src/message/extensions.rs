@@ -26,7 +26,7 @@ impl Default for Extensions {
 impl Extensions {
     /// Create a new `Extensions` with zero extensions.
     #[must_use]
-    pub fn new() -> Extensions {
+    pub fn new() -> Self {
         Self::default()
     }
 
@@ -35,12 +35,12 @@ impl Extensions {
     /// # Errors
     ///
     /// This function will return an error if unable to construct from bytes.
-    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Extensions> {
+    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         parse_extension_bits(bytes)
     }
 
     /// Add the given extension to the list of supported `Extensions`.
-    pub fn add(&mut self, extension: Extension) {
+    pub const fn add(&mut self, extension: Extension) {
         let active_bit = extension as usize;
         let byte_index = active_bit / 8;
         let bit_index = active_bit % 8;
@@ -49,7 +49,7 @@ impl Extensions {
     }
 
     /// Remove the given extension from the list of supported `Extensions`.
-    pub fn remove(&mut self, extension: Extension) {
+    pub const fn remove(&mut self, extension: Extension) {
         let active_bit = extension as usize;
         let byte_index = active_bit / 8;
         let bit_index = active_bit % 8;
@@ -59,7 +59,7 @@ impl Extensions {
 
     /// Check if a given extension is activated.
     #[must_use]
-    pub fn contains(&self, extension: Extension) -> bool {
+    pub const fn contains(&self, extension: Extension) -> bool {
         let active_bit = extension as usize;
         let byte_index = active_bit / 8;
         let bit_index = active_bit % 8;
@@ -97,8 +97,8 @@ impl Extensions {
     ///
     /// This is useful for getting the extensions that both clients support.
     #[must_use]
-    pub fn union(&self, ext: &Extensions) -> Extensions {
-        let mut result_ext = Extensions::new();
+    pub fn union(&self, ext: &Self) -> Self {
+        let mut result_ext = Self::new();
 
         for index in 0..NUM_EXTENSION_BYTES {
             result_ext.bytes[index] = self.bytes[index] & ext.bytes[index];
@@ -108,14 +108,14 @@ impl Extensions {
     }
 
     /// Create a new `Extensions` using the given bytes directly.
-    fn with_bytes(bytes: [u8; NUM_EXTENSION_BYTES]) -> Extensions {
-        Extensions { bytes }
+    const fn with_bytes(bytes: [u8; NUM_EXTENSION_BYTES]) -> Self {
+        Self { bytes }
     }
 }
 
 impl From<[u8; NUM_EXTENSION_BYTES]> for Extensions {
-    fn from(bytes: [u8; NUM_EXTENSION_BYTES]) -> Extensions {
-        Extensions { bytes }
+    fn from(bytes: [u8; NUM_EXTENSION_BYTES]) -> Self {
+        Self { bytes }
     }
 }
 

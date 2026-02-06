@@ -51,8 +51,8 @@ where
     /// # Arguments
     ///
     /// * `sock` - The underlying asynchronous stream.
-    pub fn new(sock: S) -> FramedHandshake<S> {
-        FramedHandshake {
+    pub fn new(sock: S) -> Self {
+        Self {
             sock,
             write_buffer: BytesMut::with_capacity(1),
             read_buffer: Vec::default(),

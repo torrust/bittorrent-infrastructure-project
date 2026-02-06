@@ -63,8 +63,8 @@ pub struct UtMetadataModule {
 
 impl UtMetadataModule {
     #[must_use]
-    pub fn new() -> UtMetadataModule {
-        UtMetadataModule {
+    pub fn new() -> Self {
+        Self {
             completed_map: HashMap::new(),
             pending_map: HashMap::new(),
             active_peers: HashMap::new(),
@@ -184,7 +184,7 @@ impl UtMetadataModule {
         }
     }
 
-    fn recv_reject(_info: PeerInfo, _reject: UtMetadataRejectMessage) {
+    const fn recv_reject(_info: PeerInfo, _reject: UtMetadataRejectMessage) {
         // TODO: Remove any requests after receiving a reject, for now, we will just timeout
     }
 
@@ -198,10 +198,10 @@ impl UtMetadataModule {
         opt_completed_hash.and_then(|completed_hash| {
             let completed = self.pending_map.remove(&completed_hash).unwrap().unwrap();
             self.active_peers.remove(&completed_hash);
-            match Info::from_bytes(&completed.bytes[..]) {
-                Ok(info) => Some(Ok(ODiscoveryMessage::DownloadedMetainfo(info.into()))),
-                Err(_) => self.retrieve_completed_download(),
-            }
+            Info::from_bytes(&completed.bytes[..]).map_or_else(
+                |_| self.retrieve_completed_download(),
+                |info| Some(Ok(ODiscoveryMessage::DownloadedMetainfo(info.into()))),
+            )
         })
     }
 
@@ -315,7 +315,7 @@ impl UtMetadataModule {
     }
 }
 
-fn generate_active_request(message: UtMetadataRequestMessage, peer: PeerInfo) -> ActiveRequest {
+const fn generate_active_request(message: UtMetadataRequestMessage, peer: PeerInfo) -> ActiveRequest {
     ActiveRequest {
         left: Duration::from_millis(REQUEST_TIMEOUT_MILLIS),
         message,
@@ -391,7 +391,7 @@ impl Sink<IDiscoveryMessage> for UtMetadataModule {
                 Ok(())
             }
             IDiscoveryMessage::ReceivedUtMetadataMessage(info, UtMetadataMessage::Reject(msg)) => {
-                UtMetadataModule::recv_reject(info, msg);
+                Self::recv_reject(info, msg);
                 Ok(())
             }
         }

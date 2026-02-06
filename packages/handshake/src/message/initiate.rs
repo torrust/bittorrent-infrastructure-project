@@ -16,25 +16,25 @@ pub struct InitiateMessage {
 impl InitiateMessage {
     /// Create a new `InitiateMessage`.
     #[must_use]
-    pub fn new(prot: Protocol, hash: InfoHash, addr: SocketAddr) -> InitiateMessage {
-        InitiateMessage { prot, hash, addr }
+    pub const fn new(prot: Protocol, hash: InfoHash, addr: SocketAddr) -> Self {
+        Self { prot, hash, addr }
     }
 
     /// Protocol that we want to connect to the peer with.
     #[must_use]
-    pub fn protocol(&self) -> &Protocol {
+    pub const fn protocol(&self) -> &Protocol {
         &self.prot
     }
 
     /// Hash that we are interested in from the peer.
     #[must_use]
-    pub fn hash(&self) -> &InfoHash {
+    pub const fn hash(&self) -> &InfoHash {
         &self.hash
     }
 
     /// Address that we should connect to for the peer.
     #[must_use]
-    pub fn address(&self) -> &SocketAddr {
+    pub const fn address(&self) -> &SocketAddr {
         &self.addr
     }
 

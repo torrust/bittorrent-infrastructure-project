@@ -28,7 +28,7 @@ impl TrackerServer {
     ///
     /// It would return an IO Error if unable to run the server.
     #[instrument(skip(), ret(level = Level::TRACE))]
-    pub fn run<H>(bind: SocketAddr, handler: H) -> std::io::Result<TrackerServer>
+    pub fn run<H>(bind: SocketAddr, handler: H) -> std::io::Result<Self>
     where
         H: ServerHandler + std::fmt::Debug + 'static,
     {
@@ -36,7 +36,7 @@ impl TrackerServer {
 
         tracing::info!(?bound_socket, "running server");
 
-        Ok(TrackerServer {
+        Ok(Self {
             dispatcher,
             bound_socket,
             shutdown_handle,
@@ -44,7 +44,7 @@ impl TrackerServer {
     }
 
     #[must_use]
-    pub fn local_addr(&self) -> SocketAddr {
+    pub const fn local_addr(&self) -> SocketAddr {
         self.bound_socket
     }
 }

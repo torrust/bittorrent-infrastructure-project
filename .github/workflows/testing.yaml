@@ -106,7 +106,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build project
-        run: cargo build --verbose
+        run: cargo build  --workspace --all-targets --all-features --verbose
 
   unit:
     name: Units

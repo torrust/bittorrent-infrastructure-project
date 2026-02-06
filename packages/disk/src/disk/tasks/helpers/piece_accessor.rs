@@ -15,8 +15,8 @@ where
     F: FileSystem + Sync + 'static,
     Arc<F>: Send + Sync,
 {
-    pub fn new(fs: Arc<F>, state: MetainfoState) -> PieceAccessor<F> {
-        PieceAccessor { fs, state }
+    pub const fn new(fs: Arc<F>, state: MetainfoState) -> Self {
+        Self { fs, state }
     }
 
     pub fn read_piece(&self, piece_buffer: &mut [u8], message: &BlockMetadata) -> std::io::Result<()> {

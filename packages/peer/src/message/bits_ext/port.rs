@@ -26,8 +26,8 @@ impl PortMessage {
     ///
     /// A new `PortMessage` instance.
     #[must_use]
-    pub fn new(port: u16) -> PortMessage {
-        PortMessage { port }
+    pub const fn new(port: u16) -> Self {
+        Self { port }
     }
 
     /// Parses a byte slice into a `PortMessage`.
@@ -43,8 +43,8 @@ impl PortMessage {
     /// # Errors
     ///
     /// This function will return an error if the byte slice cannot be parsed into a `PortMessage`.
-    pub fn parse_bytes(bytes: &[u8]) -> IResult<&[u8], PortMessage> {
-        map(be_u16, PortMessage::new).parse(bytes)
+    pub fn parse_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+        map(be_u16, Self::new).parse(bytes)
     }
 
     /// Writes the current state of the `PortMessage` as bytes.

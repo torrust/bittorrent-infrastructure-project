@@ -123,7 +123,7 @@ where
         let sink = HandshakerSink::new(addr_send, open_port, builder.pid, filters);
         let stream = HandshakerStream::new(sock_recv);
 
-        Ok((Handshaker { sink, stream }, tasks))
+        Ok((Self { sink, stream }, tasks))
     }
 }
 
