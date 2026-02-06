@@ -22,4 +22,4 @@ rustflags = [
 
 [term]
 quiet = false
-verbose = true
+verbose = false

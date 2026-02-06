@@ -14,6 +14,7 @@ use tracing::level_filters::LevelFilter;
 pub mod connected_channel;
 
 #[derive(Debug, Error)]
+#[allow(clippy::result_large_err)]
 pub enum Error<Message>
 where
     Message: ManagedMessage + Send + 'static,
@@ -58,6 +59,7 @@ pub fn tracing_stderr_init(filter: LevelFilter) {
     tracing::info!("Logging initialized");
 }
 
+#[allow(clippy::result_large_err)]
 pub async fn add_peer<Si, St, Peer, Message>(
     send: &mut Si,
     recv: &mut St,
@@ -96,6 +98,7 @@ where
     }
 }
 
+#[allow(clippy::result_large_err)]
 pub async fn remove_peer<Si, St, Peer, Message>(send: &mut Si, recv: &mut St, info: PeerInfo) -> Result<(), Error<Message>>
 where
     Si: Sink<std::io::Result<PeerManagerInputMessage<Peer, Message>>, Error = PeerManagerError<SendError>> + Unpin,

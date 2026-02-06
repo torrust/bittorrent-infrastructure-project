@@ -218,18 +218,14 @@ impl Sink<std::io::Result<HandshakerMessage>> for MockHandshakerSink {
     fn poll_ready(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
         tracing::trace!("polling ready");
 
-        self.send
-            .poll_ready(cx)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        self.send.poll_ready(cx).map_err(std::io::Error::other)
     }
 
     #[instrument(skip(self), ret(level = Level::TRACE))]
     fn start_send(mut self: std::pin::Pin<&mut Self>, item: std::io::Result<HandshakerMessage>) -> Result<(), Self::Error> {
         tracing::debug!("starting send");
 
-        self.send
-            .start_send(item?)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        self.send.start_send(item?).map_err(std::io::Error::other)
     }
 
     #[instrument(skip(self, cx), ret(level = Level::TRACE))]
@@ -239,9 +235,7 @@ impl Sink<std::io::Result<HandshakerMessage>> for MockHandshakerSink {
     ) -> std::task::Poll<Result<(), Self::Error>> {
         tracing::trace!("polling flush");
 
-        self.send
-            .poll_flush_unpin(cx)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        self.send.poll_flush_unpin(cx).map_err(std::io::Error::other)
     }
 
     #[instrument(skip(self, cx), ret(level = Level::TRACE))]
@@ -251,9 +245,7 @@ impl Sink<std::io::Result<HandshakerMessage>> for MockHandshakerSink {
     ) -> std::task::Poll<Result<(), Self::Error>> {
         tracing::debug!("polling close");
 
-        self.send
-            .poll_close_unpin(cx)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        self.send.poll_close_unpin(cx).map_err(std::io::Error::other)
     }
 }
 
