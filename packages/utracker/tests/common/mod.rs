@@ -18,7 +18,7 @@ use utracker::scrape::{ScrapeRequest, ScrapeResponse, ScrapeStats};
 use utracker::{HandshakerMessage, ServerHandler, ServerResult};
 
 #[allow(dead_code)]
-pub const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1000);
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
 
 #[allow(dead_code)]
 pub const LOOPBACK_IPV4: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0));

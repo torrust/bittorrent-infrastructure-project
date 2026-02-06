@@ -187,7 +187,7 @@ impl Accessor for FileAccessor {
 
 /// Filter that yields true if the entry points to a file.
 fn entry_file_filter(res_entry: &walkdir::Result<DirEntry>) -> bool {
-    res_entry.as_ref().map(|f| f.file_type().is_file()).unwrap_or(true)
+    res_entry.as_ref().map_or(true, |f| f.file_type().is_file())
 }
 
 // ----------------------------------------------------------------------------//

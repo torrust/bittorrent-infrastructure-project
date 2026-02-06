@@ -66,12 +66,10 @@ mod tests {
     async fn positive_empty_filter() {
         let exp_message = InitiateMessage::new(Protocol::BitTorrent, any_info_hash(), "1.2.3.4:5".parse().unwrap());
 
-        let recv_enum_item = super::initiator_handler(
-            exp_message.clone(),
-            &(MockTransport, Filters::new(), Duration::from_millis(1000)),
-        )
-        .await
-        .unwrap();
+        let recv_enum_item =
+            super::initiator_handler(exp_message.clone(), &(MockTransport, Filters::new(), Duration::from_secs(1)))
+                .await
+                .unwrap();
         let recv_item = match recv_enum_item {
             Some(HandshakeType::Initiate(_, msg)) => msg,
             Some(HandshakeType::Complete(_, _)) | None => panic!("Expected HandshakeType::Initiate"),
@@ -87,10 +85,9 @@ mod tests {
 
         let exp_message = InitiateMessage::new(Protocol::BitTorrent, any_info_hash(), "1.2.3.4:5".parse().unwrap());
 
-        let recv_enum_item =
-            super::initiator_handler(exp_message.clone(), &(MockTransport, filters, Duration::from_millis(1000)))
-                .await
-                .unwrap();
+        let recv_enum_item = super::initiator_handler(exp_message.clone(), &(MockTransport, filters, Duration::from_secs(1)))
+            .await
+            .unwrap();
         let recv_item = match recv_enum_item {
             Some(HandshakeType::Initiate(_, msg)) => msg,
             Some(HandshakeType::Complete(_, _)) | None => panic!("Expected HandshakeType::Initiate"),
@@ -106,10 +103,9 @@ mod tests {
 
         let exp_message = InitiateMessage::new(Protocol::BitTorrent, any_info_hash(), "1.2.3.4:5".parse().unwrap());
 
-        let recv_enum_item =
-            super::initiator_handler(exp_message.clone(), &(MockTransport, filters, Duration::from_millis(1000)))
-                .await
-                .unwrap();
+        let recv_enum_item = super::initiator_handler(exp_message.clone(), &(MockTransport, filters, Duration::from_secs(1)))
+            .await
+            .unwrap();
         let recv_item = match recv_enum_item {
             Some(HandshakeType::Initiate(_, msg)) => msg,
             Some(HandshakeType::Complete(_, _)) | None => panic!("Expected HandshakeType::Initiate"),
@@ -129,10 +125,9 @@ mod tests {
             "1.2.3.4:5".parse().unwrap(),
         );
 
-        let recv_enum_item =
-            super::initiator_handler(exp_message.clone(), &(MockTransport, filters, Duration::from_millis(1000)))
-                .await
-                .unwrap();
+        let recv_enum_item = super::initiator_handler(exp_message.clone(), &(MockTransport, filters, Duration::from_secs(1)))
+            .await
+            .unwrap();
         match recv_enum_item {
             None => (),
             Some(HandshakeType::Initiate(_, _) | HandshakeType::Complete(_, _)) => panic!("Expected No Handshake"),

@@ -153,7 +153,7 @@ where
     }
 
     // Sort our list to make sure the pieces are in order before we send them off
-    pieces.sort_by(|one, two| one.0.cmp(&two.0));
+    pieces.sort_by_key(|one| one.0);
 
     Ok(pieces)
 }

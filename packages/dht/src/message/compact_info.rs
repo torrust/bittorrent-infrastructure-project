@@ -264,8 +264,8 @@ mod tests {
 
     #[test]
     fn positive_compact_values_one() {
-        #[allow(clippy::cast_possible_truncation, clippy::decimal_bitwise_operands)]
-        let bytes = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
+        let port_bytes = 6881_u16.to_be_bytes();
+        let bytes = [127, 0, 0, 1, port_bytes[0], port_bytes[1]];
         let bencode_values = ben_list!(ben_bytes!(&bytes[..]));
         let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
 
@@ -277,10 +277,10 @@ mod tests {
 
     #[test]
     fn positive_compact_values_many() {
-        #[allow(clippy::cast_possible_truncation, clippy::decimal_bitwise_operands)]
-        let bytes_one = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
-        #[allow(clippy::cast_possible_truncation, clippy::decimal_bitwise_operands)]
-        let bytes_two = [10, 0, 0, 1, (6889 >> 8) as u8, (6889 & 0x00FF) as u8];
+        let port_one = 6881_u16.to_be_bytes();
+        let bytes_one = [127, 0, 0, 1, port_one[0], port_one[1]];
+        let port_two = 6889_u16.to_be_bytes();
+        let bytes_two = [10, 0, 0, 1, port_two[0], port_two[1]];
         let bencode_values = ben_list!(ben_bytes!(&bytes_one[..]), ben_bytes!(&bytes_two[..]));
         let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
 

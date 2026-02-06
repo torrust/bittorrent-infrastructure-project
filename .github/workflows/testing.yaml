@@ -15,7 +15,7 @@ jobs:
     steps:
       - id: checkout
         name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - id: setup
         name: Setup Toolchain
@@ -44,7 +44,7 @@ jobs:
     steps:
       - id: checkout
         name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - id: setup
         name: Setup Toolchain
@@ -65,11 +65,11 @@ jobs:
 
       - id: check
         name: Run Build Checks
-        run: cargo check --tests --benches --examples --workspace --all-targets --all-features
+        run: cargo check --workspace --all-targets --all-features
 
       - id: lint
         name: Run Lint Checks
-        run: cargo clippy --tests --benches --examples --workspace --all-targets --all-features
+        run: cargo clippy --workspace --all-targets --all-features
 
       - id: docs
         name: Lint Documentation
@@ -80,6 +80,33 @@ jobs:
       - id: deps
         name: Check Unused Dependencies
         run: cargo machete --with-metadata
+
+  build:
+    name: Build on ${{ matrix.os }} (${{ matrix.toolchain }})
+    runs-on: ${{ matrix.os }}
+    needs: format
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain: [nightly, stable]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - id: setup
+        name: Setup Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - id: cache
+        name: Enable Workflow Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build project
+        run: cargo build --verbose
 
   unit:
     name: Units
@@ -93,7 +120,7 @@ jobs:
     steps:
       - id: checkout
         name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - id: setup
         name: Setup Toolchain
@@ -105,10 +132,16 @@ jobs:
         name: Enable Job Cache
         uses: Swatinem/rust-cache@v2
 
+      - id: tools
+        name: Install Tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
       - id: test-docs
         name: Run Documentation Tests
-        run: cargo test --doc
+        run: cargo test --doc --workspace
 
       - id: test
         name: Run Unit Tests
-        run: cargo test --tests --benches --examples --workspace --all-targets --all-features
+        run: cargo nextest run --workspace --all-targets --all-features
