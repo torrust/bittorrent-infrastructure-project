@@ -8,8 +8,8 @@ pub struct Filters {
 }
 
 impl Filters {
-    pub fn new() -> Filters {
-        Filters {
+    pub fn new() -> Self {
+        Self {
             filters: Arc::new(RwLock::new(Vec::new())),
         }
     }
@@ -90,7 +90,7 @@ where
             .downcast_ref::<F>()
             .map(|downcast_filter| downcast_filter == filter);
 
-        if let Some(true) = opt_match {
+        if opt_match == Some(true) {
             return Some(index);
         }
     }
@@ -115,8 +115,8 @@ pub mod test_filters {
     }
 
     impl BlockAddrFilter {
-        pub fn new(addr: SocketAddr) -> BlockAddrFilter {
-            BlockAddrFilter { addr }
+        pub fn new(addr: SocketAddr) -> Self {
+            Self { addr }
         }
     }
 
@@ -142,8 +142,8 @@ pub mod test_filters {
     }
 
     impl BlockProtocolFilter {
-        pub fn new(prot: Protocol) -> BlockProtocolFilter {
-            BlockProtocolFilter { prot }
+        pub fn new(prot: Protocol) -> Self {
+            Self { prot }
         }
     }
 
@@ -169,8 +169,8 @@ pub mod test_filters {
     }
 
     impl BlockPeerIdFilter {
-        pub fn new(pid: PeerId) -> BlockPeerIdFilter {
-            BlockPeerIdFilter { pid }
+        pub fn new(pid: PeerId) -> Self {
+            Self { pid }
         }
     }
 

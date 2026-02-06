@@ -75,7 +75,7 @@ async fn main() {
         count: 0,
     };
     let dht = DhtBuilder::with_router(Router::uTorrent)
-        .set_source_addr(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 6889)))
+        .set_source_addr(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 6889)))
         .set_read_only(false)
         .start_mainline(handshaker)
         .await

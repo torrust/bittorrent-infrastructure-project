@@ -25,8 +25,8 @@ pub struct PeerManagerBuilder {
 impl PeerManagerBuilder {
     /// Creates a new `PeerManagerBuilder` with default values.
     #[must_use]
-    pub fn new() -> PeerManagerBuilder {
-        PeerManagerBuilder {
+    pub const fn new() -> Self {
+        Self {
             peer_capacity: DEFAULT_PEER_CAPACITY,
             sink_buffer_capacity: DEFAULT_SINK_BUFFER_CAPACITY,
             stream_buffer_capacity: DEFAULT_STREAM_BUFFER_CAPACITY,
@@ -37,66 +37,66 @@ impl PeerManagerBuilder {
 
     /// Sets the maximum number of peers that can be managed.
     #[must_use]
-    pub fn with_peer_capacity(mut self, capacity: usize) -> PeerManagerBuilder {
+    pub const fn with_peer_capacity(mut self, capacity: usize) -> Self {
         self.peer_capacity = capacity;
         self
     }
 
     /// Sets the capacity of the sink buffer for pending sent messages.
     #[must_use]
-    pub fn with_sink_buffer_capacity(mut self, capacity: usize) -> PeerManagerBuilder {
+    pub const fn with_sink_buffer_capacity(mut self, capacity: usize) -> Self {
         self.sink_buffer_capacity = capacity;
         self
     }
 
     /// Sets the capacity of the stream buffer for pending received messages.
     #[must_use]
-    pub fn with_stream_buffer_capacity(mut self, capacity: usize) -> PeerManagerBuilder {
+    pub const fn with_stream_buffer_capacity(mut self, capacity: usize) -> Self {
         self.stream_buffer_capacity = capacity;
         self
     }
 
     /// Sets the interval at which keep-alive messages are sent.
     #[must_use]
-    pub fn with_heartbeat_interval(mut self, interval: Duration) -> PeerManagerBuilder {
+    pub const fn with_heartbeat_interval(mut self, interval: Duration) -> Self {
         self.heartbeat_interval = interval;
         self
     }
 
     /// Sets the timeout duration after which a peer is disconnected if no keep-alive message is received.
     #[must_use]
-    pub fn with_heartbeat_timeout(mut self, timeout: Duration) -> PeerManagerBuilder {
+    pub const fn with_heartbeat_timeout(mut self, timeout: Duration) -> Self {
         self.heartbeat_timeout = timeout;
         self
     }
 
     /// Retrieves the peer capacity.
     #[must_use]
-    pub fn peer_capacity(&self) -> usize {
+    pub const fn peer_capacity(&self) -> usize {
         self.peer_capacity
     }
 
     /// Retrieves the sink buffer capacity.
     #[must_use]
-    pub fn sink_buffer_capacity(&self) -> usize {
+    pub const fn sink_buffer_capacity(&self) -> usize {
         self.sink_buffer_capacity
     }
 
     /// Retrieves the stream buffer capacity.
     #[must_use]
-    pub fn stream_buffer_capacity(&self) -> usize {
+    pub const fn stream_buffer_capacity(&self) -> usize {
         self.stream_buffer_capacity
     }
 
     /// Retrieves the heartbeat interval `Duration`.
     #[must_use]
-    pub fn heartbeat_interval(&self) -> Duration {
+    pub const fn heartbeat_interval(&self) -> Duration {
         self.heartbeat_interval
     }
 
     /// Retrieves the heartbeat timeout `Duration`.
     #[must_use]
-    pub fn heartbeat_timeout(&self) -> Duration {
+    pub const fn heartbeat_timeout(&self) -> Duration {
         self.heartbeat_timeout
     }
 

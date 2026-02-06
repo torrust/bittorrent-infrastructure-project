@@ -7,8 +7,7 @@ use std::num::NonZero;
 use nom::bytes::complete::take;
 use nom::combinator::map_res;
 use nom::number::complete::be_i32;
-use nom::sequence::tuple;
-use nom::{IResult, Needed};
+use nom::{IResult, Needed, Parser};
 use tracing::instrument;
 use util::bt::{self, InfoHash};
 use util::convert;
@@ -27,8 +26,8 @@ pub struct ScrapeStats {
 impl ScrapeStats {
     /// Create a new `ScrapeStats`.
     #[must_use]
-    pub fn new(seeders: i32, downloaded: i32, leechers: i32) -> ScrapeStats {
-        ScrapeStats {
+    pub const fn new(seeders: i32, downloaded: i32, leechers: i32) -> Self {
+        Self {
             seeders,
             downloaded,
             leechers,
@@ -36,31 +35,31 @@ impl ScrapeStats {
     }
 
     /// Construct a `ScrapeStats` from the given bytes.
-    fn from_bytes(bytes: &[u8]) -> IResult<&[u8], ScrapeStats> {
+    fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         parse_stats(bytes)
     }
 
     /// Current number of seeders.
     #[must_use]
-    pub fn num_seeders(&self) -> i32 {
+    pub const fn num_seeders(&self) -> i32 {
         self.seeders
     }
 
     /// Number of times it has been downloaded.
     #[must_use]
-    pub fn num_downloads(&self) -> i32 {
+    pub const fn num_downloads(&self) -> i32 {
         self.downloaded
     }
 
     /// Current number of leechers.
     #[must_use]
-    pub fn num_leechers(&self) -> i32 {
+    pub const fn num_leechers(&self) -> i32 {
         self.leechers
     }
 }
 
 fn parse_stats(bytes: &[u8]) -> IResult<&[u8], ScrapeStats> {
-    let (remaining, (seeders, downloaded, leechers)) = tuple((be_i32, be_i32, be_i32))(bytes)?;
+    let (remaining, (seeders, downloaded, leechers)) = (be_i32, be_i32, be_i32).parse(bytes)?;
     Ok((remaining, ScrapeStats::new(seeders, downloaded, leechers)))
 }
 
@@ -76,7 +75,7 @@ pub struct ScrapeRequest<'a> {
 impl<'a> ScrapeRequest<'a> {
     /// Create a new `ScrapeRequest`.
     #[must_use]
-    pub fn new() -> ScrapeRequest<'a> {
+    pub const fn new() -> Self {
         ScrapeRequest {
             hashes: Cow::Owned(Vec::new()),
         }
@@ -87,7 +86,7 @@ impl<'a> ScrapeRequest<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ScrapeRequest<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_request(bytes)
     }
 
@@ -134,18 +133,19 @@ fn parse_request(bytes: &[u8]) -> IResult<&[u8], ScrapeRequest<'_>> {
 
     let needed = remainder_bytes.and_then(|rem| bt::INFO_HASH_LEN.checked_sub(rem.into()).and_then(NonZero::new));
 
-    if let Some(needed) = needed {
-        Err(nom::Err::Incomplete(Needed::Size(needed)))
-    } else {
-        let end_of_bytes = &bytes[bytes.len()..bytes.len()];
+    needed.map_or_else(
+        || {
+            let end_of_bytes = &bytes[bytes.len()..bytes.len()];
 
-        Ok((
-            end_of_bytes,
-            ScrapeRequest {
-                hashes: Cow::Borrowed(bytes),
-            },
-        ))
-    }
+            Ok((
+                end_of_bytes,
+                ScrapeRequest {
+                    hashes: Cow::Borrowed(bytes),
+                },
+            ))
+        },
+        |needed| Err(nom::Err::Incomplete(Needed::Size(needed))),
+    )
 }
 
 // ----------------------------------------------------------------------------//
@@ -160,7 +160,7 @@ pub struct ScrapeResponse<'a> {
 impl<'a> ScrapeResponse<'a> {
     /// Create a new `ScrapeResponse`.
     #[must_use]
-    pub fn new() -> ScrapeResponse<'a> {
+    pub const fn new() -> Self {
         ScrapeResponse {
             stats: Cow::Owned(Vec::new()),
         }
@@ -171,7 +171,7 @@ impl<'a> ScrapeResponse<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], ScrapeResponse<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_response(bytes)
     }
 
@@ -230,18 +230,19 @@ fn parse_response(bytes: &[u8]) -> IResult<&[u8], ScrapeResponse<'_>> {
 
     let needed = remainder_bytes.and_then(|rem| SCRAPE_STATS_BYTES.checked_sub(rem.into()).and_then(NonZero::new));
 
-    if let Some(needed) = needed {
-        Err(nom::Err::Incomplete(Needed::Size(needed)))
-    } else {
-        let end_of_bytes = &bytes[bytes.len()..bytes.len()];
+    needed.map_or_else(
+        || {
+            let end_of_bytes = &bytes[bytes.len()..bytes.len()];
 
-        Ok((
-            end_of_bytes,
-            ScrapeResponse {
-                stats: Cow::Borrowed(bytes),
-            },
-        ))
-    }
+            Ok((
+                end_of_bytes,
+                ScrapeResponse {
+                    stats: Cow::Borrowed(bytes),
+                },
+            ))
+        },
+        |needed| Err(nom::Err::Incomplete(Needed::Size(needed))),
+    )
 }
 
 // ----------------------------------------------------------------------------//
@@ -255,7 +256,7 @@ pub struct ScrapeRequestIter<'a> {
 }
 
 impl<'a> ScrapeRequestIter<'a> {
-    fn new(bytes: &'a [u8]) -> ScrapeRequestIter<'a> {
+    const fn new(bytes: &'a [u8]) -> Self {
         ScrapeRequestIter {
             hashes: bytes,
             offset: 0,
@@ -263,7 +264,7 @@ impl<'a> ScrapeRequestIter<'a> {
     }
 }
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for ScrapeRequestIter<'a> {
+impl Iterator for ScrapeRequestIter<'_> {
     type Item = InfoHash;
 
     fn next(&mut self) -> Option<InfoHash> {
@@ -278,7 +279,7 @@ impl<'a> Iterator for ScrapeRequestIter<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for ScrapeRequestIter<'a> {
+impl ExactSizeIterator for ScrapeRequestIter<'_> {
     fn len(&self) -> usize {
         self.hashes.len() / bt::INFO_HASH_LEN
     }
@@ -295,13 +296,13 @@ pub struct ScrapeResponseIter<'a> {
 }
 
 impl<'a> ScrapeResponseIter<'a> {
-    fn new(bytes: &'a [u8]) -> ScrapeResponseIter<'a> {
+    const fn new(bytes: &'a [u8]) -> Self {
         ScrapeResponseIter { stats: bytes, offset: 0 }
     }
 }
 
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for ScrapeResponseIter<'a> {
+impl Iterator for ScrapeResponseIter<'_> {
     type Item = ScrapeStats;
 
     fn next(&mut self) -> Option<ScrapeStats> {
@@ -319,7 +320,7 @@ impl<'a> Iterator for ScrapeResponseIter<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for ScrapeResponseIter<'a> {
+impl ExactSizeIterator for ScrapeResponseIter<'_> {
     fn len(&self) -> usize {
         self.stats.len() / SCRAPE_STATS_BYTES
     }

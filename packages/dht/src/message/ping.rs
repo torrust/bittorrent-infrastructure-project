@@ -17,7 +17,7 @@ pub struct PingRequest<'a> {
 
 impl<'a> PingRequest<'a> {
     #[must_use]
-    pub fn new(trans_id: &'a [u8], node_id: NodeId) -> PingRequest<'a> {
+    pub const fn new(trans_id: &'a [u8], node_id: NodeId) -> Self {
         PingRequest { trans_id, node_id }
     }
 
@@ -26,7 +26,7 @@ impl<'a> PingRequest<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup, convert, and validate nodes.
-    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<PingRequest<'a>, DhtError>
+    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<Self, DhtError>
     where
         B: BRefAccess,
     {
@@ -39,12 +39,12 @@ impl<'a> PingRequest<'a> {
     }
 
     #[must_use]
-    pub fn transaction_id(&self) -> &'a [u8] {
+    pub const fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
     #[must_use]
-    pub fn node_id(&self) -> NodeId {
+    pub const fn node_id(&self) -> NodeId {
         self.node_id
     }
 
@@ -73,7 +73,7 @@ pub struct PingResponse<'a> {
 /// Reuse functionality of ping request since the structures are identical.
 impl<'a> PingResponse<'a> {
     #[must_use]
-    pub fn new(trans_id: &'a [u8], node_id: NodeId) -> PingResponse<'a> {
+    pub const fn new(trans_id: &'a [u8], node_id: NodeId) -> Self {
         PingResponse { trans_id, node_id }
     }
 
@@ -82,7 +82,7 @@ impl<'a> PingResponse<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to generate the ping request from the root.
-    pub fn from_parts<B>(rsp_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<PingResponse<'a>, DhtError>
+    pub fn from_parts<B>(rsp_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<Self, DhtError>
     where
         B: BRefAccess,
     {
@@ -92,12 +92,12 @@ impl<'a> PingResponse<'a> {
     }
 
     #[must_use]
-    pub fn transaction_id(&self) -> &'a [u8] {
+    pub const fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
     #[must_use]
-    pub fn node_id(&self) -> NodeId {
+    pub const fn node_id(&self) -> NodeId {
         self.node_id
     }
 

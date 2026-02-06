@@ -1,3 +1,5 @@
+#![allow(clippy::significant_drop_tightening, clippy::option_if_let_else)]
+
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -48,13 +50,13 @@ pub struct TableBootstrap {
 }
 
 impl TableBootstrap {
-    pub fn new<I>(table_id: NodeId, id_generator: MIDGenerator, nodes: Vec<SocketAddr>, routers: I) -> TableBootstrap
+    pub fn new<I>(table_id: NodeId, id_generator: MIDGenerator, nodes: Vec<SocketAddr>, routers: I) -> Self
     where
         I: Iterator<Item = SocketAddr>,
     {
         let router_filter: HashSet<SocketAddr> = routers.collect();
 
-        TableBootstrap {
+        Self {
             table_id,
             id_generator: Mutex::new(id_generator),
             starting_nodes: nodes,
@@ -207,14 +209,18 @@ impl TableBootstrap {
                     .cloned()
                     .collect();
 
-                self.send_bootstrap_requests::<H, _>(
-                    questionable_nodes.iter(),
-                    target_id,
-                    table.clone(),
-                    out.clone(),
-                    scheduled_task_sender,
-                )
-                .await
+                // Required for Rust 2024 drop order
+                #[allow(clippy::let_and_return)]
+                let result = self
+                    .send_bootstrap_requests::<H, _>(
+                        questionable_nodes.iter(),
+                        target_id,
+                        table.clone(),
+                        out.clone(),
+                        scheduled_task_sender,
+                    )
+                    .await;
+                result
             } else {
                 let questionable_nodes: Vec<Node> = {
                     let routing_table = table.read().unwrap();
@@ -259,14 +265,18 @@ impl TableBootstrap {
                         .collect()
                 };
 
-                self.send_bootstrap_requests::<H, _>(
-                    questionable_nodes.iter(),
-                    target_id,
-                    table.clone(),
-                    out.clone(),
-                    scheduled_task_sender,
-                )
-                .await
+                // Required for Rust 2024 drop order
+                #[allow(clippy::let_and_return)]
+                let result = self
+                    .send_bootstrap_requests::<H, _>(
+                        questionable_nodes.iter(),
+                        target_id,
+                        table.clone(),
+                        out.clone(),
+                        scheduled_task_sender,
+                    )
+                    .await;
+                result
             }
         }
         .boxed()

@@ -1,7 +1,6 @@
 use nom::bytes::complete::take;
 use nom::number::complete::u8;
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 use tokio::io::{AsyncWrite, AsyncWriteExt as _};
 
 const BT_PROTOCOL: &[u8] = b"BitTorrent protocol";
@@ -20,7 +19,7 @@ impl Protocol {
     /// # Errors
     ///
     /// This function will return an error if unable to construct from bytes.
-    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Protocol> {
+    pub fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         parse_protocol(bytes)
     }
 
@@ -34,8 +33,8 @@ impl Protocol {
         W: AsyncWrite + Unpin,
     {
         let (len, bytes) = match self {
-            Protocol::BitTorrent => (BT_PROTOCOL_LEN as usize, BT_PROTOCOL),
-            Protocol::Custom(prot) => (prot.len(), &prot[..]),
+            Self::BitTorrent => (BT_PROTOCOL_LEN as usize, BT_PROTOCOL),
+            Self::Custom(prot) => (prot.len(), &prot[..]),
         };
 
         #[allow(clippy::cast_possible_truncation)]
@@ -55,8 +54,8 @@ impl Protocol {
         W: std::io::Write,
     {
         let (len, bytes) = match self {
-            Protocol::BitTorrent => (BT_PROTOCOL_LEN as usize, BT_PROTOCOL),
-            Protocol::Custom(prot) => (prot.len(), &prot[..]),
+            Self::BitTorrent => (BT_PROTOCOL_LEN as usize, BT_PROTOCOL),
+            Self::Custom(prot) => (prot.len(), &prot[..]),
         };
 
         #[allow(clippy::cast_possible_truncation)]
@@ -68,10 +67,10 @@ impl Protocol {
 
     /// Get the length of the given protocol (does not include the length byte).
     #[must_use]
-    pub fn write_len(&self) -> usize {
+    pub const fn write_len(&self) -> usize {
         match self {
-            Protocol::BitTorrent => BT_PROTOCOL_LEN as usize,
-            Protocol::Custom(custom) => custom.len(),
+            Self::BitTorrent => BT_PROTOCOL_LEN as usize,
+            Self::Custom(custom) => custom.len(),
         }
     }
 }
@@ -81,7 +80,7 @@ fn parse_protocol(bytes: &[u8]) -> IResult<&[u8], Protocol> {
 }
 
 fn parse_real_protocol(bytes: &[u8]) -> IResult<&[u8], Protocol> {
-    let (remaining, (_length, raw_protocol)) = tuple((u8, take(bytes[0] as usize)))(bytes)?;
+    let (remaining, (_length, raw_protocol)) = (u8, take(bytes[0] as usize)).parse(bytes)?;
     if raw_protocol == BT_PROTOCOL {
         Ok((remaining, Protocol::BitTorrent))
     } else {
@@ -91,7 +90,7 @@ fn parse_real_protocol(bytes: &[u8]) -> IResult<&[u8], Protocol> {
 
 #[allow(dead_code)]
 fn parse_raw_protocol(bytes: &[u8]) -> IResult<&[u8], &[u8]> {
-    let (remaining, (_length, raw_protocol)) = tuple((u8, take(bytes[0] as usize)))(bytes)?;
+    let (remaining, (_length, raw_protocol)) = (u8, take(bytes[0] as usize)).parse(bytes)?;
     Ok((remaining, raw_protocol))
 }
 

@@ -40,7 +40,7 @@ pub trait Accessor {
         C: for<'a> FnMut(PieceAccess<'a>) -> std::io::Result<()>;
 }
 
-impl<'a, T> Accessor for &'a T
+impl<T> Accessor for &T
 where
     T: Accessor,
 {
@@ -99,20 +99,20 @@ impl FileAccessor {
     /// # Panics
     ///
     /// It would panic if unable to get the last directory name.
-    pub fn new<T>(path: T) -> std::io::Result<FileAccessor>
+    pub fn new<T>(path: T) -> std::io::Result<Self>
     where
         T: AsRef<Path>,
     {
         let absolute_path = path.as_ref().canonicalize()?;
         let directory_name = if absolute_path.is_dir() {
-            let dir_name: &Path = absolute_path.iter().last().unwrap().as_ref();
+            let dir_name: &Path = absolute_path.iter().next_back().unwrap().as_ref();
 
             Some(dir_name.to_path_buf())
         } else {
             None
         };
 
-        Ok(FileAccessor {
+        Ok(Self {
             absolute_path,
             directory_name,
         })
@@ -120,9 +120,9 @@ impl FileAccessor {
 }
 
 impl IntoAccessor for FileAccessor {
-    type Accessor = FileAccessor;
+    type Accessor = Self;
 
-    fn into_accessor(self) -> std::io::Result<FileAccessor> {
+    fn into_accessor(self) -> std::io::Result<Self> {
         Ok(self)
     }
 }
@@ -187,7 +187,7 @@ impl Accessor for FileAccessor {
 
 /// Filter that yields true if the entry points to a file.
 fn entry_file_filter(res_entry: &walkdir::Result<DirEntry>) -> bool {
-    res_entry.as_ref().map(|f| f.file_type().is_file()).unwrap_or(true)
+    res_entry.as_ref().map_or(true, |f| f.file_type().is_file())
 }
 
 // ----------------------------------------------------------------------------//
@@ -202,7 +202,7 @@ pub struct DirectAccessor<'a> {
 impl<'a> DirectAccessor<'a> {
     /// Create a new `DirectAccessor` from the given file name and contents.
     #[must_use]
-    pub fn new(file_name: &'a str, file_contents: &'a [u8]) -> DirectAccessor<'a> {
+    pub const fn new(file_name: &'a str, file_contents: &'a [u8]) -> Self {
         DirectAccessor {
             file_name,
             file_contents,
@@ -210,15 +210,15 @@ impl<'a> DirectAccessor<'a> {
     }
 }
 
-impl<'a> IntoAccessor for DirectAccessor<'a> {
-    type Accessor = DirectAccessor<'a>;
+impl IntoAccessor for DirectAccessor<'_> {
+    type Accessor = Self;
 
-    fn into_accessor(self) -> std::io::Result<DirectAccessor<'a>> {
+    fn into_accessor(self) -> std::io::Result<Self> {
         Ok(self)
     }
 }
 
-impl<'a> Accessor for DirectAccessor<'a> {
+impl Accessor for DirectAccessor<'_> {
     fn access_directory(&self) -> Option<&Path> {
         None
     }

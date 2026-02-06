@@ -31,13 +31,7 @@ pub struct AnnouncePeerRequest<'a> {
 
 impl<'a> AnnouncePeerRequest<'a> {
     #[must_use]
-    pub fn new(
-        trans_id: &'a [u8],
-        node_id: NodeId,
-        info_hash: InfoHash,
-        token: &'a [u8],
-        port: ConnectPort,
-    ) -> AnnouncePeerRequest<'a> {
+    pub const fn new(trans_id: &'a [u8], node_id: NodeId, info_hash: InfoHash, token: &'a [u8], port: ConnectPort) -> Self {
         AnnouncePeerRequest {
             trans_id,
             node_id,
@@ -52,10 +46,7 @@ impl<'a> AnnouncePeerRequest<'a> {
     /// # Errors
     ///
     /// This function will return an error unable to get bytes unable do lookup.
-    pub fn from_parts<B>(
-        rqst_root: &'a dyn BDictAccess<B::BKey, B>,
-        trans_id: &'a [u8],
-    ) -> Result<AnnouncePeerRequest<'a>, DhtError>
+    pub fn from_parts<B>(rqst_root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<Self, DhtError>
     where
         B: BRefAccess,
     {
@@ -86,27 +77,27 @@ impl<'a> AnnouncePeerRequest<'a> {
     }
 
     #[must_use]
-    pub fn transaction_id(&self) -> &'a [u8] {
+    pub const fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
     #[must_use]
-    pub fn node_id(&self) -> NodeId {
+    pub const fn node_id(&self) -> NodeId {
         self.node_id
     }
 
     #[must_use]
-    pub fn info_hash(&self) -> InfoHash {
+    pub const fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
     #[must_use]
-    pub fn token(&self) -> &'a [u8] {
+    pub const fn token(&self) -> &'a [u8] {
         self.token
     }
 
     #[must_use]
-    pub fn connect_port(&self) -> ConnectPort {
+    pub const fn connect_port(&self) -> ConnectPort {
         self.port
     }
 
@@ -145,7 +136,7 @@ pub struct AnnouncePeerResponse<'a> {
 
 impl<'a> AnnouncePeerResponse<'a> {
     #[must_use]
-    pub fn new(trans_id: &'a [u8], node_id: NodeId) -> AnnouncePeerResponse<'a> {
+    pub const fn new(trans_id: &'a [u8], node_id: NodeId) -> Self {
         AnnouncePeerResponse { trans_id, node_id }
     }
 
@@ -154,10 +145,7 @@ impl<'a> AnnouncePeerResponse<'a> {
     /// # Errors
     ///
     /// This function will return an error unable to get bytes or unable to validate the node id.
-    pub fn from_parts<B>(
-        rqst_root: &dyn BDictAccess<B::BKey, B>,
-        trans_id: &'a [u8],
-    ) -> Result<AnnouncePeerResponse<'a>, DhtError>
+    pub fn from_parts<B>(rqst_root: &dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8]) -> Result<Self, DhtError>
     where
         B: BRefAccess,
     {
@@ -170,12 +158,12 @@ impl<'a> AnnouncePeerResponse<'a> {
     }
 
     #[must_use]
-    pub fn transaction_id(&self) -> &'a [u8] {
+    pub const fn transaction_id(&self) -> &'a [u8] {
         self.trans_id
     }
 
     #[must_use]
-    pub fn node_id(&self) -> NodeId {
+    pub const fn node_id(&self) -> NodeId {
         self.node_id
     }
 

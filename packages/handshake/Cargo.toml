@@ -15,12 +15,15 @@ publish.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 util = { path = "../util" }
 
 bytes = "1"
 futures = "0"
-nom = "7"
+nom = "8"
 pin-project = "1"
 rand = "0"
 tokio = { version = "1", features = ["full"] }

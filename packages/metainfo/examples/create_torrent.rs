@@ -1,3 +1,5 @@
+#![allow(clippy::significant_drop_tightening)]
+
 use std::io::{BufRead as _, Write as _};
 use std::path::Path;
 

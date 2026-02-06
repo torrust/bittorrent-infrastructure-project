@@ -19,12 +19,12 @@ pub struct DiskManagerStream {
 }
 
 impl DiskManagerStream {
-    pub(super) fn new(
+    pub(super) const fn new(
         recv: mpsc::Receiver<ODiskMessage>,
         cur_capacity: Arc<AtomicUsize>,
         wake_queue: Arc<SegQueue<Waker>>,
-    ) -> DiskManagerStream {
-        DiskManagerStream {
+    ) -> Self {
+        Self {
             recv,
             cur_capacity,
             wake_queue,
@@ -40,7 +40,7 @@ impl DiskManagerStream {
         );
         if let Some(waker) = self.wake_queue.pop() {
             waker.wake();
-        };
+        }
 
         cap
     }

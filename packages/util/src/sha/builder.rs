@@ -19,13 +19,13 @@ impl Default for ShaHashBuilder {
 impl ShaHashBuilder {
     /// Create a new `ShaHashBuilder`.
     #[must_use]
-    pub fn new() -> ShaHashBuilder {
-        ShaHashBuilder::default()
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Add bytes to the `ShaHashBuilder`.
     #[must_use]
-    pub fn add_bytes(mut self, bytes: &[u8]) -> ShaHashBuilder {
+    pub fn add_bytes(mut self, bytes: &[u8]) -> Self {
         self.sha.input(bytes);
 
         self

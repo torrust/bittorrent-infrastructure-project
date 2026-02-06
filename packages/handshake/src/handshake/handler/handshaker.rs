@@ -62,9 +62,9 @@ where
     let socket = framed.into_inner();
 
     if remote_hash != hash {
-        Err(std::io::Error::new(std::io::ErrorKind::Other, "not matching hash"))
+        Err(std::io::Error::other("not matching hash"))
     } else if remote_prot != prot {
-        Err(std::io::Error::new(std::io::ErrorKind::Other, "not matching port"))
+        Err(std::io::Error::other("not matching port"))
     } else if handler::should_filter(
         Some(&addr),
         Some(&remote_prot),
@@ -73,7 +73,7 @@ where
         Some(&remote_pid),
         &filters,
     ) {
-        Err(std::io::Error::new(std::io::ErrorKind::Other, "should not filter"))
+        Err(std::io::Error::other("should not filter"))
     } else {
         Ok(Some(CompleteMessage::new(
             prot,
@@ -112,7 +112,7 @@ where
         Some(&remote_pid),
         &filters,
     ) {
-        Err(std::io::Error::new(std::io::ErrorKind::Other, "should not filter"))
+        Err(std::io::Error::other("should not filter"))
     } else {
         let handshake_msg = HandshakeMessage::from_parts(remote_prot.clone(), ext, remote_hash, pid);
 

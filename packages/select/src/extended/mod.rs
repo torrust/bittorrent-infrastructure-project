@@ -46,8 +46,8 @@ pub struct ExtendedPeerInfo {
 }
 
 impl ExtendedPeerInfo {
-    pub fn new(ours: Option<ExtendedMessage>, theirs: Option<ExtendedMessage>) -> ExtendedPeerInfo {
-        ExtendedPeerInfo { ours, theirs }
+    pub const fn new(ours: Option<ExtendedMessage>, theirs: Option<ExtendedMessage>) -> Self {
+        Self { ours, theirs }
     }
 
     pub fn update_ours(&mut self, message: ExtendedMessage) {
@@ -58,11 +58,11 @@ impl ExtendedPeerInfo {
         self.theirs = Some(message);
     }
 
-    pub fn our_message(&self) -> Option<&ExtendedMessage> {
+    pub const fn our_message(&self) -> Option<&ExtendedMessage> {
         self.ours.as_ref()
     }
 
-    pub fn their_message(&self) -> Option<&ExtendedMessage> {
+    pub const fn their_message(&self) -> Option<&ExtendedMessage> {
         self.theirs.as_ref()
     }
 }
@@ -79,8 +79,8 @@ pub struct ExtendedModule {
 }
 
 impl ExtendedModule {
-    pub fn new(builder: ExtendedMessageBuilder) -> ExtendedModule {
-        ExtendedModule {
+    pub fn new(builder: ExtendedMessageBuilder) -> Self {
+        Self {
             builder,
             peers: Arc::default(),
             out_queue: Arc::default(),
@@ -134,7 +134,8 @@ impl ExtendedModule {
 
     fn check_stream_unblock(&self) {
         if !self.out_queue.lock().unwrap().is_empty() {
-            if let Some(waker) = self.opt_waker.lock().unwrap().take() {
+            let waker = self.opt_waker.lock().unwrap().take();
+            if let Some(waker) = waker {
                 waker.wake();
             }
         }
@@ -145,7 +146,8 @@ impl Stream for ExtendedModule {
     type Item = Result<OExtendedMessage, Error>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        if let Some(message) = self.out_queue.lock().unwrap().pop_front() {
+        let message = self.out_queue.lock().unwrap().pop_front();
+        if let Some(message) = message {
             Poll::Ready(Some(Ok(message)))
         } else {
             self.opt_waker.lock().unwrap().replace(cx.waker().clone());

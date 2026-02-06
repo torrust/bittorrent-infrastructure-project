@@ -6,8 +6,7 @@ use byteorder::{BigEndian, WriteBytesExt};
 use nom::bytes::complete::take;
 use nom::combinator::{map, map_res};
 use nom::number::complete::{be_u32, be_u64};
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 use tracing::instrument;
 
 use crate::announce::AnnounceRequest;
@@ -28,7 +27,7 @@ pub enum RequestType<'a> {
     Scrape(ScrapeRequest<'a>),
 }
 
-impl<'a> RequestType<'a> {
+impl RequestType<'_> {
     /// Create an owned version of the `RequestType`.
     #[must_use]
     pub fn to_owned(&self) -> RequestType<'static> {
@@ -55,7 +54,7 @@ pub struct TrackerRequest<'a> {
 impl<'a> TrackerRequest<'a> {
     /// Create a new `TrackerRequest`.
     #[must_use]
-    pub fn new(conn_id: u64, trans_id: u32, req_type: RequestType<'a>) -> TrackerRequest<'a> {
+    pub const fn new(conn_id: u64, trans_id: u32, req_type: RequestType<'a>) -> Self {
         TrackerRequest {
             connection_id: conn_id,
             transaction_id: trans_id,
@@ -68,7 +67,7 @@ impl<'a> TrackerRequest<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerRequest<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_request(bytes)
     }
 
@@ -108,7 +107,7 @@ impl<'a> TrackerRequest<'a> {
 
                     req.write_bytes(&mut writer)?;
                 }
-            };
+            }
         }
         writer.flush()?;
 
@@ -120,19 +119,19 @@ impl<'a> TrackerRequest<'a> {
     /// For Connect requests, this will always be equal to 0x41727101980. Therefore,
     /// you should not hand out that specific ID to peers that make a connect request.
     #[must_use]
-    pub fn connection_id(&self) -> u64 {
+    pub const fn connection_id(&self) -> u64 {
         self.connection_id
     }
 
     /// Transaction ID supplied with a request to uniquely identify a response.
     #[must_use]
-    pub fn transaction_id(&self) -> u32 {
+    pub const fn transaction_id(&self) -> u32 {
         self.transaction_id
     }
 
     /// Actual type of request that this `TrackerRequest` represents.
     #[must_use]
-    pub fn request_type(&self) -> &RequestType<'_> {
+    pub const fn request_type(&self) -> &RequestType<'_> {
         &self.request_type
     }
 
@@ -148,7 +147,7 @@ impl<'a> TrackerRequest<'a> {
 }
 
 fn parse_request(bytes: &[u8]) -> IResult<&[u8], TrackerRequest<'_>> {
-    let (remaining, (connection_id, action_id, transaction_id)) = tuple((be_u64, be_u32, be_u32))(bytes)?;
+    let (remaining, (connection_id, action_id, transaction_id)) = (be_u64, be_u32, be_u32).parse(bytes)?;
 
     match (connection_id, action_id) {
         (CONNECT_ID_PROTOCOL_ID, crate::CONNECT_ACTION_ID) => Ok((

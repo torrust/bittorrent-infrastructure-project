@@ -31,7 +31,7 @@ keywords = ["bittorrent"]
 license = "Apache-2.0"
 publish = false                                                                                     # until we decide where to publish.
 repository = "https://github.com/torrust/bittorrent-infrastructure-project"
-rust-version = "1.71"
+rust-version = "1.85"
 version = "1.0.0-alpha.1"
 
 [profile.bench]
@@ -42,3 +42,26 @@ lto = false
 opt-level = 3
 panic = 'unwind'
 rpath = false
+
+[workspace.lints.rust]
+warnings = { level = "deny", priority = -1 }
+future-incompatible = { level = "deny", priority = -1 }
+let-underscore = { level = "deny", priority = -1 }
+nonstandard-style = { level = "deny", priority = -1 }
+rust-2018-compatibility = { level = "deny", priority = -1 }
+rust-2018-idioms = { level = "deny", priority = -1 }
+rust-2021-compatibility = { level = "deny", priority = -1 }
+rust-2024-compatibility = { level = "warn", priority = -1 }
+unused = { level = "deny", priority = -2 }
+deprecated-safe = { level = "deny", priority = -1 }
+unsafe-code = "warn"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+complexity = { level = "deny", priority = -1 }
+correctness = { level = "deny", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+style = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }

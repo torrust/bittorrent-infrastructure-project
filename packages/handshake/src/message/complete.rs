@@ -19,8 +19,8 @@ pub struct CompleteMessage<S> {
 
 impl<S> CompleteMessage<S> {
     /// Create a new `CompleteMessage` over the given socket S.
-    pub fn new(prot: Protocol, ext: Extensions, hash: InfoHash, pid: PeerId, addr: SocketAddr, sock: S) -> CompleteMessage<S> {
-        CompleteMessage {
+    pub const fn new(prot: Protocol, ext: Extensions, hash: InfoHash, pid: PeerId, addr: SocketAddr, sock: S) -> Self {
+        Self {
             prot,
             ext,
             hash,
@@ -31,32 +31,32 @@ impl<S> CompleteMessage<S> {
     }
 
     /// Protocol that this peer is operating over.
-    pub fn protocol(&self) -> &Protocol {
+    pub const fn protocol(&self) -> &Protocol {
         &self.prot
     }
 
     /// Extensions that both you and the peer support.
-    pub fn extensions(&self) -> &Extensions {
+    pub const fn extensions(&self) -> &Extensions {
         &self.ext
     }
 
     /// Hash that the peer is interested in.
-    pub fn hash(&self) -> &InfoHash {
+    pub const fn hash(&self) -> &InfoHash {
         &self.hash
     }
 
     /// Id that the peer has given itself.
-    pub fn peer_id(&self) -> &PeerId {
+    pub const fn peer_id(&self) -> &PeerId {
         &self.pid
     }
 
     /// Address the peer is connected to us on.
-    pub fn address(&self) -> &SocketAddr {
+    pub const fn address(&self) -> &SocketAddr {
         &self.addr
     }
 
     /// Socket of some type S, that we use to communicate with the peer.
-    pub fn socket(&self) -> &S {
+    pub const fn socket(&self) -> &S {
         &self.sock
     }
 

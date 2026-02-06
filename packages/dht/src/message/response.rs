@@ -20,7 +20,7 @@ pub struct ResponseValidate<'a> {
 
 impl<'a> ResponseValidate<'a> {
     #[must_use]
-    pub fn new(trans_id: &'a [u8]) -> ResponseValidate<'a> {
+    pub const fn new(trans_id: &'a [u8]) -> Self {
         ResponseValidate { trans_id }
     }
 
@@ -82,7 +82,7 @@ impl<'a> ResponseValidate<'a> {
     }
 }
 
-impl<'a> BConvert for ResponseValidate<'a> {
+impl BConvert for ResponseValidate<'_> {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
@@ -90,7 +90,7 @@ impl<'a> BConvert for ResponseValidate<'a> {
     }
 }
 
-impl<'a> BConvertExt for ResponseValidate<'a> {}
+impl BConvertExt for ResponseValidate<'_> {}
 
 // ----------------------------------------------------------------------------//
 
@@ -134,7 +134,7 @@ where
         root: &'a dyn BDictAccess<B::BKey, B>,
         trans_id: &'a [u8],
         rsp_type: &ExpectedResponse,
-    ) -> Result<ResponseType<'a, B>, DhtError>
+    ) -> Result<Self, DhtError>
     where
         B: BRefAccess<BType = B>,
     {

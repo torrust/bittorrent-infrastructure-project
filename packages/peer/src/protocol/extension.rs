@@ -20,8 +20,8 @@ where
     /// Create a new `PeerExtensionProtocol` with the given (nested) custom extension protocol.
     ///
     /// Notes for `PeerWireProtocol` apply to this custom extension protocol.
-    pub fn new(custom_protocol: P) -> PeerExtensionProtocol<P> {
-        PeerExtensionProtocol {
+    pub const fn new(custom_protocol: P) -> Self {
+        Self {
             our_extended_msg: None,
             their_extended_msg: None,
             custom_protocol,
@@ -45,8 +45,7 @@ where
     fn parse_bytes(&mut self, bytes: &[u8]) -> std::io::Result<Result<Self::ProtocolMessage, Self::ProtocolMessageError>> {
         match self.our_extended_msg {
             Some(ref extended_msg) => PeerExtensionProtocolMessage::parse_bytes(bytes, extended_msg, &mut self.custom_protocol),
-            None => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            None => Err(std::io::Error::other(
                 "Extension Message Received From Peer Before Extended Message...",
             )),
         }
@@ -72,8 +71,7 @@ where
                 extended_msg,
                 &mut self.custom_protocol,
             )?),
-            None => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            None => Err(std::io::Error::other(
                 "Extension Message Sent From Us Before Extended Message...",
             )),
         }

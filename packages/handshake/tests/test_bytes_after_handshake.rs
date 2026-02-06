@@ -48,16 +48,19 @@ async fn positive_recover_bytes() {
     });
 
     let test = tokio::spawn(async move {
-        if let Some(message) = handshaker_one.next().await {
-            let (_, _, _, _, _, mut sock) = message.unwrap().into_parts();
+        match handshaker_one.next().await {
+            Some(message) => {
+                let (_, _, _, _, _, mut sock) = message.unwrap().into_parts();
 
-            let mut recv_buffer = vec![0u8; 100];
-            sock.read_exact(&mut recv_buffer).await.unwrap();
+                let mut recv_buffer = vec![0u8; 100];
+                sock.read_exact(&mut recv_buffer).await.unwrap();
 
-            // Assert that our buffer contains the bytes after the handshake
-            assert_eq!(vec![55u8; 100], recv_buffer);
-        } else {
-            panic!("Failed to receive handshake message");
+                // Assert that our buffer contains the bytes after the handshake
+                assert_eq!(vec![55u8; 100], recv_buffer);
+            }
+            _ => {
+                panic!("Failed to receive handshake message");
+            }
         }
     });
 

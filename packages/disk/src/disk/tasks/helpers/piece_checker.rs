@@ -19,7 +19,7 @@ pub struct PieceChecker<F> {
     state: MetainfoState,
 }
 
-impl<'a, F> PieceChecker<F>
+impl<F> PieceChecker<F>
 where
     F: FileSystem + Sync + 'static,
     Arc<F>: Send + Sync,
@@ -35,7 +35,7 @@ where
 
         let state = MetainfoState::new(file, checker_state.clone());
         {
-            let mut piece_checker = PieceChecker::with_state(fs, state);
+            let piece_checker = Self::with_state(fs, state);
 
             piece_checker.validate_files_sizes()?;
             piece_checker.fill_checker_state().await;
@@ -46,8 +46,8 @@ where
     }
 
     /// Create a new `PieceChecker` with the given state.
-    pub fn with_state(fs: Arc<F>, state: MetainfoState) -> PieceChecker<F> {
-        PieceChecker { fs, state }
+    pub const fn with_state(fs: Arc<F>, state: MetainfoState) -> Self {
+        Self { fs, state }
     }
 
     /// Calculate the diff of old to new good/bad pieces and store them in the piece checker state
@@ -87,7 +87,7 @@ where
     ///
     /// This is done once when a torrent file is added to see if we have any good pieces that
     /// the caller can use to skip (if the torrent was partially downloaded before).
-    async fn fill_checker_state(&mut self) {
+    async fn fill_checker_state(&self) {
         let piece_length = self.state.file.info().piece_length();
         let total_bytes: u64 = self.state.file.info().files().map(metainfo::File::length).sum();
 
@@ -114,7 +114,7 @@ where
     /// Otherwise, if the file exists and it is of the correct size, it will be left alone. If it is of the wrong
     /// size, an error will be thrown as we do not want to overwrite and existing file that maybe just had the same
     /// name as a file in our dictionary.
-    fn validate_files_sizes(&mut self) -> TorrentResult<()> {
+    fn validate_files_sizes(&self) -> TorrentResult<()> {
         for file in self.state.file.info().files() {
             let file_path = helpers::build_path(self.state.file.info().directory(), file);
             let expected_size = file.length();
@@ -180,8 +180,8 @@ pub enum PieceState {
 
 impl PieceCheckerState {
     /// Create a new `PieceCheckerState`.
-    pub fn new(total_blocks: usize, last_block_size: usize) -> PieceCheckerState {
-        PieceCheckerState {
+    pub fn new(total_blocks: usize, last_block_size: usize) -> Self {
+        Self {
             new_states: Vec::new(),
             old_states: HashSet::new(),
             pending_blocks: HashMap::new(),

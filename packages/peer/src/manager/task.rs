@@ -62,6 +62,7 @@ where
     Manager(PeerManagerInputMessage<Peer, Message>),
 }
 
+#[allow(tail_expr_drop_order)]
 pub fn run_peer<Peer, Message>(
     peer: Peer,
     info: PeerInfo,

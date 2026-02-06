@@ -47,8 +47,8 @@ where
         + 'static,
     Message: ManagedMessage + Send + 'static,
 {
-    fn clone(&self) -> PeerManagerSink<Peer, Message> {
-        PeerManagerSink {
+    fn clone(&self) -> Self {
+        Self {
             builder: self.builder,
             sender: self.sender.clone(),
             peers: self.peers.clone(),
@@ -69,13 +69,13 @@ where
     Message: ManagedMessage + Send + 'static,
 {
     #[allow(clippy::type_complexity)]
-    pub fn new(
+    pub const fn new(
         builder: PeerManagerBuilder,
         sender: mpsc::Sender<Result<PeerManagerOutputMessage<Message>, PeerManagerOutputError>>,
         peers: Arc<Mutex<HashMap<PeerInfo, mpsc::Sender<PeerManagerInputMessage<Peer, Message>>>>>,
         task_queue: Arc<SegQueue<tokio::task::JoinHandle<()>>>,
-    ) -> PeerManagerSink<Peer, Message> {
-        PeerManagerSink {
+    ) -> Self {
+        Self {
             builder,
             sender,
             peers,
@@ -140,7 +140,7 @@ where
                 vac.insert(sender);
                 self.task_queue.push(task); // Add the task to the task queue
             }
-        };
+        }
 
         Ok(())
     }
@@ -201,7 +201,7 @@ where
 
         for peer_sender in guard.values_mut() {
             match peer_sender.poll_ready_unpin(cx) {
-                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Ok(())) => (),
                 Poll::Ready(Err(e)) => return Poll::Ready(Err(PeerManagerError::SendFailed(e))),
                 Poll::Pending => return Poll::Pending,
             }
@@ -229,7 +229,7 @@ where
 
         for peer_sender in guard.values_mut() {
             match peer_sender.poll_flush_unpin(cx) {
-                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Ok(())) => (),
                 Poll::Ready(Err(e)) => return Poll::Ready(Err(PeerManagerError::FlushFailed(e))),
                 Poll::Pending => {
                     tracing::debug!("pending to flush peer sender... will reschedule with waker");
@@ -241,6 +241,7 @@ where
         Poll::Ready(Ok(()))
     }
 
+    #[allow(tail_expr_drop_order)]
     fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         tracing::trace!("closing...");
 
@@ -252,7 +253,7 @@ where
 
         for peer_sender in guard.values_mut() {
             match peer_sender.poll_close_unpin(cx) {
-                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Ok(())) => (),
                 Poll::Ready(Err(e)) => return Poll::Ready(Err(PeerManagerError::FlushFailed(e))),
                 Poll::Pending => {
                     tracing::debug!("pending to flush peer sender... will reschedule with waker");

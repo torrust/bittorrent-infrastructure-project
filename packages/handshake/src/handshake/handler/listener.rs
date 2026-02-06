@@ -15,10 +15,10 @@ pub struct ListenerHandler<S> {
 }
 
 impl<S> ListenerHandler<S> {
-    pub fn new(item: std::io::Result<(S, SocketAddr)>, context: &Filters) -> ListenerHandler<S> {
+    pub fn new(item: std::io::Result<(S, SocketAddr)>, context: &Filters) -> Self {
         let (sock, addr) = match item {
             Ok(item) => item,
-            Err(e) => return ListenerHandler { opt_item: Err(e).into() },
+            Err(e) => return Self { opt_item: Err(e).into() },
         };
 
         let opt_item = if handler::should_filter(Some(&addr), None, None, None, None, context) {
@@ -27,7 +27,7 @@ impl<S> ListenerHandler<S> {
             Some(HandshakeType::Complete(sock, addr))
         };
 
-        ListenerHandler {
+        Self {
             opt_item: Ok(opt_item).into(),
         }
     }

@@ -24,7 +24,7 @@ pub trait HandshakeFilters {
     fn clear_filters(&self);
 }
 
-impl<'a, T> HandshakeFilters for &'a T
+impl<T> HandshakeFilters for &T
 where
     T: HandshakeFilters,
 {
@@ -117,7 +117,7 @@ impl FilterDecision {
     ///
     /// Allow > `NeedData` > Block > Pass
     #[must_use]
-    pub fn choose(&self, other: FilterDecision) -> FilterDecision {
+    pub const fn choose(&self, other: Self) -> Self {
         let self_num = *self as u8;
         let other_num = other as u8;
 

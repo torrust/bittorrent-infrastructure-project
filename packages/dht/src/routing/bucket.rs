@@ -19,13 +19,13 @@ pub struct Bucket {
 
 impl Bucket {
     /// Create a new Bucket with all Nodes default initialized.
-    pub fn new() -> Bucket {
+    pub fn new() -> Self {
         let id = NodeId::from([0u8; bt::NODE_ID_LEN]);
 
-        let ip = Ipv4Addr::new(127, 0, 0, 1);
+        let ip = Ipv4Addr::LOCALHOST;
         let addr = SocketAddr::V4(SocketAddrV4::new(ip, 0));
 
-        Bucket {
+        Self {
             nodes: [
                 Node::as_bad(id, addr),
                 Node::as_bad(id, addr),
@@ -103,7 +103,7 @@ pub struct GoodNodes<'a> {
 }
 
 impl<'a> GoodNodes<'a> {
-    fn new(nodes: &'a [Node]) -> GoodNodes<'a> {
+    fn new(nodes: &'a [Node]) -> Self {
         GoodNodes {
             iter: nodes.iter().filter(good_nodes_filter),
         }
@@ -130,7 +130,7 @@ pub struct PingableNodes<'a> {
 }
 
 impl<'a> PingableNodes<'a> {
-    fn new(nodes: &'a [Node]) -> PingableNodes<'a> {
+    fn new(nodes: &'a [Node]) -> Self {
         PingableNodes {
             iter: nodes.iter().filter(pingable_nodes_filter),
         }
@@ -284,7 +284,7 @@ mod tests {
         assert!(!bucket.pingable_nodes().any(|node| &new_questionable_node == node));
 
         // Try to add it
-        bucket.add_node(new_questionable_node.clone());
+        bucket.add_node(new_questionable_node);
 
         // Make sure the node is NOT in the bucket
         assert_eq!(

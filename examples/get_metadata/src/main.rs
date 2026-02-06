@@ -39,8 +39,8 @@ impl<S> LegacyHandshaker<S>
 where
     S: DiscoveryInfo + Unpin,
 {
-    pub fn new(sink: S) -> LegacyHandshaker<S> {
-        LegacyHandshaker {
+    pub fn new(sink: S) -> Self {
+        Self {
             port: sink.port(),
             id: sink.peer_id(),
             sender: sink,
@@ -101,8 +101,8 @@ fn parse_arguments() -> ArgMatches {
 }
 
 fn extract_arguments(matches: &ArgMatches) -> (String, String) {
-    let hash = matches.get_one::<String>("infohash").unwrap().to_string();
-    let output = matches.get_one::<String>("output").unwrap().to_string();
+    let hash = matches.get_one::<String>("infohash").unwrap().clone();
+    let output = matches.get_one::<String>("output").unwrap().clone();
     (hash, output)
 }
 
@@ -134,6 +134,7 @@ enum MainDht {
 
 #[allow(clippy::too_many_lines)]
 #[tokio::main]
+#[allow(tail_expr_drop_order)]
 async fn main() {
     INIT.call_once(|| {
         tracing_stdout_init(LevelFilter::TRACE);
@@ -305,7 +306,7 @@ async fn main() {
 
         tracing::info!("Bootstrapping Dht...");
         while let Some(message) = dht.events().await.next().await {
-            if let DhtEvent::BootstrapCompleted = message {
+            if matches!(message, DhtEvent::BootstrapCompleted) {
                 break;
             }
         }

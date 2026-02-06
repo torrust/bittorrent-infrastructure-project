@@ -22,14 +22,14 @@ pub struct RoutingTable {
 
 impl RoutingTable {
     /// Create a new `RoutingTable` with the given node id as our id.
-    pub fn new(node_id: NodeId) -> RoutingTable {
+    pub fn new(node_id: NodeId) -> Self {
         let buckets = vec![Bucket::new()];
 
-        RoutingTable { buckets, node_id }
+        Self { buckets, node_id }
     }
 
     /// Return the node id of the `RoutingTable`.
-    pub fn node_id(&self) -> NodeId {
+    pub const fn node_id(&self) -> NodeId {
         self.node_id
     }
 
@@ -52,16 +52,13 @@ impl RoutingTable {
         let bucket_index = leading_bit_count(self.node_id, node.id());
 
         // Check the sorted bucket
-        let opt_bucket_contents = if let Some(c) = self.buckets().nth(bucket_index) {
-            // Got the sorted bucket
-            Some(c)
-        } else {
+        let opt_bucket_contents = self.buckets().nth(bucket_index).or_else(|| {
             // Grab the assorted bucket (if it exists)
             self.buckets().find(|c| match *c {
                 BucketContents::Sorted(_) | BucketContents::Empty => false,
                 BucketContents::Assorted(_) => true,
             })
-        };
+        });
 
         // Check for our target node in our results
         match opt_bucket_contents {
@@ -127,7 +124,7 @@ impl RoutingTable {
 }
 
 /// Returns true if the bucket can be split.
-fn can_split_bucket(num_buckets: usize, bucket_index: usize) -> bool {
+const fn can_split_bucket(num_buckets: usize, bucket_index: usize) -> bool {
     bucket_index == num_buckets - 1 && bucket_index != MAX_BUCKETS - 1
 }
 
@@ -154,7 +151,7 @@ pub fn leading_bit_count(local_node: NodeId, remote_node: NodeId) -> usize {
 
 /// Take the number of leading bits that are the same between our node and the remote
 /// node and calculate a bucket index for that node id.
-fn bucket_placement(num_same_bits: usize, num_buckets: usize) -> usize {
+const fn bucket_placement(num_same_bits: usize, num_buckets: usize) -> usize {
     // The index that the node should be placed in *eventually*, meaning
     // when we create enough buckets for that bucket to appear.
     let ideal_index = num_same_bits;
@@ -181,16 +178,16 @@ pub enum BucketContents<'a> {
 }
 
 #[allow(dead_code)]
-impl<'a> BucketContents<'a> {
-    fn is_empty(&self) -> bool {
+impl BucketContents<'_> {
+    const fn is_empty(&self) -> bool {
         matches!(self, &BucketContents::Empty)
     }
 
-    fn is_sorted(&self) -> bool {
+    const fn is_sorted(&self) -> bool {
         matches!(self, &BucketContents::Sorted(_))
     }
 
-    fn is_assorted(&self) -> bool {
+    const fn is_assorted(&self) -> bool {
         matches!(self, &BucketContents::Assorted(_))
     }
 }
@@ -204,7 +201,7 @@ pub struct Buckets<'a> {
 }
 
 impl<'a> Buckets<'a> {
-    fn new(buckets: &'a [Bucket]) -> Buckets<'a> {
+    const fn new(buckets: &'a [Bucket]) -> Self {
         Buckets { buckets, index: 0 }
     }
 }
@@ -216,7 +213,7 @@ impl<'a> Iterator for Buckets<'a> {
     fn next(&mut self) -> Option<BucketContents<'a>> {
         if self.index > MAX_BUCKETS {
             return None;
-        };
+        }
 
         if self.index == MAX_BUCKETS {
             // If not all sorted buckets were present, return the assorted bucket
@@ -265,7 +262,7 @@ pub struct ClosestNodes<'a> {
 }
 
 impl<'a> ClosestNodes<'a> {
-    fn new(buckets: &'a [Bucket], self_node_id: NodeId, other_node_id: NodeId) -> ClosestNodes<'a> {
+    fn new(buckets: &'a [Bucket], self_node_id: NodeId, other_node_id: NodeId) -> Self {
         let start_index = leading_bit_count(self_node_id, other_node_id);
 
         let current_iter = bucket_iterator(buckets, start_index);
@@ -291,7 +288,7 @@ impl<'a> Iterator for ClosestNodes<'a> {
         if let Some(ref mut iter) = self.current_iter {
             if let Some(node) = iter.next() {
                 return Some(node);
-            };
+            }
         }
 
         // Check if we have any nodes to give in the assorted bucket
@@ -302,7 +299,7 @@ impl<'a> Iterator for ClosestNodes<'a> {
                 node.2 = true;
 
                 return Some(node.1);
-            };
+            }
         }
 
         // Check if we can move to a new bucket
@@ -425,7 +422,7 @@ fn next_bucket_index(num_buckets: usize, start_index: usize, curr_index: usize) 
 }
 
 /// Returns true if the overflow checked index is in bounds of the given length.
-fn index_is_in_bounds(length: usize, checked_index: Option<usize>) -> bool {
+const fn index_is_in_bounds(length: usize, checked_index: Option<usize>) -> bool {
     match checked_index {
         Some(index) => index < length,
         None => false,

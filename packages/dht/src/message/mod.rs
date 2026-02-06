@@ -76,7 +76,7 @@ where
     /// # Errors
     ///
     /// This function will return an error if unable to lookup, convert and crate type.
-    pub fn new<T>(message: &'a B::BType, trans_mapper: T) -> Result<MessageType<'a, B>, DhtError>
+    pub fn new<T>(message: &'a B::BType, trans_mapper: T) -> Result<Self, DhtError>
     where
         T: Fn(&[u8]) -> ExpectedResponse,
     {

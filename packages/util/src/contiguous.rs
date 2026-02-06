@@ -71,27 +71,27 @@ pub struct ContiguousBuffers<T> {
 impl<T> ContiguousBuffers<T> {
     /// Create a new empty `ContiguousBuffers` struct.
     #[must_use]
-    pub fn new() -> ContiguousBuffers<T> {
-        ContiguousBuffers { buffers: Vec::new() }
+    pub const fn new() -> Self {
+        Self { buffers: Vec::new() }
     }
 
     /// Create a new `ContiguousBuffers` struct with an initial element.
-    pub fn with_buffer(buffer: T) -> ContiguousBuffers<T> {
-        ContiguousBuffers { buffers: vec![buffer] }
+    pub fn with_buffer(buffer: T) -> Self {
+        Self { buffers: vec![buffer] }
     }
 
     /// Pack a value T at the end of the contiguous buffers.
-    pub fn pack(&mut self, mut buffer: ContiguousBuffers<T>) {
+    pub fn pack(&mut self, mut buffer: Self) {
         self.buffers.append(&mut buffer.buffers);
     }
 
     /// Unpack all values T and pass them to the given closure.
     pub fn unpack<F>(self, mut accept: F)
     where
-        F: FnMut(ContiguousBuffers<T>),
+        F: FnMut(Self),
     {
         for buffer in self.buffers {
-            accept(ContiguousBuffers::with_buffer(buffer));
+            accept(Self::with_buffer(buffer));
         }
     }
 }

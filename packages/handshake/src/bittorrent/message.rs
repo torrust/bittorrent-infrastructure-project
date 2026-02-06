@@ -1,7 +1,6 @@
 use nom::bytes::complete::take;
 use nom::combinator::map_res;
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 use tokio::io::{AsyncWrite, AsyncWriteExt as _};
 use util::bt::{self, InfoHash, PeerId};
 
@@ -19,7 +18,7 @@ pub struct HandshakeMessage {
 
 impl HandshakeMessage {
     /// Create a new `HandshakeMessage` from the given components.
-    pub fn from_parts(prot: Protocol, ext: Extensions, hash: InfoHash, pid: PeerId) -> HandshakeMessage {
+    pub fn from_parts(prot: Protocol, ext: Extensions, hash: InfoHash, pid: PeerId) -> Self {
         if let Protocol::Custom(ref custom) = prot {
             assert!(
                 u8::try_from(custom.len()).is_ok(),
@@ -28,10 +27,10 @@ impl HandshakeMessage {
             );
         }
 
-        HandshakeMessage { prot, ext, hash, pid }
+        Self { prot, ext, hash, pid }
     }
 
-    pub fn from_bytes(bytes: &Vec<u8>) -> IResult<(), HandshakeMessage> {
+    pub fn from_bytes(bytes: &Vec<u8>) -> IResult<(), Self> {
         parse_remote_handshake(bytes)
     }
 
@@ -62,7 +61,7 @@ impl HandshakeMessage {
         Ok(())
     }
 
-    pub fn write_len(&self) -> usize {
+    pub const fn write_len(&self) -> usize {
         #[allow(clippy::cast_possible_truncation)]
         write_len_with_protocol_len(self.prot.write_len() as u8)
     }
@@ -72,18 +71,19 @@ impl HandshakeMessage {
     }
 }
 
-pub fn write_len_with_protocol_len(protocol_len: u8) -> usize {
+pub const fn write_len_with_protocol_len(protocol_len: u8) -> usize {
     1 + (protocol_len as usize) + extensions::NUM_EXTENSION_BYTES + bt::INFO_HASH_LEN + bt::PEER_ID_LEN
 }
 
 #[allow(clippy::ptr_arg)]
 fn parse_remote_handshake(bytes: &Vec<u8>) -> IResult<(), HandshakeMessage> {
-    let res = tuple((
+    let res = (
         Protocol::from_bytes,
         Extensions::from_bytes,
         parse_remote_hash,
         parse_remote_pid,
-    ))(bytes);
+    )
+        .parse(bytes.as_slice());
 
     let (_, (prot, ext, hash, pid)) = res.map_err(|e: nom::Err<nom::error::Error<&[u8]>>| e.map_input(|_| ()))?;
 
@@ -92,14 +92,13 @@ fn parse_remote_handshake(bytes: &Vec<u8>) -> IResult<(), HandshakeMessage> {
 
 fn parse_remote_hash(bytes: &[u8]) -> IResult<&[u8], InfoHash> {
     map_res(take(bt::INFO_HASH_LEN), |hash: &[u8]| {
-        InfoHash::from_hash(hash).map_err(|_| nom::Err::Error((bytes, nom::error::ErrorKind::LengthValue)))
-    })(bytes)
+        InfoHash::from_hash(hash).map_err(|_| ())
+    })
+    .parse(bytes)
 }
 
 fn parse_remote_pid(bytes: &[u8]) -> IResult<&[u8], PeerId> {
-    map_res(take(bt::PEER_ID_LEN), |pid: &[u8]| {
-        PeerId::from_hash(pid).map_err(|_| nom::Err::Error((bytes, nom::error::ErrorKind::LengthValue)))
-    })(bytes)
+    map_res(take(bt::PEER_ID_LEN), |pid: &[u8]| PeerId::from_hash(pid).map_err(|_| ())).parse(bytes)
 }
 
 #[cfg(test)]

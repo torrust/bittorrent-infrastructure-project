@@ -51,8 +51,8 @@ where
     /// # Arguments
     ///
     /// * `sock` - The underlying asynchronous stream.
-    pub fn new(sock: S) -> FramedHandshake<S> {
-        FramedHandshake {
+    pub fn new(sock: S) -> Self {
+        Self {
             sock,
             write_buffer: BytesMut::with_capacity(1),
             read_buffer: Vec::default(),
@@ -138,6 +138,7 @@ where
     type Item = Result<HandshakeMessage, std::io::Error>;
 
     #[instrument(skip(self, cx))]
+    #[allow(clippy::too_many_lines)]
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match self.state {
             HandshakeState::Waiting => {
@@ -170,7 +171,7 @@ where
                         tracing::error!("Error reading bytes: {:?}", e);
                         *this.state = HandshakeState::Errored;
                         return Poll::Ready(Some(Err(e)));
-                    };
+                    }
                 }
 
                 let filled = buf.filled();
@@ -195,7 +196,7 @@ where
                 *this.state = HandshakeState::Reading;
 
                 cx.waker().wake_by_ref();
-                return Poll::Pending;
+                Poll::Pending
             }
             HandshakeState::Reading => {
                 tracing::trace!("handshake reading...");
@@ -226,7 +227,7 @@ where
                         tracing::error!("Error reading bytes: {:?}", e);
                         *this.state = HandshakeState::Errored;
                         return Poll::Ready(Some(Err(e)));
-                    };
+                    }
                 }
 
                 let filled = buf.filled().len();
@@ -240,10 +241,10 @@ where
                 if filled == length {
                     tracing::trace!("have full amount");
                     *this.state = HandshakeState::Ready;
-                };
+                }
 
                 cx.waker().wake_by_ref();
-                return Poll::Pending;
+                Poll::Pending
             }
 
             HandshakeState::Ready => {
@@ -259,33 +260,33 @@ where
                         tracing::trace!("Parsed HandshakeMessage: {:?}", message);
                         self.state = HandshakeState::Finished;
 
-                        return Poll::Ready(Some(Ok(message)));
+                        Poll::Ready(Some(Ok(message)))
                     }
                     Err(nom::Err::Incomplete(needed)) => {
                         tracing::error!("Failed to parse incomplete HandshakeMessage: {needed:?}");
                         self.state = HandshakeState::Errored;
 
-                        return Poll::Ready(Some(Err(std::io::Error::new(
+                        Poll::Ready(Some(Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
                             format!("Failed to parse incomplete HandshakeMessage: {needed:?}"),
-                        ))));
+                        ))))
                     }
                     Err(e) => {
                         tracing::error!("Failed to parse HandshakeMessage");
                         self.state = HandshakeState::Errored;
 
-                        return Poll::Ready(Some(Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e))));
+                        Poll::Ready(Some(Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e))))
                     }
                 }
             }
             HandshakeState::Finished => {
                 tracing::trace!("handshake finished...");
-                return Poll::Ready(None);
+                Poll::Ready(None)
             }
 
             HandshakeState::Errored => {
                 tracing::warn!("handshake polled while errored...");
-                return Poll::Ready(None);
+                Poll::Ready(None)
             }
         }
     }

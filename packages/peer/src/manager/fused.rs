@@ -3,7 +3,7 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 
 use futures::stream::{Fuse, Stream};
-use futures::{StreamExt, TryStream};
+use futures::StreamExt;
 use tokio::time::Instant;
 
 /// Error type for `PersistentStream`.
@@ -24,7 +24,6 @@ pub enum RecurringTimeoutError<Err> {
 pub struct PersistentStream<St, Ty, Err>
 where
     St: Stream<Item = Result<Ty, Err>>,
-    St: TryStream<Ok = Ty, Error = Err>,
 {
     stream: Fuse<St>,
 }
@@ -32,18 +31,16 @@ where
 impl<St, Ty, Err> PersistentStream<St, Ty, Err>
 where
     St: Stream<Item = Result<Ty, Err>>,
-    St: TryStream<Ok = Ty, Error = Err>,
 {
     /// Creates a new `PersistentStream`.
-    pub fn new(stream: St) -> PersistentStream<St, Ty, Err> {
-        PersistentStream { stream: stream.fuse() }
+    pub fn new(stream: St) -> Self {
+        Self { stream: stream.fuse() }
     }
 }
 
 impl<St, Ty, Err> Stream for PersistentStream<St, Ty, Err>
 where
-    St: Stream<Item = Result<Ty, Err>>,
-    St: TryStream<Ok = Ty, Error = Err> + Unpin,
+    St: Stream<Item = Result<Ty, Err>> + Unpin,
 {
     type Item = Result<Ty, PersistentError<Err>>;
 
@@ -71,7 +68,6 @@ where
 pub struct RecurringTimeoutStream<St, Ty, Err>
 where
     St: Stream<Item = Result<Ty, Err>>,
-    St: TryStream<Ok = Ty, Error = Err>,
 {
     stream: Fuse<St>,
     timeout: Duration,
@@ -81,11 +77,10 @@ where
 impl<St, Ty, Err> RecurringTimeoutStream<St, Ty, Err>
 where
     St: Stream<Item = Result<Ty, Err>>,
-    St: TryStream<Ok = Ty, Error = Err>,
 {
     /// Creates a new `RecurringTimeoutStream`.
-    pub fn new(stream: St, timeout: Duration) -> RecurringTimeoutStream<St, Ty, Err> {
-        RecurringTimeoutStream {
+    pub fn new(stream: St, timeout: Duration) -> Self {
+        Self {
             stream: stream.fuse(),
             timeout,
             deadline: Instant::now() + timeout,
@@ -95,8 +90,7 @@ where
 
 impl<St, Ty, Err> Stream for RecurringTimeoutStream<St, Ty, Err>
 where
-    St: Stream<Item = Result<Ty, Err>>,
-    St: TryStream<Ok = Ty, Error = Err> + Unpin,
+    St: Stream<Item = Result<Ty, Err>> + Unpin,
 {
     type Item = Result<Ty, RecurringTimeoutError<Err>>;
 

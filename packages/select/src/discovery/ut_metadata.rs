@@ -15,7 +15,7 @@ use peer::messages::{
     ExtendedMessage, ExtendedType, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
 };
 use peer::PeerInfo;
-use rand::{self, Rng};
+use rand::Rng;
 
 use crate::discovery::error::DiscoveryError;
 use crate::discovery::{IDiscoveryMessage, ODiscoveryMessage};
@@ -63,8 +63,8 @@ pub struct UtMetadataModule {
 
 impl UtMetadataModule {
     #[must_use]
-    pub fn new() -> UtMetadataModule {
-        UtMetadataModule {
+    pub fn new() -> Self {
+        Self {
             completed_map: HashMap::new(),
             pending_map: HashMap::new(),
             active_peers: HashMap::new(),
@@ -184,7 +184,7 @@ impl UtMetadataModule {
         }
     }
 
-    fn recv_reject(_info: PeerInfo, _reject: UtMetadataRejectMessage) {
+    const fn recv_reject(_info: PeerInfo, _reject: UtMetadataRejectMessage) {
         // TODO: Remove any requests after receiving a reject, for now, we will just timeout
     }
 
@@ -192,16 +192,16 @@ impl UtMetadataModule {
         let opt_completed_hash = self
             .pending_map
             .iter()
-            .find(|(_, opt_pending)| opt_pending.as_ref().map_or(false, |pending| pending.left == 0))
+            .find(|(_, opt_pending)| opt_pending.as_ref().is_some_and(|pending| pending.left == 0))
             .map(|(hash, _)| *hash);
 
         opt_completed_hash.and_then(|completed_hash| {
             let completed = self.pending_map.remove(&completed_hash).unwrap().unwrap();
             self.active_peers.remove(&completed_hash);
-            match Info::from_bytes(&completed.bytes[..]) {
-                Ok(info) => Some(Ok(ODiscoveryMessage::DownloadedMetainfo(info.into()))),
-                Err(_) => self.retrieve_completed_download(),
-            }
+            Info::from_bytes(&completed.bytes[..]).map_or_else(
+                |_| self.retrieve_completed_download(),
+                |info| Some(Ok(ODiscoveryMessage::DownloadedMetainfo(info.into()))),
+            )
         })
     }
 
@@ -213,7 +213,7 @@ impl UtMetadataModule {
                         if !active_peers.peers.is_empty() {
                             let mut active_peers_iter = active_peers.peers.iter();
                             let num_active_peers = active_peers_iter.len();
-                            let selected_peer_num = rand::thread_rng().gen::<usize>() % num_active_peers;
+                            let selected_peer_num = rand::rng().random_range(0..num_active_peers);
                             let selected_peer = active_peers_iter.nth(selected_peer_num).unwrap();
                             let selected_message = pending.messages.pop().unwrap();
                             self.active_requests
@@ -269,7 +269,7 @@ impl UtMetadataModule {
                     *opt_pending = Some(pending_info_from_metadata_size(active_peers.metadata_size));
                 }
             }
-            pending_tasks_available |= opt_pending.as_ref().map_or(false, |pending| !pending.messages.is_empty());
+            pending_tasks_available |= opt_pending.as_ref().is_some_and(|pending| !pending.messages.is_empty());
         }
         pending_tasks_available
     }
@@ -315,7 +315,7 @@ impl UtMetadataModule {
     }
 }
 
-fn generate_active_request(message: UtMetadataRequestMessage, peer: PeerInfo) -> ActiveRequest {
+const fn generate_active_request(message: UtMetadataRequestMessage, peer: PeerInfo) -> ActiveRequest {
     ActiveRequest {
         left: Duration::from_millis(REQUEST_TIMEOUT_MILLIS),
         message,
@@ -327,10 +327,10 @@ fn pending_info_from_metadata_size(metadata_size: i64) -> PendingInfo {
     let cast_metadata_size: usize = metadata_size.try_into().unwrap();
     let bytes = vec![0u8; cast_metadata_size];
     let mut messages = Vec::new();
-    let num_pieces = if cast_metadata_size % MAX_REQUEST_SIZE != 0 {
-        cast_metadata_size / MAX_REQUEST_SIZE + 1
-    } else {
+    let num_pieces = if cast_metadata_size.is_multiple_of(MAX_REQUEST_SIZE) {
         cast_metadata_size / MAX_REQUEST_SIZE
+    } else {
+        cast_metadata_size / MAX_REQUEST_SIZE + 1
     };
     for index in 0..num_pieces {
         messages.push(UtMetadataRequestMessage::new(index.try_into().unwrap()));
@@ -391,7 +391,7 @@ impl Sink<IDiscoveryMessage> for UtMetadataModule {
                 Ok(())
             }
             IDiscoveryMessage::ReceivedUtMetadataMessage(info, UtMetadataMessage::Reject(msg)) => {
-                UtMetadataModule::recv_reject(info, msg);
+                Self::recv_reject(info, msg);
                 Ok(())
             }
         }

@@ -24,7 +24,7 @@ impl HandshakerConfig {
     /// Sets the buffer size that the `HandshakeSink` uses internally
     /// to hold `InitiateMessage`s before they are processed.
     #[must_use]
-    pub fn with_sink_buffer_size(mut self, size: usize) -> HandshakerConfig {
+    pub const fn with_sink_buffer_size(mut self, size: usize) -> Self {
         self.sink_buffer_size = size;
         self
     }
@@ -32,7 +32,7 @@ impl HandshakerConfig {
     /// Sets the buffer size that `Handshaker` uses internally
     /// to store handshake connections before they are processed.
     #[must_use]
-    pub fn with_wait_buffer_size(mut self, size: usize) -> HandshakerConfig {
+    pub const fn with_wait_buffer_size(mut self, size: usize) -> Self {
         self.wait_buffer_size = size;
         self
     }
@@ -40,7 +40,7 @@ impl HandshakerConfig {
     /// Sets the buffer size that `HandshakeStream` uses internally
     /// to store processed handshake connections before they are yielded.
     #[must_use]
-    pub fn with_done_buffer_size(mut self, size: usize) -> HandshakerConfig {
+    pub const fn with_done_buffer_size(mut self, size: usize) -> Self {
         self.done_buffer_size = size;
         self
     }
@@ -48,7 +48,7 @@ impl HandshakerConfig {
     /// Sets the handshake timeout that `Handshaker` uses to
     /// make sure peers don't take too long to respond to us.
     #[must_use]
-    pub fn with_handshake_timeout(mut self, timeout: Duration) -> HandshakerConfig {
+    pub const fn with_handshake_timeout(mut self, timeout: Duration) -> Self {
         self.handshake_timeout = timeout;
         self
     }
@@ -57,45 +57,45 @@ impl HandshakerConfig {
     /// make sure peers don't take too long to respond to our
     /// connection (regardless of the underlying transport).
     #[must_use]
-    pub fn with_connect_timeout(mut self, timeout: Duration) -> HandshakerConfig {
+    pub const fn with_connect_timeout(mut self, timeout: Duration) -> Self {
         self.connect_timeout = timeout;
         self
     }
 
     /// Gets the sink buffer size.
     #[must_use]
-    pub fn sink_buffer_size(&self) -> usize {
+    pub const fn sink_buffer_size(&self) -> usize {
         self.sink_buffer_size
     }
 
     /// Gets the wait buffer size.
     #[must_use]
-    pub fn wait_buffer_size(&self) -> usize {
+    pub const fn wait_buffer_size(&self) -> usize {
         self.wait_buffer_size
     }
 
     /// Gets the done buffer size.
     #[must_use]
-    pub fn done_buffer_size(&self) -> usize {
+    pub const fn done_buffer_size(&self) -> usize {
         self.done_buffer_size
     }
 
     /// Gets the handshake timeout.
     #[must_use]
-    pub fn handshake_timeout(&self) -> Duration {
+    pub const fn handshake_timeout(&self) -> Duration {
         self.handshake_timeout
     }
 
     /// Gets the handshake connection initiation timeout.
     #[must_use]
-    pub fn connect_timeout(&self) -> Duration {
+    pub const fn connect_timeout(&self) -> Duration {
         self.connect_timeout
     }
 }
 
 impl Default for HandshakerConfig {
-    fn default() -> HandshakerConfig {
-        HandshakerConfig {
+    fn default() -> Self {
+        Self {
             sink_buffer_size: DEFAULT_HANDSHAKE_BUFFER_SIZE,
             wait_buffer_size: DEFAULT_WAIT_BUFFER_SIZE,
             done_buffer_size: DEFAULT_DONE_BUFFER_SIZE,

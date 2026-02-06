@@ -1,7 +1,6 @@
 use std::net::SocketAddr;
 
 /// Trait for getting the local address.
-
 pub trait LocalAddr {
     /// Get the local address.
     ///

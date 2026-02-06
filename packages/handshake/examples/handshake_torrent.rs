@@ -1,3 +1,5 @@
+#![allow(clippy::significant_drop_tightening)]
+
 use std::io::BufRead as _;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::Duration;
@@ -29,12 +31,12 @@ async fn main() -> std::io::Result<()> {
         .with_peer_id(peer_id)
         .build(TcpTransport)
         .await
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        .map_err(std::io::Error::other)?;
 
     handshaker
         .send(InitiateMessage::new(Protocol::BitTorrent, info_hash, socket_addr))
         .await
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        .map_err(std::io::Error::other)?;
 
     tracing::trace!("\nConnection With Peer Established...Closing In 10 Seconds");
 

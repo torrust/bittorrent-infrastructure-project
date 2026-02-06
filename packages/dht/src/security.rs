@@ -63,7 +63,7 @@ pub fn is_compliant_ipv4_addr(addr: Ipv4Addr, id: NodeId) -> bool {
 }
 
 /// Checks to see if the given ipv4 address is exempt from a security check.
-fn is_security_compliant_ipv4_exempt(addr: Ipv4Addr) -> bool {
+const fn is_security_compliant_ipv4_exempt(addr: Ipv4Addr) -> bool {
     // TODO: Since we are not using this module yet, we don't have to use the ip feature gate which is not stable yet.
 
     false
@@ -111,7 +111,7 @@ fn is_compliant_addr(masked_ip_be: u64, num_octets: usize, id: NodeId) -> bool {
 /// We don't have to check the last byte of the node id since we used that byte to generate
 /// the `crc32c_result`.
 #[allow(clippy::cast_possible_truncation)]
-fn is_compliant_id(crc32c_result: u32, id_bytes: [u8; bt::NODE_ID_LEN]) -> bool {
+const fn is_compliant_id(crc32c_result: u32, id_bytes: [u8; bt::NODE_ID_LEN]) -> bool {
     let mut is_compliant = true;
     is_compliant = is_compliant && (id_bytes[0] == ((crc32c_result >> 24) as u8));
     is_compliant = is_compliant && (id_bytes[1] == ((crc32c_result >> 16) as u8));

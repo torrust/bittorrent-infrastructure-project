@@ -58,18 +58,18 @@ pub struct ClientMetadata {
 impl ClientMetadata {
     /// Create a new `ClientMetadata` container.
     #[must_use]
-    pub fn new(token: ClientToken, result: ClientResult<ClientResponse>) -> ClientMetadata {
-        ClientMetadata { token, result }
+    pub const fn new(token: ClientToken, result: ClientResult<ClientResponse>) -> Self {
+        Self { token, result }
     }
 
     /// Access the request token corresponding to this metadata.
     #[must_use]
-    pub fn token(&self) -> ClientToken {
+    pub const fn token(&self) -> ClientToken {
         self.token
     }
 
     /// Access the result metadata for the request.
-    pub fn result(&self) -> &ClientResult<ClientResponse> {
+    pub const fn result(&self) -> &ClientResult<ClientResponse> {
         &self.result
     }
 }
@@ -91,10 +91,10 @@ impl ClientResponse {
     /// from an `AnnounceRequest`, then unwrapping this value is guaranteed to
     /// succeed.
     #[must_use]
-    pub fn announce_response(&self) -> Option<&AnnounceResponse<'static>> {
+    pub const fn announce_response(&self) -> Option<&AnnounceResponse<'static>> {
         match self {
-            ClientResponse::Announce(res) => Some(res),
-            &ClientResponse::Scrape(_) => None,
+            Self::Announce(res) => Some(res),
+            &Self::Scrape(_) => None,
         }
     }
 
@@ -104,10 +104,10 @@ impl ClientResponse {
     /// from a `ScrapeRequest`, then unwrapping this value is guaranteed to
     /// succeed.
     #[must_use]
-    pub fn scrape_response(&self) -> Option<&ScrapeResponse<'static>> {
+    pub const fn scrape_response(&self) -> Option<&ScrapeResponse<'static>> {
         match self {
-            &ClientResponse::Announce(_) => None,
-            ClientResponse::Scrape(res) => Some(res),
+            &Self::Announce(_) => None,
+            Self::Scrape(res) => Some(res),
         }
     }
 }
@@ -140,20 +140,21 @@ impl TrackerClient {
     ///
     /// It would panic if the desired capacity is too large.
     #[instrument(skip())]
-    pub fn run<H>(bind: SocketAddr, handshaker: H, capacity_or_default: Option<usize>) -> std::io::Result<TrackerClient>
+    pub fn run<H>(bind: SocketAddr, handshaker: H, capacity_or_default: Option<usize>) -> std::io::Result<Self>
     where
         H: Sink<std::io::Result<HandshakerMessage>> + std::fmt::Debug + DiscoveryInfo + Send + Unpin + 'static,
         H::Error: std::fmt::Display,
     {
-        let capacity = if let Some(capacity) = capacity_or_default {
-            tracing::trace!("with capacity {capacity}");
-
-            capacity
-        } else {
-            tracing::trace!("with default capacity: {DEFAULT_CAPACITY}");
-
-            DEFAULT_CAPACITY
-        };
+        let capacity = capacity_or_default.map_or_else(
+            || {
+                tracing::trace!("with default capacity: {DEFAULT_CAPACITY}");
+                DEFAULT_CAPACITY
+            },
+            |capacity| {
+                tracing::trace!("with capacity {capacity}");
+                capacity
+            },
+        );
 
         // Need channel capacity to be 1 more in case channel is saturated and client
         // is dropped so shutdown message can get through in the worst case
@@ -170,7 +171,7 @@ impl TrackerClient {
 
         tracing::info!(?bound_socket, "running client");
 
-        Ok(TrackerClient {
+        Ok(Self {
             send: dispatcher,
             limiter,
             generator: TokenGenerator::new(),
@@ -208,7 +209,7 @@ impl TrackerClient {
     }
 
     #[must_use]
-    pub fn local_addr(&self) -> SocketAddr {
+    pub const fn local_addr(&self) -> SocketAddr {
         self.bound_socket
     }
 }
@@ -241,8 +242,8 @@ struct TokenGenerator {
 
 impl TokenGenerator {
     /// Create a new `TokenGenerator`.
-    pub fn new() -> TokenGenerator {
-        TokenGenerator {
+    pub fn new() -> Self {
+        Self {
             generator: LocallyShuffledIds::<u32>::new(),
         }
     }
@@ -264,8 +265,8 @@ pub struct RequestLimiter {
 
 impl RequestLimiter {
     /// Creates a new `RequestLimiter`.
-    pub fn new(capacity: usize) -> RequestLimiter {
-        RequestLimiter {
+    pub fn new(capacity: usize) -> Self {
+        Self {
             active: Arc::new(AtomicUsize::new(0)),
             capacity,
         }

@@ -29,7 +29,7 @@ pub struct RequestValidate<'a> {
 
 impl<'a> RequestValidate<'a> {
     #[must_use]
-    pub fn new(trans_id: &'a [u8]) -> RequestValidate<'a> {
+    pub const fn new(trans_id: &'a [u8]) -> Self {
         RequestValidate { trans_id }
     }
 
@@ -68,14 +68,14 @@ impl<'a> RequestValidate<'a> {
     }
 }
 
-impl<'a> BConvert for RequestValidate<'a> {
+impl BConvert for RequestValidate<'_> {
     type Error = DhtError;
 
     fn handle_error(&self, error: BencodeConvertError) -> DhtError {
         error.into()
     }
 }
-impl<'a> BConvertExt for RequestValidate<'a> {}
+impl BConvertExt for RequestValidate<'_> {}
 
 // ----------------------------------------------------------------------------//
 
@@ -95,11 +95,7 @@ impl<'a> RequestType<'a> {
     /// # Errors
     ///
     /// This function will return an error if unable to lookup, convert, and generate correct type.
-    pub fn from_parts<B>(
-        root: &'a dyn BDictAccess<B::BKey, B>,
-        trans_id: &'a [u8],
-        rqst_type: &str,
-    ) -> Result<RequestType<'a>, DhtError>
+    pub fn from_parts<B>(root: &'a dyn BDictAccess<B::BKey, B>, trans_id: &'a [u8], rqst_type: &str) -> Result<Self, DhtError>
     where
         B: BRefAccess<BType = B>,
     {

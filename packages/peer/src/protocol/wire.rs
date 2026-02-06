@@ -19,8 +19,8 @@ where
     /// Important to note that nested protocol should follow the same message length format
     /// as the peer wire protocol. This means it should expect a 4 byte (`u32`) message
     /// length prefix. Nested protocols will NOT have their `bytes_needed` method called.
-    pub fn new(ext_protocol: P) -> PeerWireProtocol<P> {
-        PeerWireProtocol { ext_protocol }
+    pub const fn new(ext_protocol: P) -> Self {
+        Self { ext_protocol }
     }
 }
 
@@ -59,9 +59,9 @@ where
     where
         W: std::io::Write,
     {
-        let message = match item {
-            Ok(message) => message,
-            Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, err.clone())),
+        // ProtocolMessageError is uninhabited (empty enum), so Err case is unreachable
+        let Ok(message) = item else {
+            unreachable!("PeerWireProtocolMessageError is uninhabited")
         };
 
         let message_bytes_written = message.write_bytes(writer, &mut self.ext_protocol)?;
@@ -74,9 +74,9 @@ where
     }
 
     fn message_size(&mut self, item: &Result<Self::ProtocolMessage, Self::ProtocolMessageError>) -> std::io::Result<usize> {
-        let message = match item {
-            Ok(message) => message,
-            Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, err.clone())),
+        // ProtocolMessageError is uninhabited (empty enum), so Err case is unreachable
+        let Ok(message) = item else {
+            unreachable!("PeerWireProtocolMessageError is uninhabited")
         };
 
         message.message_size(&mut self.ext_protocol)

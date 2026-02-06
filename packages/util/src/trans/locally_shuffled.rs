@@ -18,7 +18,6 @@ const TRANSACTION_ID_PREALLOC_LEN: usize = 2048;
 /// and hand out ids in order. When the buffer is exhausted we repeat.
 /// This allows us to uphold the uniqueness property for any large
 /// transaction type (such as u64) but also works with smaller types.
-
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Default)]
 pub struct LocallyShuffledIds<T> {
@@ -33,13 +32,13 @@ where
 {
     /// Create a new `LocallyShuffledIds` struct.
     #[must_use]
-    pub fn new() -> LocallyShuffledIds<T> {
-        LocallyShuffledIds::start_at(T::zero())
+    pub fn new() -> Self {
+        Self::start_at(T::zero())
     }
 
     /// Create a new `LocallyShuffledIds` struct at the starting value.
-    pub fn start_at(start: T) -> LocallyShuffledIds<T> {
-        LocallyShuffledIds {
+    pub const fn start_at(start: T) -> Self {
+        Self {
             sequential: SequentialIds::start_at(start),
             stored_ids: Vec::new(),
         }

@@ -1,3 +1,5 @@
+#![allow(clippy::significant_drop_tightening)]
+
 use std::collections::{HashMap, HashSet};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::sync::{Arc, Mutex, Once};
@@ -18,7 +20,7 @@ use utracker::scrape::{ScrapeRequest, ScrapeResponse, ScrapeStats};
 use utracker::{HandshakerMessage, ServerHandler, ServerResult};
 
 #[allow(dead_code)]
-pub const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1000);
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
 
 #[allow(dead_code)]
 pub const LOOPBACK_IPV4: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0));
@@ -62,10 +64,10 @@ pub struct InnerMockTrackerHandler {
 #[allow(dead_code)]
 impl MockTrackerHandler {
     #[instrument(skip(), ret(level = Level::TRACE))]
-    pub fn new() -> MockTrackerHandler {
+    pub fn new() -> Self {
         tracing::debug!("new mock handler");
 
-        MockTrackerHandler {
+        Self {
             inner: Arc::new(Mutex::new(InnerMockTrackerHandler {
                 cids: HashSet::new(),
                 cid_generator: LocallyShuffledIds::<u64>::new(),
@@ -218,18 +220,14 @@ impl Sink<std::io::Result<HandshakerMessage>> for MockHandshakerSink {
     fn poll_ready(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
         tracing::trace!("polling ready");
 
-        self.send
-            .poll_ready(cx)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        self.send.poll_ready(cx).map_err(std::io::Error::other)
     }
 
     #[instrument(skip(self), ret(level = Level::TRACE))]
     fn start_send(mut self: std::pin::Pin<&mut Self>, item: std::io::Result<HandshakerMessage>) -> Result<(), Self::Error> {
         tracing::debug!("starting send");
 
-        self.send
-            .start_send(item?)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        self.send.start_send(item?).map_err(std::io::Error::other)
     }
 
     #[instrument(skip(self, cx), ret(level = Level::TRACE))]
@@ -239,9 +237,7 @@ impl Sink<std::io::Result<HandshakerMessage>> for MockHandshakerSink {
     ) -> std::task::Poll<Result<(), Self::Error>> {
         tracing::trace!("polling flush");
 
-        self.send
-            .poll_flush_unpin(cx)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        self.send.poll_flush_unpin(cx).map_err(std::io::Error::other)
     }
 
     #[instrument(skip(self, cx), ret(level = Level::TRACE))]
@@ -251,9 +247,7 @@ impl Sink<std::io::Result<HandshakerMessage>> for MockHandshakerSink {
     ) -> std::task::Poll<Result<(), Self::Error>> {
         tracing::debug!("polling close");
 
-        self.send
-            .poll_close_unpin(cx)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        self.send.poll_close_unpin(cx).map_err(std::io::Error::other)
     }
 }
 

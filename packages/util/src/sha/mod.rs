@@ -20,7 +20,7 @@ pub struct ShaHash {
 impl ShaHash {
     /// Create a `ShaHash` by hashing the given bytes.
     #[must_use]
-    pub fn from_bytes(bytes: &[u8]) -> ShaHash {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
         ShaHashBuilder::new().add_bytes(bytes).build()
     }
 
@@ -29,25 +29,25 @@ impl ShaHash {
     /// # Errors
     ///
     /// It would error if the hash is the wrong group.
-    pub fn from_hash(hash: &[u8]) -> LengthResult<ShaHash> {
+    pub fn from_hash(hash: &[u8]) -> LengthResult<Self> {
         if hash.len() == SHA_HASH_LEN {
             let mut my_hash = [0u8; SHA_HASH_LEN];
 
             my_hash.iter_mut().zip(hash.iter()).map(|(dst, src)| *dst = *src).count();
 
-            Ok(ShaHash { hash: my_hash })
+            Ok(Self { hash: my_hash })
         } else {
             Err(Error::new(LengthErrorKind::LengthExpected, SHA_HASH_LEN))
         }
     }
 
     #[must_use]
-    pub fn bits(&self) -> Bits<'_> {
+    pub const fn bits(&self) -> Bits<'_> {
         Bits::new(&self.hash)
     }
 
     #[must_use]
-    pub fn len() -> usize {
+    pub const fn len() -> usize {
         SHA_HASH_LEN
     }
 }
@@ -76,8 +76,8 @@ impl From<ShaHash> for [u8; SHA_HASH_LEN] {
 }
 
 impl From<[u8; SHA_HASH_LEN]> for ShaHash {
-    fn from(sha_hash: [u8; SHA_HASH_LEN]) -> ShaHash {
-        ShaHash { hash: sha_hash }
+    fn from(sha_hash: [u8; SHA_HASH_LEN]) -> Self {
+        Self { hash: sha_hash }
     }
 }
 
@@ -92,10 +92,10 @@ impl PartialEq<[u8]> for ShaHash {
     }
 }
 
-impl BitXor<ShaHash> for ShaHash {
-    type Output = ShaHash;
+impl BitXor<Self> for ShaHash {
+    type Output = Self;
 
-    fn bitxor(mut self, rhs: ShaHash) -> ShaHash {
+    fn bitxor(mut self, rhs: Self) -> Self {
         for (src, dst) in rhs.hash.iter().zip(self.hash.iter_mut()) {
             *dst ^= *src;
         }
@@ -128,7 +128,7 @@ pub enum BitRep {
 
 impl PartialEq<XorRep> for BitRep {
     fn eq(&self, other: &XorRep) -> bool {
-        matches!((self, other), (&BitRep::Set, &XorRep::Diff) | (&BitRep::Unset, &XorRep::Same))
+        matches!((self, other), (&Self::Set, &XorRep::Diff) | (&Self::Unset, &XorRep::Same))
     }
 }
 
@@ -140,13 +140,13 @@ pub struct Bits<'a> {
 }
 
 impl<'a> Bits<'a> {
-    fn new(bytes: &'a [u8]) -> Bits<'a> {
+    const fn new(bytes: &'a [u8]) -> Self {
         Bits { bytes, bit_pos: 0 }
     }
 }
 
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for Bits<'a> {
+impl Iterator for Bits<'_> {
     type Item = BitRep;
 
     fn next(&mut self) -> Option<BitRep> {

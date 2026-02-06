@@ -16,8 +16,8 @@ pub struct AnnounceStorage {
 
 impl AnnounceStorage {
     /// Create a new `AnnounceStorage` object.
-    pub fn new() -> AnnounceStorage {
-        AnnounceStorage {
+    pub fn new() -> Self {
+        Self {
             storage: HashMap::new(),
             expires: Vec::new(),
         }
@@ -80,11 +80,10 @@ impl AnnounceStorage {
         let item_info_hash = item.info_hash();
 
         // Check if the contact is already in our list
-        let already_in_list = if let Some(items) = self.storage.get_mut(&item_info_hash) {
-            items.iter().any(|a| a == &item)
-        } else {
-            false
-        };
+        let already_in_list = self
+            .storage
+            .get_mut(&item_info_hash)
+            .is_some_and(|items| items.iter().any(|a| a == &item));
 
         // Check if we need to insert it into the list and if we have room
         match (already_in_list, self.expires.len() < MAX_ITEMS_STORED) {
@@ -95,7 +94,7 @@ impl AnnounceStorage {
                     Entry::Vacant(vac) => {
                         vac.insert(vec![item]);
                     }
-                };
+                }
 
                 Some(false)
             }
@@ -114,13 +113,10 @@ impl AnnounceStorage {
 
             // Get a mutable reference to the list of contacts and remove all contacts that
             // are associated with the expiration (should only be one such contact).
-            let remove_info_hash = if let Some(items) = self.storage.get_mut(&info_hash) {
+            let remove_info_hash = self.storage.get_mut(&info_hash).is_some_and(|items| {
                 items.retain(|a| a.expiration() != item_expiration);
-
                 items.is_empty()
-            } else {
-                false
-            };
+            });
 
             // If we drained the list of contacts completely, remove the info hash entry
             if remove_info_hash {
@@ -138,8 +134,8 @@ struct AnnounceItem {
 }
 
 impl AnnounceItem {
-    pub fn new(info_hash: InfoHash, address: SocketAddr) -> AnnounceItem {
-        AnnounceItem {
+    pub fn new(info_hash: InfoHash, address: SocketAddr) -> Self {
+        Self {
             expiration: ItemExpiration::new(info_hash, address),
         }
     }
@@ -148,11 +144,11 @@ impl AnnounceItem {
         self.expiration.clone()
     }
 
-    pub fn address(&self) -> SocketAddr {
+    pub const fn address(&self) -> SocketAddr {
         self.expiration.address()
     }
 
-    pub fn info_hash(&self) -> InfoHash {
+    pub const fn info_hash(&self) -> InfoHash {
         self.expiration.info_hash()
     }
 }
@@ -169,8 +165,8 @@ struct ItemExpiration {
 }
 
 impl ItemExpiration {
-    pub fn new(info_hash: InfoHash, address: SocketAddr) -> ItemExpiration {
-        ItemExpiration {
+    pub fn new(info_hash: InfoHash, address: SocketAddr) -> Self {
+        Self {
             address,
             inserted: Utc::now(),
             info_hash,
@@ -181,17 +177,17 @@ impl ItemExpiration {
         now - self.inserted >= Duration::hours(EXPIRATION_TIME_HOURS)
     }
 
-    pub fn info_hash(&self) -> InfoHash {
+    pub const fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
-    pub fn address(&self) -> SocketAddr {
+    pub const fn address(&self) -> SocketAddr {
         self.address
     }
 }
 
 impl PartialEq for ItemExpiration {
-    fn eq(&self, other: &ItemExpiration) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.address() == other.address() && self.info_hash() == other.info_hash()
     }
 }

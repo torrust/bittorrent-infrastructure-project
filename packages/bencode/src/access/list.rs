@@ -86,23 +86,23 @@ impl<V> BListAccess<V> for Vec<V> {
         if index >= self[..].len() {
             None
         } else {
-            Some(Vec::remove(self, index))
+            Some(Self::remove(self, index))
         }
     }
 
     fn insert(&mut self, index: usize, item: V) {
-        Vec::insert(self, index, item);
+        Self::insert(self, index, item);
     }
 
     fn push(&mut self, item: V) {
-        Vec::push(self, item);
+        Self::push(self, item);
     }
 
     fn len(&self) -> usize {
-        Vec::len(self)
+        Self::len(self)
     }
 
     fn is_empty(&self) -> bool {
-        Vec::is_empty(self)
+        Self::is_empty(self)
     }
 }

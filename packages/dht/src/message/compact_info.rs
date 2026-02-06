@@ -26,19 +26,19 @@ impl<'a> CompactNodeInfo<'a> {
     /// # Errors
     ///
     /// This function will return an error if the byte array is the wrong length.
-    pub fn new(nodes: &'a [u8]) -> LengthResult<CompactNodeInfo<'a>> {
-        if nodes.len() % BYTES_PER_COMPACT_NODE_INFO != 0 {
+    pub const fn new(nodes: &'a [u8]) -> LengthResult<Self> {
+        if nodes.len().is_multiple_of(BYTES_PER_COMPACT_NODE_INFO) {
+            Ok(CompactNodeInfo { nodes })
+        } else {
             Err(Error::new(
                 LengthErrorKind::LengthMultipleExpected,
                 BYTES_PER_COMPACT_NODE_INFO,
             ))
-        } else {
-            Ok(CompactNodeInfo { nodes })
         }
     }
 
     #[must_use]
-    pub fn nodes(&self) -> &'a [u8] {
+    pub const fn nodes(&self) -> &'a [u8] {
         self.nodes
     }
 }
@@ -62,7 +62,7 @@ pub struct CompactNodeInfoIter<'a> {
 }
 
 #[allow(clippy::copy_iterator)]
-impl<'a> Iterator for CompactNodeInfoIter<'a> {
+impl Iterator for CompactNodeInfoIter<'_> {
     type Item = (NodeId, SocketAddrV4);
 
     fn next(&mut self) -> Option<(NodeId, SocketAddrV4)> {
@@ -86,7 +86,7 @@ pub struct CompactValueInfo<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
 {
-    values: Cow<'a, Vec<Cow<'a, B::BType>>>,
+    values: Cow<'a, [Cow<'a, B::BType>]>,
 }
 
 impl<'a, B> CompactValueInfo<'a, B>
@@ -103,7 +103,7 @@ where
     ///
     /// It is VERY important that the values have been checked to contain only
     /// bencoded bytes and not other types as that will result in a panic.
-    pub fn new(values: &'a dyn BListAccess<B::BType>) -> LengthResult<CompactValueInfo<'a, B>> {
+    pub fn new(values: &'a dyn BListAccess<B::BType>) -> LengthResult<Self> {
         for (index, node) in values.into_iter().enumerate() {
             // TODO: Do not unwrap here please
             let compact_value = node.bytes().unwrap();
@@ -118,7 +118,7 @@ where
         }
 
         Ok(CompactValueInfo {
-            values: Cow::Owned(values.into_iter().map(|b| Cow::Borrowed(b)).collect()),
+            values: Cow::Owned(values.into_iter().map(Cow::Borrowed).collect()),
         })
     }
 
@@ -149,11 +149,11 @@ pub struct CompactValueInfoIter<'a, B>
 where
     B: BRefAccess<BType = B> + Clone,
 {
-    values: Cow<'a, Vec<Cow<'a, B::BType>>>,
+    values: Cow<'a, [Cow<'a, B::BType>]>,
     pos: usize,
 }
 
-impl<'a, B> Iterator for CompactValueInfoIter<'a, B>
+impl<B> Iterator for CompactValueInfoIter<'_, B>
 where
     B: BRefAccess<BType = B> + Clone,
 {
@@ -257,37 +257,35 @@ mod tests {
         let bencode_values = Vec::new();
         let compact_value: CompactValueInfo<'_, BencodeRef<'_>> = CompactValueInfo::new(&bencode_values).unwrap();
 
-        let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
-
-        assert!(collected_info.is_empty());
+        assert!(compact_value.into_iter().next().is_none());
     }
 
     #[test]
     fn positive_compact_values_one() {
-        #[allow(clippy::cast_possible_truncation)]
-        let bytes = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
+        let port_bytes = 6881_u16.to_be_bytes();
+        let bytes = [127, 0, 0, 1, port_bytes[0], port_bytes[1]];
         let bencode_values = ben_list!(ben_bytes!(&bytes[..]));
         let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
 
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
         assert_eq!(collected_info.len(), 1);
 
-        assert_eq!(collected_info[0], SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 6881));
+        assert_eq!(collected_info[0], SocketAddrV4::new(Ipv4Addr::LOCALHOST, 6881));
     }
 
     #[test]
     fn positive_compact_values_many() {
-        #[allow(clippy::cast_possible_truncation)]
-        let bytes_one = [127, 0, 0, 1, (6881 >> 8) as u8, (6881 & 0x00FF) as u8];
-        #[allow(clippy::cast_possible_truncation)]
-        let bytes_two = [10, 0, 0, 1, (6889 >> 8) as u8, (6889 & 0x00FF) as u8];
+        let port_one = 6881_u16.to_be_bytes();
+        let bytes_one = [127, 0, 0, 1, port_one[0], port_one[1]];
+        let port_two = 6889_u16.to_be_bytes();
+        let bytes_two = [10, 0, 0, 1, port_two[0], port_two[1]];
         let bencode_values = ben_list!(ben_bytes!(&bytes_one[..]), ben_bytes!(&bytes_two[..]));
         let compact_value: CompactValueInfo<'_, BencodeMut<'_>> = CompactValueInfo::new(bencode_values.list().unwrap()).unwrap();
 
         let collected_info: Vec<SocketAddrV4> = compact_value.into_iter().collect();
         assert_eq!(collected_info.len(), 2);
 
-        assert_eq!(collected_info[0], SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 6881));
+        assert_eq!(collected_info[0], SocketAddrV4::new(Ipv4Addr::LOCALHOST, 6881));
         assert_eq!(collected_info[1], SocketAddrV4::new(Ipv4Addr::new(10, 0, 0, 1), 6889));
     }
 }

@@ -14,6 +14,7 @@ mod common;
 #[allow(unused_variables)]
 #[allow(unreachable_code)]
 #[allow(clippy::too_many_lines)]
+#[allow(tail_expr_drop_order)]
 #[tokio::test]
 async fn positive_complete_torrent() {
     INIT.call_once(|| {
@@ -134,7 +135,7 @@ async fn positive_complete_torrent() {
 
         while let Some(task) = tasks.try_join_next() {
             match task {
-                Ok(()) => continue,
+                Ok(()) => (),
                 Err(e) => panic!("task joined with error: {e}"),
             }
         }
@@ -195,7 +196,7 @@ async fn positive_complete_torrent() {
 
         while let Some(task) = tasks.try_join_next() {
             match task {
-                Ok(()) => continue,
+                Ok(()) => (),
                 Err(e) => panic!("task joined with error: {e}"),
             }
         }

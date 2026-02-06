@@ -9,6 +9,7 @@ use tracing::level_filters::LevelFilter;
 mod common;
 
 #[tokio::test]
+#[allow(tail_expr_drop_order)]
 async fn positive_load_block() {
     INIT.call_once(|| {
         tracing_stderr_init(LevelFilter::INFO);

@@ -26,7 +26,7 @@ pub struct Metainfo {
 
 impl Metainfo {
     #[must_use]
-    pub fn new(info: Info) -> Self {
+    pub const fn new(info: Info) -> Self {
         Self {
             comment: None,
             announce: None,
@@ -43,7 +43,7 @@ impl Metainfo {
     /// # Errors
     ///
     /// It would return an error if unable to parse the bytes as a [`Metainfo`]
-    pub fn from_bytes<B>(bytes: B) -> Result<Metainfo, ParseError>
+    pub fn from_bytes<B>(bytes: B) -> Result<Self, ParseError>
     where
         B: AsRef<[u8]>,
     {
@@ -60,7 +60,7 @@ impl Metainfo {
 
     /// List of announce urls.
     #[must_use]
-    pub fn trackers(&self) -> Option<&Vec<Vec<String>>> {
+    pub const fn trackers(&self) -> Option<&Vec<Vec<String>>> {
         self.announce_list.as_ref()
     }
 
@@ -84,13 +84,13 @@ impl Metainfo {
 
     /// Creation date in UNIX epoch format for the metainfo file.
     #[must_use]
-    pub fn creation_date(&self) -> Option<i64> {
+    pub const fn creation_date(&self) -> Option<i64> {
         self.creation_date
     }
 
     /// Info dictionary for the metainfo file.
     #[must_use]
-    pub fn info(&self) -> &Info {
+    pub const fn info(&self) -> &Info {
         &self.info
     }
 
@@ -116,8 +116,8 @@ impl Metainfo {
 }
 
 impl From<Info> for Metainfo {
-    fn from(info: Info) -> Metainfo {
-        Metainfo {
+    fn from(info: Info) -> Self {
+        Self {
             comment: None,
             announce: None,
             announce_list: None,
@@ -165,6 +165,7 @@ fn parse_meta_bytes(bytes: &[u8]) -> Result<Metainfo, ParseError> {
 
 /// Contains directory and checksum data for a torrent file.
 #[derive(Debug, Clone, Eq, PartialEq)]
+#[allow(clippy::struct_field_names)]
 pub struct Info {
     info_hash: InfoHash,
     files: Vec<File>,
@@ -181,7 +182,7 @@ impl Info {
     /// # Errors
     ///
     /// It would return an error if unable to parse bytes into [`Info`].
-    pub fn from_bytes<B>(bytes: B) -> Result<Info, ParseError>
+    pub fn from_bytes<B>(bytes: B) -> Result<Self, ParseError>
     where
         B: AsRef<[u8]>,
     {
@@ -192,7 +193,7 @@ impl Info {
 
     /// Hash to uniquely identify this torrent.
     #[must_use]
-    pub fn info_hash(&self) -> InfoHash {
+    pub const fn info_hash(&self) -> InfoHash {
         self.info_hash
     }
 
@@ -208,13 +209,13 @@ impl Info {
 
     /// Length in bytes of each piece.
     #[must_use]
-    pub fn piece_length(&self) -> u64 {
+    pub const fn piece_length(&self) -> u64 {
         self.piece_len
     }
 
     /// Whether or not the torrent is private.
     #[must_use]
-    pub fn is_private(&self) -> Option<bool> {
+    pub const fn is_private(&self) -> Option<bool> {
         self.is_private
     }
 
@@ -256,9 +257,9 @@ impl Info {
 }
 
 impl IntoAccessor for Info {
-    type Accessor = Info;
+    type Accessor = Self;
 
-    fn into_accessor(self) -> std::io::Result<Info> {
+    fn into_accessor(self) -> std::io::Result<Self> {
         Ok(self)
     }
 }
@@ -364,10 +365,7 @@ where
 
 /// Validates and allocates the hash pieces on the heap.
 fn allocate_pieces(pieces: &[u8]) -> Result<Vec<[u8; sha::SHA_HASH_LEN]>, ParseError> {
-    if pieces.len() % sha::SHA_HASH_LEN != 0 {
-        let error_msg = format!("Piece Hash Length Of {} Is Invalid", pieces.len());
-        Err(ParseError::MissingData { details: error_msg })
-    } else {
+    if pieces.len().is_multiple_of(sha::SHA_HASH_LEN) {
         let mut hash_buffers = Vec::with_capacity(pieces.len() / sha::SHA_HASH_LEN);
         let mut hash_bytes = [0u8; sha::SHA_HASH_LEN];
 
@@ -380,6 +378,9 @@ fn allocate_pieces(pieces: &[u8]) -> Result<Vec<[u8; sha::SHA_HASH_LEN]>, ParseE
         }
 
         Ok(hash_buffers)
+    } else {
+        let error_msg = format!("Piece Hash Length Of {} Is Invalid", pieces.len());
+        Err(ParseError::MissingData { details: error_msg })
     }
 }
 
@@ -395,7 +396,7 @@ pub struct File {
 
 impl File {
     /// Parse the info dictionary and generate a single file File.
-    fn as_single_file<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> Result<File, ParseError>
+    fn as_single_file<B>(info_dict: &dyn BDictAccess<B::BKey, B>) -> Result<Self, ParseError>
     where
         B: BRefAccess,
     {
@@ -403,7 +404,7 @@ impl File {
         let md5sum = parse::parse_md5sum(info_dict).map(std::borrow::ToOwned::to_owned);
         let name = parse::parse_name(info_dict)?;
 
-        Ok(File {
+        Ok(Self {
             len: length,
             path: name.to_owned().into(),
             md5sum,
@@ -411,7 +412,7 @@ impl File {
     }
 
     /// Parse the file dictionary and generate a multi file File.
-    fn as_multi_file<B>(file_dict: &dyn BDictAccess<B::BKey, B>) -> Result<File, ParseError>
+    fn as_multi_file<B>(file_dict: &dyn BDictAccess<B::BKey, B>) -> Result<Self, ParseError>
     where
         B: BRefAccess<BType = B>,
     {
@@ -427,7 +428,7 @@ impl File {
             path_buf.push(path);
         }
 
-        Ok(File {
+        Ok(Self {
             len: length,
             path: path_buf,
             md5sum,
@@ -436,7 +437,7 @@ impl File {
 
     /// Length of the file in bytes.
     #[must_use]
-    pub fn length(&self) -> u64 {
+    pub const fn length(&self) -> u64 {
         self.len
     }
 
@@ -549,7 +550,7 @@ mod tests {
                             }
 
                             info_dict_access.insert(parse::FILES_KEY.into(), bencode_files);
-                        };
+                        }
                     })
                     .or_else(|| {
                         // We intended to build a single file torrent if a directory was not specified
@@ -561,7 +562,7 @@ mod tests {
                                 .map(|p| info_dict_access.insert(parse::NAME_KEY.into(), ben_bytes!(&p[0][..])));
                             opt_len.map(|l| info_dict_access.insert(parse::LENGTH_KEY.into(), ben_int!(l)));
                             opt_md5.map(|m| info_dict_access.insert(parse::MD5SUM_KEY.into(), ben_bytes!(m)));
-                        };
+                        }
 
                         None
                     });

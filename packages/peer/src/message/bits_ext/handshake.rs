@@ -31,8 +31,8 @@ impl ExtendedMessageBuilder {
     ///
     /// A new `ExtendedMessageBuilder` instance.
     #[must_use]
-    pub fn new() -> ExtendedMessageBuilder {
-        ExtendedMessageBuilder {
+    pub fn new() -> Self {
+        Self {
             id_map: HashMap::new(),
             our_id: None,
             our_tcp_port: None,
@@ -55,7 +55,7 @@ impl ExtendedMessageBuilder {
     ///
     /// The updated `ExtendedMessageBuilder`.
     #[must_use]
-    pub fn with_our_id(mut self, id: Option<String>) -> ExtendedMessageBuilder {
+    pub fn with_our_id(mut self, id: Option<String>) -> Self {
         self.our_id = id;
         self
     }
@@ -71,7 +71,7 @@ impl ExtendedMessageBuilder {
     ///
     /// The updated `ExtendedMessageBuilder`.
     #[must_use]
-    pub fn with_extended_type(mut self, ext_type: ExtendedType, opt_value: Option<u8>) -> ExtendedMessageBuilder {
+    pub fn with_extended_type(mut self, ext_type: ExtendedType, opt_value: Option<u8>) -> Self {
         if let Some(value) = opt_value {
             self.id_map.insert(ext_type, value);
         } else {
@@ -90,7 +90,7 @@ impl ExtendedMessageBuilder {
     ///
     /// The updated `ExtendedMessageBuilder`.
     #[must_use]
-    pub fn with_our_tcp_port(mut self, tcp: Option<u16>) -> ExtendedMessageBuilder {
+    pub const fn with_our_tcp_port(mut self, tcp: Option<u16>) -> Self {
         self.our_tcp_port = tcp;
         self
     }
@@ -105,7 +105,7 @@ impl ExtendedMessageBuilder {
     ///
     /// The updated `ExtendedMessageBuilder`.
     #[must_use]
-    pub fn with_their_ip(mut self, ip: Option<IpAddr>) -> ExtendedMessageBuilder {
+    pub const fn with_their_ip(mut self, ip: Option<IpAddr>) -> Self {
         self.their_ip = ip;
         self
     }
@@ -120,7 +120,7 @@ impl ExtendedMessageBuilder {
     ///
     /// The updated `ExtendedMessageBuilder`.
     #[must_use]
-    pub fn with_our_ipv6_addr(mut self, ipv6: Option<Ipv6Addr>) -> ExtendedMessageBuilder {
+    pub const fn with_our_ipv6_addr(mut self, ipv6: Option<Ipv6Addr>) -> Self {
         self.our_ipv6_addr = ipv6;
         self
     }
@@ -135,7 +135,7 @@ impl ExtendedMessageBuilder {
     ///
     /// The updated `ExtendedMessageBuilder`.
     #[must_use]
-    pub fn with_our_ipv4_addr(mut self, ipv4: Option<Ipv4Addr>) -> ExtendedMessageBuilder {
+    pub const fn with_our_ipv4_addr(mut self, ipv4: Option<Ipv4Addr>) -> Self {
         self.our_ipv4_addr = ipv4;
         self
     }
@@ -150,7 +150,7 @@ impl ExtendedMessageBuilder {
     ///
     /// The updated `ExtendedMessageBuilder`.
     #[must_use]
-    pub fn with_max_requests(mut self, max_requests: Option<i64>) -> ExtendedMessageBuilder {
+    pub const fn with_max_requests(mut self, max_requests: Option<i64>) -> Self {
         self.our_max_requests = max_requests;
         self
     }
@@ -165,7 +165,7 @@ impl ExtendedMessageBuilder {
     ///
     /// The updated `ExtendedMessageBuilder`.
     #[must_use]
-    pub fn with_metadata_size(mut self, metadata_size: Option<i64>) -> ExtendedMessageBuilder {
+    pub const fn with_metadata_size(mut self, metadata_size: Option<i64>) -> Self {
         self.metadata_size = metadata_size;
         self
     }
@@ -181,7 +181,7 @@ impl ExtendedMessageBuilder {
     ///
     /// The updated `ExtendedMessageBuilder`.
     #[must_use]
-    pub fn with_custom_entry(mut self, key: String, opt_value: Option<BencodeMut<'static>>) -> ExtendedMessageBuilder {
+    pub fn with_custom_entry(mut self, key: String, opt_value: Option<BencodeMut<'static>>) -> Self {
         if let Some(value) = opt_value {
             self.custom_entries.insert(key, value);
         } else {
@@ -293,11 +293,11 @@ impl ExtendedType {
     ///
     /// An `ExtendedType` instance corresponding to the identifier.
     #[must_use]
-    pub fn from_id(id: &str) -> ExtendedType {
+    pub fn from_id(id: &str) -> Self {
         match id {
-            UT_METADATA_ID => ExtendedType::UtMetadata,
-            UT_PEX_ID => ExtendedType::UtPex,
-            custom => ExtendedType::Custom(custom.to_string()),
+            UT_METADATA_ID => Self::UtMetadata,
+            UT_PEX_ID => Self::UtPex,
+            custom => Self::Custom(custom.to_string()),
         }
     }
 
@@ -309,9 +309,9 @@ impl ExtendedType {
     #[must_use]
     pub fn id(&self) -> &str {
         match self {
-            ExtendedType::UtMetadata => UT_METADATA_ID,
-            ExtendedType::UtPex => UT_PEX_ID,
-            ExtendedType::Custom(id) => id,
+            Self::UtMetadata => UT_METADATA_ID,
+            Self::UtPex => UT_PEX_ID,
+            Self::Custom(id) => id,
         }
     }
 }
@@ -343,7 +343,7 @@ impl ExtendedMessage {
     ///
     /// An `ExtendedMessage` instance.
     #[must_use]
-    pub fn from_builder(mut builder: ExtendedMessageBuilder) -> ExtendedMessage {
+    pub fn from_builder(mut builder: ExtendedMessageBuilder) -> Self {
         let mut custom_entries = HashMap::new();
         std::mem::swap(&mut custom_entries, &mut builder.custom_entries);
 
@@ -351,7 +351,7 @@ impl ExtendedMessage {
         let mut raw_bencode = BytesMut::with_capacity(encoded_bytes.len());
         raw_bencode.extend_from_slice(&encoded_bytes);
 
-        ExtendedMessage {
+        Self {
             id_map: builder.id_map,
             our_id: builder.our_id,
             our_tcp_port: builder.our_tcp_port,
@@ -378,14 +378,14 @@ impl ExtendedMessage {
     /// # Errors
     ///
     /// This function will return an error if the byte slice cannot be parsed into an `ExtendedMessage`.
-    pub fn parse_bytes(bytes: &[u8], len: u32) -> IResult<&[u8], std::io::Result<ExtendedMessage>> {
+    pub fn parse_bytes(bytes: &[u8], len: u32) -> IResult<&[u8], std::io::Result<Self>> {
         let cast_len = message::u32_to_usize(len);
 
         if bytes.len() >= cast_len {
             let (raw_bencode, _) = bytes.split_at(cast_len);
 
             let res_extended_message = BencodeRef::decode(raw_bencode, BDecodeOpt::default())
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err.to_string()))
+                .map_err(|err| std::io::Error::other(err.to_string()))
                 .and_then(|bencode| {
                     let ben_dict = bencode_util::CONVERT.convert_dict(&bencode, ROOT_ERROR_KEY)?;
 
@@ -398,7 +398,7 @@ impl ExtendedMessage {
                     let our_max_requests = bencode_util::parse_client_max_requests(ben_dict);
                     let metadata_size = bencode_util::parse_metadata_size(ben_dict);
 
-                    Ok(ExtendedMessage {
+                    Ok(Self {
                         id_map,
                         our_id,
                         our_tcp_port,
@@ -451,7 +451,7 @@ impl ExtendedMessage {
     /// # Returns
     ///
     /// The size of the bencode portion in bytes.
-    pub fn bencode_size(&self) -> usize {
+    pub const fn bencode_size(&self) -> usize {
         self.raw_bencode.len()
     }
 
@@ -482,7 +482,7 @@ impl ExtendedMessage {
     /// # Returns
     ///
     /// An optional u16 representing our TCP port.
-    pub fn our_tcp_port(&self) -> Option<u16> {
+    pub const fn our_tcp_port(&self) -> Option<u16> {
         self.our_tcp_port
     }
 
@@ -491,7 +491,7 @@ impl ExtendedMessage {
     /// # Returns
     ///
     /// An optional `IpAddr` representing their IP address.
-    pub fn their_ip(&self) -> Option<IpAddr> {
+    pub const fn their_ip(&self) -> Option<IpAddr> {
         self.their_ip
     }
 
@@ -500,7 +500,7 @@ impl ExtendedMessage {
     /// # Returns
     ///
     /// An optional `Ipv6Addr` representing our IPv6 address.
-    pub fn our_ipv6_addr(&self) -> Option<Ipv6Addr> {
+    pub const fn our_ipv6_addr(&self) -> Option<Ipv6Addr> {
         self.our_ipv6_addr
     }
 
@@ -509,7 +509,7 @@ impl ExtendedMessage {
     /// # Returns
     ///
     /// An optional `Ipv4Addr` representing our IPv4 address.
-    pub fn our_ipv4_addr(&self) -> Option<Ipv4Addr> {
+    pub const fn our_ipv4_addr(&self) -> Option<Ipv4Addr> {
         self.our_ipv4_addr
     }
 
@@ -518,7 +518,7 @@ impl ExtendedMessage {
     /// # Returns
     ///
     /// An optional i64 representing our max queued requests.
-    pub fn our_max_requests(&self) -> Option<i64> {
+    pub const fn our_max_requests(&self) -> Option<i64> {
         self.our_max_requests
     }
 
@@ -527,7 +527,7 @@ impl ExtendedMessage {
     /// # Returns
     ///
     /// An optional i64 representing the metadata size.
-    pub fn metadata_size(&self) -> Option<i64> {
+    pub const fn metadata_size(&self) -> Option<i64> {
         self.metadata_size
     }
 

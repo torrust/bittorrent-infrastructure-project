@@ -12,8 +12,8 @@ use nom::combinator::{map, value};
 use nom::error::{ErrorKind, ParseError};
 use nom::multi::length_data;
 use nom::number::complete::{be_u32, be_u8};
-use nom::sequence::{pair, tuple};
-use nom::IResult;
+use nom::sequence::pair;
+use nom::{IResult, Parser};
 use thiserror::Error;
 use ut_metadata::UtMetadataMessageError;
 
@@ -101,7 +101,7 @@ where
         bytes: &[u8],
         extended: &ExtendedMessage,
         custom_prot: &mut P,
-    ) -> std::io::Result<Result<PeerExtensionProtocolMessage<P>, PeerExtensionProtocolMessageError>> {
+    ) -> std::io::Result<Result<Self, PeerExtensionProtocolMessageError>> {
         // pass through an inner `std::io::Error`, and wrap any nom-error.
         let res = match parse_extensions(bytes, extended, custom_prot) {
             Ok((_, result)) => result?,
@@ -127,12 +127,9 @@ where
         W: std::io::Write,
     {
         match self {
-            PeerExtensionProtocolMessage::UtMetadata(msg) => {
+            Self::UtMetadata(msg) => {
                 let Some(ext_id) = extended.query_id(&ExtendedType::UtMetadata) else {
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "Can't Send UtMetadataMessage As We Have No Id Mapping",
-                    ));
+                    return Err(std::io::Error::other("Can't Send UtMetadataMessage As We Have No Id Mapping"));
                 };
 
                 let total_len = (2 + msg.message_size());
@@ -148,7 +145,7 @@ where
 
                 Ok(id_length + total_len)
             }
-            PeerExtensionProtocolMessage::Custom(msg) => custom_prot.write_bytes(msg, writer),
+            Self::Custom(msg) => custom_prot.write_bytes(msg, writer),
         }
     }
 
@@ -159,8 +156,8 @@ where
     /// This function will return an error if unable to calculate the message length.
     pub fn message_size(&self, custom_prot: &mut P) -> std::io::Result<usize> {
         match self {
-            PeerExtensionProtocolMessage::UtMetadata(msg) => Ok(msg.message_size()),
-            PeerExtensionProtocolMessage::Custom(msg) => custom_prot.message_size(msg),
+            Self::UtMetadata(msg) => Ok(msg.message_size()),
+            Self::Custom(msg) => custom_prot.message_size(msg),
         }
     }
 }
@@ -177,7 +174,7 @@ where
         &'a [u8],
         std::io::Result<Result<PeerExtensionProtocolMessage<P>, PeerExtensionProtocolMessageError>>,
     > {
-        let (_, (message_len, extended_message_id, message_id)) = tuple((be_u32, be_u8, be_u8))(input)?;
+        let (_, (message_len, extended_message_id, message_id)) = (be_u32, be_u8, be_u8).parse(input)?;
 
         if extended_message_id == bits_ext::EXTENDED_MESSAGE_ID {
             let from = EXTENSION_HEADER_LEN;
@@ -209,7 +206,7 @@ where
     };
 
     // Attempt to parse a built in message type, otherwise, see if it is an extension type.
-    alt((ut_metadata_fn, custom_fn))(bytes)
+    alt((ut_metadata_fn, custom_fn)).parse(bytes)
 }
 
 fn parse_extensions_with_id<P>(

@@ -18,13 +18,13 @@ where
 {
     /// Create a new `SequentialIds` struct.
     #[must_use]
-    pub fn new() -> SequentialIds<T> {
-        SequentialIds::start_at(T::zero())
+    pub fn new() -> Self {
+        Self::start_at(T::zero())
     }
 
     /// Create a new `SequentialIds` struct at the starting value.
-    pub fn start_at(start: T) -> SequentialIds<T> {
-        SequentialIds { next_id: start }
+    pub const fn start_at(start: T) -> Self {
+        Self { next_id: start }
     }
 }
 

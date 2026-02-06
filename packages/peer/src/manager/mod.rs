@@ -54,15 +54,15 @@ where
 {
     /// Create a new `PeerManager` from the given `PeerManagerBuilder`.
     #[must_use]
-    pub fn from_builder(builder: PeerManagerBuilder) -> PeerManager<Peer, Message> {
+    pub fn from_builder(builder: PeerManagerBuilder) -> Self {
         let (res_send, res_recv) = mpsc::channel(builder.stream_buffer_capacity());
         let peers = Arc::new(Mutex::new(HashMap::new()));
         let task_queue = Arc::new(SegQueue::new());
 
-        let sink = PeerManagerSink::new(builder, res_send, peers.clone(), task_queue.clone());
+        let sink = PeerManagerSink::new(builder, res_send, peers.clone(), task_queue);
         let stream = PeerManagerStream::new(res_recv, peers);
 
-        PeerManager {
+        Self {
             sink,
             stream,
             _peer_marker: PhantomData,

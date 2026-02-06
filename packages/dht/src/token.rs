@@ -14,13 +14,12 @@ use util::sha::{self, ShaHash};
 /// store the secret and check if the token they gave us is valid for the current or last secret.
 /// This is technically not what we want, but it will have essentially the same result when we
 /// assume that nobody other than us knows the secret.
-
+///
 /// With this scheme we can guarantee that the minimum amount of time a token can be valid for
 /// is the maximum amount of time a token is valid for in bittorrent in order to provide interop.
 /// Since we aren't storing the tokens we generate (which is awesome) we CANT track how long each
 /// individual token has been checked out from the store and so each token is valid for some time
 /// between 10 and 20 minutes in contrast with 5 and 10 minutes.
-
 const REFRESH_INTERVAL_MINS: i64 = 10;
 
 const IPV4_SECRET_BUFFER_LEN: usize = 4 + 4;
@@ -32,14 +31,14 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(bytes: &[u8]) -> LengthResult<Token> {
+    pub fn new(bytes: &[u8]) -> LengthResult<Self> {
         if bytes.len() == sha::SHA_HASH_LEN {
             let mut token = [0u8; sha::SHA_HASH_LEN];
 
             for (src, dst) in bytes.iter().zip(token.iter_mut()) {
                 *dst = *src;
             }
-            Ok(Token::from(token))
+            Ok(Self::from(token))
         } else {
             Err(Error::new(LengthErrorKind::LengthExpected, sha::SHA_HASH_LEN))
         }
@@ -53,8 +52,8 @@ impl From<Token> for [u8; sha::SHA_HASH_LEN] {
 }
 
 impl From<[u8; sha::SHA_HASH_LEN]> for Token {
-    fn from(token: [u8; sha::SHA_HASH_LEN]) -> Token {
-        Token { token }
+    fn from(token: [u8; sha::SHA_HASH_LEN]) -> Self {
+        Self { token }
     }
 }
 
@@ -75,7 +74,7 @@ pub struct TokenStore {
 }
 
 impl TokenStore {
-    pub fn new() -> TokenStore {
+    pub fn new() -> Self {
         // We cant just use a placeholder for the last secret as that would allow external
         // nodes to exploit recently started dhts. Instead, just generate another placeholder
         // secret for the last secret with the assumption that we wont get a valid announce
@@ -84,7 +83,7 @@ impl TokenStore {
         let last_secret = rand::random::<u32>();
         let last_refresh = Utc::now();
 
-        TokenStore {
+        Self {
             curr_secret,
             last_secret,
             last_refresh,
@@ -116,7 +115,7 @@ impl TokenStore {
                 self.curr_secret = rand::random::<u32>();
                 self.last_refresh = Utc::now();
             }
-        };
+        }
     }
 }
 

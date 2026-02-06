@@ -14,8 +14,8 @@ pub struct NativeFile {
 
 impl NativeFile {
     /// Create a new `NativeFile`.
-    fn new(file: std::fs::File) -> NativeFile {
-        NativeFile { file }
+    const fn new(file: std::fs::File) -> Self {
+        Self { file }
     }
 }
 
@@ -27,11 +27,11 @@ pub struct NativeFileSystem {
 
 impl NativeFileSystem {
     /// Initialize a new `NativeFileSystem` with the default directory set.
-    pub fn with_directory<P>(default: P) -> NativeFileSystem
+    pub fn with_directory<P>(default: P) -> Self
     where
         P: AsRef<Path>,
     {
-        NativeFileSystem {
+        Self {
             current_dir: default.as_ref().to_path_buf(),
         }
     }

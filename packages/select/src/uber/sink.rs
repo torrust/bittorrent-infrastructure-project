@@ -20,6 +20,7 @@ pub struct UberSink {
 }
 
 impl UberSink {
+    #[allow(clippy::significant_drop_tightening)]
     fn handle_message(&mut self, message: IUberMessage) -> Result<(), Error> {
         match message {
             IUberMessage::Control(control) => {
@@ -38,7 +39,7 @@ impl UberSink {
                 if let Some(ext_module) = &mut self.extended {
                     let mut discovery = self.discovery.lock().unwrap();
                     let d_modules = discovery.as_mut_slice();
-                    ext_module.process_message(*extended.clone(), d_modules);
+                    ext_module.process_message(*extended, d_modules);
                 }
             }
             IUberMessage::Discovery(discovery) => {
@@ -50,10 +51,10 @@ impl UberSink {
         Ok(())
     }
 
-    fn poll_discovery_flush(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Error>> {
+    fn poll_discovery_flush(&self, cx: &mut Context<'_>) -> Poll<Result<(), Error>> {
         for discovery in self.discovery.lock().unwrap().iter_mut() {
             match Arc::get_mut(discovery).unwrap().poll_flush_unpin(cx) {
-                Poll::Ready(Ok(())) => continue,
+                Poll::Ready(Ok(())) => (),
                 Poll::Ready(Err(e)) => return Poll::Ready(Err(Error::Discovery(e))),
                 Poll::Pending => {
                     cx.waker().wake_by_ref();
@@ -76,11 +77,11 @@ impl Sink<IUberMessage> for UberSink {
         self.handle_message(item)
     }
 
-    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.poll_discovery_flush(cx)
     }
 
-    fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.poll_discovery_flush(cx)
     }
 }

@@ -35,7 +35,7 @@ where
     _marker: PhantomData<D>,
 }
 
-impl<'a, D> Write for Provider<'a, D>
+impl<D> Write for Provider<'_, D>
 where
     D: Dispatcher + std::fmt::Debug,
 {
@@ -60,10 +60,7 @@ where
                 self.wake();
             } else {
                 self.buffer_pool.push(buffer);
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "No outgoing socket address set",
-                ));
+                return Err(std::io::Error::other("No outgoing socket address set"));
             }
         } else {
             tracing::warn!("flush empty");
@@ -83,7 +80,7 @@ where
         waker: &'a Waker,
         shutdown_handle: &'a mut ShutdownHandle,
         timer_sender: &'a mpsc::Sender<TimeoutAction<D::TimeoutToken>>,
-    ) -> Provider<'a, D> {
+    ) -> Self {
         Provider {
             buffer_pool,
             buffer: None,

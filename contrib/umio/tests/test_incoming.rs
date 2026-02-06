@@ -26,7 +26,7 @@ fn positive_receive_incoming_message() {
         let (started_eloop_sender, started_eloop_receiver) = mpsc::sync_channel(0);
 
         let handle = std::thread::spawn(move || {
-            eloop.run(dispatcher, started_eloop_sender).unwrap();
+            eloop.run(dispatcher, &started_eloop_sender).unwrap();
         });
 
         let () = started_eloop_receiver.recv().unwrap().unwrap();
@@ -54,5 +54,5 @@ fn positive_receive_incoming_message() {
             assert_eq!(addr, socket_addr);
         }
         _ => panic!("ELoop Failed To Receive Incoming Message"),
-    };
+    }
 }

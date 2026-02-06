@@ -48,6 +48,13 @@ where
         Self { sender, waker }
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the channel is disconnected.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the waker fails to wake.
     #[instrument(skip(self))]
     pub fn send(&self, msg: T) -> Result<(), mpsc::SendError<T>> {
         tracing::trace!("sending message");
@@ -105,6 +112,7 @@ where
     Arc<T>: Send,
 {
     #[instrument(skip(waker, shutdown_handle), ret(level = Level::TRACE))]
+    #[allow(tail_expr_drop_order)]
     fn new(waker: Arc<Waker>, shutdown_handle: ShutdownHandle) -> Self {
         let pending: Arc<(Mutex<BinaryHeap<Timeout<T>>>, Condvar)> = Arc::default();
         let finished: Arc<Mutex<VecDeque<Arc<T>>>> = Arc::default();
@@ -132,6 +140,7 @@ where
                         }
 
                         timeouts.append(&mut pending);
+                        drop(pending);
                     }
 
                     while let Some(timeout) = timeouts.pop() {
@@ -149,8 +158,7 @@ where
                         }
                     }
 
-                    let mut finished = finished.lock().unwrap();
-                    finished.append(&mut elapsed);
+                    finished.lock().unwrap().append(&mut elapsed);
                     waker.wake().unwrap();
                 }
             })
@@ -206,7 +214,7 @@ where
 
             lock.lock().unwrap().push(timeout);
             cvar.notify_one();
-        };
+        }
 
         tracing::trace!(%inserted, "new timeout");
 
@@ -240,7 +248,7 @@ impl ShutdownHandle {
             tracing::info!("shutdown called");
         } else {
             tracing::debug!("shutdown already called");
-        };
+        }
 
         match self.waker.wake() {
             Ok(()) => tracing::trace!("waking... shutdown"),
@@ -266,30 +274,30 @@ pub struct ELoopBuilder {
 
 impl ELoopBuilder {
     #[must_use]
-    pub fn new() -> ELoopBuilder {
+    pub fn new() -> Self {
         Self::default()
     }
 
     #[must_use]
-    pub fn channel_capacity(mut self, capacity: usize) -> ELoopBuilder {
+    pub const fn channel_capacity(mut self, capacity: usize) -> Self {
         self.channel_capacity = capacity;
         self
     }
 
     #[must_use]
-    pub fn timer_capacity(mut self, capacity: usize) -> ELoopBuilder {
+    pub const fn timer_capacity(mut self, capacity: usize) -> Self {
         self.timer_capacity = capacity;
         self
     }
 
     #[must_use]
-    pub fn bind_address(mut self, address: SocketAddr) -> ELoopBuilder {
+    pub const fn bind_address(mut self, address: SocketAddr) -> Self {
         self.bind_address = address;
         self
     }
 
     #[must_use]
-    pub fn buffer_length(mut self, length: usize) -> ELoopBuilder {
+    pub const fn buffer_length(mut self, length: usize) -> Self {
         self.buffer_size = length;
         self
     }
@@ -315,7 +323,7 @@ impl Default for ELoopBuilder {
     fn default() -> Self {
         let default_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0));
 
-        ELoopBuilder {
+        Self {
             channel_capacity: DEFAULT_CHANNEL_CAPACITY,
             timer_capacity: DEFAULT_TIMER_CAPACITY,
             buffer_size: DEFAULT_BUFFER_SIZE,
@@ -352,7 +360,7 @@ where
     Weak<<D as Dispatcher>::TimeoutToken>: Send,
 {
     #[instrument(skip(), err, ret(level = Level::TRACE))]
-    fn from_builder(builder: &ELoopBuilder) -> std::io::Result<(ELoop<D>, SocketAddr, ShutdownHandle)> {
+    fn from_builder(builder: &ELoopBuilder) -> std::io::Result<(Self, SocketAddr, ShutdownHandle)> {
         let poll = Poll::new()?;
         let events = Events::with_capacity(builder.channel_capacity);
 
@@ -371,7 +379,7 @@ where
         let message_sender = MessageSender::new(message_sender, waker);
 
         Ok((
-            ELoop {
+            Self {
                 buffer_size: builder.buffer_size,
                 socket: Some(socket),
                 poll,
@@ -406,8 +414,13 @@ where
     /// # Errors
     ///
     /// This function will return an error if binding the UDP socket or polling events fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the socket was not previously set.
     #[instrument(skip(self, dispatcher))]
-    pub fn run(&mut self, dispatcher: D, started_eloop_sender: mpsc::SyncSender<std::io::Result<()>>) -> std::io::Result<()>
+    #[allow(tail_expr_drop_order)]
+    pub fn run(&mut self, dispatcher: D, started_eloop_sender: &mpsc::SyncSender<std::io::Result<()>>) -> std::io::Result<()>
     where
         D: std::fmt::Debug,
         <D as Dispatcher>::Message: std::fmt::Debug,
@@ -439,7 +452,7 @@ where
 
             // Handle events
             for event in &self.events {
-                dispatch_handler.handle_event::<D>(&self.loop_waker.waker, &mut self.shutdown_handle, event, &mut self.poll);
+                dispatch_handler.handle_event(&self.loop_waker.waker, &mut self.shutdown_handle, event, &self.poll);
             }
 
             // Handle messages

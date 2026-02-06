@@ -27,8 +27,8 @@ where
 {
     /// Create a new `FileHandleCache` with the given handle capacity and an
     /// inner `FileSystem` which will be called for handles not in the cache.
-    pub fn new(inner: F, capacity: usize) -> FileHandleCache<F> {
-        FileHandleCache {
+    pub fn new(inner: F, capacity: usize) -> Self {
+        Self {
             cache: Mutex::new(LruCache::new(capacity)),
             inner,
         }

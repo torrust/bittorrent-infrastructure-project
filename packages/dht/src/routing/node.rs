@@ -49,8 +49,8 @@ pub struct Node {
 
 impl Node {
     /// Create a new node that has recently responded to us but never requested from us.
-    pub fn as_good(id: NodeId, addr: SocketAddr) -> Node {
-        Node {
+    pub fn as_good(id: NodeId, addr: SocketAddr) -> Self {
+        Self {
             id,
             addr,
             last_response: Arc::new(Mutex::new(Some(Utc::now()))),
@@ -60,12 +60,12 @@ impl Node {
     }
 
     /// Create a questionable node that has responded to us before but never requested from us.
-    pub fn as_questionable(id: NodeId, addr: SocketAddr) -> Node {
+    pub fn as_questionable(id: NodeId, addr: SocketAddr) -> Self {
         let last_response_offset = Duration::minutes(MAX_LAST_SEEN_MINS);
         // TODO: don't use test helpers in actual code!!!
         let last_response = test::travel_into_past(last_response_offset);
 
-        Node {
+        Self {
             id,
             addr,
             last_response: Arc::new(Mutex::new(Some(last_response))),
@@ -75,8 +75,8 @@ impl Node {
     }
 
     /// Create a new node that has never responded to us or requested from us.
-    pub fn as_bad(id: NodeId, addr: SocketAddr) -> Node {
-        Node {
+    pub fn as_bad(id: NodeId, addr: SocketAddr) -> Self {
+        Self {
             id,
             addr,
             last_response: Arc::default(),
@@ -104,11 +104,11 @@ impl Node {
         self.refresh_requests.store(0, Ordering::Relaxed);
     }
 
-    pub fn id(&self) -> NodeId {
+    pub const fn id(&self) -> NodeId {
         self.id
     }
 
-    pub fn addr(&self) -> SocketAddr {
+    pub const fn addr(&self) -> SocketAddr {
         self.addr
     }
 
@@ -153,7 +153,7 @@ impl Node {
             NodeStatus::Good => return NodeStatus::Good,
             NodeStatus::Bad => return NodeStatus::Bad,
             NodeStatus::Questionable => (),
-        };
+        }
 
         recently_requested(self, curr_time)
     }
@@ -161,8 +161,8 @@ impl Node {
 
 impl Eq for Node {}
 
-impl PartialEq<Node> for Node {
-    fn eq(&self, other: &Node) -> bool {
+impl PartialEq<Self> for Node {
+    fn eq(&self, other: &Self) -> bool {
         self.id == other.id && self.addr == other.addr
     }
 }
@@ -178,8 +178,8 @@ impl Hash for Node {
 }
 
 impl Clone for Node {
-    fn clone(&self) -> Node {
-        Node {
+    fn clone(&self) -> Self {
+        Self {
             id: self.id,
             addr: self.addr,
             last_response: self.last_response.clone(),
@@ -214,7 +214,8 @@ impl std::fmt::Debug for Node {
 /// to us before, but not recently.
 fn recently_responded(node: &Node, curr_time: DateTime<Utc>) -> NodeStatus {
     // Check if node has ever responded to us
-    let since_response = match *node.last_response.lock().unwrap() {
+    let last_response_value = *node.last_response.lock().unwrap();
+    let since_response = match last_response_value {
         Some(response_time) => curr_time - response_time,
         None => return NodeStatus::Bad,
     };
@@ -237,7 +238,8 @@ fn recently_requested(node: &Node, curr_time: DateTime<Utc>) -> NodeStatus {
     let max_last_request = Duration::minutes(MAX_LAST_SEEN_MINS);
 
     // Check if the node has recently request from us
-    if let Some(request_time) = *node.last_request.lock().unwrap() {
+    let last_request_value = *node.last_request.lock().unwrap();
+    if let Some(request_time) = last_request_value {
         let since_request = curr_time - request_time;
 
         if since_request < max_last_request {

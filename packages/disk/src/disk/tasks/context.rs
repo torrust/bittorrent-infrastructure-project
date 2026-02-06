@@ -46,8 +46,8 @@ pub struct MetainfoState {
 }
 
 impl MetainfoState {
-    pub fn new(file: Metainfo, state: Arc<Mutex<PieceCheckerState>>) -> MetainfoState {
-        MetainfoState { file, checker: state }
+    pub const fn new(file: Metainfo, state: Arc<Mutex<PieceCheckerState>>) -> Self {
+        Self { file, checker: state }
     }
 }
 
@@ -56,8 +56,8 @@ where
     F: FileSystem + Sync + 'static,
     Arc<F>: Send + Sync,
 {
-    pub fn new(out: mpsc::Sender<ODiskMessage>, fs: Arc<F>) -> DiskManagerContext<F> {
-        DiskManagerContext {
+    pub fn new(out: mpsc::Sender<ODiskMessage>, fs: Arc<F>) -> Self {
+        Self {
             torrents: Arc::new(RwLock::new(HashMap::new())),
             out,
             fs,
@@ -69,21 +69,22 @@ where
         self.out.send(message).await
     }
 
-    pub fn filesystem(&self) -> &Arc<F> {
+    pub const fn filesystem(&self) -> &Arc<F> {
         &self.fs
     }
 
+    #[allow(clippy::significant_drop_tightening)]
     pub fn insert_torrent(
         &self,
         file: Metainfo,
         state: &Arc<Mutex<PieceCheckerState>>,
     ) -> Result<InfoHash, (InfoHash, Box<MetainfoState>)> {
+        let hash = file.info().info_hash();
+
         let mut write_torrents = self
             .torrents
             .write()
             .expect("bip_disk: DiskManagerContext::insert_torrents Failed To Write Torrent");
-
-        let hash = file.info().info_hash();
 
         let entry = write_torrents.entry(hash);
 
@@ -109,15 +110,18 @@ where
             read_torrents.get(&hash)?.clone()
         };
 
-        Some(with_state(self.fs.clone(), state.clone()).await)
+        let result = with_state(self.fs.clone(), state.clone()).await;
+        Some(result)
     }
 
+    #[allow(clippy::let_and_return)] // Required for Rust 2024 drop order
     pub fn remove_torrent(&self, hash: InfoHash) -> bool {
         let mut write_torrents = self
             .torrents
             .write()
             .expect("bip_disk: DiskManagerContext::remove_torrent Failed To Write Torrent");
 
-        write_torrents.remove(&hash).is_some()
+        let removed = write_torrents.remove(&hash).is_some();
+        removed
     }
 }

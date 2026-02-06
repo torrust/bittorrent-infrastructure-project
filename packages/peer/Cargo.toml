@@ -15,6 +15,9 @@ publish.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 bencode = { path = "../bencode" }
 handshake = { path = "../handshake" }
@@ -24,9 +27,9 @@ byteorder = "1"
 bytes = "1"
 crossbeam = "0"
 futures = "0"
-nom = "7"
+nom = "8"
 pin-project = "1"
-thiserror = "1"
+thiserror = "2"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0", features = ["codec"] }
 tracing = "0"

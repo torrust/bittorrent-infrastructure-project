@@ -32,14 +32,15 @@ pub struct TableRefresh {
 }
 
 impl TableRefresh {
-    pub fn new(id_generator: MIDGenerator) -> TableRefresh {
-        TableRefresh {
+    pub fn new(id_generator: MIDGenerator) -> Self {
+        Self {
             id_generator: Mutex::new(id_generator),
             curr_refresh_bucket: AtomicUsize::default(),
             tasks: Arc::default(),
         }
     }
 
+    #[allow(clippy::significant_drop_tightening)]
     pub async fn continue_refresh(
         &self,
         table: Arc<RwLock<RoutingTable>>,

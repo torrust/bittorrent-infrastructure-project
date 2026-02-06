@@ -5,8 +5,7 @@ use std::io::Write as _;
 use byteorder::{BigEndian, WriteBytesExt};
 use nom::combinator::map;
 use nom::number::complete::{be_u32, be_u64};
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 use crate::announce::AnnounceResponse;
 use crate::contact::CompactPeers;
@@ -26,7 +25,7 @@ pub enum ResponseType<'a> {
     Error(ErrorResponse<'a>),
 }
 
-impl<'a> ResponseType<'a> {
+impl ResponseType<'_> {
     /// Create an owned version of the `ResponseType`.
     #[must_use]
     pub fn to_owned(&self) -> ResponseType<'static> {
@@ -50,7 +49,7 @@ pub struct TrackerResponse<'a> {
 impl<'a> TrackerResponse<'a> {
     /// Create a new `TrackerResponse`.
     #[must_use]
-    pub fn new(trans_id: u32, res_type: ResponseType<'a>) -> TrackerResponse<'a> {
+    pub const fn new(trans_id: u32, res_type: ResponseType<'a>) -> Self {
         TrackerResponse {
             transaction_id: trans_id,
             response_type: res_type,
@@ -62,7 +61,7 @@ impl<'a> TrackerResponse<'a> {
     /// # Errors
     ///
     /// It will return an error when unable to parse the bytes.
-    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], TrackerResponse<'a>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> IResult<&'a [u8], Self> {
         parse_response(bytes)
     }
 
@@ -105,7 +104,7 @@ impl<'a> TrackerResponse<'a> {
 
                 err.write_bytes(&mut writer)?;
             }
-        };
+        }
 
         writer.flush();
 
@@ -114,13 +113,13 @@ impl<'a> TrackerResponse<'a> {
 
     /// Transaction ID supplied with a response to uniquely identify a request.
     #[must_use]
-    pub fn transaction_id(&self) -> u32 {
+    pub const fn transaction_id(&self) -> u32 {
         self.transaction_id
     }
 
     /// Actual type of response that this `TrackerResponse` represents.
     #[must_use]
-    pub fn response_type(&self) -> &ResponseType<'a> {
+    pub const fn response_type(&self) -> &ResponseType<'a> {
         &self.response_type
     }
 
@@ -135,7 +134,7 @@ impl<'a> TrackerResponse<'a> {
 }
 
 fn parse_response(bytes: &[u8]) -> IResult<&[u8], TrackerResponse<'_>> {
-    let (remaining, (action_id, transaction_id)) = tuple((be_u32, be_u32))(bytes)?;
+    let (remaining, (action_id, transaction_id)) = (be_u32, be_u32).parse(bytes)?;
 
     match action_id {
         crate::CONNECT_ACTION_ID => {

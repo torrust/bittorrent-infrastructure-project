@@ -88,11 +88,7 @@ where
     accessor.access_pieces(|piece_access| {
         match piece_access {
             PieceAccess::Compute(piece_region) => {
-                let mut curr_piece_buffer = if let Some(piece_buffer) = opt_piece_buffer.take() {
-                    piece_buffer
-                } else {
-                    buffers.checkout()
-                };
+                let mut curr_piece_buffer = opt_piece_buffer.take().unwrap_or_else(|| buffers.checkout());
 
                 let mut end_of_region = false;
                 while !end_of_region {
@@ -153,7 +149,7 @@ where
     }
 
     // Sort our list to make sure the pieces are in order before we send them off
-    pieces.sort_by(|one, two| one.0.cmp(&two.0));
+    pieces.sort_by_key(|one| one.0);
 
     Ok(pieces)
 }
@@ -182,8 +178,8 @@ fn start_hash_worker(send: &mpsc::Sender<MasterMessage>, work: &Arc<SegQueue<Wor
     while work_to_do {
         let work_item = work.pop();
 
-        match work_item {
-            Some(work) => match work {
+        if let Some(work) = work_item {
+            match work {
                 WorkerMessage::Finish => {
                     work_to_do = false;
                 }
@@ -193,8 +189,7 @@ fn start_hash_worker(send: &mpsc::Sender<MasterMessage>, work: &Arc<SegQueue<Wor
                     send.send(MasterMessage::AcceptPiece(index, hash)).unwrap();
                     buffers.checkin(buffer);
                 }
-            },
-            None => continue,
+            }
         }
     }
 
@@ -226,8 +221,8 @@ mod tests {
     }
 
     impl MockAccessor {
-        fn new() -> MockAccessor {
-            MockAccessor {
+        fn new() -> Self {
+            Self {
                 buffer_ranges: Vec::new(),
                 contiguous_buffer: Vec::new(),
             }
@@ -236,7 +231,7 @@ mod tests {
         fn create_region(&mut self, num_bytes: usize) {
             let mut buffer = vec![0u8; num_bytes];
 
-            rand::Rng::fill(&mut rand::thread_rng(), buffer.as_mut_slice());
+            rand::Rng::fill(&mut rand::rng(), buffer.as_mut_slice());
 
             let (begin, end) = (self.contiguous_buffer.len(), self.contiguous_buffer.len() + buffer.len());
 

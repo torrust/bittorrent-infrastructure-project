@@ -21,7 +21,7 @@ pub struct MainlineDht {
 
 impl MainlineDht {
     /// Start the `MainlineDht` with the given `DhtBuilder` and Handshaker.
-    async fn with_builder<H>(builder: DhtBuilder, handshaker: H) -> std::io::Result<MainlineDht>
+    async fn with_builder<H>(builder: DhtBuilder, handshaker: H) -> std::io::Result<Self>
     where
         H: HandshakerTrait + 'static,
     {
@@ -53,7 +53,7 @@ impl MainlineDht {
             tracing::warn!("bip_dt: MainlineDht failed to send a start bootstrap message...");
         }
 
-        Ok(MainlineDht {
+        Ok(Self {
             main_task_sender,
             _tasks: tasks,
         })
@@ -132,8 +132,8 @@ impl DhtBuilder {
     ///
     /// This should not be used directly, force the user to supply builder with
     /// some initial bootstrap method.
-    fn new() -> DhtBuilder {
-        DhtBuilder {
+    fn new() -> Self {
+        Self {
             nodes: HashSet::new(),
             routers: HashSet::new(),
             read_only: true,
@@ -144,8 +144,8 @@ impl DhtBuilder {
 
     /// Creates a `DhtBuilder` with an initial node for our routing table.
     #[must_use]
-    pub fn with_node(node_addr: SocketAddr) -> DhtBuilder {
-        let dht = DhtBuilder::new();
+    pub fn with_node(node_addr: SocketAddr) -> Self {
+        let dht = Self::new();
 
         dht.add_node(node_addr)
     }
@@ -156,15 +156,15 @@ impl DhtBuilder {
     /// Difference between a node and a router is that a router is never put in
     /// our routing table.
     #[must_use]
-    pub fn with_router(router: Router) -> DhtBuilder {
-        let dht = DhtBuilder::new();
+    pub fn with_router(router: Router) -> Self {
+        let dht = Self::new();
 
         dht.add_router(router)
     }
 
     /// Add nodes which will be distributed within our routing table.
     #[must_use]
-    pub fn add_node(mut self, node_addr: SocketAddr) -> DhtBuilder {
+    pub fn add_node(mut self, node_addr: SocketAddr) -> Self {
         self.nodes.insert(node_addr);
 
         self
@@ -174,7 +174,7 @@ impl DhtBuilder {
     ///
     /// See `DhtBuilder::with_router` for difference between a router and a node.
     #[must_use]
-    pub fn add_router(mut self, router: Router) -> DhtBuilder {
+    pub fn add_router(mut self, router: Router) -> Self {
         self.routers.insert(router);
 
         self
@@ -186,7 +186,7 @@ impl DhtBuilder {
     /// Used when we are behind a restrictive NAT and/or we want to decrease
     /// incoming network traffic. Defaults value is true.
     #[must_use]
-    pub fn set_read_only(mut self, read_only: bool) -> DhtBuilder {
+    pub const fn set_read_only(mut self, read_only: bool) -> Self {
         self.read_only = read_only;
 
         self
@@ -198,7 +198,7 @@ impl DhtBuilder {
     /// Purpose of the external address is to generate a `NodeId` that conforms to
     /// BEP 42 so that nodes can safely store information on our node.
     #[must_use]
-    pub fn set_external_addr(mut self, addr: SocketAddr) -> DhtBuilder {
+    pub const fn set_external_addr(mut self, addr: SocketAddr) -> Self {
         self.ext_addr = Some(addr);
 
         self
@@ -208,7 +208,7 @@ impl DhtBuilder {
     ///
     /// If this is not supplied we will use the OS default route.
     #[must_use]
-    pub fn set_source_addr(mut self, addr: SocketAddr) -> DhtBuilder {
+    pub const fn set_source_addr(mut self, addr: SocketAddr) -> Self {
         self.src_addr = addr;
 
         self
