@@ -10,7 +10,7 @@ use disk::fs_cache::FileHandleCache;
 use disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, InfoHash, ODiskMessage};
 use futures::{SinkExt, StreamExt};
 use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
-use rand::Rng;
+use rand::RngExt;
 use tokio::sync::Mutex;
 
 /// Set to true if you are playing around with anything that could affect file

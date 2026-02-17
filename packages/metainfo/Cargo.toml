@@ -30,7 +30,7 @@ walkdir = "2"
 chrono = "0"
 criterion = "0"
 pbr = "1"
-rand = "0.9"
+rand = "0.10"
 
 [[bench]]
 harness = false

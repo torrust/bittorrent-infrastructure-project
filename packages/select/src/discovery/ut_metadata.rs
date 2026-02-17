@@ -15,7 +15,7 @@ use peer::messages::{
     ExtendedMessage, ExtendedType, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
 };
 use peer::PeerInfo;
-use rand::Rng;
+use rand::RngExt;
 
 use crate::discovery::error::DiscoveryError;
 use crate::discovery::{IDiscoveryMessage, ODiscoveryMessage};

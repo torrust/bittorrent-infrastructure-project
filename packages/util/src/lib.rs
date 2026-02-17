@@ -30,7 +30,7 @@ pub mod error;
 
 /// Applies a Fisher-Yates shuffle on the given list.
 pub fn fisher_shuffle<T: Default>(list: &mut [T]) {
-    use rand::Rng;
+    use rand::RngExt;
     let mut rng = rand::rng();
     for i in 0..list.len() {
         let swap_index = rng.random_range(i..list.len());

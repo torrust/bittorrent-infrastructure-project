@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
-use rand::Rng as _;
+use rand::RngExt as _;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::task::JoinSet;
 use util::bt::PeerId;

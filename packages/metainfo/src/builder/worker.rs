@@ -231,7 +231,7 @@ mod tests {
         fn create_region(&mut self, num_bytes: usize) {
             let mut buffer = vec![0u8; num_bytes];
 
-            rand::Rng::fill(&mut rand::rng(), buffer.as_mut_slice());
+            rand::RngExt::fill(&mut rand::rng(), buffer.as_mut_slice());
 
             let (begin, end) = (self.contiguous_buffer.len(), self.contiguous_buffer.len() + buffer.len());
 
