@@ -2,8 +2,8 @@ use std::net::SocketAddr;
 use std::sync::mpsc;
 
 use tracing::{instrument, Level};
-use umio::{MessageSender, ShutdownHandle};
 
+use crate::runtime::{MessageSender, ShutdownHandle};
 use crate::server::dispatcher::DispatchMessage;
 use crate::server::handler::ServerHandler;
 
