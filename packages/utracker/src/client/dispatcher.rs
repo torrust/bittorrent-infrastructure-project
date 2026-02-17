@@ -96,7 +96,6 @@ pub enum DispatchMessage {
 
 /// Create a new background dispatcher to execute request and send responses back.
 ///
-/// Assumes `msg_capacity` is less than `usize::max_value`().
 #[allow(clippy::module_name_repetitions)]
 #[instrument(skip())]
 pub fn create_dispatcher<H>(
@@ -120,7 +119,7 @@ where
 
     let handle = std::thread::spawn(move || {
         let rt = Builder::new_current_thread().enable_all().build().expect("tokio runtime");
-        rt.block_on(run_client(std_socket, handshaker, msg_capacity, limiter, tx_for_thread, rx));
+        rt.block_on(run_client(std_socket, handshaker, limiter, tx_for_thread, rx));
     });
 
     tx.send(DispatchMessage::StartTimer)
@@ -133,7 +132,6 @@ where
 async fn run_client<H>(
     socket: std::net::UdpSocket,
     handshaker: H,
-    msg_capacity: usize,
     limiter: RequestLimiter,
     tx: MessageSender<DispatchMessage>,
     mut rx: UnboundedReceiver<DispatchMessage>,
@@ -152,10 +150,13 @@ async fn run_client<H>(
             res = socket.recv_from(&mut buf) => {
                 match res {
                     Ok((size, addr)) => {
-                        if let IResult::Ok((_, response)) = TrackerResponse::from_bytes(&buf[..size]) {
-                            dispatcher.recv_response(&socket, &response, addr).await;
-                        } else {
-                            tracing::error!("received an incoming error message");
+                        match TrackerResponse::from_bytes(&buf[..size]) {
+                            IResult::Ok((_, response)) => {
+                                dispatcher.recv_response(&socket, &response, addr).await;
+                            }
+                            Err(e) => {
+                                tracing::error!(%e, "failed to parse tracker response from UDP packet");
+                            }
                         }
                     }
                     Err(e) => tracing::error!(%e, "error receiving from socket"),
@@ -447,7 +448,9 @@ where
             tokio::time::sleep_until(sleep_until).await;
             drop(tx.send(DispatchMessage::Timeout(token)));
         });
-        self.timeouts.insert(token.id, handle);
+        if let Some(old_handle) = self.timeouts.insert(token.id, handle) {
+            old_handle.abort();
+        }
     }
 
     fn cancel_timeout(&mut self, token: TimeoutToken) {

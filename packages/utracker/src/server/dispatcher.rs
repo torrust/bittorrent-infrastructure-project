@@ -5,7 +5,7 @@ use nom::IResult;
 use tokio::net::UdpSocket;
 use tokio::runtime::Builder;
 use tokio::sync::mpsc::UnboundedReceiver;
-use tracing::{instrument, Level};
+use tracing::instrument;
 
 use crate::announce::AnnounceRequest;
 use crate::error::ErrorResponse;
@@ -63,10 +63,13 @@ where
             res = socket.recv_from(&mut buf) => {
                 match res {
                     Ok((size, addr)) => {
-                        if let IResult::Ok((_, request)) = TrackerRequest::from_bytes(&buf[..size]) {
-                            process_request(&socket, &mut handler, &request, addr).await;
-                        } else {
-                            tracing::error!("received an incoming error message");
+                        match TrackerRequest::from_bytes(&buf[..size]) {
+                            IResult::Ok((_, request)) => {
+                                process_request(&socket, &mut handler, &request, addr).await;
+                            }
+                            Err(e) => {
+                                tracing::error!(%e, "failed to parse incoming request");
+                            }
                         }
                     }
                     Err(e) => {
