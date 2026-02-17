@@ -131,9 +131,12 @@ async fn main() {
             }
             handshaker_tasks.shutdown().await;
 
-            while let Some(result) = tasks.lock().await.try_join_next() {
-                if let Err(e) = result {
-                    eprintln!("Task failed: {e:?}");
+            {
+                let mut tasks_guard = tasks.lock().await;
+                while let Some(result) = tasks_guard.try_join_next() {
+                    if let Err(e) = result {
+                        eprintln!("Task failed: {e:?}");
+                    }
                 }
             }
             tasks.lock().await.shutdown().await;
@@ -386,12 +389,12 @@ async fn handle_peer_manager_messages(
                         u64::from(request_message.block_offset()),
                         request_message.block_length(),
                     );
-                    let mut request_map_mut = disk_request_map.lock().await;
-
-                    let block_entry = request_map_mut.entry(block_metadata);
-                    let peers_requested = block_entry.or_insert(Vec::new());
-
-                    peers_requested.push(peer_info);
+                    disk_request_map
+                        .lock()
+                        .await
+                        .entry(block_metadata)
+                        .or_default()
+                        .push(peer_info);
 
                     Some(Either::Right(IDiskMessage::LoadBlock(BlockMut::new(
                         block_metadata,
@@ -462,9 +465,7 @@ async fn handle_disk_manager_messages(
             Ok(ODiskMessage::BlockLoaded(block)) => {
                 let (metadata, block) = block.into_parts();
 
-                let mut request_map_mut = disk_request_map.lock().await;
-                let peer_list = request_map_mut.get_mut(&metadata).unwrap();
-                let peer_info = peer_list.remove(0);
+                let peer_info = disk_request_map.lock().await.get_mut(&metadata).unwrap().remove(0);
 
                 let piece_message = PieceMessage::new(
                     metadata.piece_index().try_into().unwrap(),
