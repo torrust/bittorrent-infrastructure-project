@@ -2,10 +2,10 @@ use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
-use futures::channel::mpsc::{self, SendError};
 use futures::SinkExt as _;
+use futures::channel::mpsc::{self, SendError};
 use tokio::task::JoinSet;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 use util::bt::{self, NodeId};
 
 use crate::message::find_node::FindNodeRequest;

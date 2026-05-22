@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::Write as _;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
-use bencode::{ben_bytes, ben_int, BConvert, BDecodeOpt, BMutAccess, BencodeMut, BencodeRef};
+use bencode::{BConvert, BDecodeOpt, BMutAccess, BencodeMut, BencodeRef, ben_bytes, ben_int};
 use bytes::{Bytes, BytesMut};
 use nom::{IResult, Needed};
 use util::convert;

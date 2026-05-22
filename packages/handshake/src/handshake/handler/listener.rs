@@ -45,8 +45,8 @@ impl<S> Future for ListenerHandler<S> {
 mod tests {
 
     use super::ListenerHandler;
-    use crate::filter::filters::test_filters::{BlockAddrFilter, BlockProtocolFilter};
     use crate::filter::filters::Filters;
+    use crate::filter::filters::test_filters::{BlockAddrFilter, BlockProtocolFilter};
     use crate::handshake::handler::HandshakeType;
     use crate::message::protocol::Protocol;
 

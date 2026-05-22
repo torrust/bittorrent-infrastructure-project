@@ -297,8 +297,8 @@ mod tests {
 
     use std::sync::Once;
 
-    use futures::stream::StreamExt;
     use futures::SinkExt as _;
+    use futures::stream::StreamExt;
     use tokio::io::{AsyncRead, AsyncReadExt as _, AsyncWriteExt as _};
     use tracing::level_filters::LevelFilter;
     use util::bt::{self, InfoHash, PeerId};

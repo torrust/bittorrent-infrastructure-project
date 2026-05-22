@@ -24,7 +24,9 @@ pub enum TorrentError {
     #[error("IO error")]
     Io(#[from] std::io::Error),
 
-    #[error("Failed To Add Torrent Because Size Checker Failed For {file_path:?} Where File Size Was {actual_size} But Should Have Been {expected_size}")]
+    #[error(
+        "Failed To Add Torrent Because Size Checker Failed For {file_path:?} Where File Size Was {actual_size} But Should Have Been {expected_size}"
+    )]
     ExistingFileSizeCheck {
         file_path: PathBuf,
         expected_size: u64,

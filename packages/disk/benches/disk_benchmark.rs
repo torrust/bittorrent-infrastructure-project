@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use bytes::BytesMut;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use disk::error::TorrentError;
 use disk::fs::NativeFileSystem;
 use disk::fs_cache::FileHandleCache;

@@ -5,8 +5,8 @@ use std::sync::Once;
 
 use dht::handshaker_trait::HandshakerTrait;
 use dht::{DhtBuilder, Router};
-use futures::future::BoxFuture;
 use futures::StreamExt;
+use futures::future::BoxFuture;
 use tokio::task::JoinSet;
 use tracing::level_filters::LevelFilter;
 use util::bt::{InfoHash, PeerId};

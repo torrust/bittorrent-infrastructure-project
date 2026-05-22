@@ -10,17 +10,17 @@ use futures::sink::Sink;
 use futures::stream::Stream;
 use handshake::InfoHash;
 use metainfo::{Info, Metainfo};
+use peer::PeerInfo;
 use peer::messages::builders::ExtendedMessageBuilder;
 use peer::messages::{
     ExtendedMessage, ExtendedType, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
 };
-use peer::PeerInfo;
 use rand::RngExt;
 
+use crate::ControlMessage;
 use crate::discovery::error::DiscoveryError;
 use crate::discovery::{IDiscoveryMessage, ODiscoveryMessage};
 use crate::extended::{ExtendedListener, ExtendedPeerInfo};
-use crate::ControlMessage;
 
 const REQUEST_TIMEOUT_MILLIS: u64 = 2000;
 const MAX_REQUEST_SIZE: usize = 16 * 1024;
@@ -240,7 +240,8 @@ impl UtMetadataModule {
             let start = piece * MAX_REQUEST_SIZE;
             let end = start + MAX_REQUEST_SIZE;
             if let Some(data) = self.completed_map.get(hash)
-                && start <= data.len() && end <= data.len()
+                && start <= data.len()
+                && end <= data.len()
             {
                 let info_slice = &data[start..end];
                 let mut info_payload = BytesMut::with_capacity(info_slice.len());
@@ -296,18 +297,14 @@ impl UtMetadataModule {
         let peer_requests_available = !self.peer_requests.is_empty();
         let should_unblock = self.opt_stream_waker.is_some()
             && ((free_task_queue_space && tasks_available) || peer_requests_available || downloads_available);
-        if should_unblock
-            && let Some(waker) = self.opt_stream_waker.take()
-        {
+        if should_unblock && let Some(waker) = self.opt_stream_waker.take() {
             waker.wake();
         }
     }
 
     fn check_sink_unblock(&mut self) {
         let should_unblock = self.opt_sink_waker.is_some() && self.peer_requests.len() != MAX_PEER_REQUESTS;
-        if should_unblock
-            && let Some(waker) = self.opt_sink_waker.take()
-        {
+        if should_unblock && let Some(waker) = self.opt_sink_waker.take() {
             waker.wake();
         }
     }

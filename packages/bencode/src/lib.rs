@@ -121,8 +121,8 @@ macro_rules! ben_list {
 #[macro_export]
 macro_rules! ben_bytes {
     ( $ben:expr_2021 ) => {{
-        use $crate::inner::BCowConvert;
         use $crate::BencodeMut;
+        use $crate::inner::BCowConvert;
 
         BencodeMut::new_bytes(BCowConvert::convert($ben))
     }};

@@ -47,8 +47,8 @@ mod tests {
 
     use util::bt::{self, InfoHash, PeerId};
 
-    use crate::filter::filters::test_filters::{BlockAddrFilter, BlockPeerIdFilter, BlockProtocolFilter};
     use crate::filter::filters::Filters;
+    use crate::filter::filters::test_filters::{BlockAddrFilter, BlockPeerIdFilter, BlockProtocolFilter};
     use crate::handshake::handler::HandshakeType;
     use crate::message::initiate::InitiateMessage;
     use crate::message::protocol::Protocol;

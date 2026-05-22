@@ -1,4 +1,4 @@
-use bencode::{ben_bytes, ben_map, BConvert, BDictAccess, BRefAccess};
+use bencode::{BConvert, BDictAccess, BRefAccess, ben_bytes, ben_map};
 use util::bt::NodeId;
 
 use crate::error::DhtError;

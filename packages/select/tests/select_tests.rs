@@ -1,13 +1,13 @@
 use std::time::Duration;
 
-use common::{tracing_stderr_init, INIT};
+use common::{INIT, tracing_stderr_init};
 use futures::{SinkExt as _, StreamExt as _};
 use handshake::Extensions;
 use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
 use peer::PeerInfo;
+use select::ControlMessage;
 use select::revelation::error::RevealError;
 use select::revelation::{HonestRevealModuleBuilder, IRevealMessage, ORevealMessage};
-use select::ControlMessage;
 use tracing::level_filters::LevelFilter;
 use util::bt;
 use util::bt::InfoHash;

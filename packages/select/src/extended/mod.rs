@@ -4,12 +4,12 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 
 use futures::stream::Stream;
-use peer::messages::builders::ExtendedMessageBuilder;
-use peer::messages::ExtendedMessage;
 use peer::PeerInfo;
+use peer::messages::ExtendedMessage;
+use peer::messages::builders::ExtendedMessageBuilder;
 
-use crate::error::Error;
 use crate::ControlMessage;
+use crate::error::Error;
 
 /// Enumeration of extended messages that can be sent to the extended module.
 #[derive(Clone, Debug, PartialEq, Eq)]

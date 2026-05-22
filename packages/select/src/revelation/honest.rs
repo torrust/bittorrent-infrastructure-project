@@ -8,13 +8,13 @@ use bytes::{BufMut, BytesMut};
 use futures::{Sink, Stream};
 use handshake::InfoHash;
 use metainfo::Metainfo;
-use peer::messages::{BitFieldMessage, HaveMessage};
 use peer::PeerInfo;
+use peer::messages::{BitFieldMessage, HaveMessage};
 use tracing::instrument;
 
+use crate::ControlMessage;
 use crate::revelation::error::RevealError;
 use crate::revelation::{IRevealMessage, ORevealMessage};
-use crate::ControlMessage;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Default)]

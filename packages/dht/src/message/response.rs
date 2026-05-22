@@ -71,7 +71,7 @@ impl<'a> ResponseValidate<'a> {
                 None => {
                     return Err(DhtError::InvalidResponse {
                         details: format!("TID {:?} Found Values Structure As Non Bytes Type", self.trans_id),
-                    })
+                    });
                 }
             }
         }

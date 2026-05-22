@@ -1,5 +1,5 @@
-use nom::bytes::complete::take;
 use nom::IResult;
+use nom::bytes::complete::take;
 use tokio::io::{AsyncWrite, AsyncWriteExt as _};
 
 /// Number of bytes that the extension protocol takes.

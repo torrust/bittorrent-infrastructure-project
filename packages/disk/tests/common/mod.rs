@@ -7,7 +7,7 @@ use bytes::BytesMut;
 use disk::{BlockMetadata, BlockMut, FileSystem, IDiskMessage};
 use futures::future::BoxFuture;
 use futures::stream::Stream;
-use futures::{future, Sink, SinkExt as _, StreamExt as _};
+use futures::{Sink, SinkExt as _, StreamExt as _, future};
 use metainfo::{Accessor, IntoAccessor, PieceAccess};
 use tokio::time::timeout;
 use tracing::level_filters::LevelFilter;

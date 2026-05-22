@@ -1,7 +1,7 @@
 //! `DiskManagerStream` which is the stream portion of a `DiskManager`.
 
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::task::{Context, Poll, Waker};
 
 use crossbeam::queue::SegQueue;

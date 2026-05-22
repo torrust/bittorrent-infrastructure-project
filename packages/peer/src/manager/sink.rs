@@ -1,5 +1,5 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
@@ -11,10 +11,10 @@ use futures::{SinkExt as _, Stream, TryStream};
 
 use super::messages::{PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage};
 use super::task::run_peer;
+use crate::manager::ManagedMessage;
 use crate::manager::builder::PeerManagerBuilder;
 use crate::manager::error::PeerManagerError;
 use crate::manager::peer_info::PeerInfo;
-use crate::manager::ManagedMessage;
 
 /// Sink half of a `PeerManager`.
 #[allow(clippy::module_name_repetitions)]

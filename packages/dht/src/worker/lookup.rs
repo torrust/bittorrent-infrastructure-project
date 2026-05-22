@@ -9,7 +9,7 @@ use futures::channel::mpsc::SendError;
 use futures::future::BoxFuture;
 use futures::{FutureExt, SinkExt as _};
 use tokio::task::JoinSet;
-use tokio::time::{sleep, Duration, Instant};
+use tokio::time::{Duration, Instant, sleep};
 use util::bt::{self, InfoHash, NodeId};
 use util::net;
 use util::sha::ShaHash;
@@ -177,11 +177,7 @@ impl TableLookup {
                 .fold(dist_to_beat, |closest, (id, _)| {
                     let distance = self.target_id ^ id;
 
-                    if distance < closest {
-                        distance
-                    } else {
-                        closest
-                    }
+                    if distance < closest { distance } else { closest }
                 });
 
             let iterate_nodes = if next_dist_to_beat < dist_to_beat {
@@ -309,9 +305,7 @@ impl TableLookup {
                 }
 
                 let routing_table = table.read().unwrap();
-                if !fatal_error
-                    && let Some(n) = routing_table.find_node(&node)
-                {
+                if !fatal_error && let Some(n) = routing_table.find_node(&node) {
                     n.local_request();
                 }
             }

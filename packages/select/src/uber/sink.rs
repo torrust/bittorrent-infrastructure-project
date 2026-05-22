@@ -5,10 +5,10 @@ use std::task::{Context, Poll};
 use futures::{Sink, SinkExt as _};
 
 use super::{IUberMessage, UberDiscovery};
+use crate::IExtendedMessage;
 use crate::discovery::IDiscoveryMessage;
 use crate::error::Error;
 use crate::extended::ExtendedModule;
-use crate::IExtendedMessage;
 
 //----------------------------------------------------------------------//
 /// `Sink` portion of the `UberModule` for sending messages.

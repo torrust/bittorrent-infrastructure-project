@@ -1,6 +1,6 @@
 use common::{
-    random_buffer, runtime_loop_with_timeout, send_block, tracing_stderr_init, InMemoryFileSystem, MultiFileDirectAccessor,
-    DEFAULT_TIMEOUT, INIT,
+    DEFAULT_TIMEOUT, INIT, InMemoryFileSystem, MultiFileDirectAccessor, random_buffer, runtime_loop_with_timeout, send_block,
+    tracing_stderr_init,
 };
 use disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
 use futures::future::{self, Either};

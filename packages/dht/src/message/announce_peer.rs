@@ -1,7 +1,7 @@
 // TODO: Remove this when announces are implemented
 #![allow(unused)]
 
-use bencode::{ben_bytes, ben_int, ben_map, BConvert, BDictAccess, BRefAccess};
+use bencode::{BConvert, BDictAccess, BRefAccess, ben_bytes, ben_int, ben_map};
 use util::bt::{InfoHash, NodeId};
 
 use crate::error::DhtError;

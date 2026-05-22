@@ -121,11 +121,7 @@ impl FilterDecision {
         let self_num = *self as u8;
         let other_num = other as u8;
 
-        if self_num > other_num {
-            *self
-        } else {
-            other
-        }
+        if self_num > other_num { *self } else { other }
     }
 }
 

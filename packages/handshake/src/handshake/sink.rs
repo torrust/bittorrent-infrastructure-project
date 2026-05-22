@@ -1,9 +1,9 @@
 //! `Sink` portion of the `Handshaker` for initiating handshakes.
 
+use futures::SinkExt as _;
 use futures::channel::mpsc;
 use futures::sink::Sink;
 use futures::task::{Context, Poll};
-use futures::SinkExt as _;
 use util::bt::PeerId;
 
 use crate::discovery::DiscoveryInfo;

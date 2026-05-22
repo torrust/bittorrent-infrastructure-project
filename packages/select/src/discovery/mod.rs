@@ -2,8 +2,8 @@
 
 use handshake::InfoHash;
 use metainfo::Metainfo;
-use peer::messages::UtMetadataMessage;
 use peer::PeerInfo;
+use peer::messages::UtMetadataMessage;
 
 use crate::ControlMessage;
 

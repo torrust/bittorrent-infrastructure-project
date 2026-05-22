@@ -1,9 +1,9 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use futures::SinkExt as _;
 use futures::channel::mpsc;
 use futures::stream::StreamExt;
-use futures::SinkExt as _;
 use tokio::net::UdpSocket;
 use tokio::task;
 
