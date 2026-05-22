@@ -42,7 +42,6 @@
         "hasher",
         "heartbeating",
         "holepunch",
-        "htracker",
         "infohash",
         "kademlia",
         "KRPC",
