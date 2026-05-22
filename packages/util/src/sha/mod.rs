@@ -178,7 +178,7 @@ mod tests {
         let xor_hash = zero_bits ^ one_bits;
 
         let leading_zeroes = xor_hash.bits().take_while(|&n| n == XorRep::Same).count();
-        assert!(leading_zeroes == 0);
+        assert_eq!(leading_zeroes, 0);
     }
 
     #[test]
@@ -189,7 +189,7 @@ mod tests {
         let xor_hash = first_one_bits ^ second_one_bits;
 
         let leading_zeroes = xor_hash.bits().take_while(|&n| n == XorRep::Same).count();
-        assert!(leading_zeroes == (super::SHA_HASH_LEN * 8));
+        assert_eq!(leading_zeroes, (super::SHA_HASH_LEN * 8));
     }
 
     #[test]
@@ -203,7 +203,7 @@ mod tests {
         let xor_hash = zero_bits ^ mostly_one_bits;
 
         let leading_zeroes = xor_hash.bits().take_while(|&n| n == XorRep::Same).count();
-        assert!(leading_zeroes == 1);
+        assert_eq!(leading_zeroes, 1);
     }
 
     #[test]
@@ -217,7 +217,7 @@ mod tests {
         let xor_hash = zero_bits ^ mostly_zero_bits;
 
         let leading_zeroes = xor_hash.bits().take_while(|&n| n == XorRep::Same).count();
-        assert!(leading_zeroes == 0);
+        assert_eq!(leading_zeroes, 0);
     }
 
     #[test]

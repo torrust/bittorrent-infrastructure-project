@@ -36,7 +36,7 @@ where
     }
 
     fn clear(&mut self) {
-        self.truncate(0);
+        self.clear();
     }
 
     fn write(&mut self, data: &[T]) {
