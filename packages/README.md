@@ -37,7 +37,3 @@ A library providing the _Bittorrent Infrastructure Project_ piece selection modu
 ### [Utility (util)](./util/)
 
 A library providing a set of utilities used by the _Bittorrent Infrastructure Project_.
-
-### [UDP Tracker (utracker)](./utracker/)
-
-A library for parsing and writing UDP tracker messages.

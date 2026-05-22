@@ -11,7 +11,6 @@ members = [
     "packages/peer",
     "packages/select",
     "packages/util",
-    "packages/utracker",
 ]
 
 resolver = "2"
