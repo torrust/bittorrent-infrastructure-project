@@ -29,12 +29,13 @@ The future goals are:
 
 ### Crates
 
-[![t_i37]![s_i37]][#37]
+> We have not published any crates from this repository yet.
+> Before publishing, we need to complete the ongoing refactoring work and settle on
+> a crate naming convention (see [#64]). The leading candidates for the prefix are
+> `torrust-` (e.g. `torrust-bencode`) and `torrust-bittorrent-` (e.g. `torrust-bittorrent-bencode`).
+> See [#37] for the publishing milestone.
 
-> We have not published any crates from this repository yet.</br>
-> Please see Issue: [#37], to track the progress towards publishing updated crates.
-
-The crates in this repository use simplified names (no prefix):
+The current (working) crate names, subject to renaming before publication:
 
 | Crate       | Description                                                    |
 | ----------- | -------------------------------------------------------------- |
@@ -110,6 +111,7 @@ additional terms or conditions.
 [#38]: https://github.com/torrust/torrust-bittorrent/issues/38
 [#53]: https://github.com/torrust/torrust-bittorrent/issues/53
 [#54]: https://github.com/torrust/torrust-bittorrent/issues/54
+[#64]: https://github.com/torrust/torrust-bittorrent/issues/64
 [#70]: https://github.com/torrust/torrust-bittorrent/pull/70
 [torrust-tracker]: https://github.com/torrust/torrust-tracker
 [t_i37]: https://img.shields.io/github/issues/detail/title/torrust/torrust-bittorrent/37?style=for-the-badge&
