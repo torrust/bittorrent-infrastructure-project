@@ -1,4 +1,4 @@
-# BitTorrent Infrastructure Project　[![coverage_wf_b]][coverage_wf] [![testing_wf_b]][testing_wf]
+# Torrust BitTorrent　[![coverage_wf_b]][coverage_wf] [![testing_wf_b]][testing_wf]
 
 <div align="center"><img src="./docs/media/torrust-bittorrent-logo.svg" alt="Torrust BitTorrent Logo" width="200" align="center"/></div>
 

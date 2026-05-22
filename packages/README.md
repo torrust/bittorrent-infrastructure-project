@@ -1,6 +1,6 @@
 # Packages
 
-These packages together are the _BitTorrent Infrastructure Project_:
+These packages together are the _Torrust BitTorrent_ packages:
 
 ### [Bencode (bencode)](./bencode/)
 
@@ -32,8 +32,8 @@ A library assisting communication between with bittorrent peers via the peer wir
 
 ### [Select (select)](./select/)
 
-A library providing the _Bittorrent Infrastructure Project_ piece selection module.
+A library providing the _Torrust BitTorrent_ piece selection module.
 
 ### [Utility (util)](./util/)
 
-A library providing a set of utilities used by the _Bittorrent Infrastructure Project_.
+A library providing a set of utilities used by _Torrust BitTorrent_.

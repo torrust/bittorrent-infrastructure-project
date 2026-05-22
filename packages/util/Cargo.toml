@@ -1,5 +1,5 @@
 [package]
-description = "Utilities for the Bittorrent Infrastructure Project"
+description = "Utilities for Torrust BitTorrent"
 keywords = ["utility"]
 name = "util"
 readme = "README.md"
