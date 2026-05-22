@@ -11,6 +11,7 @@ edition.workspace = true
 homepage.workspace = true
 license.workspace = true
 publish.workspace = true
+rust-version.workspace = true
 
 repository.workspace = true
 version.workspace = true
@@ -23,4 +24,3 @@ util = { path = "../util" }
 
 base32 = "0"
 url = "2"
-
