@@ -6,14 +6,11 @@ members = [
     "packages/dht",
     "packages/disk",
     "packages/handshake",
-    "packages/htracker",
-    "packages/lpd",
     "packages/magnet",
     "packages/metainfo",
     "packages/peer",
     "packages/select",
     "packages/util",
-    "packages/utp",
     "packages/utracker",
 ]
 
@@ -43,7 +40,7 @@ panic = 'unwind'
 rpath = false
 
 [workspace.lints.rust]
-warnings = { level = "deny", priority = -1 }
+deprecated-safe = { level = "deny", priority = -1 }
 future-incompatible = { level = "deny", priority = -1 }
 let-underscore = { level = "deny", priority = -1 }
 nonstandard-style = { level = "deny", priority = -1 }
@@ -51,9 +48,9 @@ rust-2018-compatibility = { level = "deny", priority = -1 }
 rust-2018-idioms = { level = "deny", priority = -1 }
 rust-2021-compatibility = { level = "deny", priority = -1 }
 rust-2024-compatibility = { level = "warn", priority = -1 }
-unused = { level = "deny", priority = -2 }
-deprecated-safe = { level = "deny", priority = -1 }
 unsafe-code = "warn"
+unused = { level = "deny", priority = -2 }
+warnings = { level = "deny", priority = -1 }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
