@@ -23,7 +23,6 @@ handshake = { path = "../handshake" }
 metainfo = { path = "../metainfo" }
 peer = { path = "../peer" }
 util = { path = "../util" }
-utracker = { path = "../utracker" }
 
 bit-set = "0"
 bytes = "1"

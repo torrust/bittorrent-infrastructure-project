@@ -1,12 +1,9 @@
 //! Module for peer discovery.
 
-use std::net::SocketAddr;
-
 use handshake::InfoHash;
 use metainfo::Metainfo;
 use peer::messages::UtMetadataMessage;
 use peer::PeerInfo;
-use utracker::announce::ClientState;
 
 use crate::ControlMessage;
 
@@ -32,8 +29,6 @@ pub enum IDiscoveryMessage {
 pub enum ODiscoveryMessage {
     /// Send a dht announce for the `InfoHash`.
     SendDhtAnnounce(InfoHash),
-    /// Send a udp tracker announce for the `InfoHash`.
-    SendUdpTrackerAnnounce(InfoHash, SocketAddr, ClientState),
     /// Send a `UtMetadata` message.
     SendUtMetadataMessage(PeerInfo, UtMetadataMessage),
     /// We have finished downloading the given `Metainfo`.
