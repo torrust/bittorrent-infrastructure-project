@@ -1,5 +1,5 @@
 [package]
-description = "Bittorrent Infrastructure Project Disk Module"
+description = "Torrust BitTorrent Disk Module"
 keywords = ["disk", "filesystem", "fs"]
 name = "disk"
 readme = "README.md"

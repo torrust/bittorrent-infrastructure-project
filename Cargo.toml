@@ -19,13 +19,13 @@ resolver = "2"
 authors = ["Nautilus Cyberneering <info@nautilus-cyberneering.de>, Andrew <amiller4421@gmail.com>"]
 categories = ["network-programming", "web-programming"]
 description = "A collection of crates for building applications using bittorrent technologies."
-documentation = "https://github.com/torrust/bittorrent-infrastructure-project"
+documentation = "https://github.com/torrust/torrust-bittorrent"
 edition = "2021"
-homepage = "https://github.com/torrust/bittorrent-infrastructure-project"
+homepage = "https://github.com/torrust/torrust-bittorrent"
 keywords = ["bittorrent"]
 license = "Apache-2.0"
 publish = false                                                                                     # until we decide where to publish.
-repository = "https://github.com/torrust/bittorrent-infrastructure-project"
+repository = "https://github.com/torrust/torrust-bittorrent"
 rust-version = "1.85"
 version = "1.0.0-alpha.1"
 

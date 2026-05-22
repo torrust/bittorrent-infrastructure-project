@@ -1,5 +1,5 @@
 [package]
-description = "Bittorrent Infrastructure Project Piece Selection Module"
+description = "Torrust BitTorrent Piece Selection Module"
 keywords = ["piece", "selection"]
 name = "select"
 readme = "README.md"
