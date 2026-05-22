@@ -26,7 +26,7 @@ keywords = ["bittorrent"]
 license = "Apache-2.0"
 publish = false                                                                                     # until we decide where to publish.
 repository = "https://github.com/torrust/torrust-bittorrent"
-rust-version = "1.85"
+rust-version = "1.88"
 version = "1.0.0-alpha.1"
 
 [profile.bench]
