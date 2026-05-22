@@ -11,7 +11,7 @@ use disk::{
 use futures::channel::mpsc;
 use futures::future::Either;
 use futures::lock::Mutex;
-use futures::{stream, SinkExt as _, StreamExt as _};
+use futures::{SinkExt as _, StreamExt as _, stream};
 use handshake::transports::TcpTransport;
 use handshake::{
     Extensions, Handshaker, HandshakerBuilder, HandshakerConfig, HandshakerStream, InitiateMessage, PeerId, Protocol,

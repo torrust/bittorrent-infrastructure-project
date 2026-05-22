@@ -9,7 +9,7 @@ use futures::channel::mpsc::{self, SendError};
 use futures::future::BoxFuture;
 use futures::{FutureExt as _, SinkExt as _};
 use tokio::task::JoinSet;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 use util::bt::{self, NodeId};
 
 use crate::handshaker_trait::HandshakerTrait;

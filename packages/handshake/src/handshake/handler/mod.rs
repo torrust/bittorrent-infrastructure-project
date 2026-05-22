@@ -5,8 +5,8 @@ use futures::sink::SinkExt;
 use futures::stream::StreamExt;
 use util::bt::{InfoHash, PeerId};
 
-use crate::filter::filters::Filters;
 use crate::filter::FilterDecision;
+use crate::filter::filters::Filters;
 use crate::message::extensions::Extensions;
 use crate::message::initiate::InitiateMessage;
 use crate::message::protocol::Protocol;

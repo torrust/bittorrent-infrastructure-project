@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::ops::Deref;
 
 use bencode::inner::BCowConvert;
-use bencode::{ben_bytes, ben_map, BConvert, BDictAccess, BMutAccess, BRefAccess, BencodeMut};
+use bencode::{BConvert, BDictAccess, BMutAccess, BRefAccess, BencodeMut, ben_bytes, ben_map};
 use util::bt::{InfoHash, NodeId};
 
 use crate::error::DhtError;
@@ -164,7 +164,7 @@ where
             (Err(_), Err(_)) => {
                 return Err(DhtError::InvalidResponse {
                     details: "Failed To Find nodes Or values In Node Response".to_owned(),
-                })
+                });
             }
         };
 

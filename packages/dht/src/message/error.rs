@@ -4,7 +4,7 @@
 use std::borrow::Cow;
 
 use bencode::ext::BConvertExt;
-use bencode::{ben_bytes, ben_int, ben_list, ben_map, BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
+use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError, ben_bytes, ben_int, ben_list, ben_map};
 
 use crate::error::DhtError;
 use crate::message;

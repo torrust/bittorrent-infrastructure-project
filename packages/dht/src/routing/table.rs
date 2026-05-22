@@ -285,10 +285,10 @@ impl<'a> Iterator for ClosestNodes<'a> {
         let current_index = self.current_index;
 
         // Check if we have any nodes left in the current iterator
-        if let Some(ref mut iter) = self.current_iter {
-            if let Some(node) = iter.next() {
-                return Some(node);
-            }
+        if let Some(ref mut iter) = self.current_iter
+            && let Some(node) = iter.next()
+        {
+            return Some(node);
         }
 
         // Check if we have any nodes to give in the assorted bucket
@@ -523,11 +523,13 @@ mod tests {
             table.buckets().skip(1).take(table::MAX_BUCKETS - 1).count(),
             table::MAX_BUCKETS - 1
         );
-        assert!(table
-            .buckets()
-            .skip(1)
-            .take(table::MAX_BUCKETS - 1)
-            .all(|contents| contents.is_empty()));
+        assert!(
+            table
+                .buckets()
+                .skip(1)
+                .take(table::MAX_BUCKETS - 1)
+                .all(|contents| contents.is_empty())
+        );
 
         // Last assorted bucket should show up
         assert_eq!(table.buckets().skip(table::MAX_BUCKETS).count(), 1);

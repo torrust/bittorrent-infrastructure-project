@@ -206,7 +206,7 @@ fn socket_v4_from_bytes_be(bytes: &[u8]) -> LengthResult<SocketAddrV4> {
 mod tests {
     use std::net::{Ipv4Addr, SocketAddrV4};
 
-    use bencode::{ben_bytes, ben_list, BRefAccess, BencodeMut, BencodeRef};
+    use bencode::{BRefAccess, BencodeMut, BencodeRef, ben_bytes, ben_list};
     use util::bt::NodeId;
     use util::sha::ShaHash;
 

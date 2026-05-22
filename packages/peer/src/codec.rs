@@ -52,12 +52,12 @@ where
             return Ok(None);
         };
 
-        if let Some(max_payload) = self.max_payload {
-            if bytes_needed > max_payload {
-                return Err(std::io::Error::other(
-                    "PeerProtocolCodec Enforced Maximum Payload Check For Peer",
-                ));
-            }
+        if let Some(max_payload) = self.max_payload
+            && bytes_needed > max_payload
+        {
+            return Err(std::io::Error::other(
+                "PeerProtocolCodec Enforced Maximum Payload Check For Peer",
+            ));
         }
 
         let bytes = if bytes_needed <= src.len() {

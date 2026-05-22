@@ -1,12 +1,12 @@
 //! `DiskManager` object which handles the storage of `Blocks` to the `FileSystem`.
 
-use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
 use std::task::{Context, Poll};
 
 use crossbeam::queue::SegQueue;
-use futures::channel::mpsc;
 use futures::Stream;
+use futures::channel::mpsc;
 use pin_project::pin_project;
 pub use sink::DiskManagerSink;
 pub use stream::DiskManagerStream;

@@ -1,5 +1,5 @@
-use common::connected_channel::{connected_channel, ConnectedChannel};
-use common::{add_peer, remove_peer, tracing_stderr_init, INIT};
+use common::connected_channel::{ConnectedChannel, connected_channel};
+use common::{INIT, add_peer, remove_peer, tracing_stderr_init};
 use futures::SinkExt as _;
 use handshake::Extensions;
 use peer::error::PeerManagerError;

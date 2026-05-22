@@ -1,6 +1,6 @@
 use std::io::Write as _;
 
-use bencode::{ben_int, ben_map, BConvert, BDecodeOpt, BencodeRef};
+use bencode::{BConvert, BDecodeOpt, BencodeRef, ben_int, ben_map};
 use bytes::Bytes;
 use thiserror::Error;
 

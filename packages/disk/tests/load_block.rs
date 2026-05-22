@@ -1,9 +1,9 @@
 use bytes::BytesMut;
-use common::{random_buffer, tracing_stderr_init, InMemoryFileSystem, MultiFileDirectAccessor, INIT};
+use common::{INIT, InMemoryFileSystem, MultiFileDirectAccessor, random_buffer, tracing_stderr_init};
 use disk::{Block, BlockMetadata, BlockMut, DiskManagerBuilder, IDiskMessage, ODiskMessage};
 use futures::{SinkExt as _, StreamExt as _};
 use metainfo::{Metainfo, MetainfoBuilder, PieceLength};
-use tokio::time::{timeout, Duration};
+use tokio::time::{Duration, timeout};
 use tracing::level_filters::LevelFilter;
 
 mod common;

@@ -5,10 +5,10 @@ use peer::messages::builders::ExtendedMessageBuilder;
 use sink::UberSink;
 use stream::UberStream;
 
+use crate::ControlMessage;
 use crate::discovery::error::DiscoveryError;
 use crate::discovery::{IDiscoveryMessage, ODiscoveryMessage};
 use crate::extended::{ExtendedListener, ExtendedModule, IExtendedMessage, OExtendedMessage};
-use crate::ControlMessage;
 
 pub mod sink;
 pub mod stream;

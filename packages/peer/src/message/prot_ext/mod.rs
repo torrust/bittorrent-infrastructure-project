@@ -11,13 +11,13 @@ use nom::bytes::complete::{take, take_until};
 use nom::combinator::{map, value};
 use nom::error::{ErrorKind, ParseError};
 use nom::multi::length_data;
-use nom::number::complete::{be_u32, be_u8};
+use nom::number::complete::{be_u8, be_u32};
 use nom::sequence::pair;
 use nom::{IResult, Parser};
 use thiserror::Error;
 use ut_metadata::UtMetadataMessageError;
 
-use crate::message::{self, bencode_util, bits_ext, ExtendedMessage, ExtendedType, PeerWireProtocolMessage};
+use crate::message::{self, ExtendedMessage, ExtendedType, PeerWireProtocolMessage, bencode_util, bits_ext};
 use crate::protocol::PeerProtocol;
 
 const EXTENSION_HEADER_LEN: usize = message::HEADER_LEN + 1;

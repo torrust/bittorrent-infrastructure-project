@@ -11,7 +11,7 @@ use bytes::Bytes;
 use nom::branch::alt;
 use nom::bytes::complete::take;
 use nom::combinator::{all_consuming, map, map_res, opt, value};
-use nom::number::complete::{be_u32, be_u8};
+use nom::number::complete::{be_u8, be_u32};
 use nom::sequence::preceded;
 use nom::{IResult, Parser};
 use thiserror::Error;
@@ -51,6 +51,7 @@ mod null;
 mod prot_ext;
 mod standard;
 
+use crate::ManagedMessage;
 #[allow(clippy::module_name_repetitions)]
 pub use crate::message::bits_ext::{BitsExtensionMessage, ExtendedMessage, ExtendedMessageBuilder, ExtendedType, PortMessage};
 #[allow(clippy::module_name_repetitions)]
@@ -62,7 +63,6 @@ pub use crate::message::prot_ext::{
 };
 #[allow(clippy::module_name_repetitions)]
 pub use crate::message::standard::{BitFieldIter, BitFieldMessage, CancelMessage, HaveMessage, PieceMessage, RequestMessage};
-use crate::ManagedMessage;
 
 #[derive(Error, Debug, Clone)]
 pub enum PeerWireProtocolMessageError {}

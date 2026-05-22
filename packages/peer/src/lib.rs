@@ -5,12 +5,12 @@ mod protocol;
 
 pub use codec::PeerProtocolCodec;
 
+pub use crate::manager::PeerManager;
 pub use crate::manager::builder::PeerManagerBuilder;
 pub use crate::manager::messages::{ManagedMessage, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage};
 pub use crate::manager::peer_info::PeerInfo;
 pub use crate::manager::sink::PeerManagerSink;
 pub use crate::manager::stream::PeerManagerStream;
-pub use crate::manager::PeerManager;
 pub use crate::protocol::{NestedPeerProtocol, PeerProtocol};
 
 /// Serializable and deserializable protocol messages.

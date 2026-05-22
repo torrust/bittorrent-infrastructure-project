@@ -1,4 +1,4 @@
-use common::{tracing_stderr_init, INIT};
+use common::{INIT, tracing_stderr_init};
 use futures::future::try_join;
 use futures::sink::SinkExt;
 use futures::stream::StreamExt;

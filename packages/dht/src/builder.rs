@@ -2,8 +2,8 @@ use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use futures::channel::mpsc;
 use futures::SinkExt as _;
+use futures::channel::mpsc;
 use tokio::net::UdpSocket;
 use tokio::task::JoinSet;
 use util::bt::InfoHash;

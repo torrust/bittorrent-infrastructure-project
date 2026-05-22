@@ -1,7 +1,7 @@
 use std::io::{Read as _, Write as _};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 
-use common::{tracing_stderr_init, INIT};
+use common::{INIT, tracing_stderr_init};
 use futures::stream::StreamExt;
 use handshake::transports::TcpTransport;
 use handshake::{DiscoveryInfo, HandshakerBuilder};

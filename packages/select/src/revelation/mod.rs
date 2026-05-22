@@ -1,8 +1,8 @@
 //! Module for piece revelation.
 
 use handshake::InfoHash;
-use peer::messages::{BitFieldMessage, HaveMessage};
 use peer::PeerInfo;
+use peer::messages::{BitFieldMessage, HaveMessage};
 
 use crate::ControlMessage;
 

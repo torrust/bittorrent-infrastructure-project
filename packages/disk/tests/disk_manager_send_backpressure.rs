@@ -1,4 +1,4 @@
-use common::{random_buffer, tracing_stderr_init, InMemoryFileSystem, MultiFileDirectAccessor, DEFAULT_TIMEOUT, INIT};
+use common::{DEFAULT_TIMEOUT, INIT, InMemoryFileSystem, MultiFileDirectAccessor, random_buffer, tracing_stderr_init};
 use disk::{DiskManagerBuilder, IDiskMessage};
 use futures::{FutureExt, SinkExt as _, StreamExt as _};
 use metainfo::{Metainfo, MetainfoBuilder, PieceLength};

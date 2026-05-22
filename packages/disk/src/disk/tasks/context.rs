@@ -1,5 +1,5 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::sync::{Arc, RwLock};
 
 use futures::channel::mpsc;
@@ -9,9 +9,9 @@ use futures::sink::SinkExt;
 use metainfo::Metainfo;
 use util::bt::InfoHash;
 
-use crate::disk::tasks::helpers::piece_checker::PieceCheckerState;
-use crate::disk::ODiskMessage;
 use crate::FileSystem;
+use crate::disk::ODiskMessage;
+use crate::disk::tasks::helpers::piece_checker::PieceCheckerState;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]

@@ -3,7 +3,7 @@
 
 use std::net::Ipv4Addr;
 
-use crc::{Crc, CRC_32_ISCSI};
+use crc::{CRC_32_ISCSI, Crc};
 use util::bt::{self, NodeId};
 use util::convert;
 

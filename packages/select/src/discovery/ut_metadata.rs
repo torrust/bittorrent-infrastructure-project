@@ -10,17 +10,17 @@ use futures::sink::Sink;
 use futures::stream::Stream;
 use handshake::InfoHash;
 use metainfo::{Info, Metainfo};
+use peer::PeerInfo;
 use peer::messages::builders::ExtendedMessageBuilder;
 use peer::messages::{
     ExtendedMessage, ExtendedType, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
 };
-use peer::PeerInfo;
 use rand::RngExt;
 
+use crate::ControlMessage;
 use crate::discovery::error::DiscoveryError;
 use crate::discovery::{IDiscoveryMessage, ODiscoveryMessage};
 use crate::extended::{ExtendedListener, ExtendedPeerInfo};
-use crate::ControlMessage;
 
 const REQUEST_TIMEOUT_MILLIS: u64 = 2000;
 const MAX_REQUEST_SIZE: usize = 16 * 1024;
@@ -207,29 +207,27 @@ impl UtMetadataModule {
 
     fn retrieve_piece_request(&mut self) -> Option<Result<ODiscoveryMessage, DiscoveryError>> {
         for (hash, opt_pending) in &mut self.pending_map {
-            if let Some(pending) = opt_pending {
-                if !pending.messages.is_empty() {
-                    if let Some(active_peers) = self.active_peers.get(hash) {
-                        if !active_peers.peers.is_empty() {
-                            let mut active_peers_iter = active_peers.peers.iter();
-                            let num_active_peers = active_peers_iter.len();
-                            let selected_peer_num = rand::rng().random_range(0..num_active_peers);
-                            let selected_peer = active_peers_iter.nth(selected_peer_num).unwrap();
-                            let selected_message = pending.messages.pop().unwrap();
-                            self.active_requests
-                                .push(generate_active_request(selected_message, *selected_peer));
-                            tracing::info!(
-                                "Requesting Piece {:?} For Hash {:?}",
-                                selected_message.piece(),
-                                selected_peer.hash()
-                            );
-                            return Some(Ok(ODiscoveryMessage::SendUtMetadataMessage(
-                                *selected_peer,
-                                UtMetadataMessage::Request(selected_message),
-                            )));
-                        }
-                    }
-                }
+            if let Some(pending) = opt_pending
+                && !pending.messages.is_empty()
+                && let Some(active_peers) = self.active_peers.get(hash)
+                && !active_peers.peers.is_empty()
+            {
+                let mut active_peers_iter = active_peers.peers.iter();
+                let num_active_peers = active_peers_iter.len();
+                let selected_peer_num = rand::rng().random_range(0..num_active_peers);
+                let selected_peer = active_peers_iter.nth(selected_peer_num).unwrap();
+                let selected_message = pending.messages.pop().unwrap();
+                self.active_requests
+                    .push(generate_active_request(selected_message, *selected_peer));
+                tracing::info!(
+                    "Requesting Piece {:?} For Hash {:?}",
+                    selected_message.piece(),
+                    selected_peer.hash()
+                );
+                return Some(Ok(ODiscoveryMessage::SendUtMetadataMessage(
+                    *selected_peer,
+                    UtMetadataMessage::Request(selected_message),
+                )));
             }
         }
         None
@@ -241,21 +239,22 @@ impl UtMetadataModule {
             let piece: usize = request.request.piece().try_into().unwrap();
             let start = piece * MAX_REQUEST_SIZE;
             let end = start + MAX_REQUEST_SIZE;
-            if let Some(data) = self.completed_map.get(hash) {
-                if start <= data.len() && end <= data.len() {
-                    let info_slice = &data[start..end];
-                    let mut info_payload = BytesMut::with_capacity(info_slice.len());
-                    info_payload.extend_from_slice(info_slice);
-                    let message = UtMetadataDataMessage::new(
-                        piece.try_into().unwrap(),
-                        info_slice.len().try_into().unwrap(),
-                        info_payload.freeze(),
-                    );
-                    return Some(Ok(ODiscoveryMessage::SendUtMetadataMessage(
-                        request.send_to,
-                        UtMetadataMessage::Data(message),
-                    )));
-                }
+            if let Some(data) = self.completed_map.get(hash)
+                && start <= data.len()
+                && end <= data.len()
+            {
+                let info_slice = &data[start..end];
+                let mut info_payload = BytesMut::with_capacity(info_slice.len());
+                info_payload.extend_from_slice(info_slice);
+                let message = UtMetadataDataMessage::new(
+                    piece.try_into().unwrap(),
+                    info_slice.len().try_into().unwrap(),
+                    info_payload.freeze(),
+                );
+                return Some(Ok(ODiscoveryMessage::SendUtMetadataMessage(
+                    request.send_to,
+                    UtMetadataMessage::Data(message),
+                )));
             }
         }
         None
@@ -264,10 +263,10 @@ impl UtMetadataModule {
     fn initialize_pending(&mut self) -> bool {
         let mut pending_tasks_available = false;
         for (hash, opt_pending) in &mut self.pending_map {
-            if opt_pending.is_none() {
-                if let Some(active_peers) = self.active_peers.get(hash) {
-                    *opt_pending = Some(pending_info_from_metadata_size(active_peers.metadata_size));
-                }
+            if opt_pending.is_none()
+                && let Some(active_peers) = self.active_peers.get(hash)
+            {
+                *opt_pending = Some(pending_info_from_metadata_size(active_peers.metadata_size));
             }
             pending_tasks_available |= opt_pending.as_ref().is_some_and(|pending| !pending.messages.is_empty());
         }
@@ -277,14 +276,14 @@ impl UtMetadataModule {
     fn validate_downloaded(&mut self) -> bool {
         let mut completed_downloads_available = false;
         for (&expected_hash, opt_pending) in &mut self.pending_map {
-            if let Some(pending) = opt_pending {
-                if pending.left == 0 {
-                    let real_hash = InfoHash::from_bytes(&pending.bytes[..]);
-                    if real_hash == expected_hash {
-                        completed_downloads_available = true;
-                    } else {
-                        *opt_pending = None;
-                    }
+            if let Some(pending) = opt_pending
+                && pending.left == 0
+            {
+                let real_hash = InfoHash::from_bytes(&pending.bytes[..]);
+                if real_hash == expected_hash {
+                    completed_downloads_available = true;
+                } else {
+                    *opt_pending = None;
                 }
             }
         }
@@ -298,19 +297,15 @@ impl UtMetadataModule {
         let peer_requests_available = !self.peer_requests.is_empty();
         let should_unblock = self.opt_stream_waker.is_some()
             && ((free_task_queue_space && tasks_available) || peer_requests_available || downloads_available);
-        if should_unblock {
-            if let Some(waker) = self.opt_stream_waker.take() {
-                waker.wake();
-            }
+        if should_unblock && let Some(waker) = self.opt_stream_waker.take() {
+            waker.wake();
         }
     }
 
     fn check_sink_unblock(&mut self) {
         let should_unblock = self.opt_sink_waker.is_some() && self.peer_requests.len() != MAX_PEER_REQUESTS;
-        if should_unblock {
-            if let Some(waker) = self.opt_sink_waker.take() {
-                waker.wake();
-            }
+        if should_unblock && let Some(waker) = self.opt_sink_waker.take() {
+            waker.wake();
         }
     }
 }

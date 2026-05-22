@@ -6,10 +6,10 @@ use tokio::task::{self, JoinHandle};
 
 use super::fused::{PersistentError, PersistentStream, RecurringTimeoutError, RecurringTimeoutStream};
 use super::messages::{PeerManagerInputMessage, PeerManagerOutputMessage};
+use crate::PeerManagerOutputError;
+use crate::manager::ManagedMessage;
 use crate::manager::builder::PeerManagerBuilder;
 use crate::manager::peer_info::PeerInfo;
-use crate::manager::ManagedMessage;
-use crate::PeerManagerOutputError;
 
 #[derive(Error, Debug)]
 enum PeerError<PeerSendErr, ManagerSendErr> {

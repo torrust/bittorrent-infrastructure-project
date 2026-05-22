@@ -2,10 +2,10 @@ use std::any::Any;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use common::{tracing_stderr_init, INIT};
+use common::{INIT, tracing_stderr_init};
+use futures::FutureExt as _;
 use futures::sink::SinkExt;
 use futures::stream::{self, StreamExt};
-use futures::FutureExt as _;
 use handshake::transports::TcpTransport;
 use handshake::{
     DiscoveryInfo, Extensions, FilterDecision, HandshakeFilter, HandshakeFilters, HandshakerBuilder, InitiateMessage, Protocol,

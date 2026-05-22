@@ -191,8 +191,8 @@ pub mod test_filters {
 
 #[cfg(test)]
 mod tests {
-    use super::test_filters::BlockAddrFilter;
     use super::Filters;
+    use super::test_filters::BlockAddrFilter;
 
     #[test]
     fn positive_add_filter() {
