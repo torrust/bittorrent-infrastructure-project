@@ -70,7 +70,7 @@ The original crates were published under the `bip_` prefix, short for _BitTorren
 >
 > > `Apache-2.0`　and/or　`MIT`　→　*(only)*　`Apache-2.0`
 >
-> If this is a particular issue for your project, please open an issue.</br>
+> If this is a particular issue for your project, please open an issue.<br>
 > _The primary motivation that it has [some software-patent protections][apache-2-patent-license]._
 
 ## Contribution
