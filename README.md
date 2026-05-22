@@ -34,9 +34,25 @@ The future goals are:
 > We have not published any crates from this repository yet.</br>
 > Please see Issue: [#37], to track the progress towards publishing updated crates.
 
-#### Here are the links to the original crates published by [GGist]:
+The crates in this repository use simplified names (no prefix):
+
+| Crate       | Description                                                    |
+| ----------- | -------------------------------------------------------------- |
+| `bencode`   | Parsing and converting bencoded data                           |
+| `dht`       | Bittorrent Mainline Distributed Hash Table                     |
+| `disk`      | `FileSystem` interface for managing torrent pieces on disk     |
+| `handshake` | Trait and implementation for the standard BitTorrent handshake |
+| `magnet`    | Parsing and constructing magnet links                          |
+| `metainfo`  | Parsing and building bittorrent metainfo (`.torrent`) files    |
+| `peer`      | Communication with bittorrent peers via the peer wire protocol |
+| `select`    | Piece selection algorithm                                      |
+| `util`      | Shared utilities used across packages                          |
+
+#### Original crates published by [GGist]
 
 > **Note:** These crates have not been updated since mid-2018.
+
+The original crates were published under the `bip_` prefix, short for _BitTorrent Infrastructure Project_ (the former name of this project).
 
 [![b_bip_bencode]][c_bip_bencode]　
 [![b_bip_disk]][c_bip_disk]　
