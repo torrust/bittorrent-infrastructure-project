@@ -1,4 +1,4 @@
-//! Utilities used by Torrust BitTorrent.
+//! Utilities used by Torrust `BitTorrent`.
 
 /// Bittorrent specific types.
 pub mod bt;
