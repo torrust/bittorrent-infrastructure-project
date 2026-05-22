@@ -15,12 +15,12 @@ In this fork we have:
 - [x] Update some of the project dependencies. ([#9], [#17], [#26], [#27])
 - [x] Preformed a general cleanup of the codebase. ([#10], [#16], [#18], [#29], [#31])
 - [x] Updated all dependencies to modern versions. ( [#19], [#20], [#21], [#22], [#23], [#25])
+- [x] Removed the `utracker` package (superseded by [torrust-tracker] for UDP tracker support). ([#53], [#70])
 
 The future goals are:
 
 - [ ] Publish updated versions of the crates. ([#37])
 - [ ] Increase coverage of unit tests. ([#38])
-- [ ] Remove dependency on umio in `utracker` package. Instead use Tokio. ([#53])
 - [ ] Overhaul the old `mio` architecture in the `dht` package. Making better use of Tokio. ([#54])
 
 **We would like to make a special thanks to all the developers who had contributed to and created this great project.**
@@ -94,6 +94,8 @@ additional terms or conditions.
 [#38]: https://github.com/torrust/torrust-bittorrent/issues/38
 [#53]: https://github.com/torrust/torrust-bittorrent/issues/53
 [#54]: https://github.com/torrust/torrust-bittorrent/issues/54
+[#70]: https://github.com/torrust/torrust-bittorrent/pull/70
+[torrust-tracker]: https://github.com/torrust/torrust-tracker
 [t_i37]: https://img.shields.io/github/issues/detail/title/torrust/torrust-bittorrent/37?style=for-the-badge&
 [s_i37]: https://img.shields.io/github/issues/detail/state/torrust/torrust-bittorrent/37?style=for-the-badge&label=%E3%80%80
 [b_bip_bencode]: https://img.shields.io/crates/v/bip_bencode?style=for-the-badge&label=bip_bencode
