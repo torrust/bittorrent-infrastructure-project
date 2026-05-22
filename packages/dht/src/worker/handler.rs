@@ -4,7 +4,7 @@ use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
-use bencode::{ben_bytes, BDecodeOpt, BencodeMut, BencodeRef};
+use bencode::{BDecodeOpt, BencodeMut, BencodeRef, ben_bytes};
 use futures::channel::mpsc;
 use futures::future::BoxFuture;
 use futures::{FutureExt, SinkExt, StreamExt as _};
@@ -15,6 +15,7 @@ use util::convert;
 use util::net::IpAddr;
 
 use crate::handshaker_trait::HandshakerTrait;
+use crate::message::MessageType;
 use crate::message::announce_peer::{AnnouncePeerResponse, ConnectPort};
 use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
 use crate::message::error::{ErrorCode, ErrorMessage};
@@ -23,7 +24,6 @@ use crate::message::get_peers::{CompactInfoType, GetPeersResponse};
 use crate::message::ping::PingResponse;
 use crate::message::request::RequestType;
 use crate::message::response::{ExpectedResponse, ResponseType};
-use crate::message::MessageType;
 use crate::router::Router;
 use crate::routing::node::{Node, NodeStatus};
 use crate::routing::table::{BucketContents, RoutingTable};
@@ -231,10 +231,10 @@ where
         // TODO: Add read only flags to messages we send it we are read only!
         // Also, check for read only flags on responses we get before adding nodes
         // to our RoutingTable.
-        if self.read_only {
-            if let Ok(MessageType::Request(_)) = message {
-                return;
-            }
+        if self.read_only
+            && let Ok(MessageType::Request(_)) = message
+        {
+            return;
         }
 
         // Process the given message

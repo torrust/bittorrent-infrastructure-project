@@ -78,7 +78,7 @@ where
             },
         };
 
-        let ready = match next_message {
+        match next_message {
             Err(err) => match err {
                 PeerManagerOutputError::PeerError(info, _) => {
                     let Ok(mut peers) = self.peers.try_lock() else {
@@ -134,8 +134,6 @@ where
             }
 
             Ok(msg) => Poll::Ready(Some(Ok(msg))),
-        };
-
-        ready
+        }
     }
 }

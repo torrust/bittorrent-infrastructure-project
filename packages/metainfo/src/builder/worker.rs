@@ -1,4 +1,4 @@
-use std::sync::{mpsc, Arc};
+use std::sync::{Arc, mpsc};
 
 use crossbeam::queue::SegQueue;
 use util::sha::ShaHash;
@@ -119,14 +119,14 @@ where
     })?;
 
     // If we still have a partial piece left over, push it to the workers
-    if let Some(piece_buffer) = opt_piece_buffer {
-        if !piece_buffer.is_empty() {
-            work.push(WorkerMessage::HashPiece(piece_index, piece_buffer));
+    if let Some(piece_buffer) = opt_piece_buffer
+        && !piece_buffer.is_empty()
+    {
+        work.push(WorkerMessage::HashPiece(piece_index, piece_buffer));
 
-            piece_index += 1;
-            if progress_sender.send(piece_index).is_err() {
-                // TODO: Add logging here
-            }
+        piece_index += 1;
+        if progress_sender.send(piece_index).is_err() {
+            // TODO: Add logging here
         }
     }
 

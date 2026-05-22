@@ -309,10 +309,10 @@ impl TableLookup {
                 }
 
                 let routing_table = table.read().unwrap();
-                if !fatal_error {
-                    if let Some(n) = routing_table.find_node(&node) {
-                        n.local_request();
-                    }
+                if !fatal_error
+                    && let Some(n) = routing_table.find_node(&node)
+                {
+                    n.local_request();
                 }
             }
         }
