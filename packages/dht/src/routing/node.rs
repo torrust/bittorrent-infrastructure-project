@@ -356,20 +356,20 @@ mod tests {
     fn positive_good_status_ordering() {
         assert!(NodeStatus::Good > NodeStatus::Questionable);
         assert!(NodeStatus::Good > NodeStatus::Bad);
-        assert!(NodeStatus::Good == NodeStatus::Good);
+        assert_eq!(NodeStatus::Good, NodeStatus::Good);
     }
 
     #[test]
     fn positive_questionable_status_ordering() {
         assert!(NodeStatus::Questionable > NodeStatus::Bad);
         assert!(NodeStatus::Questionable < NodeStatus::Good);
-        assert!(NodeStatus::Questionable == NodeStatus::Questionable);
+        assert_eq!(NodeStatus::Questionable, NodeStatus::Questionable);
     }
 
     #[test]
     fn positive_bad_status_ordering() {
         assert!(NodeStatus::Bad < NodeStatus::Good);
         assert!(NodeStatus::Bad < NodeStatus::Questionable);
-        assert!(NodeStatus::Bad == NodeStatus::Bad);
+        assert_eq!(NodeStatus::Bad, NodeStatus::Bad);
     }
 }
