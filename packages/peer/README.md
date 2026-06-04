@@ -1,7 +1,9 @@
 # Peer
+
 This library assists communication between with bittorrent peers via the peer wire protocol.
 
 Peer communication with bittorrent involves:
+
 - Choking (telling someone we won't respond to them now).
 - Expressing interest (telling someone, if we were unchoked, we would be interested in some data they hold).
 

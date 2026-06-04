@@ -1,7 +1,7 @@
 [env]
 
 [build]
-rustflags = []
+rustflags = [  ]
 
 [term]
 quiet = false

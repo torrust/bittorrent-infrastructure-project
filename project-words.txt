@@ -1,4 +1,6 @@
 acks
+Cinstrument
+colord
 addrs
 aelitis
 alekitto
@@ -41,6 +43,7 @@ hasher
 heartbeating
 holepunch
 infohash
+ISCSI
 kademlia
 KRPC
 lblock
@@ -54,6 +57,7 @@ myapp
 nanos
 natted
 nextest
+nodetypes
 Oneshot
 openbittorrent
 pblock
@@ -65,6 +69,8 @@ rasterbar
 rebootstrap
 rebootstrapping
 recvd
+repomix
+reorganised
 reqq
 reregister
 ringbuffer
@@ -73,11 +79,15 @@ rqst
 RUSTDOCFLAGS
 rustflags
 rustfmt
+shellcheck
 submac
 subsecond
 Swatinem
 taiki
+taplo
 thiserror
+Torrust
+torrust
 transmissionbt
 umio
 unchoke
@@ -86,8 +96,10 @@ unpinged
 unscalable
 upnp
 utorrent
+utracker
 vals
 vecs
 Vuze
 walkdir
+xlink
 yourip

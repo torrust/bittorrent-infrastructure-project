@@ -1,6 +1,6 @@
 [package]
 description = "Common handshaking interface as well as a default handshake implementation"
-keywords = ["bittorrent", "handshake"]
+keywords = [ "bittorrent", "handshake" ]
 name = "handshake"
 readme = "README.md"
 
@@ -27,7 +27,7 @@ futures = "0"
 nom = "8"
 pin-project = "1"
 rand = "0.10"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = [ "full" ] }
 tracing = "0"
 
 [dev-dependencies]

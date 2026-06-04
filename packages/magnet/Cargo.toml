@@ -1,6 +1,6 @@
 [package]
 description = "Magnet link parsing and construction"
-keywords = ["bittorrent", "magnet"]
+keywords = [ "bittorrent", "magnet" ]
 name = "magnet"
 readme = "README.md"
 

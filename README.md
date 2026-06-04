@@ -27,7 +27,7 @@ The future goals are:
 
 ---
 
-### Crates
+## Crates
 
 > We have not published any crates from this repository yet.
 > Before publishing, we need to complete the ongoing refactoring work and settle on
@@ -49,20 +49,20 @@ The current (working) crate names, subject to renaming before publication:
 | `select`    | Piece selection algorithm                                      |
 | `util`      | Shared utilities used across packages                          |
 
-#### Original crates published by [GGist]
+### Original crates published by [GGist]
 
 > **Note:** These crates have not been updated since mid-2018.
 
 The original crates were published under the `bip_` prefix, short for _BitTorrent Infrastructure Project_ (the former name of this project).
 
-[![b_bip_bencode]][c_bip_bencode]　
-[![b_bip_disk]][c_bip_disk]　
-[![b_bip_handshake]][c_bip_handshake]　
-[![b_bip_peer]][c_bip_peer]　
-[![b_bip_select]][c_bip_select]　
-[![b_bip_dht]][c_bip_dht]　
-[![b_bip_metainfo]][c_bip_metainfo]　
-[![b_bip_utracker]][c_bip_utracker]　
+[![b_bip_bencode]][c_bip_bencode]
+[![b_bip_disk]][c_bip_disk]
+[![b_bip_handshake]][c_bip_handshake]
+[![b_bip_peer]][c_bip_peer]
+[![b_bip_select]][c_bip_select]
+[![b_bip_dht]][c_bip_dht]
+[![b_bip_metainfo]][c_bip_metainfo]
+[![b_bip_utracker]][c_bip_utracker]
 
 ## License
 
@@ -114,8 +114,6 @@ additional terms or conditions.
 [#64]: https://github.com/torrust/torrust-bittorrent/issues/64
 [#70]: https://github.com/torrust/torrust-bittorrent/pull/70
 [torrust-tracker]: https://github.com/torrust/torrust-tracker
-[t_i37]: https://img.shields.io/github/issues/detail/title/torrust/torrust-bittorrent/37?style=for-the-badge&
-[s_i37]: https://img.shields.io/github/issues/detail/state/torrust/torrust-bittorrent/37?style=for-the-badge&label=%E3%80%80
 [b_bip_bencode]: https://img.shields.io/crates/v/bip_bencode?style=for-the-badge&label=bip_bencode
 [b_bip_disk]: https://img.shields.io/crates/v/bip_disk?style=for-the-badge&label=bip_disk
 [b_bip_handshake]: https://img.shields.io/crates/v/bip_handshake?style=for-the-badge&label=bip_handshake

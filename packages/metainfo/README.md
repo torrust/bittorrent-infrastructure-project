@@ -1,6 +1,6 @@
 # Magnet
-This library provides an api for parsing and building of bittorrent metainfo files.
 
+This library provides an api for parsing and building of bittorrent metainfo files.
 
 Metainfo files serve the purpose of providing a list of checksums for clients interested in specific files, how long each hashed piece should be, and the directory structure for the files.
 

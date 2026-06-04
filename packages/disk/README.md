@@ -1,5 +1,6 @@
 # Disk
-This disk management library is all about storing/loading pieces to/from any object implementing the ```FileSystem``` interface.
+
+This disk management library is all about storing/loading pieces to/from any object implementing the `FileSystem` interface.
 
 Allowing torrent storage could to be transparently sent to disk, stored in memory, pushed to a distributed file system, or even uploaded to the cloud as pieces come in.
 

@@ -18,6 +18,9 @@
     ],
     "ignorePaths": [
         "target",
+        "**/*.svg",
+        "**/*.bencode",
+        "**/*.metainfo",
         "/project-words.txt",
         "repomix-output.xml",
         "TEMP-*.md",
