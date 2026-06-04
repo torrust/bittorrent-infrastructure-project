@@ -1,6 +1,6 @@
 ---
 name: run-linters
-description: Run code quality checks and linters for the torrust-tracker project. Includes Rust clippy, rustfmt, markdown, YAML, TOML, spell checking, and shellcheck. Use when asked to lint code, check formatting, fix code quality issues, or prepare for commit. Triggers on "lint", "run linters", "check code quality", "fix formatting", "run clippy", "run rustfmt", or "pre-commit checks".
+description: Run code quality checks and linters for the torrust-bittorrent project. Includes Rust clippy, rustfmt, markdown, YAML, TOML, spell checking, and shellcheck. Use when asked to lint code, check formatting, fix code quality issues, or prepare for commit. Triggers on "lint", "run linters", "check code quality", "fix formatting", "run clippy", "run rustfmt", or "pre-commit checks".
 metadata:
   author: torrust
   version: "1.0"

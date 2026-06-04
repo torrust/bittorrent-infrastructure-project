@@ -118,7 +118,7 @@ shell, and spell-check linters in one shot.
 Install it once:
 
 ```sh
-cargo install torrust-linting
+cargo install --locked --git https://github.com/torrust/torrust-linting --tag v0.1.0 --bin linter
 ```
 
 **Run it before every commit and push:**

@@ -1,6 +1,6 @@
 ---
 name: add-rust-dependency
-description: Guide for safely adding a new Rust crate dependency in torrust-tracker, starting from the latest stable crates.io version, minimizing features, documenting version rationale, and validating with cargo machete and repository quality gates. Use when introducing a new dependency, selecting a crate version, or justifying why an older version is required.
+description: Guide for safely adding a new Rust crate dependency in torrust-bittorrent, starting from the latest stable crates.io version, minimizing features, documenting version rationale, and validating with cargo machete and repository quality gates. Use when introducing a new dependency, selecting a crate version, or justifying why an older version is required.
 metadata:
   author: torrust
   version: "1.0"
@@ -69,13 +69,13 @@ After editing `Cargo.toml`/`Cargo.lock`:
 ```bash
 cargo update -p <crate-name>
 cargo machete
-./contrib/dev-tools/git/hooks/pre-commit.sh --format=json
+linter all
 ```
 
 If the run fails and more diagnostics are needed, retry with:
 
 ```bash
-./contrib/dev-tools/git/hooks/pre-commit.sh --format=text --verbosity=verbose
+linter all
 ```
 
 If checks fail, resolve issues or revert the dependency addition.

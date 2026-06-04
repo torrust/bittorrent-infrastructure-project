@@ -1,6 +1,6 @@
 ---
 name: create-adr
-description: Guide for creating Architectural Decision Records (ADRs) in the torrust-tracker project. Covers the timestamp-based file naming convention, free-form structure, index registration in the docs/adrs/README.md index table, and commit workflow. Use when documenting architectural decisions, recording design choices, or adding decision records. Triggers on "create ADR", "add ADR", "new decision record", "architectural decision", "document decision", or "add decision".
+description: Guide for creating Architectural Decision Records (ADRs) in the torrust-bittorrent project. Covers the timestamp-based file naming convention, free-form structure, index registration in the docs/adrs/README.md index table, and commit workflow. Use when documenting architectural decisions, recording design choices, or adding decision records. Triggers on "create ADR", "add ADR", "new decision record", "architectural decision", "document decision", or "add decision".
 metadata:
   author: torrust
   version: "1.0"

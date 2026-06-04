@@ -1,6 +1,6 @@
 ---
 name: link-subissue-to-parent-issue
-description: Guide for linking an existing GitHub issue as a sub-issue of a parent issue in the torrust-tracker project. Covers the GitHub REST API flow, the required internal issue ID for the child issue, verification, and common failure modes. Use when setting a parent issue for a sub-issue, attaching a child issue to an epic, or linking an existing issue under another issue. Triggers on "set parent issue", "link subissue", "add sub-issue", "attach child issue", or "make issue a subissue".
+description: Guide for linking an existing GitHub issue as a sub-issue of a parent issue in the torrust-bittorrent project. Covers the GitHub REST API flow, the required internal issue ID for the child issue, verification, and common failure modes. Use when setting a parent issue for a sub-issue, attaching a child issue to an epic, or linking an existing issue under another issue. Triggers on "set parent issue", "link subissue", "add sub-issue", "attach child issue", or "make issue a subissue".
 metadata:
   author: torrust
   version: "1.0"
@@ -40,13 +40,13 @@ Decide which issue is the parent and which is the child.
 ### 2. Get the internal ID for the child issue
 
 ```bash
-gh api /repos/torrust/torrust-tracker/issues/{child-issue-number} --jq '.id'
+gh api /repos/torrust/torrust-bittorrent/issues/{child-issue-number} --jq '.id'
 ```
 
 Example:
 
 ```bash
-gh api /repos/torrust/torrust-tracker/issues/1715 --jq '.id'
+gh api /repos/torrust/torrust-bittorrent/issues/1715 --jq '.id'
 ```
 
 ### 3. Link the child issue to the parent issue

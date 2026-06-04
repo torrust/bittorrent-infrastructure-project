@@ -113,7 +113,7 @@ Before calling the GitHub API or CLI, review and reformat the issue body followi
 
 ```bash
 gh issue create \
-  --repo torrust/torrust-tracker \
+  --repo torrust/torrust-bittorrent \
   --title "{title}" \
   --body "{body}" \
   --label "{label}"
@@ -173,7 +173,7 @@ Recommended GitHub CLI command for fork-based PRs:
 
 ```bash
 gh pr create \
-  --repo torrust/torrust-tracker \
+  --repo torrust/torrust-bittorrent \
   --base develop \
   --head {fork-owner}:{branch} \
   --title "{title}" \

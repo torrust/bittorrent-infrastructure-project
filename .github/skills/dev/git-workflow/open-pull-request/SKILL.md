@@ -144,7 +144,7 @@ When MCP pull request management tools are available, create the PR with:
 
 ## Post-creation Validation
 
-- [ ] PR targets `torrust/torrust-tracker:develop`
+- [ ] PR targets `torrust/torrust-bittorrent:develop`
 - [ ] Head branch is correct
 - [ ] CI workflows started
 - [ ] Issue linked with the correct keyword (`Related to` for spec-only, `Closes` for implementation)

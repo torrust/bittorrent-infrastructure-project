@@ -121,7 +121,7 @@ git remote -v
 
 ### 5. Create Pull Request
 
-Target branch: `torrust/torrust-tracker:develop` from `<fork-owner>:<branch-name>`.
+Target branch: `torrust/torrust-bittorrent:develop` from `<fork-owner>:<branch-name>`.
 
 ### 6. Cleanup After Merge
 

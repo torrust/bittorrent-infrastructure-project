@@ -1,6 +1,6 @@
 ---
 name: process-copilot-suggestions
-description: End-to-end workflow for processing and resolving all Copilot code review suggestions on a pull request in torrust-tracker. Use when asked to handle PR review feedback, process all copilot suggestions, audit and resolve review comments, or manage copilot-generated review threads. Triggers on "process copilot suggestions", "handle all PR feedback", "resolve copilot review", "audit PR suggestions", or "close all copilot comments".
+description: End-to-end workflow for processing and resolving all Copilot code review suggestions on a pull request in torrust-bittorrent. Use when asked to handle PR review feedback, process all copilot suggestions, audit and resolve review comments, or manage copilot-generated review threads. Triggers on "process copilot suggestions", "handle all PR feedback", "resolve copilot review", "audit PR suggestions", or "close all copilot comments".
 metadata:
   author: torrust
   version: "1.0"

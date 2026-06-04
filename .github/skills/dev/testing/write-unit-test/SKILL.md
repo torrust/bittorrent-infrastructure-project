@@ -226,17 +226,6 @@ fn it_should_validate_info_hash(#[case] input: &str, #[case] is_valid: bool) {
 }
 ```
 
-## Phase 4: Test Helpers
-
-The `test-helpers` workspace package provides shared test utilities.
-
-```toml
-[dev-dependencies]
-torrust-tracker-test-helpers = { workspace = true }
-```
-
-Check the package for available mock servers, fixture generators, and utility types.
-
 ## Quick Checklist
 
 - [ ] Test name uses `it_should_` prefix

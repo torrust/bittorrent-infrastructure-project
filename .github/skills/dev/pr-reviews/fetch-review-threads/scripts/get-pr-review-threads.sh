@@ -12,7 +12,7 @@ Options:
 	--pr-number <number>   Pull request number (required)
 	--output-file <path>   Output JSON file (default: /tmp/pr_threads_<PR_NUMBER>.json)
 	--owner <owner>        Repository owner (default: torrust)
-	--repo <repo>          Repository name (default: torrust-tracker)
+	--repo <repo>          Repository name (default: torrust-bittorrent)
 	-h, --help             Show this help
 
 Output:
@@ -23,7 +23,7 @@ EOF
 }
 
 OWNER="torrust"
-REPO="torrust-tracker"
+REPO="torrust-bittorrent"
 PR_NUMBER=""
 OUTPUT_FILE=""
 
