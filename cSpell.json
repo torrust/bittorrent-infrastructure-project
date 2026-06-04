@@ -51,6 +51,7 @@
         "metafile",
         "metainfo",
         "mpmc",
+        "MSRV",
         "myapp",
         "nanos",
         "natted",
