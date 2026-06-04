@@ -3,8 +3,8 @@ doc-type: issue
 issue-type: task
 status: in-review
 priority: p2
-github-issue: null
-spec-path: docs/issues/add-agent-infrastructure.md
+github-issue: 77
+spec-path: docs/issues/0077-add-agent-infrastructure.md
 branch: chore/add-agent-infrastructure
 related-pr: null
 last-updated-utc: 2026-06-04 16:00
