@@ -1,6 +1,6 @@
 [package]
 description = "Efficient decoding and encoding for bencode."
-keywords = ["bencode"]
+keywords = [ "bencode" ]
 name = "bencode"
 readme = "README.md"
 

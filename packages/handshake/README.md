@@ -1,4 +1,5 @@
 # Handshake
+
 This library provides an implementation for handshaking between peers.
 
 Handshaking is the process of connecting to a peer and exchanging information related to how a peer will be communicating with you and vice versa.

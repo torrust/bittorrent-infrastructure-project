@@ -1,6 +1,6 @@
 [package]
 description = "Implementation of the bittorrent mainline DHT"
-keywords = ["bittorrent", "dht", "distributed", "hash", "mainline"]
+keywords = [ "bittorrent", "dht", "distributed", "hash", "mainline" ]
 name = "dht"
 readme = "README.md"
 
@@ -29,6 +29,6 @@ crc = "3"
 futures = "0"
 rand = "0.10"
 thiserror = "2"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = [ "full" ] }
 tracing = "0"
 tracing-subscriber = "0"

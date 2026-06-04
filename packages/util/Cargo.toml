@@ -1,6 +1,6 @@
 [package]
 description = "Utilities for Torrust BitTorrent"
-keywords = ["utility"]
+keywords = [ "utility" ]
 name = "util"
 readme = "README.md"
 

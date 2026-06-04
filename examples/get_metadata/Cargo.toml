@@ -27,7 +27,7 @@ select = { path = "../../packages/select" }
 clap = "4"
 futures = "0"
 hex = "0"
-tokio = { version = "1", features = ["full"] }
-tokio-util = { version = "0", features = ["codec"] }
+tokio = { version = "1", features = [ "full" ] }
+tokio-util = { version = "0", features = [ "codec" ] }
 tracing = "0"
 tracing-subscriber = "0"

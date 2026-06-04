@@ -1,6 +1,6 @@
 [package]
 description = "Parsing and building of bittorrent metainfo files"
-keywords = ["bittorrent", "file", "metainfo", "torrent"]
+keywords = [ "bittorrent", "file", "metainfo", "torrent" ]
 name = "metainfo"
 readme = "README.md"
 
