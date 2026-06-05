@@ -1,6 +1,6 @@
 [package]
 description = "Efficient decoding and encoding for bencode."
-keywords = [ "bencode" ]
+keywords = [ "bencode", "bittorrent", "library" ]
 name = "torrust-bencode"
 readme = "README.md"
 
@@ -10,11 +10,14 @@ documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
-publish = false                # override with publish = true when ready for a public release
+publish = true
 rust-version.workspace = true
 
 repository.workspace = true
-version = "0.1.0"
+# Version kept at 3.0.0 to match the previously published torrust-tracker-contrib-bencode v3.0.0.
+# See ADR docs/adrs/20260605103740_crate_publishing_and_versioning.md for the exception policy
+# on imported crates that carry an existing published version.
+version = "3.0.0"
 
 [lints]
 workspace = true
