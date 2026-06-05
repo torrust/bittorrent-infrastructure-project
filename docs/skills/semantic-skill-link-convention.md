@@ -24,6 +24,14 @@ Current markers:
 | ------------ | -------------- | -------------------------------------------------------------------------------------- |
 | `skill-link` | `<skill-name>` | This artifact affects the linked skill and should trigger a skill review when changed. |
 
+## Frontmatter Keys
+
+| Key                 | Type                        | Meaning                                                    |
+| ------------------- | --------------------------- | ---------------------------------------------------------- |
+| `skill-links`       | list of skill names         | Skills that should be reviewed when this artifact changes. |
+| `related-issues`    | list of GitHub issue URLs   | GitHub issues that motivated or track this artifact.       |
+| `related-artifacts` | list of repo-relative paths | Other files strongly coupled to this artifact.             |
+
 Add new markers only when there is a concrete recurring maintenance problem that the current marker set cannot represent.
 
 ## Marker Format
@@ -83,6 +91,8 @@ Recommended shape:
 semantic-links:
   skill-links:
     - <skill-name>
+  related-issues:
+    - https://github.com/torrust/torrust-bittorrent/issues/<number>
   related-artifacts:
     - <repo-relative-path>
 ---

@@ -1,13 +1,13 @@
 ---
 doc-type: issue
 issue-type: task
-status: open
+status: in-review
 priority: p2
 github-issue: 80
 spec-path: docs/issues/0080-setup-package-publishing-infrastructure.md
 branch: chore/setup-package-publishing-infrastructure
 related-pr: null
-last-updated-utc: 2026-06-05 00:00
+last-updated-utc: 2026-06-05 10:42
 semantic-links:
   skill-links:
     - create-adr
@@ -117,7 +117,8 @@ Version choice:
 
 ### 4. Write an ADR for publishing strategy and independent per-crate versioning
 
-Create `docs/adr/0001-crate-publishing-and-versioning.md` documenting:
+Create `docs/adrs/YYYYMMDDHHMMSS_crate_publishing_and_versioning.md` and register it in
+`docs/adrs/index.md` documenting:
 
 - **Context**: this is a library workspace forked from an unmaintained upstream
   ([GGist/bip-rs](https://github.com/GGist/bip-rs)); old versions under the original crate names
@@ -155,19 +156,19 @@ to release a new version of a crate:
 
 ## Acceptance Criteria
 
-- [ ] All crates in `packages/` are renamed to `torrust-<name>` in their `Cargo.toml`.
-- [ ] Folder names under `packages/` are unchanged.
-- [ ] All inter-crate dependency references use the new crate names.
-- [ ] Each crate in `packages/` has an explicit `version` field independent of the workspace
+- [x] All crates in `packages/` are renamed to `torrust-<name>` in their `Cargo.toml`.
+- [x] Folder names under `packages/` are unchanged.
+- [x] All inter-crate dependency references use the new crate names.
+- [x] Each crate in `packages/` has an explicit `version` field independent of the workspace
       default.
-- [ ] `[workspace.package] publish = false` is kept as the default; crates ready to publish
+- [x] `[workspace.package] publish = false` is kept as the default; crates ready to publish
       override it with `publish = true` in their own `Cargo.toml`.
-- [ ] `docs/adr/0001-crate-publishing-and-versioning.md` exists, covers both the
-      publish-on-demand strategy and independent versioning, and is complete.
-- [ ] `.github/skills/dev/maintenance/release-package/SKILL.md` exists and covers all release
+- [x] `docs/adrs/20260605103740_crate_publishing_and_versioning.md` and `docs/adrs/index.md`
+      exist, cover both the publish-on-demand strategy and independent versioning, and are complete.
+- [x] `.github/skills/dev/maintenance/release-package/SKILL.md` exists and covers all release
       steps.
-- [ ] `cargo check --workspace --all-targets --all-features` passes.
-- [ ] `linter all` passes.
+- [x] `cargo check --workspace --all-targets --all-features` passes.
+- [x] `linter all` passes.
 
 ## Out of scope
 
