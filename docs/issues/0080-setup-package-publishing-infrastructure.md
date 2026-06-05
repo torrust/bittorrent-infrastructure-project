@@ -16,7 +16,7 @@ semantic-links:
   related-artifacts:
     - Cargo.toml
     - packages/
-    - docs/adr/
+    - docs/adrs/
     - .github/skills/
 ---
 
