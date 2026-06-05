@@ -5,7 +5,7 @@ use std::iter::Filter;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::slice::Iter;
 
-use util::bt::{self, NodeId};
+use torrust_util::bt::{self, NodeId};
 
 use crate::routing::node::{Node, NodeStatus};
 
@@ -157,8 +157,8 @@ impl<'a> Iterator for PingableNodes<'a> {
 
 #[cfg(test)]
 mod tests {
-    use util::sha::{self, ShaHash};
-    use util::test as bip_test;
+    use torrust_util::sha::{self, ShaHash};
+    use torrust_util::test as bip_test;
 
     use crate::routing::bucket::{self, Bucket};
     use crate::routing::node::{Node, NodeStatus};

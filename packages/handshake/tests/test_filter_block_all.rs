@@ -6,12 +6,12 @@ use common::{INIT, tracing_stderr_init};
 use futures::FutureExt;
 use futures::sink::SinkExt;
 use futures::stream::{self, StreamExt};
-use handshake::transports::TcpTransport;
-use handshake::{
+use torrust_handshake::transports::TcpTransport;
+use torrust_handshake::{
     DiscoveryInfo, Extensions, FilterDecision, HandshakeFilter, HandshakeFilters, HandshakerBuilder, InitiateMessage, Protocol,
 };
+use torrust_util::bt::{self, InfoHash, PeerId};
 use tracing::level_filters::LevelFilter;
-use util::bt::{self, InfoHash, PeerId};
 
 mod common;
 

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use futures::channel::mpsc;
 use futures::lock::Mutex;
 use futures::{FutureExt, SinkExt as _};
-use metainfo::Metainfo;
-use util::bt::InfoHash;
+use torrust_metainfo::Metainfo;
+use torrust_util::bt::InfoHash;
 
 use crate::disk::fs::FileSystem;
 use crate::disk::tasks::context::DiskManagerContext;

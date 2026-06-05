@@ -1,4 +1,4 @@
-use bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
+use torrust_bencode::{BConvert, BDictAccess, BListAccess, BRefAccess, BencodeConvertError};
 
 use crate::error::ParseError;
 
@@ -64,11 +64,11 @@ where
     B: BRefAccess<BType = B>,
 {
     list.into_iter()
-        .filter_map(bencode::BRefAccess::list)
+        .filter_map(torrust_bencode::BRefAccess::list)
         .map(|entry| {
             entry
                 .into_iter()
-                .filter_map(bencode::BRefAccess::str)
+                .filter_map(torrust_bencode::BRefAccess::str)
                 .map(String::from)
                 .collect()
         })

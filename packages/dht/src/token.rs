@@ -1,10 +1,10 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use chrono::{DateTime, Duration, Utc};
-use util::convert;
-use util::error::{Error, LengthErrorKind, LengthResult};
-use util::net::IpAddr;
-use util::sha::{self, ShaHash};
+use torrust_util::convert;
+use torrust_util::error::{Error, LengthErrorKind, LengthResult};
+use torrust_util::net::IpAddr;
+use torrust_util::sha::{self, ShaHash};
 
 /// We will partially follow the bittorrent implementation for issuing tokens to nodes, the
 /// secret will change every 10 minutes and tokens up to 10 minutes old will be accepted. This
@@ -196,7 +196,7 @@ fn validate_token_from_addr_v6(v6_addr: Ipv6Addr, token: Token, secret: u32) -> 
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
-    use util::test as bip_test;
+    use torrust_util::test as bip_test;
 
     use crate::token::TokenStore;
 

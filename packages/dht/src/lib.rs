@@ -26,9 +26,9 @@ mod token;
 mod transaction;
 mod worker;
 
-pub use handshake::Handshaker;
+pub use torrust_handshake::Handshaker;
 /// Test
-pub use util::bt::{InfoHash, PeerId};
+pub use torrust_util::bt::{InfoHash, PeerId};
 
 pub use crate::builder::{DhtBuilder, MainlineDht};
 pub use crate::router::Router;

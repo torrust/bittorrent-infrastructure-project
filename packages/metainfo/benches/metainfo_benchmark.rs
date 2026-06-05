@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder};
+use torrust_metainfo::{DirectAccessor, Metainfo, MetainfoBuilder};
 
 const MULTI_KB_METAINFO: &[u8; 30004] = include_bytes!("multi_kb.metainfo");
 

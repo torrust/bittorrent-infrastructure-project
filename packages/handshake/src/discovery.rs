@@ -1,4 +1,4 @@
-use util::bt::PeerId;
+use torrust_util::bt::PeerId;
 
 /// Trait for advertisement information that other peers can discover.
 #[allow(clippy::module_name_repetitions)]

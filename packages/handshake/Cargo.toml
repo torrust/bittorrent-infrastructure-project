@@ -1,7 +1,7 @@
 [package]
 description = "Common handshaking interface as well as a default handshake implementation"
 keywords = [ "bittorrent", "handshake" ]
-name = "handshake"
+name = "torrust-handshake"
 readme = "README.md"
 
 authors.workspace = true
@@ -20,7 +20,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-util = { path = "../util" }
+torrust-util = { path = "../util" }
 
 bytes = "1"
 futures = "0"

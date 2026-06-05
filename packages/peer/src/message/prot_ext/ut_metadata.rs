@@ -1,8 +1,8 @@
 use std::io::Write as _;
 
-use bencode::{BConvert, BDecodeOpt, BencodeRef, ben_int, ben_map};
 use bytes::Bytes;
 use thiserror::Error;
+use torrust_bencode::{BConvert, BDecodeOpt, BencodeRef, ben_int, ben_map};
 
 use super::PeerExtensionProtocolMessageError;
 use crate::message::bencode_util;

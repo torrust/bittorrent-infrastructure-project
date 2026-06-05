@@ -1,5 +1,5 @@
-use bencode::ext::BConvertExt;
-use bencode::{BConvert, BRefAccess, BencodeConvertError};
+use torrust_bencode::ext::BConvertExt;
+use torrust_bencode::{BConvert, BRefAccess, BencodeConvertError};
 
 use crate::error::DhtError;
 use crate::message::error::ErrorMessage;

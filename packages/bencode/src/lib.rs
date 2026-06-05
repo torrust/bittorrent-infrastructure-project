@@ -7,7 +7,7 @@
 //! ```rust
 //!     extern crate bencode;
 //!
-//!     use bencode::{BencodeRef, BRefAccess, BDecodeOpt};
+//!     use torrust_bencode::{BencodeRef, BRefAccess, BDecodeOpt};
 //!
 //!     fn main() {
 //!         let data = b"d12:lucky_numberi7ee"; // cspell:disable-line

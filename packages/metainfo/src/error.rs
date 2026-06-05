@@ -1,7 +1,7 @@
 //! Errors for torrent file building and parsing.
 
-use bencode::{BencodeConvertError, BencodeParseError};
 use thiserror::Error;
+use torrust_bencode::{BencodeConvertError, BencodeParseError};
 use walkdir;
 
 #[allow(clippy::module_name_repetitions)]

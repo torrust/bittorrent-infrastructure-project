@@ -1,5 +1,5 @@
-use metainfo::Metainfo;
-use util::bt::InfoHash;
+use torrust_metainfo::Metainfo;
+use torrust_util::bt::InfoHash;
 
 use crate::error::{BlockError, TorrentError};
 use crate::memory::block::{Block, BlockMut};

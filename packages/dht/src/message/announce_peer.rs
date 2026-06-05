@@ -1,8 +1,8 @@
 // TODO: Remove this when announces are implemented
 #![allow(unused)]
 
-use bencode::{BConvert, BDictAccess, BRefAccess, ben_bytes, ben_int, ben_map};
-use util::bt::{InfoHash, NodeId};
+use torrust_bencode::{BConvert, BDictAccess, BRefAccess, ben_bytes, ben_int, ben_map};
+use torrust_util::bt::{InfoHash, NodeId};
 
 use crate::error::DhtError;
 use crate::message;
@@ -63,7 +63,10 @@ impl<'a> AnnouncePeerRequest<'a> {
 
         // Technically, the specification says that the value is either 0 or 1 but goes on to say that
         // if it is not zero, then the source port should be used. We will allow values other than 0 or 1.
-        let response_port = match rqst_root.lookup(IMPLIED_PORT_KEY.as_bytes()).map(bencode::BRefAccess::int) {
+        let response_port = match rqst_root
+            .lookup(IMPLIED_PORT_KEY.as_bytes())
+            .map(torrust_bencode::BRefAccess::int)
+        {
             Some(Some(n)) if n != 0 => ConnectPort::Implied,
             _ => {
                 // If we hit this, the port either was not provided or it was of the wrong bencode type

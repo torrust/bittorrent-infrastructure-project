@@ -19,10 +19,10 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-disk = { path = "../../packages/disk" }
-handshake = { path = "../../packages/handshake" }
-metainfo = { path = "../../packages/metainfo" }
-peer = { path = "../../packages/peer" }
+torrust-disk = { path = "../../packages/disk" }
+torrust-handshake = { path = "../../packages/handshake" }
+torrust-metainfo = { path = "../../packages/metainfo" }
+torrust-peer = { path = "../../packages/peer" }
 
 clap = "4"
 futures = "0"

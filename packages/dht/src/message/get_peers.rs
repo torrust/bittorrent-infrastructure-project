@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
-use bencode::inner::BCowConvert;
-use bencode::{BConvert, BDictAccess, BMutAccess, BRefAccess, BencodeMut, ben_bytes, ben_map};
-use util::bt::{InfoHash, NodeId};
+use torrust_bencode::inner::BCowConvert;
+use torrust_bencode::{BConvert, BDictAccess, BMutAccess, BRefAccess, BencodeMut, ben_bytes, ben_map};
+use torrust_util::bt::{InfoHash, NodeId};
 
 use crate::error::DhtError;
 use crate::message;

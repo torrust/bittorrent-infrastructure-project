@@ -4,9 +4,9 @@ use std::io::{BufRead as _, Write as _};
 use std::path::Path;
 
 use chrono::offset::{TimeZone, Utc};
-use metainfo::error::ParseError;
-use metainfo::{Metainfo, MetainfoBuilder};
 use pbr::ProgressBar;
+use torrust_metainfo::error::ParseError;
+use torrust_metainfo::{Metainfo, MetainfoBuilder};
 
 fn main() {
     println!("\nIMPORTANT: Remember to run in release mode for real world performance...\n");

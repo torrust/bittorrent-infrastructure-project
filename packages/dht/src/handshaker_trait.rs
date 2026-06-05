@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use futures::future::BoxFuture;
-use util::bt::{InfoHash, PeerId};
+use torrust_util::bt::{InfoHash, PeerId};
 
 /// Trait for peer discovery services to forward peer contact information and metadata.
 pub trait HandshakerTrait: Send {

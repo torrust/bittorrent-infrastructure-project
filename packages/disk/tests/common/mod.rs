@@ -4,14 +4,14 @@ use std::sync::{Arc, Mutex, Once, Weak};
 use std::time::Duration;
 
 use bytes::BytesMut;
-use disk::{BlockMetadata, BlockMut, FileSystem, IDiskMessage};
 use futures::future::BoxFuture;
 use futures::stream::Stream;
 use futures::{Sink, SinkExt as _, StreamExt as _, future};
-use metainfo::{Accessor, IntoAccessor, PieceAccess};
 use tokio::time::timeout;
+use torrust_disk::{BlockMetadata, BlockMut, FileSystem, IDiskMessage};
+use torrust_metainfo::{Accessor, IntoAccessor, PieceAccess};
+use torrust_util::bt::InfoHash;
 use tracing::level_filters::LevelFilter;
-use util::bt::InfoHash;
 
 #[allow(dead_code)]
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_millis(500);

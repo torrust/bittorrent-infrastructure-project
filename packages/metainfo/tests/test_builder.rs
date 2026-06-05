@@ -1,4 +1,4 @@
-use metainfo::MetainfoBuilder;
+use torrust_metainfo::MetainfoBuilder;
 
 const TRACKER: &str = "udp://foo.bar.baz:6969";
 const DATE: i64 = 1_517_651_523_851;

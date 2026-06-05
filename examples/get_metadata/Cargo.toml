@@ -18,11 +18,11 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-dht = { path = "../../packages/dht" }
-handshake = { path = "../../packages/handshake" }
-metainfo = { path = "../../packages/metainfo" }
-peer = { path = "../../packages/peer" }
-select = { path = "../../packages/select" }
+torrust-dht = { path = "../../packages/dht" }
+torrust-handshake = { path = "../../packages/handshake" }
+torrust-metainfo = { path = "../../packages/metainfo" }
+torrust-peer = { path = "../../packages/peer" }
+torrust-select = { path = "../../packages/select" }
 
 clap = "4"
 futures = "0"

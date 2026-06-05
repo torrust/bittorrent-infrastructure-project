@@ -6,8 +6,8 @@ use futures::channel::mpsc;
 use futures::future::BoxFuture;
 use futures::lock::Mutex;
 use futures::sink::SinkExt;
-use metainfo::Metainfo;
-use util::bt::InfoHash;
+use torrust_metainfo::Metainfo;
+use torrust_util::bt::InfoHash;
 
 use crate::FileSystem;
 use crate::disk::ODiskMessage;

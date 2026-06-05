@@ -1,7 +1,7 @@
 [package]
 description = "Magnet link parsing and construction"
 keywords = [ "bittorrent", "magnet" ]
-name = "magnet"
+name = "torrust-magnet"
 readme = "README.md"
 
 authors.workspace = true
@@ -20,7 +20,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-util = { path = "../util" }
+torrust-util = { path = "../util" }
 
 base32 = "0"
 url = "2"

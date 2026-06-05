@@ -2,9 +2,9 @@
 
 use std::path::{Path, PathBuf};
 
-use bencode::{BDecodeOpt, BDictAccess, BRefAccess, BencodeRef};
-use util::bt::InfoHash;
-use util::sha::{self, ShaHash};
+use torrust_bencode::{BDecodeOpt, BDictAccess, BRefAccess, BencodeRef};
+use torrust_util::bt::InfoHash;
+use torrust_util::sha::{self, ShaHash};
 
 use crate::accessor::{Accessor, IntoAccessor, PieceAccess};
 use crate::builder::{InfoBuilder, MetainfoBuilder, PieceLength};
@@ -460,9 +460,9 @@ impl File {
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use bencode::{BMutAccess, BencodeMut, ben_bytes, ben_int};
-    use util::bt::InfoHash;
-    use util::sha;
+    use torrust_bencode::{BMutAccess, BencodeMut, ben_bytes, ben_int};
+    use torrust_util::bt::InfoHash;
+    use torrust_util::sha;
 
     use crate::metainfo::Metainfo;
     use crate::parse;

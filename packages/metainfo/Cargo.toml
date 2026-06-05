@@ -1,7 +1,7 @@
 [package]
 description = "Parsing and building of bittorrent metainfo files"
 keywords = [ "bittorrent", "file", "metainfo", "torrent" ]
-name = "metainfo"
+name = "torrust-metainfo"
 readme = "README.md"
 
 authors.workspace = true
@@ -20,8 +20,8 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-bencode = { path = "../bencode" }
-util = { path = "../util" }
+torrust-bencode = { path = "../bencode" }
+torrust-util = { path = "../util" }
 
 crossbeam = "0"
 thiserror = "2"

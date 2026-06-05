@@ -1,8 +1,8 @@
 use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
 
-use handshake::Extensions;
-use util::bt::{InfoHash, PeerId};
+use torrust_handshake::Extensions;
+use torrust_util::bt::{InfoHash, PeerId};
 
 /// Information that uniquely identifies a peer.
 ///

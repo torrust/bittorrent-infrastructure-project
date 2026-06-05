@@ -4,7 +4,7 @@ use std::time::Duration;
 use futures::future::BoxFuture;
 use futures::{FutureExt as _, SinkExt as _, StreamExt as _};
 use tokio::io::{AsyncRead, AsyncWrite};
-use util::bt::PeerId;
+use torrust_util::bt::PeerId;
 
 use crate::bittorrent::framed::FramedHandshake;
 use crate::bittorrent::message::HandshakeMessage;
@@ -139,7 +139,7 @@ mod tests {
 
     use std::time::Duration;
 
-    use util::bt::{self, InfoHash, PeerId};
+    use torrust_util::bt::{self, InfoHash, PeerId};
 
     use super::HandshakeMessage;
     use crate::filter::filters::Filters;

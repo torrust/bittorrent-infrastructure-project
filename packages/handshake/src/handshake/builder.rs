@@ -3,8 +3,8 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use rand::RngExt as _;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::task::JoinSet;
-use util::bt::PeerId;
-use util::convert;
+use torrust_util::bt::PeerId;
+use torrust_util::convert;
 
 use super::Handshaker;
 use crate::{Extensions, HandshakerConfig, Transport};

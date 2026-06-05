@@ -2,32 +2,32 @@ use std::collections::HashMap;
 use std::io::Read as _;
 use std::sync::{Arc, Once};
 
-use disk::fs::NativeFileSystem;
-use disk::fs_cache::FileHandleCache;
-use disk::{
-    Block, BlockMetadata, BlockMut, DiskManager, DiskManagerBuilder, DiskManagerSink, DiskManagerStream, IDiskMessage, InfoHash,
-    ODiskMessage,
-};
 use futures::channel::mpsc;
 use futures::future::Either;
 use futures::lock::Mutex;
 use futures::{SinkExt as _, StreamExt as _, stream};
-use handshake::transports::TcpTransport;
-use handshake::{
-    Extensions, Handshaker, HandshakerBuilder, HandshakerConfig, HandshakerStream, InitiateMessage, PeerId, Protocol,
-};
-use metainfo::{Info, Metainfo};
-use peer::messages::{BitFieldMessage, HaveMessage, PeerWireProtocolMessage, PieceMessage, RequestMessage};
-use peer::protocols::{NullProtocol, PeerWireProtocol};
-use peer::{
-    PeerInfo, PeerManagerBuilder, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage, PeerManagerSink,
-    PeerManagerStream, PeerProtocolCodec,
-};
 use tokio::net::TcpStream;
 use tokio::signal;
 use tokio::task::JoinSet;
 use tokio_util::bytes::BytesMut;
 use tokio_util::codec::{Decoder, Framed};
+use torrust_disk::fs::NativeFileSystem;
+use torrust_disk::fs_cache::FileHandleCache;
+use torrust_disk::{
+    Block, BlockMetadata, BlockMut, DiskManager, DiskManagerBuilder, DiskManagerSink, DiskManagerStream, IDiskMessage, InfoHash,
+    ODiskMessage,
+};
+use torrust_handshake::transports::TcpTransport;
+use torrust_handshake::{
+    Extensions, Handshaker, HandshakerBuilder, HandshakerConfig, HandshakerStream, InitiateMessage, PeerId, Protocol,
+};
+use torrust_metainfo::{Info, Metainfo};
+use torrust_peer::messages::{BitFieldMessage, HaveMessage, PeerWireProtocolMessage, PieceMessage, RequestMessage};
+use torrust_peer::protocols::{NullProtocol, PeerWireProtocol};
+use torrust_peer::{
+    PeerInfo, PeerManagerBuilder, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage, PeerManagerSink,
+    PeerManagerStream, PeerProtocolCodec,
+};
 use tracing::level_filters::LevelFilter;
 
 // Maximum number of requests that can be in flight at once.
@@ -320,7 +320,7 @@ async fn setup_handshaker() -> (TcpHandshaker, JoinSet<()>) {
         .unwrap()
 }
 
-type PeerManager = peer::PeerManager<
+type PeerManager = torrust_peer::PeerManager<
     Framed<TcpStream, PeerProtocolCodec<PeerWireProtocol<NullProtocol>>>,
     PeerWireProtocolMessage<NullProtocol>,
 >;
@@ -633,7 +633,7 @@ fn generate_piece_requests(info: &Info, block_size: usize) -> Vec<RequestMessage
 
     // Grab our piece length, and the sum of the lengths of each file in the torrent
     let piece_length: u64 = info.piece_length();
-    let mut total_file_length: u64 = info.files().map(metainfo::File::length).sum();
+    let mut total_file_length: u64 = info.files().map(torrust_metainfo::File::length).sum();
 
     // Loop over each piece (keep subtracting total file length by piece size, use cmp::min to handle last, smaller piece)
     let mut piece_index: u64 = 0;

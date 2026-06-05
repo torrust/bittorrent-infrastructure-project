@@ -3,7 +3,7 @@ use std::collections::hash_map::Entry;
 use std::net::SocketAddr;
 
 use chrono::{DateTime, Duration, Utc};
-use util::bt::InfoHash;
+use torrust_util::bt::InfoHash;
 
 const MAX_ITEMS_STORED: usize = 500;
 
@@ -197,7 +197,7 @@ impl Eq for ItemExpiration {}
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
-    use util::{bt, test as bip_test};
+    use torrust_util::{bt, test as bip_test};
 
     use crate::storage::{self, AnnounceStorage};
 

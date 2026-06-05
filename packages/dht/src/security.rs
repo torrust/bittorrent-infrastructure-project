@@ -4,8 +4,8 @@
 use std::net::Ipv4Addr;
 
 use crc::{CRC_32_ISCSI, Crc};
-use util::bt::{self, NodeId};
-use util::convert;
+use torrust_util::bt::{self, NodeId};
+use torrust_util::convert;
 
 const IPV4_MASK: u32 = 0x030F_3FFF;
 const IPV6_MASK: u64 = 0x0103_070F_1F3F_7FFF;

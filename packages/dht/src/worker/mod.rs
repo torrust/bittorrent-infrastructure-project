@@ -4,7 +4,7 @@ use std::sync::Arc;
 use futures::channel::mpsc;
 use tokio::net::UdpSocket;
 use tokio::task::JoinSet;
-use util::bt::InfoHash;
+use torrust_util::bt::InfoHash;
 
 use crate::handshaker_trait::HandshakerTrait;
 use crate::router::Router;

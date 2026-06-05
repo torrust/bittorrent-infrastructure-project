@@ -2,10 +2,10 @@ use std::borrow::Cow;
 use std::hash::Hash;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
-use bencode::{BListAccess, BRefAccess};
-use util::bt::{self, NodeId};
-use util::error::{Error, LengthErrorKind, LengthResult};
-use util::sha::ShaHash;
+use torrust_bencode::{BListAccess, BRefAccess};
+use torrust_util::bt::{self, NodeId};
+use torrust_util::error::{Error, LengthErrorKind, LengthResult};
+use torrust_util::sha::ShaHash;
 
 // TODO: Update this module to accept data sources as both a slice of bytes and probably
 // a wrapper around a closest nodes iterator. Eventually when the interfaces are updated
@@ -206,9 +206,9 @@ fn socket_v4_from_bytes_be(bytes: &[u8]) -> LengthResult<SocketAddrV4> {
 mod tests {
     use std::net::{Ipv4Addr, SocketAddrV4};
 
-    use bencode::{BRefAccess, BencodeMut, BencodeRef, ben_bytes, ben_list};
-    use util::bt::NodeId;
-    use util::sha::ShaHash;
+    use torrust_bencode::{BRefAccess, BencodeMut, BencodeRef, ben_bytes, ben_list};
+    use torrust_util::bt::NodeId;
+    use torrust_util::sha::ShaHash;
 
     use crate::message::compact_info::{CompactNodeInfo, CompactValueInfo};
 

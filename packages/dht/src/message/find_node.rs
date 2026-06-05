@@ -1,5 +1,5 @@
-use bencode::{BConvert, BDictAccess, BRefAccess, ben_bytes, ben_map};
-use util::bt::NodeId;
+use torrust_bencode::{BConvert, BDictAccess, BRefAccess, ben_bytes, ben_map};
+use torrust_util::bt::NodeId;
 
 use crate::error::DhtError;
 use crate::message;

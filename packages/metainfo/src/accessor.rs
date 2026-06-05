@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use util::sha::ShaHash;
+use torrust_util::sha::ShaHash;
 use walkdir::{self, DirEntry, WalkDir};
 
 /// Trait for types convertible as a Result into some Accessor.

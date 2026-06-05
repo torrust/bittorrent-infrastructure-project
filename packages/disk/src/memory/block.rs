@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 use bytes::{Bytes, BytesMut};
-use util::bt::{self, InfoHash};
+use torrust_util::bt::{self, InfoHash};
 
 //----------------------------------------------------------------------------//
 

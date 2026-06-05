@@ -5,9 +5,9 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::Duration;
 
 use futures::SinkExt;
-use handshake::transports::TcpTransport;
-use handshake::{HandshakerBuilder, InitiateMessage, Protocol};
 use tokio::time::sleep;
+use torrust_handshake::transports::TcpTransport;
+use torrust_handshake::{HandshakerBuilder, InitiateMessage, Protocol};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

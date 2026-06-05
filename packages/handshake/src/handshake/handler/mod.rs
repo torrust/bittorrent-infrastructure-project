@@ -3,7 +3,7 @@ use std::pin::Pin;
 
 use futures::sink::SinkExt;
 use futures::stream::StreamExt;
-use util::bt::{InfoHash, PeerId};
+use torrust_util::bt::{InfoHash, PeerId};
 
 use crate::filter::FilterDecision;
 use crate::filter::filters::Filters;

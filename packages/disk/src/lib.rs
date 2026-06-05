@@ -20,4 +20,4 @@ pub mod fs_cache {
     pub use crate::disk::fs::cache::file_handle::FileHandleCache;
 }
 
-pub use util::bt::InfoHash;
+pub use torrust_util::bt::InfoHash;

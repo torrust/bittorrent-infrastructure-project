@@ -2,8 +2,8 @@ use std::iter::Filter;
 use std::slice::Iter;
 
 use rand;
-use util::bt::NodeId;
-use util::sha::{self, ShaHash, XorRep};
+use torrust_util::bt::NodeId;
+use torrust_util::sha::{self, ShaHash, XorRep};
 
 use crate::routing::bucket::{self, Bucket};
 use crate::routing::node::{Node, NodeStatus};
@@ -433,8 +433,8 @@ const fn index_is_in_bounds(length: usize, checked_index: Option<usize>) -> bool
 
 #[cfg(test)]
 mod tests {
-    use util::bt::{self, NodeId};
-    use util::test as bip_test;
+    use torrust_util::bt::{self, NodeId};
+    use torrust_util::test as bip_test;
 
     use crate::routing::bucket;
     use crate::routing::node::Node;

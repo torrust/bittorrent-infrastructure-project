@@ -3,16 +3,16 @@ use std::net::{SocketAddr, SocketAddrV4};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
-use bencode::BRefAccess;
 use futures::channel::mpsc;
 use futures::channel::mpsc::SendError;
 use futures::future::BoxFuture;
 use futures::{FutureExt, SinkExt as _};
 use tokio::task::JoinSet;
 use tokio::time::{Duration, Instant, sleep};
-use util::bt::{self, InfoHash, NodeId};
-use util::net;
-use util::sha::ShaHash;
+use torrust_bencode::BRefAccess;
+use torrust_util::bt::{self, InfoHash, NodeId};
+use torrust_util::net;
+use torrust_util::sha::ShaHash;
 
 use crate::message::announce_peer::{AnnouncePeerRequest, ConnectPort};
 use crate::message::get_peers::{CompactInfoType, GetPeersRequest, GetPeersResponse};

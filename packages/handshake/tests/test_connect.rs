@@ -2,11 +2,11 @@ use common::{INIT, tracing_stderr_init};
 use futures::future::try_join;
 use futures::sink::SinkExt;
 use futures::stream::StreamExt;
-use handshake::transports::TcpTransport;
-use handshake::{DiscoveryInfo, HandshakerBuilder, InitiateMessage, Protocol};
 use tokio::net::TcpStream;
+use torrust_handshake::transports::TcpTransport;
+use torrust_handshake::{DiscoveryInfo, HandshakerBuilder, InitiateMessage, Protocol};
+use torrust_util::bt::{self};
 use tracing::level_filters::LevelFilter;
-use util::bt::{self};
 
 mod common;
 
@@ -54,12 +54,12 @@ async fn positive_connect() {
             .unwrap();
 
         let handshaker_one_future = async {
-            let message: handshake::CompleteMessage<TcpStream> = handshaker_one.next().await.unwrap().unwrap();
+            let message: torrust_handshake::CompleteMessage<TcpStream> = handshaker_one.next().await.unwrap().unwrap();
             Ok::<_, ()>(message)
         };
 
         let handshaker_two_future = async {
-            let message: handshake::CompleteMessage<TcpStream> = handshaker_two.next().await.unwrap().unwrap();
+            let message: torrust_handshake::CompleteMessage<TcpStream> = handshaker_two.next().await.unwrap().unwrap();
             Ok::<_, ()>(message)
         };
 

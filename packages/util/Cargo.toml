@@ -1,7 +1,7 @@
 [package]
 description = "Utilities for Torrust BitTorrent"
 keywords = [ "utility" ]
-name = "util"
+name = "torrust-util"
 readme = "README.md"
 
 authors.workspace = true
