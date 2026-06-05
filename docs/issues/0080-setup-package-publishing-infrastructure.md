@@ -1,13 +1,13 @@
 ---
 doc-type: issue
 issue-type: task
-status: in-review
+status: closed
 priority: p2
 github-issue: 80
 spec-path: docs/issues/0080-setup-package-publishing-infrastructure.md
 branch: chore/setup-package-publishing-infrastructure
-related-pr: null
-last-updated-utc: 2026-06-05 10:42
+related-pr: 81
+last-updated-utc: 2026-06-05 11:30
 semantic-links:
   skill-links:
     - create-adr

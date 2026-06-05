@@ -1,13 +1,13 @@
 ---
 doc-type: issue
 issue-type: task
-status: in-review
+status: closed
 priority: p2
 github-issue: 77
 spec-path: docs/issues/0077-add-agent-infrastructure.md
 branch: chore/add-agent-infrastructure
-related-pr: null
-last-updated-utc: 2026-06-04 16:00
+related-pr: 79
+last-updated-utc: 2026-06-04 16:37
 semantic-links:
   skill-links:
     - add-new-skill
