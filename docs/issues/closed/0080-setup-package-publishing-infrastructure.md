@@ -4,7 +4,7 @@ issue-type: task
 status: closed
 priority: p2
 github-issue: 80
-spec-path: docs/issues/0080-setup-package-publishing-infrastructure.md
+spec-path: docs/issues/closed/0080-setup-package-publishing-infrastructure.md
 branch: chore/setup-package-publishing-infrastructure
 related-pr: 81
 last-updated-utc: 2026-06-05 11:30

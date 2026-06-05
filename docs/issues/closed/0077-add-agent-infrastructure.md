@@ -4,7 +4,7 @@ issue-type: task
 status: closed
 priority: p2
 github-issue: 77
-spec-path: docs/issues/0077-add-agent-infrastructure.md
+spec-path: docs/issues/closed/0077-add-agent-infrastructure.md
 branch: chore/add-agent-infrastructure
 related-pr: 79
 last-updated-utc: 2026-06-04 16:37
