@@ -73,6 +73,14 @@ Adopted from DEC-02 and DEC-04 of the Torrust Tracker overhaul DECISIONS.md:
 - Every crate in `packages/` carries its own explicit `version` field.
 - All crates start at `0.1.0` regardless of prior crates.io history under different names
   (old names are different crate identities; their version history does not carry over).
+- **Exception — imported crates with an existing published version**: when a crate is imported
+  from another Torrust repository where it was already published to crates.io under a _different_
+  crate name, the version from that prior publication is preserved in this workspace. This avoids
+  confusion for consumers who may be familiar with the prior version number and ensures a clear
+  continuity of the release history. The first version published under the _new_ crate name must
+  therefore be at least as high as the last version published under the old name.
+  Example: `torrust-tracker-contrib-bencode v3.0.0` was imported and renamed to `torrust-bencode`;
+  the version in this workspace is kept at `3.0.0`.
 - Subsequent releases follow [SemVer](https://semver.org/): PATCH for fixes, MINOR for
   new backwards-compatible API, MAJOR for breaking changes.
 - Each crate is released independently; releasing one crate does not require bumping any other.

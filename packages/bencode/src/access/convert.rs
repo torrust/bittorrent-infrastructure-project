@@ -157,9 +157,10 @@ pub trait BConvert {
     {
         let key_ref = key.as_ref();
 
-        dictionary
-            .lookup(key_ref)
-            .ok_or_else(|| self.handle_error(BencodeConvertError::MissingKey { key: key_ref.to_owned() }))
+        dictionary.lookup(key_ref).map_or_else(
+            || Err(self.handle_error(BencodeConvertError::MissingKey { key: key_ref.to_owned() })),
+            Ok,
+        )
     }
 
     /// Combines a lookup operation on the given key with a conversion of the value, if found, to an integer.

@@ -5,6 +5,8 @@
 //! Decoding bencoded data:
 //!
 //! ```rust
+//!     extern crate torrust_bencode;
+//!
 //!     use torrust_bencode::{BencodeRef, BRefAccess, BDecodeOpt};
 //!
 //!     fn main() {
@@ -19,7 +21,8 @@
 //! Encoding bencoded data:
 //!
 //! ```rust
-//!     use torrust_bencode::{ben_map, ben_int, ben_bytes};
+//!     #[macro_use]
+//!     extern crate torrust_bencode;
 //!
 //!     fn main() {
 //!         let message = (ben_map!{
