@@ -44,7 +44,7 @@ new `torrust-bencode` crate on crates.io.
 
 - The corresponding tracker-side issue is [torrust/torrust-tracker#1881](https://github.com/torrust/torrust-tracker/issues/1881).
 - The previously published crate: [crates.io/crates/torrust-tracker-contrib-bencode v3.0.0](https://crates.io/crates/torrust-tracker-contrib-bencode).
-- The ADR [docs/adrs/20260605103740_crate_publishing_and_versioning.md](../adrs/20260605103740_crate_publishing_and_versioning.md)
+- The ADR [docs/adrs/20260605103740_crate_publishing_and_versioning.md](../../adrs/20260605103740_crate_publishing_and_versioning.md)
   was updated to include an exception for this case: imported crates that were already published
   under a different name retain their prior version number rather than resetting to `0.1.0`.
 
