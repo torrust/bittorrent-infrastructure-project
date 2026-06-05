@@ -6,7 +6,7 @@ use futures::SinkExt as _;
 use futures::channel::mpsc::{self, SendError};
 use tokio::task::JoinSet;
 use tokio::time::{Duration, sleep};
-use util::bt::{self, NodeId};
+use torrust_util::bt::{self, NodeId};
 
 use crate::message::find_node::FindNodeRequest;
 use crate::routing::node::NodeStatus;

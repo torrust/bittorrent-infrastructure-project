@@ -1,7 +1,7 @@
 use common::{DEFAULT_TIMEOUT, INIT, InMemoryFileSystem, MultiFileDirectAccessor, random_buffer, tracing_stderr_init};
-use disk::{DiskManagerBuilder, IDiskMessage};
 use futures::{FutureExt, SinkExt as _, StreamExt as _};
-use metainfo::{Metainfo, MetainfoBuilder, PieceLength};
+use torrust_disk::{DiskManagerBuilder, IDiskMessage};
+use torrust_metainfo::{Metainfo, MetainfoBuilder, PieceLength};
 use tracing::level_filters::LevelFilter;
 
 mod common;

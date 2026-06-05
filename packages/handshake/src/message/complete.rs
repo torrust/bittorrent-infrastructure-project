@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use util::bt::{InfoHash, PeerId};
+use torrust_util::bt::{InfoHash, PeerId};
 
 use crate::message::extensions::Extensions;
 use crate::message::protocol::Protocol;

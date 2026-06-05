@@ -1,5 +1,5 @@
-use bencode::BencodeConvertError;
 use thiserror::Error;
+use torrust_bencode::BencodeConvertError;
 
 use crate::message::error::ErrorMessage;
 

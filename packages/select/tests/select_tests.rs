@@ -2,15 +2,15 @@ use std::time::Duration;
 
 use common::{INIT, tracing_stderr_init};
 use futures::{SinkExt as _, StreamExt as _};
-use handshake::Extensions;
-use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
-use peer::PeerInfo;
-use select::ControlMessage;
-use select::revelation::error::RevealError;
-use select::revelation::{HonestRevealModuleBuilder, IRevealMessage, ORevealMessage};
+use torrust_handshake::Extensions;
+use torrust_metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
+use torrust_peer::PeerInfo;
+use torrust_select::ControlMessage;
+use torrust_select::revelation::error::RevealError;
+use torrust_select::revelation::{HonestRevealModuleBuilder, IRevealMessage, ORevealMessage};
+use torrust_util::bt;
+use torrust_util::bt::InfoHash;
 use tracing::level_filters::LevelFilter;
-use util::bt;
-use util::bt::InfoHash;
 
 mod common;
 

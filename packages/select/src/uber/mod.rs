@@ -1,9 +1,9 @@
 use std::sync::{Arc, Mutex};
 
 use futures::{Sink, Stream};
-use peer::messages::builders::ExtendedMessageBuilder;
 use sink::UberSink;
 use stream::UberStream;
+use torrust_peer::messages::builders::ExtendedMessageBuilder;
 
 use crate::ControlMessage;
 use crate::discovery::error::DiscoveryError;

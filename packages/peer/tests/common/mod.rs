@@ -5,10 +5,10 @@ use futures::channel::mpsc::SendError;
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::{SinkExt as _, StreamExt as _, TryStream};
-use peer::error::PeerManagerError;
-use peer::{ManagedMessage, PeerInfo, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage};
 use thiserror::Error;
 use tokio::time::error::Elapsed;
+use torrust_peer::error::PeerManagerError;
+use torrust_peer::{ManagedMessage, PeerInfo, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage};
 use tracing::level_filters::LevelFilter;
 
 pub mod connected_channel;

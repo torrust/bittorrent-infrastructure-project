@@ -8,14 +8,14 @@ use std::time::Duration;
 use bytes::BytesMut;
 use futures::sink::Sink;
 use futures::stream::Stream;
-use handshake::InfoHash;
-use metainfo::{Info, Metainfo};
-use peer::PeerInfo;
-use peer::messages::builders::ExtendedMessageBuilder;
-use peer::messages::{
+use rand::RngExt;
+use torrust_handshake::InfoHash;
+use torrust_metainfo::{Info, Metainfo};
+use torrust_peer::PeerInfo;
+use torrust_peer::messages::builders::ExtendedMessageBuilder;
+use torrust_peer::messages::{
     ExtendedMessage, ExtendedType, UtMetadataDataMessage, UtMetadataMessage, UtMetadataRejectMessage, UtMetadataRequestMessage,
 };
-use rand::RngExt;
 
 use crate::ControlMessage;
 use crate::discovery::error::DiscoveryError;

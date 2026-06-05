@@ -3,11 +3,11 @@ use std::net::TcpStream;
 
 use common::{INIT, tracing_stderr_init};
 use futures::stream::StreamExt;
-use handshake::transports::TcpTransport;
-use handshake::{DiscoveryInfo, HandshakerBuilder};
 use tokio::io::AsyncReadExt as _;
+use torrust_handshake::transports::TcpTransport;
+use torrust_handshake::{DiscoveryInfo, HandshakerBuilder};
+use torrust_util::bt::{self};
 use tracing::level_filters::LevelFilter;
-use util::bt::{self};
 
 mod common;
 

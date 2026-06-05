@@ -4,14 +4,14 @@ use std::sync::Arc;
 
 use bytes::BytesMut;
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use disk::error::TorrentError;
-use disk::fs::NativeFileSystem;
-use disk::fs_cache::FileHandleCache;
-use disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, InfoHash, ODiskMessage};
 use futures::{SinkExt, StreamExt};
-use metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
 use rand::RngExt;
 use tokio::sync::Mutex;
+use torrust_disk::error::TorrentError;
+use torrust_disk::fs::NativeFileSystem;
+use torrust_disk::fs_cache::FileHandleCache;
+use torrust_disk::{Block, BlockMetadata, DiskManagerBuilder, FileSystem, IDiskMessage, InfoHash, ODiskMessage};
+use torrust_metainfo::{DirectAccessor, Metainfo, MetainfoBuilder, PieceLength};
 
 /// Set to true if you are playing around with anything that could affect file
 /// sizes for an existing or new benchmarks. As a precaution, if the disk manager

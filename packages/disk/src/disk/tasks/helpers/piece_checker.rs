@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use futures::lock::Mutex;
-use metainfo::{Info, Metainfo};
-use util::bt::InfoHash;
+use torrust_metainfo::{Info, Metainfo};
+use torrust_util::bt::InfoHash;
 
 use crate::disk::fs::FileSystem;
 use crate::disk::tasks::context::MetainfoState;
@@ -89,7 +89,7 @@ where
     /// the caller can use to skip (if the torrent was partially downloaded before).
     async fn fill_checker_state(&self) {
         let piece_length = self.state.file.info().piece_length();
-        let total_bytes: u64 = self.state.file.info().files().map(metainfo::File::length).sum();
+        let total_bytes: u64 = self.state.file.info().files().map(torrust_metainfo::File::length).sum();
 
         let full_pieces = total_bytes / piece_length;
         let last_piece_size = last_piece_size(self.state.file.info());
@@ -152,7 +152,7 @@ where
 
 fn last_piece_size(info_dict: &Info) -> usize {
     let piece_length = info_dict.piece_length();
-    let total_bytes: u64 = info_dict.files().map(metainfo::File::length).sum();
+    let total_bytes: u64 = info_dict.files().map(torrust_metainfo::File::length).sum();
 
     (total_bytes % piece_length).try_into().unwrap()
 }
@@ -332,7 +332,7 @@ fn merge_piece_messages(message_a: &BlockMetadata, message_b: &BlockMetadata) ->
 
 #[cfg(test)]
 mod tests {
-    use util::bt;
+    use torrust_util::bt;
 
     use crate::memory::block::BlockMetadata;
 

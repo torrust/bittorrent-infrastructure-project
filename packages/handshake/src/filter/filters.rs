@@ -104,7 +104,7 @@ pub mod test_filters {
     use std::any::Any;
     use std::net::SocketAddr;
 
-    use util::bt::PeerId;
+    use torrust_util::bt::PeerId;
 
     use crate::filter::{FilterDecision, HandshakeFilter};
     use crate::message::protocol::Protocol;

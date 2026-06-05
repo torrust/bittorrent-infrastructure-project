@@ -4,7 +4,7 @@ use futures::SinkExt as _;
 use futures::channel::mpsc;
 use futures::sink::Sink;
 use futures::task::{Context, Poll};
-use util::bt::PeerId;
+use torrust_util::bt::PeerId;
 
 use crate::discovery::DiscoveryInfo;
 use crate::filter::filters::Filters;

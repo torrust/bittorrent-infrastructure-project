@@ -3,7 +3,6 @@ use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use bencode::{BConvert, BDecodeOpt, BencodeRef};
 use byteorder::{BigEndian, WriteBytesExt};
 use bytes::Bytes;
 use nom::branch::alt;
@@ -15,6 +14,7 @@ use nom::number::complete::{be_u8, be_u32};
 use nom::sequence::pair;
 use nom::{IResult, Parser};
 use thiserror::Error;
+use torrust_bencode::{BConvert, BDecodeOpt, BencodeRef};
 use ut_metadata::UtMetadataMessageError;
 
 use crate::message::{self, ExtendedMessage, ExtendedType, PeerWireProtocolMessage, bencode_util, bits_ext};

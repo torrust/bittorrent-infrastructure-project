@@ -25,4 +25,4 @@ pub mod transports {
     pub use crate::transport::{TcpListenerStream, TcpTransport};
 }
 
-pub use util::bt::{InfoHash, PeerId};
+pub use torrust_util::bt::{InfoHash, PeerId};

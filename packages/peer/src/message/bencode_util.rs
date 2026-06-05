@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str;
 
-use bencode::{BConvert, BDictAccess, BRefAccess, BencodeConvertError};
-use util::convert;
+use torrust_bencode::{BConvert, BDictAccess, BRefAccess, BencodeConvertError};
+use torrust_util::convert;
 
 use crate::message::bits_ext::ExtendedType;
 

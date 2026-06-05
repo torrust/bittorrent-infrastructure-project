@@ -4,26 +4,26 @@ use std::sync::{Arc, Once};
 use std::time::Duration;
 
 use clap::{Arg, ArgMatches, Command};
-use dht::handshaker_trait::HandshakerTrait;
-use dht::{DhtBuilder, DhtEvent, Router};
 use futures::future::{BoxFuture, Either};
 use futures::{FutureExt, Sink, SinkExt as _, StreamExt};
-use handshake::transports::TcpTransport;
-use handshake::{
-    DiscoveryInfo, Extension, Extensions, HandshakerBuilder, HandshakerConfig, InfoHash, InitiateMessage, PeerId, Protocol,
-};
 use hex::FromHex;
-use metainfo::Metainfo;
-use peer::messages::builders::ExtendedMessageBuilder;
-use peer::messages::{BitsExtensionMessage, PeerExtensionProtocolMessage, PeerWireProtocolMessage};
-use peer::protocols::{NullProtocol, PeerExtensionProtocol, PeerWireProtocol};
-use peer::{
-    PeerInfo, PeerManagerBuilder, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage, PeerProtocolCodec,
-};
-use select::discovery::{IDiscoveryMessage, ODiscoveryMessage, UtMetadataModule};
-use select::{ControlMessage, IExtendedMessage, IUberMessage, OUberMessage, UberModuleBuilder};
 use tokio::signal;
 use tokio_util::codec::Framed;
+use torrust_dht::handshaker_trait::HandshakerTrait;
+use torrust_dht::{DhtBuilder, DhtEvent, Router};
+use torrust_handshake::transports::TcpTransport;
+use torrust_handshake::{
+    DiscoveryInfo, Extension, Extensions, HandshakerBuilder, HandshakerConfig, InfoHash, InitiateMessage, PeerId, Protocol,
+};
+use torrust_metainfo::Metainfo;
+use torrust_peer::messages::builders::ExtendedMessageBuilder;
+use torrust_peer::messages::{BitsExtensionMessage, PeerExtensionProtocolMessage, PeerWireProtocolMessage};
+use torrust_peer::protocols::{NullProtocol, PeerExtensionProtocol, PeerWireProtocol};
+use torrust_peer::{
+    PeerInfo, PeerManagerBuilder, PeerManagerInputMessage, PeerManagerOutputError, PeerManagerOutputMessage, PeerProtocolCodec,
+};
+use torrust_select::discovery::{IDiscoveryMessage, ODiscoveryMessage, UtMetadataModule};
+use torrust_select::{ControlMessage, IExtendedMessage, IUberMessage, OUberMessage, UberModuleBuilder};
 use tracing::level_filters::LevelFilter;
 
 pub static INIT: Once = Once::new();
@@ -123,7 +123,7 @@ async fn ctrl_c() {
 }
 
 enum SendUber {
-    Finished(Result<(), select::error::Error>),
+    Finished(Result<(), torrust_select::error::Error>),
     Interrupted,
 }
 

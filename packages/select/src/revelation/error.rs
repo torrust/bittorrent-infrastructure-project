@@ -1,8 +1,8 @@
 //! Module for revelation error types.
 
-use handshake::InfoHash;
-use peer::PeerInfo;
 use thiserror::Error;
+use torrust_handshake::InfoHash;
+use torrust_peer::PeerInfo;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Error, Debug)]

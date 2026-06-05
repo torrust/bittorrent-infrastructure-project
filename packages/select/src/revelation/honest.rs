@@ -6,10 +6,10 @@ use std::task::{Context, Poll, Waker};
 use bit_set::BitSet;
 use bytes::{BufMut, BytesMut};
 use futures::{Sink, Stream};
-use handshake::InfoHash;
-use metainfo::Metainfo;
-use peer::PeerInfo;
-use peer::messages::{BitFieldMessage, HaveMessage};
+use torrust_handshake::InfoHash;
+use torrust_metainfo::Metainfo;
+use torrust_peer::PeerInfo;
+use torrust_peer::messages::{BitFieldMessage, HaveMessage};
 use tracing::instrument;
 
 use crate::ControlMessage;

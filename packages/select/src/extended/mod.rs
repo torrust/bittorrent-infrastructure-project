@@ -4,9 +4,9 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 
 use futures::stream::Stream;
-use peer::PeerInfo;
-use peer::messages::ExtendedMessage;
-use peer::messages::builders::ExtendedMessageBuilder;
+use torrust_peer::PeerInfo;
+use torrust_peer::messages::ExtendedMessage;
+use torrust_peer::messages::builders::ExtendedMessageBuilder;
 
 use crate::ControlMessage;
 use crate::error::Error;

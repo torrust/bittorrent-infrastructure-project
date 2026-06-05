@@ -1,6 +1,6 @@
+use torrust_util::bt::InfoHash;
+use torrust_util::sha::ShaHash;
 use url::Url;
-use util::bt::InfoHash;
-use util::sha::ShaHash;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Topic {
@@ -110,7 +110,7 @@ impl MagnetLink {
 
 #[cfg(test)]
 mod tests {
-    use util::sha::ShaHash;
+    use torrust_util::sha::ShaHash;
 
     #[test]
     fn test_wikipedia() {

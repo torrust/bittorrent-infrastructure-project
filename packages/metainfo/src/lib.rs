@@ -5,9 +5,7 @@
 //! Building and parsing a metainfo file from a directory:
 //!
 //! ```rust
-//!     extern crate metainfo;
-//!
-//!     use metainfo::{MetainfoBuilder, Metainfo};
+//!     use torrust_metainfo::{MetainfoBuilder, Metainfo};
 //!
 //!     fn main() {
 //!         let builder = MetainfoBuilder::new()
@@ -28,9 +26,7 @@
 //! Building and parsing a metainfo file from direct data:
 //!
 //! ```rust
-//!     extern crate metainfo;
-//!
-//!     use metainfo::{MetainfoBuilder, Metainfo, DirectAccessor};
+//!     use torrust_metainfo::{MetainfoBuilder, Metainfo, DirectAccessor};
 //!
 //!     fn main() {
 //!         let builder = MetainfoBuilder::new()
@@ -66,7 +62,7 @@ mod parse;
 
 pub mod iter;
 
-pub use util::bt::InfoHash;
+pub use torrust_util::bt::InfoHash;
 
 pub use self::metainfo::{File, Info, Metainfo};
 pub use crate::accessor::{Accessor, DirectAccessor, FileAccessor, IntoAccessor, PieceAccess};

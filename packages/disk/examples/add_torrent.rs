@@ -3,10 +3,10 @@
 use std::io::{BufRead, Read as _, Write as _};
 use std::sync::{Arc, Once};
 
-use disk::fs::NativeFileSystem;
-use disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
 use futures::{SinkExt, StreamExt};
-use metainfo::Metainfo;
+use torrust_disk::fs::NativeFileSystem;
+use torrust_disk::{DiskManagerBuilder, IDiskMessage, ODiskMessage};
+use torrust_metainfo::Metainfo;
 use tracing::level_filters::LevelFilter;
 
 static INIT: Once = Once::new();

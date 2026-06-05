@@ -3,13 +3,13 @@ use std::io::Read as _;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::Once;
 
-use dht::handshaker_trait::HandshakerTrait;
-use dht::{DhtBuilder, Router};
 use futures::StreamExt;
 use futures::future::BoxFuture;
 use tokio::task::JoinSet;
+use torrust_dht::handshaker_trait::HandshakerTrait;
+use torrust_dht::{DhtBuilder, Router};
+use torrust_util::bt::{InfoHash, PeerId};
 use tracing::level_filters::LevelFilter;
-use util::bt::{InfoHash, PeerId};
 
 static INIT: Once = Once::new();
 

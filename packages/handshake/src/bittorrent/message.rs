@@ -2,7 +2,7 @@ use nom::bytes::complete::take;
 use nom::combinator::map_res;
 use nom::{IResult, Parser};
 use tokio::io::{AsyncWrite, AsyncWriteExt as _};
-use util::bt::{self, InfoHash, PeerId};
+use torrust_util::bt::{self, InfoHash, PeerId};
 
 use crate::message::extensions::{self, Extensions};
 use crate::message::protocol::Protocol;
@@ -105,7 +105,7 @@ fn parse_remote_pid(bytes: &[u8]) -> IResult<&[u8], PeerId> {
 mod tests {
     use std::io::Write as _;
 
-    use util::bt::{self, InfoHash, PeerId};
+    use torrust_util::bt::{self, InfoHash, PeerId};
 
     use super::HandshakeMessage;
     use crate::message::extensions::{self, Extensions};

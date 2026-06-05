@@ -13,16 +13,16 @@ publish.workspace = true
 rust-version.workspace = true
 
 repository.workspace = true
-version.workspace = true
+version = "0.1.0"
 
 [lints]
 workspace = true
 
 [dependencies]
-disk = { path = "../../packages/disk" }
-handshake = { path = "../../packages/handshake" }
-metainfo = { path = "../../packages/metainfo" }
-peer = { path = "../../packages/peer" }
+torrust-disk = { path = "../../packages/disk" }
+torrust-handshake = { path = "../../packages/handshake" }
+torrust-metainfo = { path = "../../packages/metainfo" }
+torrust-peer = { path = "../../packages/peer" }
 
 clap = "4"
 futures = "0"

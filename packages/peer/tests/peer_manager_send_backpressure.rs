@@ -1,13 +1,13 @@
 use common::connected_channel::{ConnectedChannel, connected_channel};
 use common::{INIT, add_peer, remove_peer, tracing_stderr_init};
 use futures::SinkExt as _;
-use handshake::Extensions;
-use peer::error::PeerManagerError;
-use peer::messages::PeerWireProtocolMessage;
-use peer::protocols::NullProtocol;
-use peer::{PeerInfo, PeerManagerBuilder, PeerManagerInputMessage};
+use torrust_handshake::Extensions;
+use torrust_peer::error::PeerManagerError;
+use torrust_peer::messages::PeerWireProtocolMessage;
+use torrust_peer::protocols::NullProtocol;
+use torrust_peer::{PeerInfo, PeerManagerBuilder, PeerManagerInputMessage};
+use torrust_util::bt;
 use tracing::level_filters::LevelFilter;
-use util::bt;
 
 mod common;
 

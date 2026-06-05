@@ -1,9 +1,9 @@
 //! Module for peer discovery.
 
-use handshake::InfoHash;
-use metainfo::Metainfo;
-use peer::PeerInfo;
-use peer::messages::UtMetadataMessage;
+use torrust_handshake::InfoHash;
+use torrust_metainfo::Metainfo;
+use torrust_peer::PeerInfo;
+use torrust_peer::messages::UtMetadataMessage;
 
 use crate::ControlMessage;
 

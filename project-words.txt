@@ -72,6 +72,7 @@ nodetypes
 oneline
 Oneshot
 openbittorrent
+organisation
 pblock
 peekable
 Pingable
@@ -112,6 +113,7 @@ unchoke
 unchoked
 unpinged
 unscalable
+unvalidated
 upnp
 usize
 utorrent

@@ -8,8 +8,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Duration, Utc};
-use util::bt::NodeId;
-use util::test;
+use torrust_util::bt::NodeId;
+use torrust_util::test;
 
 // TODO: Should remove as_* functions and replace them with from_requested, from_responded, etc to hide the logic
 // of the nodes initial status.
@@ -260,8 +260,8 @@ mod tests {
     use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
     use chrono::Duration;
-    use util::bt::NodeId;
-    use util::test as bip_test;
+    use torrust_util::bt::NodeId;
+    use torrust_util::test as bip_test;
 
     use crate::routing::node::{Node, NodeStatus};
 

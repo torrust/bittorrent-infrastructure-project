@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use metainfo::File;
+use torrust_metainfo::File;
 
 pub mod piece_accessor;
 pub mod piece_checker;

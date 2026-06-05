@@ -1,7 +1,7 @@
 use std::sync::{Arc, mpsc};
 
 use crossbeam::queue::SegQueue;
-use util::sha::ShaHash;
+use torrust_util::sha::ShaHash;
 
 use crate::accessor::{Accessor, PieceAccess};
 use crate::builder::buffer::{PieceBuffer, PieceBuffers};
@@ -204,7 +204,7 @@ mod tests {
     use std::path::Path;
     use std::sync::mpsc;
 
-    use util::sha::ShaHash;
+    use torrust_util::sha::ShaHash;
 
     use crate::accessor::{Accessor, PieceAccess};
     use crate::builder::worker;

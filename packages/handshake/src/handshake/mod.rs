@@ -9,7 +9,7 @@ use sink::HandshakerSink;
 use stream::HandshakerStream;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::task::JoinSet;
-use util::bt::PeerId;
+use torrust_util::bt::PeerId;
 
 use crate::filter::filters::Filters;
 use crate::local_addr::LocalAddr as _;

@@ -1,6 +1,6 @@
-use bencode::ext::BConvertExt;
-use bencode::{BConvert, BDictAccess, BRefAccess, BencodeConvertError};
-use util::bt::{InfoHash, NodeId};
+use torrust_bencode::ext::BConvertExt;
+use torrust_bencode::{BConvert, BDictAccess, BRefAccess, BencodeConvertError};
+use torrust_util::bt::{InfoHash, NodeId};
 
 use crate::error::DhtError;
 use crate::message;

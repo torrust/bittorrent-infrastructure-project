@@ -45,7 +45,7 @@ where
 mod tests {
     use std::time::Duration;
 
-    use util::bt::{self, InfoHash, PeerId};
+    use torrust_util::bt::{self, InfoHash, PeerId};
 
     use crate::filter::filters::Filters;
     use crate::filter::filters::test_filters::{BlockAddrFilter, BlockPeerIdFilter, BlockProtocolFilter};

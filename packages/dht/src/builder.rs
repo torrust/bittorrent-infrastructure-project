@@ -6,8 +6,8 @@ use futures::SinkExt as _;
 use futures::channel::mpsc;
 use tokio::net::UdpSocket;
 use tokio::task::JoinSet;
-use util::bt::InfoHash;
-use util::net;
+use torrust_util::bt::InfoHash;
+use torrust_util::net;
 
 use crate::handshaker_trait::HandshakerTrait;
 use crate::router::Router;

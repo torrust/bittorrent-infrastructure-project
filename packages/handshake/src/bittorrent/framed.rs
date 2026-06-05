@@ -300,8 +300,8 @@ mod tests {
     use futures::SinkExt as _;
     use futures::stream::StreamExt;
     use tokio::io::{AsyncRead, AsyncReadExt as _, AsyncWriteExt as _};
+    use torrust_util::bt::{self, InfoHash, PeerId};
     use tracing::level_filters::LevelFilter;
-    use util::bt::{self, InfoHash, PeerId};
 
     use super::FramedHandshake;
     use crate::bittorrent::message::HandshakeMessage;

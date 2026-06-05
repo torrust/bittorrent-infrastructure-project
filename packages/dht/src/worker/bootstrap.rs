@@ -10,7 +10,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt as _, SinkExt as _};
 use tokio::task::JoinSet;
 use tokio::time::{Duration, sleep};
-use util::bt::{self, NodeId};
+use torrust_util::bt::{self, NodeId};
 
 use crate::handshaker_trait::HandshakerTrait;
 use crate::message::find_node::FindNodeRequest;

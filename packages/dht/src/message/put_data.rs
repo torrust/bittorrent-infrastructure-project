@@ -1,4 +1,4 @@
-use bencode::{Bencode, BencodeConvert, Dictionary};
+use torrust_bencode::{Bencode, BencodeConvert, Dictionary};
 
 use crate::error::{DhtError, DhtErrorKind, DhtResult};
 

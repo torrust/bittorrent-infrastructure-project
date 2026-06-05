@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use metainfo::Metainfo;
-use peer::PeerInfo;
+use torrust_metainfo::Metainfo;
+use torrust_peer::PeerInfo;
 
 pub mod discovery;
 pub mod error;

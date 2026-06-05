@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
-use bencode::{BDecodeOpt, BencodeRef};
 use criterion::{Criterion, criterion_group, criterion_main};
+use torrust_bencode::{BDecodeOpt, BencodeRef};
 
 const B_NESTED_LISTS: &[u8; 100] =
     b"lllllllllllllllllllllllllllllllllllllllllllllllllleeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; // cspell:disable-line

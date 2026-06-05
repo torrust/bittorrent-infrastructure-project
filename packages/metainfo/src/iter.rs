@@ -1,6 +1,6 @@
 //! Iterators over torrent file information.
 
-use util::sha;
+use torrust_util::sha;
 
 use crate::metainfo::File;
 

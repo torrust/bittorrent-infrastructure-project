@@ -1,7 +1,7 @@
 use std::iter::ExactSizeIterator;
 
-use bencode::{BMutAccess, BRefAccess, BencodeMut, ben_bytes, ben_int, ben_map};
-use util::sha::{self, ShaHash};
+use torrust_bencode::{BMutAccess, BRefAccess, BencodeMut, ben_bytes, ben_int, ben_map};
+use torrust_util::sha::{self, ShaHash};
 
 use crate::accessor::{Accessor, IntoAccessor};
 use crate::error::ParseError;

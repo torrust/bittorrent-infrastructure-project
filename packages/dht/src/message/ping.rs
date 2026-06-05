@@ -1,8 +1,8 @@
 // We don't really use PingRequests for our current algorithms, but that may change in the future!
 #![allow(unused)]
 
-use bencode::{BConvert, BDictAccess, BRefAccess, ben_bytes, ben_map};
-use util::bt::NodeId;
+use torrust_bencode::{BConvert, BDictAccess, BRefAccess, ben_bytes, ben_map};
+use torrust_util::bt::NodeId;
 
 use crate::error::DhtError;
 use crate::message;

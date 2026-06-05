@@ -24,10 +24,14 @@ edition = "2024"
 homepage = "https://github.com/torrust/torrust-bittorrent"
 keywords = [ "bittorrent" ]
 license = "Apache-2.0"
-publish = false                                                                                       # until we decide where to publish.
+# publish = false is the workspace default inherited by example crates.
+# Each crate in packages/ sets its own publish and version fields explicitly.
+# A crate is only published to crates.io when it is actively consumed by another
+# Torrust project and has been validated in production use. Flip publish = true
+# in the crate's own Cargo.toml when it is ready for a public release.
+publish = false
 repository = "https://github.com/torrust/torrust-bittorrent"
 rust-version = "1.88"
-version = "1.0.0-alpha.1"
 
 [profile.bench]
 codegen-units = 1

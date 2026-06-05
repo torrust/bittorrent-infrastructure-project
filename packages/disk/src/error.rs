@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use thiserror::Error;
-use util::bt::InfoHash;
+use torrust_util::bt::InfoHash;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Error, Debug)]

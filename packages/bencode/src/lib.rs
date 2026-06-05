@@ -5,9 +5,7 @@
 //! Decoding bencoded data:
 //!
 //! ```rust
-//!     extern crate bencode;
-//!
-//!     use bencode::{BencodeRef, BRefAccess, BDecodeOpt};
+//!     use torrust_bencode::{BencodeRef, BRefAccess, BDecodeOpt};
 //!
 //!     fn main() {
 //!         let data = b"d12:lucky_numberi7ee"; // cspell:disable-line
@@ -21,8 +19,7 @@
 //! Encoding bencoded data:
 //!
 //! ```rust
-//!     #[macro_use]
-//!     extern crate bencode;
+//!     use torrust_bencode::{ben_map, ben_int, ben_bytes};
 //!
 //!     fn main() {
 //!         let message = (ben_map!{

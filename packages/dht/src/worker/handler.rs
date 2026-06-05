@@ -4,15 +4,15 @@ use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
-use bencode::{BDecodeOpt, BencodeMut, BencodeRef, ben_bytes};
 use futures::channel::mpsc;
 use futures::future::BoxFuture;
 use futures::{FutureExt, SinkExt, StreamExt as _};
 use tokio::net::UdpSocket;
 use tokio::task::JoinSet;
-use util::bt::InfoHash;
-use util::convert;
-use util::net::IpAddr;
+use torrust_bencode::{BDecodeOpt, BencodeMut, BencodeRef, ben_bytes};
+use torrust_util::bt::InfoHash;
+use torrust_util::convert;
+use torrust_util::net::IpAddr;
 
 use crate::handshaker_trait::HandshakerTrait;
 use crate::message::MessageType;
