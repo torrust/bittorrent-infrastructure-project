@@ -1,13 +1,13 @@
 ---
 doc-type: issue
 issue-type: task
-status: open
+status: closed
 priority: p1
 github-issue: 82
-spec-path: docs/issues/open/0082-import-contrib-bencode-from-torrust-tracker.md
+spec-path: docs/issues/closed/0082-import-contrib-bencode-from-torrust-tracker.md
 branch: 82-import-contrib-bencode-from-torrust-tracker
-related-pr: null
-last-updated-utc: 2026-06-05 14:00
+related-pr: 84
+last-updated-utc: 2026-06-05 15:30
 semantic-links:
   skill-links:
     - release-package
