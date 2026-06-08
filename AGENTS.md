@@ -18,6 +18,7 @@ workspace under the `torrust-bittorrent` umbrella.
 | `magnet`    | `packages/magnet`    | Parsing and constructing magnet links                    |
 | `metainfo`  | `packages/metainfo`  | Parsing and building `.torrent` metainfo files           |
 | `peer`      | `packages/peer`      | Peer wire protocol communication                         |
+| `peer-id`   | `packages/peer-id`   | BitTorrent peer ID parsing and client identification     |
 | `select`    | `packages/select`    | Piece selection algorithm                                |
 | `util`      | `packages/util`      | Shared utilities used across packages                    |
 
@@ -165,7 +166,13 @@ All jobs must be green before merging.
 
 - Each `packages/<name>` is an independent Cargo crate; add it to the workspace
   `members` list in the root `Cargo.toml` when creating a new one.
+- When adding a new crate, also add a row to the package table in the **Project overview**
+  section of this file (keep rows sorted alphabetically by folder name). `AGENTS.md` is the
+  canonical package list — there is no separate `packages/README.md`.
 - Inter-crate dependencies use path references (e.g.
   `packages/dht/Cargo.toml` references `util` as `{ path = "../util" }`).
 - Benchmarks live alongside the crate they benchmark (`benches/`).
 - Integration tests live in the crate's `tests/` directory.
+- Markdown files may carry YAML frontmatter with `semantic-links` (skill links, related issues,
+  related artifacts). See `docs/skills/semantic-skill-link-convention.md` for the convention.
+  Add or update frontmatter when creating or significantly changing a doc file.

@@ -9,6 +9,7 @@ members = [
   "packages/magnet",
   "packages/metainfo",
   "packages/peer",
+  "packages/peer-id",
   "packages/select",
   "packages/util",
 ]
