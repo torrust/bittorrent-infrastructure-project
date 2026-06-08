@@ -15,6 +15,7 @@ workspace under the `torrust-bittorrent` umbrella.
 | `dht`       | `packages/dht`       | BitTorrent Mainline DHT                                  |
 | `disk`      | `packages/disk`      | FileSystem interface for managing torrent pieces on disk |
 | `handshake` | `packages/handshake` | Standard BitTorrent handshake trait and implementation   |
+| `info-hash` | `packages/info-hash` | BitTorrent InfoHash v1 type                              |
 | `magnet`    | `packages/magnet`    | Parsing and constructing magnet links                    |
 | `metainfo`  | `packages/metainfo`  | Parsing and building `.torrent` metainfo files           |
 | `peer`      | `packages/peer`      | Peer wire protocol communication                         |
