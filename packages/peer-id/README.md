@@ -8,10 +8,11 @@ This crate was originally derived from Aquatic's `peer_id` crate:
 
 - https://github.com/greatest-ape/aquatic/tree/master/crates/peer_id
 
-This crate is extracted from previously duplicated in-house implementations in:
+This crate is extracted from previously duplicated in-house implementations in the
+[torrust/torrust-tracker](https://github.com/torrust/torrust-tracker) workspace:
 
-- `packages/primitives/src/peer_id.rs`
-- `packages/udp-protocol/src/peer_id.rs`
+- `packages/primitives/src/peer_id.rs` (torrust-tracker)
+- `packages/udp-protocol/src/peer_id.rs` (torrust-tracker)
 
 It provides a shared implementation that can be consumed by both domain and protocol crates
 without introducing inverted dependency directions.

@@ -1,4 +1,4 @@
-// Adapted from aquatic_peer_id 0.9.0 by Joakim Frostegard (greatest-ape).
+// Adapted from aquatic_peer_id 0.9.0 by Joakim Frostegård (greatest-ape).
 // Source: https://crates.io/crates/aquatic_peer_id/0.9.0
 // Repository: https://github.com/greatest-ape/aquatic
 // License: Apache License, Version 2.0
@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::fmt::Display;
 use std::sync::OnceLock;
 
-use compact_str::{CompactString, format_compact};
+use compact_str::{format_compact, CompactString};
 use regex::bytes::Regex;
 
 use crate::peer_id::PeerId;

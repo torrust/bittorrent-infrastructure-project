@@ -68,7 +68,7 @@ The original crates were published under the `bip_` prefix, short for _BitTorren
 
 > **_Please note:_** The license of this repository has been changed!
 >
-> > `Apache-2.0`　and/or　`MIT`　→　_(only)_　`Apache-2.0`
+> > `Apache-2.0`　and/or　`MIT`　→　*(only)*　`Apache-2.0`
 >
 > If this is a particular issue for your project, please open an issue.<br>
 > _The primary motivation that it has [some software-patent protections][apache-2-patent-license]._
@@ -83,7 +83,7 @@ additional terms or conditions.
 [coverage_wf_b]: ../../actions/workflows/coverage.yaml/badge.svg
 [testing_wf]: ../../actions/workflows/testing.yaml
 [testing_wf_b]: ../../actions/workflows/testing.yaml/badge.svg
-[rel_packages]: ./packages/README.md
+[rel_packages]: ./AGENTS.md
 [rel_copyright]: ./COPYRIGHT
 [BitTorrent]: https://www.bittorrent.org/introduction.html
 [GGist]: https://github.com/GGist/
