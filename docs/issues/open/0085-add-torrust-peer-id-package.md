@@ -6,8 +6,8 @@ priority: p1
 github-issue: 85
 spec-path: docs/issues/open/0085-add-torrust-peer-id-package.md
 branch: feat/add-torrust-peer-id
-related-pr: null
-last-updated-utc: 2026-06-08 00:00
+related-pr: 86
+last-updated-utc: 2026-06-08 10:40
 semantic-links:
   skill-links:
     - release-package
@@ -94,7 +94,7 @@ After the crate is published, the tracker-side tasks (torrust/torrust-tracker#18
 | 3    | Fix `clippy::missing-const-for-fn` on `PeerId::as_bytes`        | ✅ done    |
 | 4    | Run `cargo check/nextest/clippy/fmt` — all pass                 | ✅ done    |
 | 5    | Create branch `feat/add-torrust-peer-id` and commit             | ✅ done    |
-| 6    | Push branch and open PR against `develop`                       | ⬜ pending |
+| 6    | Push branch and open PR against `develop`                       | ✅ done    |
 | 7    | Merge PR after CI passes                                        | ⬜ pending |
 | 8    | Publish `torrust-peer-id 0.1.0` to crates.io                    | ⬜ pending |
 | 9    | Signal tracker repo to proceed with removal                     | ⬜ pending |
