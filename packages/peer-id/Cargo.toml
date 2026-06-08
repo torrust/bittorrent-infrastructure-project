@@ -1,0 +1,33 @@
+[package]
+description = "Peer ID parsing and client identification primitives for BitTorrent crates."
+keywords = ["bittorrent", "library", "peer-id", "primitives"]
+name = "torrust-peer-id"
+readme = "README.md"
+version = "0.1.0"
+
+authors.workspace = true
+categories.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = ["serde"]
+quickcheck = ["dep:quickcheck"]
+serde = ["dep:serde"]
+zerocopy = ["dep:zerocopy"]
+
+[dependencies]
+compact_str = "0.9"
+hex = "0.4"
+quickcheck = { version = "1", optional = true }
+regex = "1"
+serde = { version = "1", features = ["derive"], optional = true }
+zerocopy = { version = "0.8", features = ["derive"], optional = true }
