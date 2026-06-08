@@ -11,11 +11,13 @@ Behaviour
 behaviour
 bencode
 bencoded
+binascii
 bitcomet
 bitfield
 btih
 byteorder
 canonicalize
+Celano
 castagnoli
 checkin
 checksummed
@@ -49,9 +51,11 @@ frontmatter
 handshaken
 hasher
 heartbeating
+hexlify
 holepunch
 impls
 infohash
+infohashes
 ISCSI
 josecelano
 kademlia

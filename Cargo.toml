@@ -6,6 +6,7 @@ members = [
   "packages/dht",
   "packages/disk",
   "packages/handshake",
+  "packages/info-hash",
   "packages/magnet",
   "packages/metainfo",
   "packages/peer",
