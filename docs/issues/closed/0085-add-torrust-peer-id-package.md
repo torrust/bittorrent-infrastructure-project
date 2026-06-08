@@ -1,13 +1,13 @@
 ---
 doc-type: issue
 issue-type: task
-status: open
+status: closed
 priority: p1
 github-issue: 85
-spec-path: docs/issues/open/0085-add-torrust-peer-id-package.md
+spec-path: docs/issues/closed/0085-add-torrust-peer-id-package.md
 branch: feat/add-torrust-peer-id
 related-pr: 86
-last-updated-utc: 2026-06-08 10:40
+last-updated-utc: 2026-06-08 10:55
 semantic-links:
   skill-links:
     - release-package
@@ -87,17 +87,17 @@ After the crate is published, the tracker-side tasks (torrust/torrust-tracker#18
 
 ## Implementation Plan
 
-| Step | Task                                                            | Status     |
-| ---- | --------------------------------------------------------------- | ---------- |
-| 1    | Copy and adapt `packages/peer-id/` from tracker branch          | ✅ done    |
-| 2    | Add `"packages/peer-id"` to root `Cargo.toml` workspace members | ✅ done    |
-| 3    | Fix `clippy::missing-const-for-fn` on `PeerId::as_bytes`        | ✅ done    |
-| 4    | Run `cargo check/nextest/clippy/fmt` — all pass                 | ✅ done    |
-| 5    | Create branch `feat/add-torrust-peer-id` and commit             | ✅ done    |
-| 6    | Push branch and open PR against `develop`                       | ✅ done    |
-| 7    | Merge PR after CI passes                                        | ✅ done    |
-| 8    | Publish `torrust-peer-id 0.1.0` to crates.io                    | ✅ done    |
-| 9    | Signal tracker repo to proceed with removal                     | ⬜ pending |
+| Step | Task                                                            | Status                                         |
+| ---- | --------------------------------------------------------------- | ---------------------------------------------- |
+| 1    | Copy and adapt `packages/peer-id/` from tracker branch          | ✅ done                                        |
+| 2    | Add `"packages/peer-id"` to root `Cargo.toml` workspace members | ✅ done                                        |
+| 3    | Fix `clippy::missing-const-for-fn` on `PeerId::as_bytes`        | ✅ done                                        |
+| 4    | Run `cargo check/nextest/clippy/fmt` — all pass                 | ✅ done                                        |
+| 5    | Create branch `feat/add-torrust-peer-id` and commit             | ✅ done                                        |
+| 6    | Push branch and open PR against `develop`                       | ✅ done                                        |
+| 7    | Merge PR after CI passes                                        | ✅ done                                        |
+| 8    | Publish `torrust-peer-id 0.1.0` to crates.io                    | ✅ done                                        |
+| 9    | Signal tracker repo to proceed with removal                     | ↩️ tracker-side (torrust/torrust-tracker#1884) |
 
 ## Acceptance Criteria
 
