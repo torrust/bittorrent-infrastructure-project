@@ -173,3 +173,6 @@ All jobs must be green before merging.
   `packages/dht/Cargo.toml` references `util` as `{ path = "../util" }`).
 - Benchmarks live alongside the crate they benchmark (`benches/`).
 - Integration tests live in the crate's `tests/` directory.
+- Markdown files may carry YAML frontmatter with `semantic-links` (skill links, related issues,
+  related artifacts). See `docs/skills/semantic-skill-link-convention.md` for the convention.
+  Add or update frontmatter when creating or significantly changing a doc file.
