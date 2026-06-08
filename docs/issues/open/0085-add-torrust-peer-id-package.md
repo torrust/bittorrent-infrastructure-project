@@ -95,8 +95,8 @@ After the crate is published, the tracker-side tasks (torrust/torrust-tracker#18
 | 4    | Run `cargo check/nextest/clippy/fmt` — all pass                 | ✅ done    |
 | 5    | Create branch `feat/add-torrust-peer-id` and commit             | ✅ done    |
 | 6    | Push branch and open PR against `develop`                       | ✅ done    |
-| 7    | Merge PR after CI passes                                        | ⬜ pending |
-| 8    | Publish `torrust-peer-id 0.1.0` to crates.io                    | ⬜ pending |
+| 7    | Merge PR after CI passes                                        | ✅ done    |
+| 8    | Publish `torrust-peer-id 0.1.0` to crates.io                    | ✅ done    |
 | 9    | Signal tracker repo to proceed with removal                     | ⬜ pending |
 
 ## Acceptance Criteria
