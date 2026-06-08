@@ -1,3 +1,12 @@
+---
+semantic-links:
+  related-issues:
+    - https://github.com/torrust/torrust-bittorrent/issues/85
+  related-artifacts:
+    - Cargo.toml
+    - AGENTS.md
+---
+
 # Packages
 
 These packages together are the _Torrust BitTorrent_ packages:
@@ -11,5 +20,6 @@ These packages together are the _Torrust BitTorrent_ packages:
 | `magnet`    | [magnet](./magnet/)       | Parsing and constructing magnet links                          |
 | `metainfo`  | [metainfo](./metainfo/)   | Parsing and building bittorrent metainfo (`.torrent`) files    |
 | `peer`      | [peer](./peer/)           | Communication with bittorrent peers via the peer wire protocol |
+| `peer-id`   | [peer-id](./peer-id/)     | BitTorrent peer ID parsing and client identification           |
 | `select`    | [select](./select/)       | Piece selection algorithm                                      |
 | `util`      | [util](./util/)           | Shared utilities used across packages                          |

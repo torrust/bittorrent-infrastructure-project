@@ -17,13 +17,13 @@ members = [
 resolver = "2"
 
 [workspace.package]
-authors = ["Nautilus Cyberneering <info@nautilus-cyberneering.de>, Andrew <amiller4421@gmail.com>"]
-categories = ["network-programming", "web-programming"]
+authors = [ "Nautilus Cyberneering <info@nautilus-cyberneering.de>, Andrew <amiller4421@gmail.com>" ]
+categories = [ "network-programming", "web-programming" ]
 description = "A collection of crates for building applications using bittorrent technologies."
 documentation = "https://github.com/torrust/torrust-bittorrent"
 edition = "2024"
 homepage = "https://github.com/torrust/torrust-bittorrent"
-keywords = ["bittorrent"]
+keywords = [ "bittorrent" ]
 license = "Apache-2.0"
 # publish = false is the workspace default inherited by example crates.
 # Each crate in packages/ sets its own publish and version fields explicitly.
