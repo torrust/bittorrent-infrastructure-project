@@ -6,7 +6,7 @@ priority: p1
 github-issue: 90
 spec-path: docs/issues/open/90-export-missing-public-api-in-torrust-info-hash.md
 branch: fix/export-missing-public-api-in-torrust-info-hash
-last-updated-utc: 2026-06-09 12:00
+last-updated-utc: 2026-06-09 13:00
 semantic-links:
   related-artifacts:
     - packages/info-hash/Cargo.toml
@@ -146,7 +146,7 @@ After all work is complete and the PR is merged, the Acceptance Criteria section
 - [x] **Implementation started** — Branch created
 - [ ] **Implementation complete** — All action items done
 - [x] **PR opened** — #91 against `develop`
-- [ ] **PR merged** — Merged to `develop`
+- [x] **PR merged** — Merged to `develop`
 - [ ] **Crate published** — `torrust-info-hash v0.2.0` on crates.io
 - [ ] **Issue closed** — Acceptance criteria verified
 

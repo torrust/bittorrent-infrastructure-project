@@ -344,7 +344,6 @@ pub mod fixture {
     ///
     /// The results should not be relied upon between versions.
     #[must_use]
-    #[expect(dead_code, reason = "public fixture API for downstream consumers")]
     pub fn gen_seeded_infohash(seed: u64) -> InfoHash {
         let mut buf_a: [[u8; 8]; 4] = Default::default();
         let mut buf_b = InfoHash::default();
