@@ -145,7 +145,7 @@ After all work is complete and the PR is merged, the Acceptance Criteria section
 - [x] **GitHub issue created** — #90
 - [x] **Implementation started** — Branch created
 - [ ] **Implementation complete** — All action items done
-- [ ] **PR opened** — PR against `develop`
+- [x] **PR opened** — #91 against `develop`
 - [ ] **PR merged** — Merged to `develop`
 - [ ] **Crate published** — `torrust-info-hash v0.2.0` on crates.io
 - [ ] **Issue closed** — Acceptance criteria verified
