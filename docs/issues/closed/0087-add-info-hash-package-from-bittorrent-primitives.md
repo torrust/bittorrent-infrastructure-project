@@ -1,12 +1,12 @@
 ---
 doc-type: issue
 issue-type: task
-status: open
+status: closed
 priority: p1
 github-issue: 87
-spec-path: docs/issues/open/0087-add-info-hash-package-from-bittorrent-primitives.md
+spec-path: docs/issues/closed/0087-add-info-hash-package-from-bittorrent-primitives.md
 branch: feat/add-info-hash-from-bittorrent-primitives
-last-updated-utc: 2026-06-08 12:00
+last-updated-utc: 2026-06-09 12:00
 semantic-links:
   skill-links:
     - release-package
@@ -137,14 +137,14 @@ Update the relevant tracking issues:
 
 | Step | Task                                                              | Status          |
 | ---- | ----------------------------------------------------------------- | --------------- |
-| 1    | Review existing file copies and adaptations                       | ⬜ todo         |
-| 2    | Add `"packages/info-hash"` to root `Cargo.toml` workspace members | ⬜ todo         |
-| 3    | Add `info-hash` row to package table in `AGENTS.md`               | ⬜ todo         |
-| 4    | Run full workspace validation (check, test, fmt, clippy, linter)  | ⬜ todo         |
-| 5    | Create branch and commit with original author attribution         | ⬜ todo         |
-| 6    | Push branch and open PR against `develop`                         | ⬜ todo         |
-| 7    | Merge PR after CI passes                                          | ⬜ todo         |
-| 8    | Publish `torrust-info-hash 0.1.0` to crates.io                    | ⬜ todo         |
+| 1    | Review existing file copies and adaptations                       | ✅ done         |
+| 2    | Add `"packages/info-hash"` to root `Cargo.toml` workspace members | ✅ done         |
+| 3    | Add `info-hash` row to package table in `AGENTS.md`               | ✅ done         |
+| 4    | Run full workspace validation (check, test, fmt, clippy, linter)  | ✅ done         |
+| 5    | Create branch and commit with original author attribution         | ✅ done         |
+| 6    | Push branch and open PR against `develop`                         | ✅ done         |
+| 7    | Merge PR after CI passes                                          | ✅ done         |
+| 8    | Publish `torrust-info-hash 0.1.0` to crates.io                    | ✅ done         |
 | 9    | Signal tracker repo to switch dependency                          | ↩️ tracker-side |
 
 ## Dependencies of the new package
