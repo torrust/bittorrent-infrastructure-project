@@ -152,6 +152,6 @@ After all work is complete and the PR is merged, the Acceptance Criteria section
 
 ### Progress Log
 
-| Date       | Entry                                                                                   |
-| ---------- | --------------------------------------------------------------------------------------- |
+| Date       | Entry                                              |
+| ---------- | -------------------------------------------------- |
 | 2026-06-09 | Published `torrust-info-hash v0.2.0` to crates.io. |
