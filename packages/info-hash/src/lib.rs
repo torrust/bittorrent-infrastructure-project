@@ -4,4 +4,4 @@
 
 mod info_hash;
 
-pub use self::info_hash::InfoHash;
+pub use self::info_hash::{ConversionError, INFO_HASH_BYTES_LEN, InfoHash, fixture};
