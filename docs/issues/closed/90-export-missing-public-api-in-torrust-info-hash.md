@@ -147,11 +147,11 @@ After all work is complete and the PR is merged, the Acceptance Criteria section
 - [x] **Implementation complete** — All action items done
 - [x] **PR opened** — #92 against `develop`
 - [x] **PR merged** — Merged to `develop`
-- [ ] **Crate published** — `torrust-info-hash v0.2.0` on crates.io
-- [ ] **Issue closed** — Acceptance criteria verified
+- [x] **Crate published** — `torrust-info-hash v0.2.0` on crates.io
+- [x] **Issue closed** — Acceptance criteria verified
 
 ### Progress Log
 
 | Date       | Entry                                                                                   |
 | ---------- | --------------------------------------------------------------------------------------- |
-| 2026-06-09 | Issue drafted. Missing re-exports identified in `HANDOFF-export-missing-public-api.md`. |
+| 2026-06-09 | Published `torrust-info-hash v0.2.0` to crates.io. |
