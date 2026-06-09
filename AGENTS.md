@@ -172,15 +172,15 @@ authoring, testing policies, and more.
 
 Key skills agents should look up proactively:
 
-| Task                      | Skill path                                          |
-| ------------------------- | --------------------------------------------------- |
-| Creating an issue         | `.github/skills/dev/planning/create-issue/`         |
-| Writing an ADR            | `.github/skills/dev/planning/create-adr/`           |
-| Planning a refactor       | `.github/skills/dev/planning/create-refactor-plan/` |
-| Opening a pull request    | `.github/skills/dev/github/git-workflow/`           |
-| Reviewing a PR            | `.github/skills/dev/pr-reviews/`                    |
-| Reviewing a task          | `.github/skills/dev/task-reviews/`                  |
-| Adding or editing a skill | `.github/skills/add-new-skill/`                     |
+| Task                      | Skill path                                           |
+| ------------------------- | ---------------------------------------------------- |
+| Creating an issue         | `.github/skills/dev/planning/create-issue/`          |
+| Writing an ADR            | `.github/skills/dev/planning/create-adr/`            |
+| Planning a refactor       | `.github/skills/dev/planning/create-refactor-plan/`  |
+| Opening a pull request    | `.github/skills/dev/git-workflow/open-pull-request/` |
+| Reviewing a PR            | `.github/skills/dev/pr-reviews/review-pr/`           |
+| Reviewing a task          | `.github/skills/dev/task-reviews/review-task/`       |
+| Adding or editing a skill | `.github/skills/add-new-skill/`                      |
 
 For example, the issue-creation workflow is **spec-first**: draft a spec in
 `docs/issues/drafts/`, present it for user review, create the GitHub issue
