@@ -163,6 +163,31 @@ Workflows live in `.github/workflows/`:
 
 All jobs must be green before merging.
 
+## Skill-based workflows
+
+This repository ships reusable skills under `.github/skills/dev/` that encode
+project workflows. **Before starting a new task, check if a relevant skill
+exists.** Skills cover issue creation, PR reviews, refactoring plans, ADR
+authoring, testing policies, and more.
+
+Key skills agents should look up proactively:
+
+| Task                      | Skill path                                           |
+| ------------------------- | ---------------------------------------------------- |
+| Creating an issue         | `.github/skills/dev/planning/create-issue/`          |
+| Writing an ADR            | `.github/skills/dev/planning/create-adr/`            |
+| Planning a refactor       | `.github/skills/dev/planning/create-refactor-plan/`  |
+| Opening a pull request    | `.github/skills/dev/git-workflow/open-pull-request/` |
+| Reviewing a PR            | `.github/skills/dev/pr-reviews/review-pr/`           |
+| Reviewing a task          | `.github/skills/dev/task-reviews/review-task/`       |
+| Adding or editing a skill | `.github/skills/add-new-skill/`                      |
+
+For example, the issue-creation workflow is **spec-first**: draft a spec in
+`docs/issues/drafts/`, present it for user review, create the GitHub issue
+(which assigns the real number), then move to `docs/issues/open/`.
+
+Always use the skill's full instructions — do not guess the workflow.
+
 ## Monorepo tips
 
 - Each `packages/<name>` is an independent Cargo crate; add it to the workspace
