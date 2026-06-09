@@ -1,11 +1,11 @@
 ---
 doc-type: issue
 issue-type: bug
-status: open
+status: closed
 priority: p1
 github-issue: 90
-spec-path: docs/issues/open/90-export-missing-public-api-in-torrust-info-hash.md
-branch: fix/export-missing-public-api-in-torrust-info-hash
+spec-path: docs/issues/closed/90-export-missing-public-api-in-torrust-info-hash.md
+branch: feat/export-missing-public-api-in-torrust-info-hash
 last-updated-utc: 2026-06-09 13:00
 semantic-links:
   related-artifacts:
@@ -144,14 +144,14 @@ After all work is complete and the PR is merged, the Acceptance Criteria section
 - [x] **Issue spec reviewed** — User approved
 - [x] **GitHub issue created** — #90
 - [x] **Implementation started** — Branch created
-- [ ] **Implementation complete** — All action items done
-- [x] **PR opened** — #91 against `develop`
+- [x] **Implementation complete** — All action items done
+- [x] **PR opened** — #92 against `develop`
 - [x] **PR merged** — Merged to `develop`
-- [ ] **Crate published** — `torrust-info-hash v0.2.0` on crates.io
-- [ ] **Issue closed** — Acceptance criteria verified
+- [x] **Crate published** — `torrust-info-hash v0.2.0` on crates.io
+- [x] **Issue closed** — Acceptance criteria verified
 
 ### Progress Log
 
-| Date       | Entry                                                                                   |
-| ---------- | --------------------------------------------------------------------------------------- |
-| 2026-06-09 | Issue drafted. Missing re-exports identified in `HANDOFF-export-missing-public-api.md`. |
+| Date       | Entry                                              |
+| ---------- | -------------------------------------------------- |
+| 2026-06-09 | Published `torrust-info-hash v0.2.0` to crates.io. |
